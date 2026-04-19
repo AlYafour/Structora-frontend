@@ -1,0 +1,152 @@
+/* InvoiceAllocationTable – BEM styles */
+
+.invoice-allocation {
+  margin-block-end: var(--space-4, 16px);
+}
+
+/* ---- Add Invoice Row ---- */
+.invoice-allocation__add-row {
+  margin-block-end: var(--space-5, 20px);
+}
+
+.invoice-allocation__add-label {
+  display: block;
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+  color: var(--text-primary, #374151);
+  margin-block-end: var(--space-2, 8px);
+}
+
+/* ---- Table ---- */
+.invoice-allocation__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+}
+
+.invoice-allocation__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 14px);
+  background: var(--surface-primary, #ffffff);
+}
+
+/* ---- Header ---- */
+.invoice-allocation__header-row {
+  background: var(--surface-secondary, #f3f4f6);
+  border-block-end: 2px solid var(--color-border, #e5e7eb);
+}
+
+.invoice-allocation__th {
+  text-align: right;
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary, #6b7280);
+  padding: var(--space-3, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.invoice-allocation__th--center {
+  text-align: center;
+}
+
+[dir="rtl"] .invoice-allocation__th {
+  text-align: right;
+}
+
+/* ---- Body Rows ---- */
+.invoice-allocation__body-row {
+  border-block-end: 1px solid var(--color-border, #e5e7eb);
+  transition: background 0.15s;
+}
+
+.invoice-allocation__body-row:hover {
+  background: var(--surface-hover, #f3f4f6);
+}
+
+.invoice-allocation__body-row:nth-child(even) {
+  background: var(--surface-secondary, #f9fafb);
+}
+
+.invoice-allocation__body-row:nth-child(even):hover {
+  background: var(--surface-hover, #f3f4f6);
+}
+
+/* ---- Cells ---- */
+.invoice-allocation__td {
+  padding: var(--space-3, 12px);
+  text-align: right;
+  vertical-align: middle;
+}
+
+.invoice-allocation__td--center {
+  text-align: center;
+}
+
+[dir="rtl"] .invoice-allocation__td {
+  text-align: right;
+}
+
+/* ---- Invoice Number ---- */
+.invoice-allocation__invoice-number {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary, #111827);
+}
+
+/* ---- Remaining Original ---- */
+.invoice-allocation__remaining-original {
+  font-weight: var(--font-medium, 500);
+  color: var(--success-600, #059669);
+}
+
+/* ---- Allocated Display (auto mode) ---- */
+.invoice-allocation__allocated-display {
+  display: block;
+  text-align: right;
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary, #111827);
+}
+
+/* ---- Remaining After Status Colors ---- */
+.invoice-allocation__remaining-value {
+  font-weight: var(--font-semibold, 600);
+}
+
+.invoice-allocation__remaining-value--paid {
+  color: var(--success-500, #10b981);
+}
+
+.invoice-allocation__remaining-value--partial {
+  color: var(--warning-500, #f59e0b);
+}
+
+.invoice-allocation__remaining-value--over {
+  color: var(--error-600, #dc2626);
+}
+
+/* ---- Fully Paid Badge ---- */
+.invoice-allocation__fully-paid {
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--font-medium, 500);
+  color: var(--success-600, #059669);
+  margin-block-start: 2px;
+}
+
+/* ---- Remove Button ---- */
+.invoice-allocation__remove-btn {
+  padding: var(--space-1, 4px) var(--space-3, 12px);
+  background: var(--error-50, #fee2e2);
+  color: var(--error-600, #dc2626);
+  border: 1px solid var(--error-200, #fecaca);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--font-medium, 500);
+  transition: background 0.2s;
+}
+
+.invoice-allocation__remove-btn:hover {
+  background: var(--error-100, #fecaca);
+}

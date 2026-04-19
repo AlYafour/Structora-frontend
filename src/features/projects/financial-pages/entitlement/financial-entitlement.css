@@ -1,0 +1,260 @@
+/* ==========================================
+   Financial Entitlement Page
+   Professional table-based layout
+   ========================================== */
+
+/* ==================== PAGE LAYOUT ==================== */
+.fe-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+}
+
+/* Side-by-side grid for paired sections (2+3, 4+5) */
+.fe-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* ==================== SECTION ==================== */
+.fe-section {
+  border: 1px solid var(--color-border, var(--border, #e5e7eb));
+  border-radius: 10px;
+  overflow: visible;
+  background: var(--color-surface, var(--surface, #fff));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fe-section__header {
+  background: var(--color-primary, var(--primary, #14213D));
+  color: #fff;
+  padding: 14px 20px;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px 10px 0 0;
+}
+
+.fe-section__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ==================== TABLE ==================== */
+.fe-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.fe-table th {
+  background: var(--gray-50, var(--surface-2, #f9fafb));
+  border: 1px solid var(--color-border, var(--border, #e5e7eb));
+  border-top: none;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary, var(--ink, #374151));
+  text-align: start;
+}
+
+.fe-table td {
+  border: 1px solid var(--color-border, var(--border, #e5e7eb));
+  padding: 10px 14px;
+  vertical-align: middle;
+  background: var(--color-surface, var(--surface, #fff));
+  font-size: 14px;
+}
+
+/* Label column */
+.fe-table .fe-td-label {
+  text-align: start;
+}
+
+/* Value column — use system font, no monospace */
+.fe-table .fe-td-value {
+  text-align: end;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-primary, var(--ink, #1f2937));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================== ROW STATES ==================== */
+.fe-row--total td {
+  font-weight: 700;
+  background: var(--color-primary-light, var(--primary-50, rgba(20, 33, 61, 0.06)));
+}
+
+.fe-row--total .fe-td-value {
+  font-weight: 700;
+  color: var(--color-primary-700, var(--primary-700, #0d6e64));
+  font-size: 15px;
+}
+
+.fe-row--highlight td {
+  background: var(--warning-50, #fffbeb);
+}
+
+/* ==================== LABEL WITH INFOTIP ==================== */
+.fe-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fe-label-wrap > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Bottom row border-radius to match section rounding */
+.fe-table tr:last-child td:first-child { border-radius: 0 0 0 10px; }
+.fe-table tr:last-child td:last-child  { border-radius: 0 0 10px 0; }
+[dir="rtl"] .fe-table tr:last-child td:first-child { border-radius: 0 0 10px 0; }
+[dir="rtl"] .fe-table tr:last-child td:last-child  { border-radius: 0 0 0 10px; }
+
+/* ==================== STATUS BADGE ==================== */
+.fe-status-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.fe-status-badge--balanced {
+  background: var(--success-100, #dcfce7);
+  color: var(--success-700, #15803d);
+}
+
+.fe-status-badge--outstanding {
+  background: var(--warning-100, #fef3c7);
+  color: var(--warning-700, #a16207);
+}
+
+.fe-status-badge--overpaid {
+  background: var(--error-100, #fee2e2);
+  color: var(--error-700, #b91c1c);
+}
+
+/* ==================== COLUMN WIDTHS ==================== */
+/* 4-column VAT table */
+.fe-table--vat .fe-col-label { width: 40%; }
+.fe-table--vat .fe-col-excl  { width: 20%; }
+.fe-table--vat .fe-col-vat   { width: 20%; }
+.fe-table--vat .fe-col-incl  { width: 20%; }
+
+/* 2-column table — label takes more space */
+.fe-table--2col .fe-col-label { width: 60%; }
+.fe-table--2col .fe-col-value { width: 40%; }
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1024px) {
+  .fe-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .fe-section__header {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+
+  .fe-table th,
+  .fe-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .fe-td-value {
+    font-size: 13px;
+  }
+
+  .fe-section__number {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Hide VAT breakdown columns on very small screens */
+  .fe-table--vat .fe-col-excl,
+  .fe-table--vat .fe-col-vat {
+    display: none;
+  }
+
+  .fe-table--vat .fe-col-label { width: 55%; }
+  .fe-table--vat .fe-col-incl  { width: 45%; }
+
+  .fe-table--vat thead th:nth-child(2),
+  .fe-table--vat thead th:nth-child(3),
+  .fe-table--vat tbody td:nth-child(2),
+  .fe-table--vat tbody td:nth-child(3) {
+    display: none;
+  }
+}
+
+/* ==================== DARK MODE ==================== */
+html.theme-dark .fe-section {
+  border-color: var(--gray-700, #374151);
+  background: var(--gray-900, #111827);
+}
+
+html.theme-dark .fe-section__header {
+  background: var(--color-primary, #14213D);
+}
+
+html.theme-dark .fe-table th {
+  background: var(--gray-800, #1f2937);
+  border-color: var(--gray-700, #374151);
+  color: var(--gray-300, #d1d5db);
+}
+
+html.theme-dark .fe-table td {
+  background: var(--gray-900, #111827);
+  border-color: var(--gray-700, #374151);
+  color: var(--gray-200, #e5e7eb);
+}
+
+html.theme-dark .fe-row--total td {
+  background: rgba(20, 33, 61, 0.1);
+}
+
+html.theme-dark .fe-row--total .fe-td-value {
+  color: var(--color-primary, #14213D);
+}
+
+html.theme-dark .fe-row--highlight td {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+html.theme-dark .fe-status-badge--balanced {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+}
+
+html.theme-dark .fe-status-badge--outstanding {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+html.theme-dark .fe-status-badge--overpaid {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}

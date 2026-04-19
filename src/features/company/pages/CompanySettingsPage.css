@@ -1,0 +1,606 @@
+/* ═══════════════════════════════════════════════
+   Company Settings — Professional Layout
+   ═══════════════════════════════════════════════ */
+
+/* ── Company Profile Card ── */
+.cs-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 28px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.cs-profile__logo-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--gray-50, #f9fafb);
+  border: 2px solid var(--border, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-profile__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+.cs-profile__logo-fallback {
+  font-size: 28px;
+  color: var(--color-primary, #14213D);
+  opacity: 0.6;
+}
+
+.cs-profile__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-profile__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.cs-profile__name-secondary {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0 0 8px;
+}
+
+.cs-profile__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cs-profile__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.cs-profile__meta-item svg {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.cs-profile__badge-wrap {
+  flex-shrink: 0;
+}
+
+/* ── Layout Shell ── */
+.cs-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+  padding: 0 0 40px;
+}
+
+/* ── Sidebar ── */
+.cs-sidebar {
+  position: sticky;
+  top: 80px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.cs-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  font-family: inherit;
+}
+
+.cs-sidebar__item:hover {
+  background: var(--hover, #f3f4f6);
+  color: var(--color-text, #111827);
+}
+
+.cs-sidebar__item--active {
+  background: var(--primary-50, #fff7ed);
+  color: var(--color-primary, #f97316);
+  font-weight: 600;
+}
+
+.cs-sidebar__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+}
+
+.cs-sidebar__item--active .cs-sidebar__icon {
+  opacity: 1;
+}
+
+.cs-sidebar__label {
+  line-height: 1.3;
+}
+
+/* ── Content Panel ── */
+.cs-panel {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  min-height: 400px;
+}
+
+/* ── Section ── */
+.cs-section {
+  padding: 28px 32px;
+}
+
+.cs-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.cs-section__icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-50, #fff7ed);
+  color: var(--color-primary, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cs-section__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+  margin: 0 0 4px;
+}
+
+.cs-section__subtitle {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Grid ── */
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.cs-grid__full {
+  grid-column: 1 / -1;
+}
+
+/* ── Actions Bar ── */
+.cs-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+/* ── Divider ── */
+.cs-divider {
+  height: 1px;
+  background: var(--border, #e5e7eb);
+  margin: 24px 0;
+}
+
+/* ── Upload Cards (Logo, Background, Avatar) ── */
+.cs-upload-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.cs-upload-card__preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface, #fff);
+  border: 2px dashed var(--border, #d1d5db);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-upload-card__preview--wide {
+  width: 160px;
+  height: 90px;
+}
+
+.cs-upload-card__preview--circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.cs-upload-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cs-upload-card__img--cover {
+  object-fit: cover;
+}
+
+.cs-upload-card__placeholder {
+  font-size: 28px;
+  color: var(--color-text-secondary, #9ca3af);
+  opacity: 0.5;
+}
+
+.cs-upload-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-upload-card__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+  margin: 0;
+}
+
+.cs-upload-card__hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Color Fields ── */
+.cs-colors-row {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.cs-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 180px;
+  flex: 1;
+}
+
+.cs-color-field__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+}
+
+.cs-color-field__control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+}
+
+.cs-color-field__preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  flex-shrink: 0;
+}
+
+.cs-color-field__input {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.cs-color-field__value {
+  font-size: 0.875rem;
+  font-family: monospace;
+  color: var(--color-text-secondary, #6b7280);
+  letter-spacing: 0.02em;
+}
+
+/* ── Subscription Cards ── */
+.cs-subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.cs-sub-card {
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.cs-sub-card:hover {
+  border-color: var(--color-primary, #f97316);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.cs-sub-card__icon {
+  font-size: 1.1rem;
+  color: var(--color-primary, #f97316);
+  opacity: 0.8;
+}
+
+.cs-sub-card__label {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.cs-sub-card__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+}
+
+.cs-sub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.cs-sub-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.cs-sub-badge--inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ═══ Dark Mode ═══ */
+html.theme-dark .cs-profile {
+  background: var(--surface, #1f2937);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-profile__logo-wrap {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-sidebar {
+  background: var(--surface, #1f2937);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-sidebar__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.theme-dark .cs-sidebar__item--active {
+  background: rgba(var(--color-primary-rgb, 249, 115, 22), 0.1);
+}
+
+html.theme-dark .cs-panel {
+  background: var(--surface, #1f2937);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-section__icon-wrap {
+  background: rgba(var(--color-primary-rgb, 249, 115, 22), 0.1);
+}
+
+html.theme-dark .cs-upload-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-upload-card__preview {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border, #4b5563);
+}
+
+html.theme-dark .cs-color-field__control {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-sub-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border, #374151);
+}
+
+html.theme-dark .cs-sub-card:hover {
+  border-color: var(--color-primary, #f97316);
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 900px) {
+  .cs-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-sidebar {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .cs-sidebar__item {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    white-space: nowrap;
+  }
+
+  .cs-sidebar__label {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .cs-section {
+    padding: 20px 16px;
+  }
+
+  .cs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-grid__full {
+    grid-column: 1;
+  }
+
+  .cs-subscription-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cs-upload-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cs-upload-card__preview--wide {
+    width: 100%;
+    height: 120px;
+  }
+
+  .cs-colors-row {
+    flex-direction: column;
+  }
+
+  .cs-profile__meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* ── Read-only admin fields ── */
+.cs-readonly {
+  background: var(--gray-50, #f8f9fa) !important;
+  color: var(--ink, #1a1408) !important;
+  opacity: 0.85;
+  cursor: not-allowed;
+  border-style: dashed !important;
+}
+
+html.theme-dark .cs-readonly {
+  background: rgba(200, 168, 78, 0.04) !important;
+  color: var(--ink, #fff) !important;
+  border-color: rgba(200, 168, 78, 0.12) !important;
+}
+
+.cs-readonly-icon {
+  font-size: 0.65rem;
+  opacity: 0.45;
+  vertical-align: middle;
+  margin-inline-start: 4px;
+}
+
+.cs-readonly-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted, #888);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--gray-50, #f8f9fa);
+  border-radius: 8px;
+  border: 1px dashed var(--border, #e5e7eb);
+}
+
+html.theme-dark .cs-readonly-note {
+  background: rgba(200, 168, 78, 0.04);
+  border-color: rgba(200, 168, 78, 0.1);
+}
+
+.cs-readonly-note svg {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+/* Gold icon wrap variant */
+.cs-section__icon-wrap--gold {
+  background: rgba(200, 168, 78, 0.12);
+  color: var(--accent, #C8A84E);
+}
+
+html.theme-dark .cs-section__icon-wrap--gold {
+  background: rgba(200, 168, 78, 0.15);
+}

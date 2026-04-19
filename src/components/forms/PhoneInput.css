@@ -1,0 +1,136 @@
+/* ==================== Phone Input ==================== */
+.phone-input {
+  display: flex;
+  align-items: stretch;
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border, #E2E4E9);
+  transition: all var(--transition-base, 0.2s ease);
+  overflow: hidden;
+  direction: ltr;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.phone-input:focus-within {
+  border-color: var(--color-primary, #14213D);
+  box-shadow: 0 0 0 3px var(--color-primary-light, rgba(20, 33, 61, 0.08));
+}
+
+.phone-input--valid {
+  border-color: #10b981;
+}
+
+.phone-input--valid:focus-within {
+  border-color: var(--color-primary, #14213D);
+  box-shadow: 0 0 0 3px var(--color-primary-light, rgba(20, 33, 61, 0.08));
+}
+
+.phone-input--error {
+  border-color: var(--error-500, #ef4444);
+}
+
+.phone-input--error:focus-within {
+  border-color: var(--error-500, #ef4444);
+  box-shadow: 0 0 0 3px var(--error-50, rgba(239, 68, 68, 0.1));
+}
+
+.phone-input--disabled {
+  background-color: var(--gray-100, #f3f4f6);
+  color: var(--color-text-disabled, #9ca3af);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Prefix ── */
+.phone-input__prefix {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-right: 1px solid var(--color-border, #E2E4E9);
+  background: var(--gray-50, #f9fafb);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.phone-input__flag {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.phone-input__code {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--color-text-primary, #14213D);
+  white-space: nowrap;
+}
+
+/* ── Input ── */
+.phone-input__field {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0 var(--space-3, 12px);
+  font-size: var(--font-size-base, 14px);
+  height: 100%;
+  color: var(--color-text-primary, #1a1a2e);
+  background: transparent;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  text-align: left;
+  min-width: 0;
+  line-height: var(--line-height-normal, 1.5);
+}
+
+.phone-input__field::placeholder {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+/* ── Check mark ── */
+.phone-input__check {
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Dark mode ── */
+html.theme-dark .phone-input {
+  background: var(--color-surface, rgba(13, 26, 48, 0.65));
+  border-color: var(--color-border, rgba(200, 168, 78, 0.08));
+}
+
+html.theme-dark .phone-input:focus-within {
+  border-color: var(--color-primary, #C8A84E);
+  box-shadow: 0 0 0 3px var(--color-primary-light, rgba(200, 168, 78, 0.1));
+}
+
+html.theme-dark .phone-input--valid {
+  border-color: #10b981;
+}
+
+html.theme-dark .phone-input--valid:focus-within {
+  border-color: var(--color-primary, #C8A84E);
+}
+
+html.theme-dark .phone-input__prefix {
+  background: var(--gray-800, #1f2937);
+  border-color: var(--color-border, rgba(200, 168, 78, 0.08));
+}
+
+html.theme-dark .phone-input__code {
+  color: var(--gray-300, #d1d5db);
+}
+
+html.theme-dark .phone-input__field {
+  color: var(--ink, #fff);
+}
+
+html.theme-dark .phone-input--disabled {
+  background-color: var(--gray-700, #374151);
+  color: var(--gray-400, #9ca3af);
+}

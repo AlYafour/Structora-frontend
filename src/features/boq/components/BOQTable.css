@@ -1,0 +1,74 @@
+.boq-table {
+  margin-top: var(--space-4);
+}
+
+.boq-section {
+  margin-bottom: var(--space-8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.boq-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.boq-section-header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.125rem;
+}
+
+.boq-items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.boq-items-table th,
+.boq-items-table td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.boq-items-table th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.boq-item-row.editing {
+  background: #f0f9ff;
+}
+
+.boq-item-row.editing input {
+  width: 100%;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.boq-table-loading,
+.boq-table-empty {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-secondary);
+}
+
+/* ==================== EXTRACTED INLINE STYLES ==================== */
+.boq-table__empty-hint {
+  margin-top: var(--space-2, 8px);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.boq-table__delete-actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-4, 16px);
+}

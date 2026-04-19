@@ -1,0 +1,10 @@
+/* ==========================================
+   CONSULTANTS PAGE
+   ========================================== */
+
+/* ==================== CONSULTANT NAME ENGLISH SUBTEXT ==================== */
+.consultants-page__name-en {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}

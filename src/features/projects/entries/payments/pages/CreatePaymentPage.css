@@ -1,0 +1,233 @@
+/* ==========================================
+   CREATE PAYMENT PAGE — Compact Professional Layout
+   ========================================== */
+
+/* ---- Page wrapper: minimal breathing room ---- */
+.payment-page.entry-form {
+  padding: 0 12px 16px;
+}
+
+/* ---- Action bar: tighter ---- */
+.payment-page .financial-action-bar {
+  margin-bottom: 8px;
+}
+.payment-page .financial-action-bar__container {
+  padding: 8px 12px;
+  gap: 10px;
+}
+
+/* ---- Cards: tight padding, small gaps ---- */
+.payment-page .card {
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.payment-page .card__header {
+  padding: 8px 12px;
+  margin: -12px -12px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.payment-page .card__body {
+  gap: 0;
+  padding-top: 10px;
+}
+
+/* ---- Inputs/selects/currency: slimmer ---- */
+.payment-page .prj-input,
+.payment-page .prj-select,
+.payment-page .input,
+.payment-page input.input {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.payment-page textarea.prj-input {
+  min-height: 40px;
+  padding: 6px 10px;
+}
+.payment-page .currency-field__currency-label {
+  font-size: 12px;
+}
+.payment-page .ds-flex-col.ds-gap-1-5 {
+  gap: 4px !important;
+}
+
+/* ---- Form sections: minimal separators ---- */
+.payment-page .payment-form-fields__section {
+  padding-block-end: 6px;
+  margin-block-end: 6px;
+}
+.payment-page .payment-form-fields__section--last {
+  margin-block-end: 0;
+  padding-block-end: 0;
+}
+.payment-page .payment-form-fields__section-title {
+  margin-block-end: 6px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+}
+.payment-page .payment-form-fields__label {
+  margin-block-end: 2px;
+  font-size: 12px;
+}
+.payment-page .payment-form-fields__hint {
+  margin-block-start: 2px;
+  font-size: 11px;
+}
+
+/* ---- Sub-sections (bank transfer, cheque, etc.) ---- */
+.payment-page .payment-form-fields__sub-section {
+  margin-block-start: 6px;
+  padding: 6px 8px;
+}
+.payment-page .payment-form-fields__sub-title {
+  margin-block-end: 4px;
+  font-size: 12px;
+}
+
+/* ---- Grid gaps ---- */
+.payment-page .ds-gap-4 {
+  gap: 8px !important;
+}
+
+/* ---- Textarea ---- */
+.payment-page .payment-form-fields__textarea {
+  min-height: 36px;
+  resize: vertical;
+}
+
+/* ---- Info display (completion %, etc.) ---- */
+.payment-page .payment-form-fields__info-display {
+  padding: 4px 8px;
+  font-size: 13px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- File uploads: compact ---- */
+.payment-page .file-input-display {
+  padding: 8px 10px;
+  gap: 8px;
+  border-width: 1px;
+}
+.payment-page .file-input-icon {
+  font-size: 16px;
+}
+.payment-page .file-input-text {
+  font-size: 12px;
+}
+.payment-page .file-input-browse {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.payment-page .existing-file-info,
+.payment-page .selected-file-info {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+.payment-page .file-upload-hint {
+  margin-top: 2px;
+  font-size: 10px;
+}
+.payment-page .field-label {
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+/* ---- Attachments card ---- */
+.payment-page .payment-attachments {
+  margin-block-end: 0;
+}
+.payment-page .payment-attachments__grid {
+  gap: 8px;
+}
+.payment-page .payment-attachments__label {
+  margin-block-end: 2px;
+  font-size: 12px;
+}
+
+/* ---- Invoice allocation ---- */
+.payment-page .invoice-allocation {
+  margin-block-end: 6px;
+}
+.payment-page .invoice-allocation__add-row {
+  margin-block-end: 6px;
+}
+.payment-page .invoice-allocation__add-label {
+  margin-block-end: 2px;
+  font-size: 12px;
+}
+.payment-page .invoice-allocation__th {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.payment-page .invoice-allocation__td {
+  padding: 5px 8px;
+}
+
+/* ---- Payment summary ---- */
+.payment-page .payment-summary {
+  padding: 8px 10px;
+  margin-top: 2px;
+}
+.payment-page .payment-summary__title {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+}
+.payment-page .payment-summary__grid {
+  gap: 6px;
+  margin-block-end: 6px;
+}
+.payment-page .payment-summary__stat-label {
+  font-size: 11px;
+  margin-block-end: 2px;
+}
+.payment-page .payment-summary__amount-value,
+.payment-page .payment-summary__allocated-value {
+  font-size: 13px;
+}
+.payment-page .payment-summary__balance {
+  padding: 8px 10px;
+}
+.payment-page .payment-summary__balance-label {
+  font-size: 11px;
+  margin-block-end: 2px;
+}
+.payment-page .payment-summary__balance-amount {
+  font-size: 15px;
+}
+.payment-page .payment-summary__balance-icon {
+  font-size: 20px;
+}
+.payment-page .payment-summary__balance-hint {
+  margin-block-start: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+/* ---- CurrencyField inside allocation: slimmer ---- */
+.payment-page .invoice-allocation__td .currency-field input,
+.payment-page .invoice-allocation__td .prj-input {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* ---- Clickable remaining amount ---- */
+.invoice-allocation__remaining-clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.invoice-allocation__remaining-clickable:hover {
+  background: var(--success-50, #d1fae5);
+  box-shadow: 0 0 0 2px var(--success-300, #6ee7b7);
+  transform: scale(1.04);
+}
+.invoice-allocation__remaining-clickable:active {
+  transform: scale(0.97);
+}

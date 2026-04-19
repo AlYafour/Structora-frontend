@@ -1,0 +1,11 @@
+/* ==================== OWNERS PAGE ==================== */
+
+.owners-page__name-sub {
+  font-size: var(--font-size-xs, 12px);
+}
+
+.owners-page__name-en {
+  direction: ltr;
+  text-align: left;
+  display: inline-block;
+}

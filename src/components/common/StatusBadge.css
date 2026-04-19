@@ -1,0 +1,268 @@
+/* ========================================
+   StatusBadge Component Styles
+   ======================================== */
+
+.ds-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  transition: var(--transition-colors);
+}
+
+/* ==================== SIZES ==================== */
+
+.ds-status-badge--sm {
+  padding: var(--space-1) var(--space-2-5);
+  font-size: var(--text-xs);
+  line-height: var(--leading-tight);
+}
+
+.ds-status-badge--md {
+  padding: var(--space-1-5) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+}
+
+.ds-status-badge--lg {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-base);
+  line-height: var(--leading-tight);
+}
+
+/* ==================== VARIANTS ==================== */
+
+/* Filled Variant (Default) */
+.ds-status-badge--filled.ds-status-approved {
+  background-color: var(--status-approved-bg);
+  color: var(--status-approved);
+}
+
+.ds-status-badge--filled.ds-status-pending {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending);
+}
+
+.ds-status-badge--filled.ds-status-rejected {
+  background-color: var(--status-rejected-bg);
+  color: var(--status-rejected);
+}
+
+.ds-status-badge--filled.ds-status-active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active);
+}
+
+.ds-status-badge--filled.ds-status-inactive {
+  background-color: var(--status-inactive-bg);
+  color: var(--status-inactive);
+}
+
+.ds-status-badge--filled.ds-status-draft {
+  background-color: var(--status-draft-bg);
+  color: var(--status-draft);
+}
+
+.ds-status-badge--filled.ds-status-trial {
+  background-color: var(--status-trial-bg);
+  color: var(--status-trial);
+}
+
+.ds-status-badge--filled.ds-status-expired {
+  background-color: var(--status-expired-bg);
+  color: var(--status-expired);
+}
+
+.ds-status-badge--filled.ds-status-invoice-initial {
+  background-color: var(--invoice-initial);
+  color: var(--invoice-initial-text);
+}
+
+.ds-status-badge--filled.ds-status-invoice-actual {
+  background-color: var(--invoice-actual);
+  color: var(--invoice-actual-text);
+}
+
+.ds-status-badge--filled.ds-status-financial-positive {
+  background-color: var(--financial-positive-bg);
+  color: var(--financial-positive);
+}
+
+.ds-status-badge--filled.ds-status-financial-negative {
+  background-color: var(--financial-negative-bg);
+  color: var(--financial-negative);
+}
+
+.ds-status-badge--filled.ds-status-financial-neutral {
+  background-color: var(--financial-neutral-bg);
+  color: var(--financial-neutral);
+}
+
+/* Outlined Variant */
+.ds-status-badge--outlined {
+  background-color: transparent;
+  border: var(--border-1) solid;
+}
+
+.ds-status-badge--outlined.ds-status-approved {
+  border-color: var(--status-approved);
+  color: var(--status-approved);
+}
+
+.ds-status-badge--outlined.ds-status-pending {
+  border-color: var(--status-pending);
+  color: var(--status-pending);
+}
+
+.ds-status-badge--outlined.ds-status-rejected {
+  border-color: var(--status-rejected);
+  color: var(--status-rejected);
+}
+
+.ds-status-badge--outlined.ds-status-active {
+  border-color: var(--status-active);
+  color: var(--status-active);
+}
+
+.ds-status-badge--outlined.ds-status-inactive {
+  border-color: var(--status-inactive);
+  color: var(--status-inactive);
+}
+
+.ds-status-badge--outlined.ds-status-draft {
+  border-color: var(--status-draft);
+  color: var(--status-draft);
+}
+
+.ds-status-badge--outlined.ds-status-trial {
+  border-color: var(--status-trial);
+  color: var(--status-trial);
+}
+
+.ds-status-badge--outlined.ds-status-expired {
+  border-color: var(--status-expired);
+  color: var(--status-expired);
+}
+
+.ds-status-badge--outlined.ds-status-invoice-initial {
+  border-color: var(--invoice-initial-text);
+  color: var(--invoice-initial-text);
+}
+
+.ds-status-badge--outlined.ds-status-invoice-actual {
+  border-color: var(--invoice-actual-text);
+  color: var(--invoice-actual-text);
+}
+
+.ds-status-badge--outlined.ds-status-financial-positive {
+  border-color: var(--financial-positive);
+  color: var(--financial-positive);
+}
+
+.ds-status-badge--outlined.ds-status-financial-negative {
+  border-color: var(--financial-negative);
+  color: var(--financial-negative);
+}
+
+.ds-status-badge--outlined.ds-status-financial-neutral {
+  border-color: var(--financial-neutral);
+  color: var(--financial-neutral);
+}
+
+/* Soft Variant */
+.ds-status-badge--soft.ds-status-approved {
+  background-color: var(--status-approved-bg);
+  color: var(--status-approved);
+  border: var(--border-1) solid var(--status-approved-bg);
+}
+
+.ds-status-badge--soft.ds-status-pending {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending);
+  border: var(--border-1) solid var(--status-pending-bg);
+}
+
+.ds-status-badge--soft.ds-status-rejected {
+  background-color: var(--status-rejected-bg);
+  color: var(--status-rejected);
+  border: var(--border-1) solid var(--status-rejected-bg);
+}
+
+.ds-status-badge--soft.ds-status-active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active);
+  border: var(--border-1) solid var(--status-active-bg);
+}
+
+.ds-status-badge--soft.ds-status-inactive {
+  background-color: var(--status-inactive-bg);
+  color: var(--status-inactive);
+  border: var(--border-1) solid var(--status-inactive-bg);
+}
+
+.ds-status-badge--soft.ds-status-draft {
+  background-color: var(--status-draft-bg);
+  color: var(--status-draft);
+  border: var(--border-1) solid var(--status-draft-bg);
+}
+
+.ds-status-badge--soft.ds-status-trial {
+  background-color: var(--status-trial-bg);
+  color: var(--status-trial);
+  border: var(--border-1) solid var(--status-trial-bg);
+}
+
+.ds-status-badge--soft.ds-status-expired {
+  background-color: var(--status-expired-bg);
+  color: var(--status-expired);
+  border: var(--border-1) solid var(--status-expired-bg);
+}
+
+.ds-status-badge--soft.ds-status-invoice-initial {
+  background-color: var(--invoice-initial);
+  color: var(--invoice-initial-text);
+  border: var(--border-1) solid var(--invoice-initial);
+}
+
+.ds-status-badge--soft.ds-status-invoice-actual {
+  background-color: var(--invoice-actual);
+  color: var(--invoice-actual-text);
+  border: var(--border-1) solid var(--invoice-actual);
+}
+
+.ds-status-badge--soft.ds-status-financial-positive {
+  background-color: var(--financial-positive-bg);
+  color: var(--financial-positive);
+  border: var(--border-1) solid var(--financial-positive-bg);
+}
+
+.ds-status-badge--soft.ds-status-financial-negative {
+  background-color: var(--financial-negative-bg);
+  color: var(--financial-negative);
+  border: var(--border-1) solid var(--financial-negative-bg);
+}
+
+.ds-status-badge--soft.ds-status-financial-neutral {
+  background-color: var(--financial-neutral-bg);
+  color: var(--financial-neutral);
+  border: var(--border-1) solid var(--financial-neutral-bg);
+}
+
+/* ==================== DARK MODE ==================== */
+
+html.theme-dark .ds-status-badge--filled.ds-status-approved {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+html.theme-dark .ds-status-badge--filled.ds-status-pending {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+html.theme-dark .ds-status-badge--filled.ds-status-rejected {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}

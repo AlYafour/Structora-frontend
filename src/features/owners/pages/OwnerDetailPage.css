@@ -1,0 +1,75 @@
+/* OwnerDetailPage — BEM */
+
+/* Profile image */
+.owner-detail__profile-image {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border: 3px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit-image overlay button */
+.owner-detail__edit-btn {
+  position: absolute;
+  bottom: var(--space-2);
+  right: var(--space-2);
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.owner-detail__edit-btn:hover {
+  transform: scale(1.1);
+  background: var(--primary-600);
+}
+
+/* Upload placeholder (no image yet) */
+.owner-detail__upload-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  border: 3px dashed var(--border);
+  cursor: pointer;
+  background: var(--surface-2);
+  transition: all 0.2s ease;
+}
+
+.owner-detail__upload-placeholder:hover {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+/* Placeholder icon */
+.owner-detail__upload-icon {
+  font-size: 48px;
+  color: var(--muted);
+}
+
+/* Owner name heading */
+.owner-detail__name {
+  font-size: 32px;
+  color: var(--ink);
+  margin: 0 0 var(--space-2) 0;
+}
+
+/* Arabic name subtitle */
+.owner-detail__name-ar {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0 0 var(--space-2) 0;
+}
+
+/* English name subtitle */
+.owner-detail__name-en {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0;
+  direction: ltr;
+  text-align: left;
+}

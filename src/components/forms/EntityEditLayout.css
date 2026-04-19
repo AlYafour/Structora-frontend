@@ -1,0 +1,86 @@
+/* EntityEditLayout – shared header/footer for edit pages (Owner, Consultant, etc.) */
+
+/* ── Header ── */
+.entity-edit__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.entity-edit__header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entity-edit__header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Footer ── */
+.entity-edit__footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Contact row: 3 equal columns ── */
+.contact-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-4, 16px);
+}
+
+.contact-row-3 > * {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.contact-row-3 .input,
+.contact-row-3 .phone-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .contact-row-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .contact-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .entity-edit__header {
+    flex-direction: column;
+  }
+
+  .entity-edit__header-actions {
+    width: 100%;
+  }
+
+  .entity-edit__header-actions .btn {
+    flex: 1;
+  }
+
+  .entity-edit__footer {
+    flex-direction: column;
+  }
+
+  .entity-edit__footer .btn {
+    width: 100%;
+  }
+}

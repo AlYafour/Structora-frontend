@@ -1,0 +1,16 @@
+/* PersonField BEM styles */
+
+.person-field__names-row {
+  width: 100%;
+  margin-bottom: var(--space-4);
+}
+
+.person-field__license-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.person-field__add-icon {
+  font-size: 16px;
+  font-weight: bold;
+}

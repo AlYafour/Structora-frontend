@@ -1,0 +1,46 @@
+/* DateInput Component Styles - Clean without conflicts */
+
+.date-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.date-input-text {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  line-height: var(--line-height-normal);
+  transition: all var(--transition-base);
+  min-height: 40px;
+}
+
+.date-input-text:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.date-input-text:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.date-input-text::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* RTL Support */
+[dir="rtl"] .date-input-text {
+  text-align: right;
+}
+
+[dir="ltr"] .date-input-text {
+  text-align: left;
+}
+

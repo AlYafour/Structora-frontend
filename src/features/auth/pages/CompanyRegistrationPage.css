@@ -1,0 +1,68 @@
+/* CompanyRegistrationPage — BEM with CSS logical properties & design tokens */
+
+.company-registration {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--color-bg);
+}
+
+.company-registration__card {
+  width: 100%;
+  max-width: 800px;
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.company-registration__header {
+  text-align: center;
+  margin-block-end: var(--space-6);
+}
+
+.company-registration__logo {
+  height: 60px;
+  width: 60px;
+  object-fit: contain;
+  margin-block-end: var(--space-4);
+}
+
+.company-registration__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-block-end: var(--space-2);
+}
+
+.company-registration__error {
+  padding: var(--space-4);
+  margin-block-end: var(--space-6);
+  border-radius: var(--radius-md);
+  background-color: var(--error-50);
+  color: var(--error-600);
+  border: 1px solid var(--error-500);
+  font-size: var(--font-size-sm);
+}
+
+.company-registration__section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-block-end: var(--space-4);
+  color: var(--color-text-primary);
+  padding-block-end: var(--space-2);
+  border-block-end: 2px solid var(--color-primary);
+}
+
+.company-registration__divider {
+  height: 1px;
+  background-color: var(--color-border);
+  width: 100%;
+}
+
+.company-registration__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}

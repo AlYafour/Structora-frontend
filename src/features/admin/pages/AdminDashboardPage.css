@@ -1,0 +1,366 @@
+/* AdminDashboardPage — STRUCTORA Unified Admin Design */
+
+.admin-dash {
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.admin-dash__header { margin-bottom: var(--space-6); }
+
+.admin-dash__title {
+  font-size: var(--font-size-3xl);
+  color: var(--ink);
+  margin-bottom: var(--space-1);
+}
+
+.admin-dash__subtitle { color: var(--text); }
+
+/* Loading */
+.admin-dash__loading {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Stats Grid */
+.admin-dash__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.admin-dash__stat-card {
+  cursor: pointer;
+  text-align: center;
+  padding: var(--space-5) var(--space-4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.admin-dash__stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.admin-dash__stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-3);
+  font-size: 1.25rem;
+}
+
+.admin-dash__stat-icon--navy {
+  background: rgba(11, 22, 41, 0.08);
+  color: #0B1629;
+}
+
+.admin-dash__stat-icon--green {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.admin-dash__stat-icon--gold {
+  background: rgba(200, 168, 78, 0.12);
+  color: var(--accent);
+}
+
+.admin-dash__stat-icon--blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* Dark mode stat icons */
+.theme-dark .admin-dash__stat-icon--navy {
+  background: rgba(200, 168, 78, 0.1);
+  color: var(--accent);
+}
+
+.admin-dash__stat-value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--space-1);
+}
+
+.admin-dash__stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--muted);
+}
+
+/* Two-column grid */
+.admin-dash__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Section card */
+.admin-dash__section {
+  padding: var(--space-5);
+}
+
+.admin-dash__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.admin-dash__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.admin-dash__section-icon {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.admin-dash__view-all {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.admin-dash__view-all:hover {
+  background: rgba(200, 168, 78, 0.08);
+}
+
+/* Empty state */
+.admin-dash__empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Company list */
+.admin-dash__company-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.admin-dash__company-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.admin-dash__company-item:hover {
+  background: rgba(200, 168, 78, 0.04);
+}
+
+.admin-dash__company-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(200, 168, 78, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.admin-dash__company-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-dash__company-name {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-dash__company-date {
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.admin-dash__company-badges {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Badges */
+.admin-dash__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-dash__badge--active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.admin-dash__badge--inactive {
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--danger-500);
+}
+
+.admin-dash__badge--trial {
+  background: rgba(200, 168, 78, 0.12);
+  color: var(--accent);
+}
+
+/* Quick Actions */
+.admin-dash__actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.admin-dash__action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--ink);
+  transition: background 0.15s;
+  text-align: start;
+}
+
+.admin-dash__action-item:hover {
+  background: rgba(200, 168, 78, 0.04);
+}
+
+.admin-dash__action-item--primary {
+  background: rgba(200, 168, 78, 0.08);
+  font-weight: 600;
+}
+
+.admin-dash__action-item--primary:hover {
+  background: rgba(200, 168, 78, 0.15);
+}
+
+.admin-dash__action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(200, 168, 78, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.admin-dash__action-label {
+  flex: 1;
+}
+
+.admin-dash__action-arrow {
+  color: var(--muted);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+/* System Info Bar */
+.admin-dash__system-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.admin-dash__info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.admin-dash__info-label {
+  font-size: var(--font-size-sm);
+  color: var(--muted);
+}
+
+.admin-dash__info-value {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin-dash__info-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #10b981;
+}
+
+.admin-dash__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-dash { padding: var(--space-4); }
+
+  .admin-dash__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-dash__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dash__stats {
+    grid-template-columns: 1fr;
+  }
+}

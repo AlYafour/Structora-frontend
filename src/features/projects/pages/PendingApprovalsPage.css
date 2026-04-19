@@ -1,0 +1,89 @@
+/* PendingApprovalsPage – BEM styles
+ * Uses CSS logical properties for RTL support
+ * Uses var() design tokens where applicable
+ */
+
+/* ─── Empty state ─────────────────────────────────────────── */
+
+.pending-approvals__empty-state {
+  background-color: var(--surface-1);
+  border-radius: var(--space-2);
+  border: 1px solid var(--border);
+}
+
+.pending-approvals__empty-icon {
+  font-size: 48px;
+}
+
+.pending-approvals__empty-title {
+  font-size: 18px;
+}
+
+/* ─── Table wrapper ───────────────────────────────────────── */
+
+.pending-approvals__table-wrapper {
+  background-color: var(--surface-1);
+  border-radius: var(--space-2);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.pending-approvals__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ─── Table header ────────────────────────────────────────── */
+
+.pending-approvals__header-row {
+  background-color: var(--surface-2);
+  border-bottom: 2px solid var(--border);
+}
+
+/* ─── Table body rows ─────────────────────────────────────── */
+
+.pending-approvals__row {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s;
+}
+
+.pending-approvals__row:hover {
+  background-color: var(--surface-2);
+}
+
+/* ─── Internal code badge ─────────────────────────────────── */
+
+.pending-approvals__code {
+  font-family: monospace;
+  background-color: var(--surface-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-1);
+  font-size: 13px;
+}
+
+/* ─── Status indicator dot ────────────────────────────────── */
+
+.pending-approvals__status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ─── Review action link ──────────────────────────────────── */
+
+.pending-approvals__review-link {
+  color: var(--primary);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--space-1);
+  background-color: var(--surface-2);
+  display: inline-block;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.pending-approvals__review-link:hover {
+  background-color: var(--primary);
+  color: white;
+}

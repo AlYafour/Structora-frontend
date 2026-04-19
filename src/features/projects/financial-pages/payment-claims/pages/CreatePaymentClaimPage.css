@@ -1,0 +1,851 @@
+/**
+ * CreatePaymentClaimPage - Optimized CSS
+ * Cleaned up and organized with CSS variables
+ */
+@import '../components/PaymentClaimComponents.css';
+
+.create-payment-claim-page {
+  padding: var(--space-6, 24px) var(--space-8, 32px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .create-payment-claim-page {
+    padding: var(--space-4, 16px);
+  }
+}
+
+.create-payment-claim-header {
+  margin-bottom: var(--space-6, 24px);
+  padding-bottom: var(--space-4, 16px);
+  border-bottom: 2px solid var(--border, #e5e7eb);
+}
+
+.create-payment-claim-title {
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: var(--font-bold, 700);
+  color: var(--text-primary, #1a1a1a);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.create-payment-claim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Read-only fields styling */
+.read-only-field {
+  background-color: var(--gray-50, #f9fafb);
+  color: var(--text-primary, #1a1a1a);
+  cursor: default;
+  border-color: var(--border, #e5e7eb);
+}
+
+.read-only-field:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.read-only-value {
+  display: inline-block;
+  padding: 0.5rem;
+  color: var(--text-primary, #1a1a1a);
+  font-weight: 500;
+}
+
+/* Payment Claim View Actions */
+.payment-claim-view-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface, #ffffff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.payment-claim-form-card {
+  background: var(--surface, #ffffff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  overflow: visible;
+  width: 100%;
+  margin-bottom: var(--space-6, 24px);
+  border: 1px solid var(--border, #e5e7eb);
+  transition: box-shadow 0.2s ease;
+}
+
+.payment-claim-form-card:hover {
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+.payment-claim-form-card-header {
+  padding: var(--space-5, 20px) var(--space-6, 24px);
+  background: linear-gradient(135deg, var(--primary, #14213D) 0%, var(--primary-600, #1B2D52) 100%);
+  color: var(--color-white, #FFFFFF);
+  font-weight: var(--font-semibold, 600);
+  font-size: var(--text-lg, 1.125rem);
+  border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+  letter-spacing: 0.025em;
+}
+
+.payment-claim-form-card-body {
+  padding: var(--space-6, 24px);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  flex: 1 1 0%;
+}
+
+.form-group.full-width {
+  flex: 1 1 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2, 8px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary, #1a1a1a);
+  font-size: var(--text-sm, 0.875rem);
+  letter-spacing: 0.025em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--space-3, 12px);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--text-sm, 0.875rem);
+  transition: all 0.2s ease;
+  background: var(--surface, #ffffff);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary, #14213D);
+  box-shadow: 0 0 0 3px rgba(20, 33, 61, 0.1);
+}
+
+.form-help {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--gray-600, #666666);
+}
+
+.payment-claim-items-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface, #ffffff);
+}
+
+/* Ensure table uses full available width */
+.payment-claim-items-table-wrapper .payment-claim-items-table {
+  min-width: 100%;
+  table-layout: auto;
+  margin: 0;
+}
+
+.payment-claim-items-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  table-layout: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.payment-claim-items-table input,
+.payment-claim-items-table textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.payment-claim-items-table th {
+  background: linear-gradient(to bottom, var(--gray-25, #f8f9fa), var(--gray-100, #e9ecef));
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid var(--gray-300, #dee2e6);
+  color: var(--gray-700, #495057);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.payment-claim-items-table th:nth-child(4) {
+  /* Description column - wider */
+  min-width: 300px;
+  width: auto;
+}
+
+.payment-claim-items-table th:nth-child(3) {
+  /* Item code column - fixed width */
+  min-width: 90px;
+  width: auto;
+}
+
+.payment-claim-items-table th:nth-child(5) {
+  /* Unit column */
+  min-width: 80px;
+  width: auto;
+}
+
+.payment-claim-items-table th:nth-child(6) {
+  /* Amount column */
+  min-width: 320px;
+  width: auto;
+}
+
+/* Percentage columns - optimized widths */
+.payment-claim-items-table th:nth-child(7),
+.payment-claim-items-table th:nth-child(8),
+.payment-claim-items-table th:nth-child(9) {
+  min-width: 100px;
+  width: auto;
+}
+
+/* Amount columns - optimized widths */
+.payment-claim-items-table th:nth-child(10),
+.payment-claim-items-table th:nth-child(11),
+.payment-claim-items-table th:nth-child(12) {
+  min-width: 130px;
+  width: auto;
+}
+
+.payment-claim-items-table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid var(--gray-100, #e9ecef);
+  vertical-align: middle;
+}
+
+/* Center align specific columns */
+.payment-claim-items-table td:nth-child(1),
+.payment-claim-items-table td:nth-child(2),
+.payment-claim-items-table td:nth-child(3),
+.payment-claim-items-table td:nth-child(5),
+.payment-claim-items-table td:nth-child(7),
+.payment-claim-items-table td:nth-child(8),
+.payment-claim-items-table td:nth-child(9),
+.payment-claim-items-table td:nth-child(13) {
+  text-align: center;
+}
+
+/* Right align amount columns */
+.payment-claim-items-table td:nth-child(6),
+.payment-claim-items-table td:nth-child(10),
+.payment-claim-items-table td:nth-child(11),
+.payment-claim-items-table td:nth-child(12) {
+  text-align: right;
+}
+
+.payment-claim-items-table td:nth-child(4) {
+  /* Description column - wider with more padding */
+  min-width: 300px;
+  width: auto;
+  padding: 1rem 1.25rem;
+}
+
+.payment-claim-items-table td:nth-child(3) {
+  /* Item code column - fixed width */
+  min-width: 90px;
+  width: auto;
+  padding: 1rem;
+}
+
+/* Amount column cells */
+.payment-claim-items-table td:nth-child(6) {
+  min-width: 380px;
+  width: auto;
+  padding: 1rem;
+}
+
+/* Professional Amount Calculation Container */
+.amount-calculation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--gray-25, #f8f9fa) 0%, var(--color-white, #ffffff) 100%);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-lg, 8px);
+  transition: all 0.2s ease;
+}
+
+.amount-calculation-container:hover {
+  background: linear-gradient(135deg, var(--gray-100, #f1f3f5) 0%, var(--gray-25, #f8f9fa) 100%);
+  border-color: var(--primary-200, #A3BDD6);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.amount-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.amount-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.amount-input-label {
+  font-size: 0.75rem;
+  font-weight: var(--font-semibold, 600);
+  color: var(--gray-600, #4b5563);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.amount-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  font-size: 0.95rem;
+  font-weight: var(--font-medium, 500);
+  text-align: center;
+  background: var(--surface, #ffffff);
+  color: var(--text-primary, #1a1a1a);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.amount-input:focus {
+  outline: none;
+  border-color: var(--primary-500, #3D5A80);
+  background: var(--primary-50, #EDF2F7);
+  box-shadow: 0 0 0 3px rgba(20, 33, 61, 0.1);
+}
+
+.amount-input:hover {
+  border-color: var(--primary-300, #6B8AB5);
+}
+
+.amount-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, var(--primary-50, #EDF2F7) 0%, var(--primary-100, #D1DEE9) 100%);
+  border: 1.5px solid var(--primary-300, #6B8AB5);
+  border-radius: var(--radius-md, 6px);
+  margin-top: 0.25rem;
+}
+
+.amount-result-label {
+  font-size: 0.875rem;
+  font-weight: var(--font-semibold, 600);
+  color: var(--primary-700, #1B2D52);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.amount-result-value {
+  font-size: 1.1rem;
+  font-weight: var(--font-bold, 700);
+  color: var(--primary-700, #1B2D52);
+  letter-spacing: 0.025em;
+}
+
+/* Percentage column cells */
+.payment-claim-items-table td:nth-child(7),
+.payment-claim-items-table td:nth-child(8),
+.payment-claim-items-table td:nth-child(9) {
+  min-width: 100px;
+  width: auto;
+  text-align: center;
+}
+
+/* Amount column cells */
+.payment-claim-items-table td:nth-child(10),
+.payment-claim-items-table td:nth-child(11),
+.payment-claim-items-table td:nth-child(12) {
+  min-width: 130px;
+  width: auto;
+  text-align: right;
+}
+
+.payment-claim-items-table tbody tr {
+  transition: background-color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.payment-claim-items-table tbody tr:hover {
+  background: var(--gray-25, #f8f9fa);
+}
+
+.payment-claim-items-table tbody tr:nth-child(even) {
+  background: var(--gray-50, #f9fafb);
+}
+
+.payment-claim-items-table tbody tr:nth-child(even):hover {
+  background: var(--gray-100, #f3f4f6);
+}
+
+.payment-claim-items-table tbody tr.selected {
+  background: var(--primary-50, #EDF2F7);
+  border-left: 3px solid var(--primary-500, #3D5A80);
+}
+
+.payment-claim-items-table tbody tr.selected:hover {
+  background: var(--primary-100, #D1DEE9);
+}
+
+.payment-claim-items-table tfoot .totals-row {
+  background: var(--gray-100, #f5f5f5);
+  font-weight: 600;
+}
+
+.payment-claim-items-table tfoot .totals-row td {
+  border-top: 2px solid var(--gray-300, #dddddd);
+  padding-top: 1rem;
+}
+
+.percent-input,
+.editable-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300, #ced4da);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background: var(--color-white, #FFFFFF);
+}
+
+.percent-input:focus,
+.editable-input:focus {
+  outline: none;
+  border-color: var(--primary-400, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.percent-input:hover,
+.editable-input:hover {
+  border-color: var(--gray-400, #adb5bd);
+}
+
+.error-message {
+  padding: var(--space-4, 16px) var(--space-5, 20px);
+  background: var(--error-50, #fef2f2);
+  color: var(--error-700, #b91c1c);
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--error-200, #fecaca);
+  font-weight: var(--font-medium, 500);
+  margin-top: var(--space-4, 16px);
+}
+
+/* Sections with collapsible functionality */
+.payment-claim-sections-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.payment-claim-section {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  background: var(--surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--space-4, 16px);
+  transition: all 0.2s ease;
+}
+
+.payment-claim-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-200, #A3BDD6);
+  transform: translateY(-1px);
+}
+
+.payment-claim-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4, 16px) var(--space-5, 20px);
+  background: linear-gradient(135deg, var(--error-50, #fef2f2) 0%, var(--color-white, #ffffff) 100%);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  transition: all 0.2s ease;
+  border-left: 4px solid var(--error-500, #ef4444);
+}
+
+.payment-claim-section-header:hover {
+  background: linear-gradient(135deg, var(--error-100, #fee2e2) 0%, var(--color-white, #ffffff) 100%);
+  border-left-color: var(--error-600, #dc2626);
+}
+
+.payment-claim-section-header h3 {
+  margin: 0;
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-bold, 700);
+  color: var(--error-700, #b91c1c);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+.section-toggle-icon {
+  display: flex;
+  align-items: center;
+  color: var(--gray-600, #666666);
+  transition: transform 0.2s;
+}
+
+.payment-claim-section-body {
+  padding: 0;
+  width: 100%;
+  overflow: visible;
+}
+
+.payment-claim-section-body .payment-claim-items-table-wrapper {
+  margin: 0;
+  width: 100%;
+}
+
+/* Drag and Drop styles */
+.payment-claim-section.dragging {
+  opacity: 0.5;
+  border: 2px dashed var(--primary-500, #3D5A80);
+}
+
+.item-row.dragging {
+  opacity: 0.4;
+  background: var(--primary-100, #D1DEE9);
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(20, 33, 61, 0.3);
+  cursor: grabbing;
+}
+
+.item-row {
+  transition: all 0.15s ease;
+  cursor: move;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.item-row * {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.item-row input,
+.item-row textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.item-row:hover {
+  background: var(--gray-50, #f9fafb);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.item-row[draggable="true"]:hover {
+  cursor: grab;
+}
+
+.item-row[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.add-item-between-row {
+  transition: all 0.2s ease;
+  height: 1px;
+  pointer-events: none;
+}
+
+.add-item-between-row .add-item-between-container {
+  pointer-events: auto;
+}
+
+.add-item-between-row:hover {
+  background: transparent;
+}
+
+.add-item-between-row:hover .add-item-between-container {
+  opacity: 1;
+}
+
+.add-item-between-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 40px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin: 0.5rem 0;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.add-item-between-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--primary-200, #A3BDD6) 20%,
+    var(--primary-300, #6B8AB5) 50%,
+    var(--primary-200, #A3BDD6) 80%,
+    transparent 100%
+  );
+  transition: all 0.3s ease;
+}
+
+.add-item-between-container:hover .add-item-between-line {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--primary-400, #3D5A80) 20%,
+    var(--primary-500, #3D5A80) 50%,
+    var(--primary-400, #3D5A80) 80%,
+    transparent 100%
+  );
+  height: 3px;
+  box-shadow: 0 0 8px rgba(20, 33, 61, 0.3);
+}
+
+.add-item-between-button {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface, #ffffff);
+  border: 2px solid var(--primary-300, #6B8AB5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-item-between-container:hover .add-item-between-button {
+  background: linear-gradient(135deg, var(--primary-500, #3D5A80) 0%, var(--primary-600, #14213D) 100%);
+  border-color: var(--primary-500, #3D5A80);
+  transform: scale(1.15) rotate(90deg);
+  box-shadow: 0 4px 12px rgba(20, 33, 61, 0.4);
+}
+
+.add-item-between-icon {
+  color: var(--primary-600, #14213D);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.add-item-between-container:hover .add-item-between-icon {
+  color: var(--color-white, #FFFFFF);
+  transform: scale(1.1);
+}
+
+.section-drag-handle,
+.item-drag-handle {
+  cursor: grab;
+  user-select: none;
+  transition: all 0.2s ease;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.section-drag-handle:hover,
+.item-drag-handle:hover {
+  background: var(--gray-100, #f3f4f6);
+  color: var(--primary-600, #14213D);
+  transform: scale(1.1);
+}
+
+.section-drag-handle:active,
+.item-drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.add-item-row {
+  background: linear-gradient(135deg, var(--gray-25, #f8f9fa) 0%, var(--color-white, #ffffff) 100%);
+  border-top: 2px dashed var(--gray-300, #dee2e6);
+  transition: all 0.2s ease;
+}
+
+.add-item-row:hover {
+  background: linear-gradient(135deg, var(--gray-200, #e9ecef) 0%, var(--gray-25, #f8f9fa) 100%);
+  border-top-color: var(--primary-300, #6B8AB5);
+  border-top-style: solid;
+}
+
+.delete-item-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.delete-item-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(220, 53, 69, 0.2);
+}
+
+.payment-claim-grand-totals {
+  margin-top: var(--space-6, 24px);
+  padding: var(--space-6, 24px);
+  background: linear-gradient(135deg, var(--primary-50, #EDF2F7) 0%, var(--primary-100, #D1DEE9) 100%);
+  border-radius: var(--radius-lg, 12px);
+  border: 2px solid var(--primary-400, #3D5A80);
+  box-shadow: 0 4px 6px -1px rgba(20, 33, 61, 0.1);
+}
+
+.grand-totals-row {
+  background: transparent;
+  font-weight: var(--font-bold, 700);
+  font-size: var(--text-lg, 1.125rem);
+}
+
+.grand-totals-row td {
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+  border-top: 2px solid var(--primary-500, #3D5A80);
+  color: var(--primary-900, #0A1128);
+}
+
+.grand-totals-row td:first-child {
+  font-size: var(--text-xl, 1.25rem);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================
+   NEW OPTIMIZED STYLES
+   ============================================ */
+
+/* Page Header with Status */
+.page-header-with-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Saving Status Indicator */
+.saving-status {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-radius: var(--radius-md, 6px);
+}
+
+.saving-status--saving {
+  color: var(--primary-600, #14213D);
+  background: var(--primary-50, #EDF2F7);
+}
+
+.saving-status--saved {
+  color: var(--success-600, #16a34a);
+  background: var(--success-50, #f0fdf4);
+}
+
+.saving-status--error {
+  color: var(--error-600, #dc2626);
+  background: var(--error-50, #fef2f2);
+}
+
+/* Empty State */
+.empty-state {
+  padding: var(--space-12, 48px) var(--space-8, 32px);
+  text-align: center;
+  color: var(--gray-600, #4b5563);
+}
+
+.empty-state-title {
+  margin-bottom: var(--space-4, 16px);
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: var(--font-semibold, 600);
+  color: var(--error-600, #dc2626);
+}
+
+.empty-state-description {
+  font-size: var(--text-base, 1rem);
+  margin-bottom: var(--space-6, 24px);
+  line-height: 1.6;
+  color: var(--gray-500, #6b7280);
+}
+
+/* Add Section Container */
+.add-section-container {
+  margin-top: var(--space-6, 24px);
+  text-align: center;
+  padding: var(--space-4, 16px);
+  background: var(--gray-50, #f9fafb);
+  border-radius: var(--radius-lg, 12px);
+  border: 2px dashed var(--gray-200, #e5e7eb);
+  transition: all 0.2s ease;
+}
+
+.add-section-container:hover {
+  background: var(--primary-50, #EDF2F7);
+  border-color: var(--primary-300, #6B8AB5);
+}
+
+/* ViewPaymentClaimPage - BEM styles */
+
+.payment-claim-view__error {
+  padding: var(--space-8, 2rem);
+  text-align: center;
+}
+
+.payment-claim-view__action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.payment-claim-view__status-row {
+  display: flex;
+  gap: var(--space-4, 1rem);
+  align-items: center;
+}
+
+/* ── Print: hide page content, show only print template ── */
+@media print {
+  .create-payment-claim-page {
+    display: none !important;
+  }
+}
+

@@ -1,0 +1,132 @@
+.file-attachment-view__empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.file-attachment-view__container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: var(--radius-lg, 8px);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.file-attachment-view__container:hover {
+  border-color: var(--gray-300, #d1d5db);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* File icon */
+.file-attachment-view__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--primary-50, #EDF2F7);
+  color: var(--primary-600, #14213D);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* File name area */
+.file-attachment-view__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-attachment-view__filename {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Action buttons */
+.file-attachment-view__actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.file-attachment-view__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  background: transparent;
+  color: var(--text-tertiary, #9ca3af);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  padding: 0;
+}
+
+.file-attachment-view__btn:hover:not(:disabled) {
+  background: var(--gray-100, #f3f4f6);
+  color: var(--text-primary, #1f2937);
+}
+
+.file-attachment-view__btn:active:not(:disabled) {
+  background: var(--gray-200, #e5e7eb);
+  transform: scale(0.95);
+}
+
+.file-attachment-view__btn--download:hover:not(:disabled) {
+  background: var(--primary-50, #EDF2F7);
+  color: var(--primary-600, #14213D);
+}
+
+.file-attachment-view__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.file-attachment-view__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dark mode */
+html.theme-dark .file-attachment-view__container {
+  background: var(--gray-800, #1f2937);
+  border-color: var(--gray-600, #4b5563);
+}
+
+html.theme-dark .file-attachment-view__container:hover {
+  border-color: rgba(200, 168, 78, 0.3);
+}
+
+html.theme-dark .file-attachment-view__icon {
+  background: rgba(200, 168, 78, 0.1);
+  color: var(--accent, #C8A84E);
+}
+
+html.theme-dark .file-attachment-view__filename {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+html.theme-dark .file-attachment-view__btn {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+html.theme-dark .file-attachment-view__btn:hover:not(:disabled) {
+  background: var(--gray-700, #374151);
+  color: #FFFFFF;
+}
+
+html.theme-dark .file-attachment-view__btn--download:hover:not(:disabled) {
+  background: rgba(200, 168, 78, 0.1);
+  color: var(--accent, #C8A84E);
+}

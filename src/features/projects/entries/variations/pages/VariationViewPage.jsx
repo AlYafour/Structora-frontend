@@ -1,0 +1,873 @@
+import { useState, useEffect, useRef } from "react";
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
+import { useReactToPrint } from "react-to-print";
+import { projectApi, companyApi } from "../../../../../services";
+import { logger } from "../../../../../utils/logger";
+import { downloadBlob } from "../../../../../utils/helpers/file";
+import PageLayout from "../../../../../components/layout/PageLayout";
+import PageHeader from "../../../../../components/layout/PageHeader";
+import Button from "../../../../../components/common/Button";
+import Dialog from "../../../../../components/common/Dialog";
+import { formatDate } from "../../../../../utils/formatters";
+import NoticeOfVariationPage from "./NoticeOfVariationPage";
+import VariationPrintDocument from "../components/VariationPrintDocument";
+import FileAttachmentView from "../../../../../components/file-upload/FileAttachmentView";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { useLanguage } from "../../../../../hooks";
+import { useNotifications } from "../../../../../contexts/NotificationContext";
+import { FaPrint, FaFilePdf, FaCheckCircle, FaTimesCircle, FaClock, FaEdit, FaFileAlt, FaFilePdf as FaFilePdfIcon, FaPaperclip, FaExchangeAlt } from "react-icons/fa";
+import { useVariationData } from "../hooks/useVariationData";
+import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandlers";
+import { useVariationFinancials } from "../hooks/useVariationFinancials";
+import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
+import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
+import "./VariationViewPage.css";
+import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
+
+export default function VariationViewPage() {
+  const { variationId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
+  const navigate = useTenantNavigate();
+  const { user, tenantTheme } = useAuth();
+  const { isArabic: isAR } = useLanguage();
+  const printDocumentRef = useRef(null);
+  const { success, error: showError } = useNotifications();
+
+  // Tab management
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "view");
+  const [isPrintPreview, setIsPrintPreview] = useState(false);
+  const [blockEditDialogOpen, setBlockEditDialogOpen] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const printPreviewTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => clearTimeout(printPreviewTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+      setSearchParams({}, { replace: true });
+    }
+  }, [tabFromUrl, setSearchParams]);
+
+  // Use custom hooks for data management
+  const toast = (type, msg) => type === "success" ? success(msg) : showError(msg);
+
+  const { variation, project, loading, error: loadError, auditLogs, loadingAuditLogs, loadVariation } = useVariationData(
+    variationId,
+    toast,
+    t,
+    navigate
+  );
+
+  const { noticeData } = useVariationFinancials(variation);
+
+  const {
+    processingApproval,
+    actionNotes,
+    setActionNotes,
+    dialogStates,
+    handlers,
+  } = useVariationApprovalHandlers(variation, project, toast, t, loadVariation);
+
+  // Load company information for print header (non-critical — don't redirect on 401)
+  useEffect(() => {
+    const loadCompanyInfo = async () => {
+      try {
+        const { api } = await import("../../../../../services/api");
+        const { data } = await api.get('auth/tenant-settings/current/', { _skipAuthRedirect: true });
+        setCompanyInfo({
+          logo: data.company_logo || tenantTheme?.logo || null,
+          name: data.contractor_name || data.company_name || "",
+          name_en: data.contractor_name_en || data.company_name || "",
+          phone: data.company_phone || data.contractor_phone || "",
+          email: data.company_email || data.contractor_email || "",
+          website: data.company_website || "",
+          address: data.company_address || "",
+        });
+      } catch (e) {
+        logger.warn("Could not load company info", e);
+      }
+    };
+    loadCompanyInfo();
+  }, [tenantTheme]);
+
+  // Status and permissions
+  const variationStatus = variation?.status || variation?.workflow_status || 'draft';
+  const permissions = calculatePermissions(variation, user);
+  const isRejected = checkRejected(variation);
+
+  // Professional Print Handler using react-to-print
+  const handlePrint = useReactToPrint({
+    content: () => {
+      if (!printDocumentRef.current) {
+        logger.error("Print document ref is not available");
+        return null;
+      }
+      return printDocumentRef.current;
+    },
+    documentTitle: () => generateDocumentTitle(variation, noticeData),
+    pageStyle: `
+      @page {
+        size: A4 portrait;
+        margin: 15mm 20mm;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `,
+    onBeforeGetContent: () => {
+      if (!printDocumentRef.current) {
+        logger.warn("Print document ref is not ready, waiting");
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            if (printDocumentRef.current) {
+              resolve();
+            } else {
+              logger.error("Print document ref still not available after wait");
+              resolve();
+            }
+          }, 100);
+        });
+      }
+      return Promise.resolve();
+    },
+  });
+
+  // Print Preview handlers
+  const handlePrintPreview = () => {
+    setIsPrintPreview(true);
+    printPreviewTimerRef.current = setTimeout(() => window.scrollTo(0, 0), 100);
+  };
+
+  const handleClosePrintPreview = () => {
+    setIsPrintPreview(false);
+  };
+
+  // PDF Export — always uses server-side WeasyPrint (correct Arabic/RTL support)
+  const handleExportPDF = async () => {
+    if (!variation || !project) {
+      showError(t("variation_not_found"));
+      return;
+    }
+    setPdfLoading(true);
+    try {
+      success(t("generating_pdf"));
+      const blob = await projectApi.generateVariationPDF(project.id, variation.id);
+      downloadBlob(blob, generatePDFFilename(variation, noticeData));
+      success(t("pdf_exported_successfully"));
+    } catch (error) {
+      logger.error("Error generating PDF", error);
+      showError(t("pdf_export_error"));
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageLayout loading={true} loadingText={t("loading")}>
+        <div></div>
+      </PageLayout>
+    );
+  }
+
+  if (loadError || !variation || !project) {
+    return (
+      <PageLayout>
+        <div className="prj-error-state">
+          <div className="prj-error-state__icon">⚠️</div>
+          <h2 className="prj-error-state__title">
+            {loadError === "variation_not_found" ? t("variation_not_found") : t("load_error")}
+          </h2>
+          <p className="prj-error-state__desc">
+            {t("error_description")}
+          </p>
+          <div className="prj-error-state__actions">
+            <Button variant="primary" onClick={() => loadVariation()}>
+              {t("error_try_again")}
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/projects")}>
+              {t("error_go_to_projects")}
+            </Button>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  const statusConfig = getStatusConfig(variationStatus);
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <PageLayout>
+      <div className="var-view-container">
+        {/* Print Preview Overlay */}
+        {isPrintPreview && (
+          <div className="print-preview-overlay">
+            <div className="print-preview-controls">
+              <Button variant="primary" onClick={handlePrint}>
+                <FaPrint /> {t("print")}
+              </Button>
+              <Button variant="secondary" onClick={handleExportPDF}>
+                <FaFilePdf /> {t("export_pdf")}
+              </Button>
+              <Button variant="danger" onClick={handleClosePrintPreview}>
+                {t("close")}
+              </Button>
+            </div>
+            <div className="print-preview-content">
+              <VariationPrintDocument
+                variation={variation}
+                project={project}
+                companyInfo={companyInfo}
+                noticeData={noticeData}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ========== PROFESSIONAL PRINT DOCUMENT (Hidden on screen, visible on print) ========== */}
+        {variation && project && (
+          <div
+            id="variation-print-document-wrapper"
+            className="var-print-document-wrapper"
+          >
+            <VariationPrintDocument
+              ref={printDocumentRef}
+              variation={variation}
+              project={project}
+              companyInfo={companyInfo}
+              noticeData={noticeData}
+            />
+          </div>
+        )}
+
+        {/* ========== PAGE HEADER ========== */}
+        <PageHeader
+          title={t("variation_order")}
+          onBack={() => navigate(`/projects/${project.id}?tab=variations`)}
+          className="no-print"
+          actions={
+            <>
+              <Button variant="ghost" size="sm" onClick={handlePrint} title={t("print")}>
+                <FaPrint />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={pdfLoading} title={t("export_pdf")}>
+                <FaFilePdf />
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  if (!permissions.canEdit) { setBlockEditDialogOpen(true); return; }
+                  setActiveTab("edit");
+                }}
+                disabled={!permissions.canEdit}
+                title={!permissions.canEdit ? t("cannot_edit_approved") : ""}
+              >
+                {t("edit")}
+              </Button>
+            </>
+          }
+        >
+          <div className="var-header-meta no-print">
+            <div className="var-header-meta__chip">
+              <span className="var-header-meta__label">{t("variation_no")}</span>
+              <span className="var-header-meta__value">{variation?.variation_number || `VAR-${variation?.id}`}</span>
+            </div>
+            <div className={`var-status-pill var-status-pill--${variationStatus}`}>
+              <StatusIcon />
+              <span>{getStatusLabel(variationStatus, t)}</span>
+            </div>
+          </div>
+        </PageHeader>
+
+
+        {/* ========== REJECTION WARNING ========== */}
+        {variation?.rejected_by && variation?.rejection_reason && (
+          <div className="var-rejection-alert no-print">
+            <div className="var-rejection-alert__icon">
+              <FaTimesCircle />
+            </div>
+            <div className="var-rejection-alert__content">
+              <div className="var-rejection-alert__title">{t("variation_rejected")}</div>
+              <div className="var-rejection-alert__reason">{variation.rejection_reason}</div>
+              <div className="var-rejection-alert__meta">
+                {t("rejected_by")}: {variation.rejected_by?.full_name || variation.rejected_by?.email}
+                {variation.rejected_at && ` • ${formatDate(variation.rejected_at)}`}
+              </div>
+              {isRejected && (
+                <div className="var-rejection-alert__warning">
+                  {t("must_edit_before_approval")}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ========== TOOLBAR: TABS + APPROVAL ACTIONS IN ONE ROW ========== */}
+        <div className="var-toolbar no-print">
+          {/* Tabs */}
+          <div className="var-toolbar__tabs">
+            <button
+              className={`var-toolbar__tab ${activeTab === "view" ? "var-toolbar__tab--active" : ""}`}
+              onClick={() => setActiveTab("view")}
+            >
+              {t("view")}
+            </button>
+            <button
+              className={`var-toolbar__tab ${activeTab === "edit" ? "var-toolbar__tab--active" : ""} ${!permissions.canEdit ? "var-toolbar__tab--disabled" : ""}`}
+              onClick={() => {
+                if (!permissions.canEdit) { setBlockEditDialogOpen(true); return; }
+                setActiveTab("edit");
+              }}
+              title={!permissions.canEdit ? t("cannot_edit_approved") : ""}
+            >
+              {t("edit")}
+            </button>
+            <button
+              className={`var-toolbar__tab ${activeTab === "approvals" ? "var-toolbar__tab--active" : ""}`}
+              onClick={() => setActiveTab("approvals")}
+            >
+              {t("approvals")}
+            </button>
+          </div>
+
+          {/* Approval Actions (inline, right side) */}
+          {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
+            permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
+            permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
+            permissions.canApproveGeneralManagerFinal) && (
+            <div className="var-toolbar__actions">
+              <span className="var-toolbar__actions-label">{t("available_actions")}</span>
+              {permissions.canApproveProjectManager && (
+                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
+                  <FaCheckCircle /> {t("approve_project_manager_initial")}
+                </Button>
+              )}
+              {permissions.canRejectProjectManager && (
+                <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
+                  <FaTimesCircle /> {t("reject")}
+                </Button>
+              )}
+              {permissions.canApproveGeneralManagerInitial && (
+                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerInitialDialogOpen(true)}>
+                  <FaCheckCircle /> {t("approve_general_manager_initial")}
+                </Button>
+              )}
+              {permissions.canRejectGeneralManager && (
+                <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGeneralManagerDialogOpen(true)}>
+                  <FaTimesCircle /> {t("reject")}
+                </Button>
+              )}
+              {permissions.canConfirmOwnerApproval && (
+                <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmOwnerApprovalDialogOpen(true)}>
+                  <FaCheckCircle /> {t("confirm_owner_approval")}
+                </Button>
+              )}
+              {permissions.canConfirmConsultantApproval && (
+                <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
+                  <FaCheckCircle /> {t("confirm_consultant_approval")}
+                </Button>
+              )}
+              {permissions.canApproveGeneralManagerFinal && (
+                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerFinalDialogOpen(true)}>
+                  <FaCheckCircle /> {t("approve_general_manager_final")}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ========== TAB CONTENT ========== */}
+        <div className="var-content prj-tab-panel">
+          {activeTab === "view" && (
+            <div className="var-view-content" ref={printDocumentRef}>
+              <NoticeOfVariationPage variation={variation} project={project} viewMode={true} />
+
+              {/* ========== BOTTOM PANELS: ATTACHMENTS + AUDIT ========== */}
+              <div className="var-bottom-panels no-print">
+
+                {/* LEFT: Attachments */}
+                <div className="var-panel var-panel--attachments">
+                  <div className="var-panel__header">
+                    <FaPaperclip className="var-panel__icon var-panel__icon--gold" />
+                    <span className="var-panel__title">{t("attachments")}</span>
+                  </div>
+                  <div className="var-panel__body">
+
+                    {/* الفاريشن الورقي */}
+                    <div className="var-attach-row">
+                      <div className="var-attach-row__label">
+                        <span className="var-attach-dot var-attach-dot--gold" />
+                        {t("variation_document")}
+                      </div>
+                      <div className="var-attach-row__sub">{t("variation_document_desc")}</div>
+                      {variation?.variation_invoice_file ? (
+                        <FileAttachmentView
+                          fileUrl={variation.variation_invoice_file}
+                          fileName={variation.variation_invoice_file.split('/').pop()}
+                          projectId={project?.id}
+                          endpoint={project?.id ? `projects/${project.id}/variations/${variation.id}/` : undefined}
+                        />
+                      ) : (
+                        <span className="var-attach-row__empty">{t("no_file_attached")}</span>
+                      )}
+                    </div>
+
+                    <div className="var-attach-divider" />
+
+                    {/* PDF إلكتروني */}
+                    <div className="var-attach-row">
+                      <div className="var-attach-row__label">
+                        <span className="var-attach-dot var-attach-dot--red" />
+                        {t("export_pdf")}
+                      </div>
+                      <div className="var-attach-row__sub">{t("pdf_export_desc")}</div>
+                      <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={pdfLoading}>
+                        <FaFilePdf /> {pdfLoading ? t("generating_pdf") : t("export_pdf")}
+                      </Button>
+                    </div>
+
+                    <div className="var-attach-divider" />
+
+                    {/* الطباعة */}
+                    <div className="var-attach-row">
+                      <div className="var-attach-row__label">
+                        <span className="var-attach-dot var-attach-dot--blue" />
+                        {t("print_document")}
+                      </div>
+                      <div className="var-attach-row__sub">{t("print_document_desc")}</div>
+                      <Button variant="secondary" size="sm" onClick={handlePrint}>
+                        <FaPrint /> {t("print")}
+                      </Button>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* RIGHT: Audit Log */}
+                <div className="var-panel var-panel--audit">
+                  <div className="var-panel__header">
+                    <FaClock className="var-panel__icon var-panel__icon--gold" />
+                    <span className="var-panel__title">{t("variation_history")}</span>
+                    {auditLogs.length > 0 && (
+                      <span className="var-panel__badge">{auditLogs.length}</span>
+                    )}
+                  </div>
+                  <div className="var-panel__body var-panel__body--scroll">
+                    {loadingAuditLogs ? (
+                      <div className="var-audit-loading">
+                        <div className="var-audit-loading__spinner" />
+                        <span>{t("loading")}</span>
+                      </div>
+                    ) : auditLogs.length === 0 ? (
+                      <div className="var-audit-empty">
+                        <FaClock />
+                        <span>{t("no_history")}</span>
+                      </div>
+                    ) : (
+                      <div className="var-audit-timeline">
+                        {auditLogs.map((log, index) => {
+                          const isApprove = log.action === 'approve' || log.action?.includes('approv');
+                          const isReject  = log.action === 'reject'  || log.action?.includes('reject');
+                          const isCreate  = log.action === 'create'  || log.action?.includes('creat');
+                          const isEdit    = log.action === 'update'  || log.action?.includes('edit') || log.action?.includes('updat');
+                          let logClass = '';
+                          if (isApprove)      logClass = 'var-audit-entry--approve';
+                          else if (isReject)  logClass = 'var-audit-entry--reject';
+                          else if (isCreate)  logClass = 'var-audit-entry--create';
+                          else if (isEdit)    logClass = 'var-audit-entry--edit';
+
+                          return (
+                            <div key={log.id || index} className={`var-audit-entry ${logClass}`}>
+                              <div className="var-audit-entry__dot">
+                                {isApprove && <FaCheckCircle />}
+                                {isReject  && <FaTimesCircle />}
+                                {isCreate  && <FaFileAlt />}
+                                {isEdit    && <FaEdit />}
+                                {!isApprove && !isReject && !isCreate && !isEdit && <FaExchangeAlt />}
+                              </div>
+                              <div className="var-audit-entry__body">
+                                <div className="var-audit-entry__top">
+                                  <span className="var-audit-entry__action">
+                                    {log.action_display || log.action}
+                                  </span>
+                                  <span className="var-audit-entry__date">
+                                    {log.created_at ? formatDate(log.created_at) : ''}
+                                  </span>
+                                </div>
+                                {log.user && (
+                                  <div className="var-audit-entry__user">
+                                    <span className="var-audit-entry__user-avatar">
+                                      {(log.user.full_name || log.user.email || '?')[0].toUpperCase()}
+                                    </span>
+                                    {log.user.full_name || log.user.email}
+                                  </div>
+                                )}
+                                {log.description && (
+                                  <div className="var-audit-entry__desc">{log.description}</div>
+                                )}
+                                {log.changes?.old_status && log.changes?.new_status && (
+                                  <div className="var-audit-entry__status-change">
+                                    <span className="var-audit-entry__status-old">{log.changes.old_status}</span>
+                                    <FaExchangeAlt className="var-audit-entry__status-arrow" />
+                                    <span className="var-audit-entry__status-new">{log.changes.new_status}</span>
+                                  </div>
+                                )}
+                                {log.changes?.new_rejection_reason && (
+                                  <div className="var-audit-entry__rejection">
+                                    <strong>{t("rejection_reason")}:</strong> {log.changes.new_rejection_reason}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {activeTab === "edit" && (
+            <div className="var-edit-content no-print">
+              <div className="var-edit-header">
+                <Button variant="secondary" onClick={() => setActiveTab("view")}>
+                  {t("back_to_view")}
+                </Button>
+              </div>
+              <NoticeOfVariationPage variation={variation} project={project} viewMode={false} />
+            </div>
+          )}
+
+          {activeTab === "approvals" && (
+            <div className="var-approvals-content no-print">
+              <h2 className="var-approvals-title">
+                {t("approval_workflow")}
+              </h2>
+
+              <div className="var-approvals-timeline">
+                {/* Project Manager Initial */}
+                <div className={`var-approval-step ${variation?.project_manager_initial_approved_by ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.project_manager_initial_approved_by ? <FaCheckCircle /> : <span>1</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("project_manager_initial_approval")}</div>
+                    {variation?.project_manager_initial_approved_by ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__user">{variation.project_manager_initial_approved_by?.full_name}</span>
+                        {variation.project_manager_initial_approved_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.project_manager_initial_approved_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* General Manager Initial */}
+                <div className={`var-approval-step ${variation?.general_manager_initial_approved_by ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.general_manager_initial_approved_by ? <FaCheckCircle /> : <span>2</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("general_manager_initial_approval")}</div>
+                    {variation?.general_manager_initial_approved_by ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__user">{variation.general_manager_initial_approved_by?.full_name}</span>
+                        {variation.general_manager_initial_approved_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.general_manager_initial_approved_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Owner Confirmation */}
+                <div className={`var-approval-step ${variation?.owner_approval_confirmed ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.owner_approval_confirmed ? <FaCheckCircle /> : <span>3</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("owner_approval_confirmed")}</div>
+                    {variation?.owner_approval_confirmed ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__status">{t("confirmed")}</span>
+                        {variation.owner_approval_confirmed_by && (
+                          <span className="var-approval-step__user">{variation.owner_approval_confirmed_by?.full_name}</span>
+                        )}
+                        {variation.owner_approval_confirmed_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.owner_approval_confirmed_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Consultant Confirmation */}
+                <div className={`var-approval-step ${variation?.consultant_approval_confirmed ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.consultant_approval_confirmed ? <FaCheckCircle /> : <span>4</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("consultant_approval_confirmed")}</div>
+                    {variation?.consultant_approval_confirmed ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__status">{t("confirmed")}</span>
+                        {variation.consultant_approval_confirmed_by && (
+                          <span className="var-approval-step__user">{variation.consultant_approval_confirmed_by?.full_name}</span>
+                        )}
+                        {variation.consultant_approval_confirmed_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.consultant_approval_confirmed_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* General Manager Final */}
+                <div className={`var-approval-step ${variation?.general_manager_final_approved_by ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.general_manager_final_approved_by ? <FaCheckCircle /> : <span>5</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("general_manager_final_approval")}</div>
+                    {variation?.general_manager_final_approved_by ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__user">{variation.general_manager_final_approved_by?.full_name}</span>
+                        {variation.general_manager_final_approved_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.general_manager_final_approved_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ========== PRINT FOOTER ========== */}
+        <div className="var-print-footer print-only">
+          <div className="var-print-footer__content">
+            {companyInfo?.phone && <span>📞 {companyInfo.phone}</span>}
+            {companyInfo?.email && <span>✉️ {companyInfo.email}</span>}
+            {companyInfo?.website && <span>🌐 {companyInfo.website}</span>}
+          </div>
+        </div>
+
+        {/* ========== DIALOGS ========== */}
+        <Dialog
+          open={dialogStates.approveProjectManagerDialogOpen}
+          title={t("approve_project_manager_initial")}
+          desc={
+            <div>
+              <p>{t("approve_project_manager_initial_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("approve")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setApproveProjectManagerDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleApproveProjectManagerInitial}
+          busy={processingApproval}
+        />
+
+        {/* Block Edit Dialog for Final Approved Variations */}
+        <Dialog
+          open={blockEditDialogOpen}
+          title={t("variation_edit_not_allowed")}
+          desc={t("variation_edit_not_allowed_desc")}
+          confirmLabel={t("ok_label")}
+          cancelLabel={null}
+          onClose={() => setBlockEditDialogOpen(false)}
+          onConfirm={() => setBlockEditDialogOpen(false)}
+        />
+
+        <Dialog
+          open={dialogStates.approveGeneralManagerInitialDialogOpen}
+          title={t("approve_general_manager_initial")}
+          desc={
+            <div>
+              <p>{t("approve_general_manager_initial_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("approve")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setApproveGeneralManagerInitialDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleApproveGeneralManagerInitial}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.confirmOwnerApprovalDialogOpen}
+          title={t("confirm_owner_approval")}
+          desc={
+            <div>
+              <p>{t("confirm_owner_approval_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("confirm")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setConfirmOwnerApprovalDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleConfirmOwnerApproval}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.confirmConsultantApprovalDialogOpen}
+          title={t("confirm_consultant_approval")}
+          desc={
+            <div>
+              <p>{t("confirm_consultant_approval_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("confirm")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setConfirmConsultantApprovalDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleConfirmConsultantApproval}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.approveGeneralManagerFinalDialogOpen}
+          title={t("approve_general_manager_final")}
+          desc={
+            <div>
+              <p>{t("approve_general_manager_final_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("approve")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setApproveGeneralManagerFinalDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleApproveGeneralManagerFinal}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.rejectProjectManagerDialogOpen}
+          title={t("reject_variation")}
+          desc={
+            <div>
+              <p>{t("reject_project_manager_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("rejection_reason")} <span className="var-required">*</span>
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("enter_rejection_reason")}
+                required
+              />
+            </div>
+          }
+          confirmLabel={t("reject")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setRejectProjectManagerDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleRejectProjectManager}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.rejectGeneralManagerDialogOpen}
+          title={t("reject_variation")}
+          desc={
+            <div>
+              <p>{t("reject_general_manager_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("rejection_reason")} <span className="var-required">*</span>
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("enter_rejection_reason")}
+                required
+              />
+            </div>
+          }
+          confirmLabel={t("reject")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setRejectGeneralManagerDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleRejectGeneralManager}
+          busy={processingApproval}
+        />
+      </div>
+    </PageLayout>
+  );
+}

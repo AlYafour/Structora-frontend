@@ -1,0 +1,106 @@
+/* ==========================================
+   ADVANCE PAYMENT MONITOR
+   ========================================== */
+
+.advance-monitor {
+  background: var(--surface-primary, #ffffff);
+  border: 1px solid var(--warning-200, #fde68a);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-4, 16px);
+  margin-block-end: var(--space-4, 16px);
+}
+
+.advance-monitor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--space-3, 12px);
+}
+
+.advance-monitor__title {
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-bold, 700);
+  color: var(--warning-700, #b45309);
+  margin: 0;
+}
+
+/* MetricGrid inside monitor — remove extra margin */
+.advance-monitor .psc__grid { margin-bottom: var(--space-3, 12px); }
+
+/* ---- Progress Bar ---- */
+.advance-monitor__progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  margin-block-end: var(--space-3, 12px);
+}
+
+.advance-monitor__progress-bar {
+  flex: 1;
+  height: 12px;
+  background: var(--surface-secondary, #e5e7eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.advance-monitor__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--warning-400, #fbbf24), var(--success-500, #22c55e));
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.advance-monitor__progress-fill--complete {
+  background: var(--success-500, #22c55e);
+}
+
+.advance-monitor__progress-text {
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary, #4b5563);
+  white-space: nowrap;
+  min-width: 50px;
+  text-align: end;
+}
+
+/* ---- Deductions Table ---- */
+.advance-monitor__deductions {
+  margin-block-start: var(--space-3, 12px);
+  overflow-x: auto;
+}
+
+.advance-monitor__deductions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 13px);
+}
+
+.advance-monitor__deductions-table th {
+  padding: var(--space-2, 8px);
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-block-end: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-secondary, #f9fafb);
+  text-align: start;
+}
+
+.advance-monitor__deductions-table td {
+  padding: var(--space-2, 8px);
+  border-block-end: 1px solid var(--color-border, #f3f4f6);
+  color: var(--text-primary, #374151);
+}
+
+.advance-monitor__deduction-amount {
+  color: var(--error-600, #dc2626);
+  font-weight: var(--font-semibold, 600);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .advance-monitor__deductions-table {
+    min-width: 500px;
+  }
+}

@@ -1,0 +1,100 @@
+/* ========================================
+   BulkActionsBar Component Styles
+   ======================================== */
+
+.ds-bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--primary-50, #EDF2F7);
+  border: 1px solid var(--primary-200, #A3BDD6);
+  border-radius: var(--radius-lg, 10px);
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.ds-bulk-actions-bar__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ds-bulk-actions-bar__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  background-color: var(--primary, #14213D);
+  color: var(--color-white, #ffffff);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.ds-bulk-actions-bar__text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ds-bulk-actions-bar__label {
+  font-weight: 600;
+  color: var(--primary-700, #1B2D52);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ds-bulk-actions-bar__stats {
+  color: var(--muted, #6b7280);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-bulk-actions-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.ds-bulk-actions-bar__icon {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 4px;
+}
+
+/* ==================== DARK MODE ==================== */
+
+html.theme-dark .ds-bulk-actions-bar {
+  background: rgba(20, 33, 61, 0.1);
+  border-color: rgba(20, 33, 61, 0.3);
+}
+
+html.theme-dark .ds-bulk-actions-bar__label {
+  color: var(--primary-400, #3D5A80);
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+  .ds-bulk-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ds-bulk-actions-bar__actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}

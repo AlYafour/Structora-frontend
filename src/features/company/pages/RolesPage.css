@@ -1,0 +1,381 @@
+/* ═══════════════════════════════════════════════
+   Roles & Permissions Page
+   ═══════════════════════════════════════════════ */
+
+.rp-page {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.rp-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.rp-page__title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rp-page__icon {
+  font-size: 28px;
+  color: var(--primary-700, #14213D);
+  flex-shrink: 0;
+}
+
+.rp-page__title h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  margin: 0 0 4px;
+}
+
+.rp-page__title p {
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+  margin: 0;
+}
+
+/* ── Grid of role cards ── */
+.rp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* ── Role card ── */
+.rp-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.15s;
+}
+
+.rp-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+.rp-card--inactive { opacity: 0.6; }
+
+.rp-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rp-card__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  margin: 0 0 4px;
+}
+
+.rp-card__desc {
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+  margin: 0;
+}
+
+.rp-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rp-card__users {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: var(--muted, #6b7280);
+}
+
+.rp-card__system-badge {
+  background: rgba(20,33,61,0.08);
+  color: var(--primary-700, #14213D);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.rp-card__perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rp-card__perm-chip {
+  background: var(--surface-2, #f3f4f6);
+  color: var(--muted, #374151);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-family: monospace;
+}
+
+.rp-card__perm-chip--more {
+  background: var(--primary-50, #EDF2F7);
+  color: var(--primary-700, #14213D);
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.rp-card__actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border, #f3f4f6);
+}
+
+/* ── Form wrapper ── */
+.rp-form-wrapper {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.rp-form-wrapper__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.rp-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.rp-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .rp-form__row { grid-template-columns: 1fr; }
+}
+
+.rp-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rp-form__field label {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--ink, #374151);
+}
+
+.rp-form__hint {
+  font-size: 0.75rem;
+  color: var(--muted, #9ca3af);
+  margin: 2px 0 0;
+}
+
+/* ── Permissions section in form ── */
+.rp-form__perms-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  margin-bottom: 14px;
+}
+
+.rp-form__perms-count {
+  margin-inline-start: auto;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--primary-700, #14213D);
+}
+
+.rp-form__perms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.rp-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+/* ── Permission group ── */
+.rp-perm-group {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rp-perm-group__header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--surface-2, #f9fafb);
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+}
+
+.rp-perm-group__all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+  font-size: 0;
+}
+
+.rp-perm-group__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink, #111827);
+}
+
+.rp-perm-group__count {
+  font-size: 0.75rem;
+  color: var(--muted, #6b7280);
+}
+
+.rp-perm-group__toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.rp-perm-group__items {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  gap: 6px;
+}
+
+.rp-perm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.rp-perm-item:hover { background: var(--hover, #f9fafb); }
+
+.rp-perm-item__name {
+  font-size: 0.83rem;
+  color: var(--ink, #374151);
+  flex: 1;
+}
+
+.rp-perm-item__code {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: var(--muted, #9ca3af);
+}
+
+/* ── Delete dialog ── */
+.rp-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rp-dialog {
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.rp-dialog h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--ink, #111827);
+}
+
+.rp-dialog p {
+  font-size: 0.88rem;
+  color: var(--muted, #6b7280);
+  margin: 0 0 20px;
+}
+
+.rp-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── States ── */
+.rp-loading, .rp-empty, .rp-forbidden {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted, #9ca3af);
+}
+
+.rp-forbidden__icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* ── Buttons (supplement design system) ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+.btn-primary { background: var(--primary-700, #14213D); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1a2d4f; }
+.btn-ghost { background: transparent; color: var(--muted, #374151); border: 1px solid var(--border, #e5e7eb); }
+.btn-ghost:hover:not(:disabled) { background: var(--hover, #f3f4f6); }
+.btn-danger { background: #ef4444; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #dc2626; }
+.btn-danger-ghost { background: transparent; color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.btn-danger-ghost:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
+
+/* ── Dark mode ── */
+html.theme-dark .rp-card { background: var(--surface, #1f2937); border-color: var(--border, #374151); }
+html.theme-dark .rp-card__name { color: var(--ink, #f9fafb); }
+html.theme-dark .rp-form-wrapper { background: var(--surface, #1f2937); border-color: var(--border, #374151); }
+html.theme-dark .rp-perm-group { border-color: var(--border, #374151); }
+html.theme-dark .rp-perm-group__header { background: rgba(255,255,255,0.04); }
+html.theme-dark .rp-dialog { background: var(--surface, #1f2937); }

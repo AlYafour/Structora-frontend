@@ -1,0 +1,72 @@
+.import-data-dialog {
+  padding: var(--space-4);
+}
+
+.import-field {
+  margin-bottom: var(--space-4);
+}
+
+.import-field label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.import-field input[type="file"],
+.import-field select {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.file-name {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.import-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.import-error {
+  padding: var(--space-3);
+  background: var(--error-50, #fee);
+  color: var(--error-600, #c33);
+  border-radius: var(--radius-md);
+  margin: var(--space-4) 0;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: var(--space-2);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preview-table th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+/* ==================== EXTRACTED INLINE STYLES ==================== */
+.import-data-dialog__file-status {
+  margin-top: var(--space-2, 8px);
+  padding: var(--space-2, 8px);
+  background: var(--color-info-bg, #f0f9ff);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--color-info-text, #0369a1);
+  font-weight: 500;
+}

@@ -1,0 +1,98 @@
+/* PaymentFormFields – BEM styles */
+
+/* ---- Section Layout ---- */
+.payment-form-fields__section {
+  padding-block-end: var(--space-3, 12px);
+  margin-block-end: var(--space-3, 12px);
+  border-block-end: 1px solid var(--color-border, #e5e7eb);
+}
+
+.payment-form-fields__section--last {
+  border-block-end: none;
+  margin-block-end: 0;
+  padding-block-end: 0;
+}
+
+.payment-form-fields__section-title {
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--primary, #2563eb);
+  margin-block-end: var(--space-4, 16px);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ---- Sub-sections (payment method details) ---- */
+.payment-form-fields__sub-section {
+  margin-block-start: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  background: var(--surface-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+}
+
+.payment-form-fields__sub-title {
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+  color: var(--text-secondary, #6b7280);
+  margin-block-end: var(--space-3, 12px);
+}
+
+/* ---- Labels ---- */
+.payment-form-fields__label {
+  display: block;
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+  color: var(--text-primary, #374151);
+  margin-block-end: var(--space-2, 8px);
+}
+
+.payment-form-fields__required {
+  color: var(--error-500, #ef4444);
+}
+
+/* ---- Hints ---- */
+.payment-form-fields__hint {
+  display: block;
+  font-size: var(--text-xs, 12px);
+  color: var(--text-tertiary, #9ca3af);
+  margin-block-start: var(--space-1, 4px);
+}
+
+.payment-form-fields__hint--success {
+  color: var(--success-600, #059669);
+  font-weight: var(--font-medium, 500);
+}
+
+.payment-form-fields__hint--auto {
+  color: var(--primary, #2563eb);
+  font-weight: var(--font-medium, 500);
+}
+
+.payment-form-fields__hint--warning {
+  color: var(--warning-600, #d97706);
+  font-weight: var(--font-medium, 500);
+}
+
+/* ---- Info Display (read-only values) ---- */
+.payment-form-fields__info-display {
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--surface-secondary, #f3f4f6);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--primary, #2563eb);
+}
+
+/* ---- Textarea ---- */
+.payment-form-fields__textarea {
+  resize: vertical;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .payment-form-fields__sub-section .ds-grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}

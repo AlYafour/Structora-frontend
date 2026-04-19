@@ -1,0 +1,18 @@
+/* ContractAttachment - BEM styles */
+
+.contract-attachment__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 20px;
+}
+
+.contract-attachment__title {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-lg, 18px);
+}
+
+.contract-attachment__notes-input {
+  resize: vertical;
+}

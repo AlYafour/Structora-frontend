@@ -1,0 +1,30 @@
+.currency-field__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-field__currency-label {
+  position: absolute;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.currency-field__currency-label--ltr {
+  left: 12px;
+}
+
+.currency-field__currency-label--rtl {
+  right: 12px;
+}
+
+.currency-field__arabic-words {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  padding-top: 4px;
+  min-height: 20px;
+}

@@ -1,0 +1,233 @@
+/* AdminAnalyticsPage — STRUCTORA Unified */
+
+.admin-analytics {
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-analytics__header {
+  margin-bottom: var(--space-6);
+}
+
+.admin-analytics__title {
+  font-size: var(--font-size-3xl);
+  color: var(--ink);
+  margin-bottom: var(--space-1);
+}
+
+.admin-analytics__subtitle {
+  color: var(--text);
+}
+
+.admin-analytics__loading,
+.admin-analytics__empty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Stats Grid */
+.admin-analytics__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.admin-analytics__stat-card {
+  text-align: center;
+  padding: var(--space-5) !important;
+}
+
+.admin-analytics__stat-icon {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.admin-analytics__stat-value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin-analytics__stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text);
+  margin-top: var(--space-1);
+}
+
+.admin-analytics__stat-sub {
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+  margin-top: var(--space-1);
+}
+
+/* Two Column */
+.admin-analytics__grid-2col {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .admin-analytics__grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-analytics__section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+}
+
+/* Table */
+.admin-analytics__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-analytics__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.admin-analytics__table th {
+  text-align: start;
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-analytics__table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.admin-analytics__table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-analytics__company-cell {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Usage Bar */
+.admin-analytics__usage-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text);
+}
+
+.admin-analytics__usage-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.admin-analytics__usage-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.admin-analytics__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+/* Login List */
+.admin-analytics__login-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-analytics__login-item {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-analytics__login-item:last-child {
+  border-bottom: none;
+}
+
+.admin-analytics__login-user {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.admin-analytics__login-meta {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--muted);
+}
+
+/* Bar Chart */
+.admin-analytics__bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-analytics__bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin-analytics__bar-label {
+  width: 140px;
+  font-size: var(--font-size-sm);
+  color: var(--ink);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.admin-analytics__bar-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.admin-analytics__bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(135deg, var(--accent), #8B7333);
+  transition: width 0.4s ease;
+}
+
+.admin-analytics__bar-value {
+  width: 30px;
+  text-align: end;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}

@@ -1,0 +1,9 @@
+/* ==================== VARIATIONS TAB ==================== */
+
+.variations-tab__action-col {
+  min-width: 300px;
+}
+
+.variations-tab__description-cell {
+  max-width: 300px;
+}

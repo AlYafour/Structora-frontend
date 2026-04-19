@@ -1,0 +1,85 @@
+/* Financial Action Bar - Standardized Component for Financial Pages */
+
+.financial-action-bar {
+  position: sticky;
+  top: 72px; /* Navbar height */
+  z-index: 999;
+  background: var(--color-surface, var(--surface, #ffffff));
+  border-bottom: 2px solid var(--color-border, var(--border, #e5e7eb));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--space-3, 12px);
+}
+
+html.theme-dark .financial-action-bar {
+  background: var(--surface, #1f2937);
+  border-bottom-color: var(--border, #374151);
+}
+
+.financial-action-bar__container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4, 16px);
+  padding: var(--space-3, 12px);
+  flex-wrap: wrap;
+}
+
+/* Back Button Container */
+.financial-action-bar__back {
+  flex-shrink: 0;
+  order: 1;
+}
+
+.financial-action-bar--rtl .financial-action-bar__back {
+  order: 3;
+}
+
+/* Center Content */
+.financial-action-bar__center {
+  flex: 1 1 0%;
+  min-width: 0;
+  order: 2;
+}
+
+.financial-action-bar__center-info {
+  text-align: inherit;
+}
+
+/* Save Button Container */
+.financial-action-bar__save {
+  flex-shrink: 0;
+  order: 3;
+}
+
+.financial-action-bar--rtl .financial-action-bar__save {
+  order: 1;
+}
+
+/* Responsive: Stack on small screens */
+@media (max-width: 640px) {
+  .financial-action-bar__container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .financial-action-bar__back,
+  .financial-action-bar__center,
+  .financial-action-bar__save {
+    order: initial;
+    width: 100%;
+  }
+
+  .financial-action-bar__back,
+  .financial-action-bar__save {
+    display: flex;
+  }
+
+  .financial-action-bar--rtl .financial-action-bar__back,
+  .financial-action-bar--rtl .financial-action-bar__save {
+    order: initial;
+  }
+
+  .financial-action-bar--rtl .financial-action-bar__container {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,139 @@
+/* PaymentSummaryPanel – BEM styles */
+
+.payment-summary {
+  padding: var(--space-4, 16px);
+  background: var(--surface-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+}
+
+.payment-summary__title {
+  margin: 0 0 var(--space-4, 16px) 0;
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary, #374151);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ---- Stats Grid ---- */
+.payment-summary__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3, 12px);
+  margin-block-end: var(--space-4, 16px);
+}
+
+.payment-summary__stat-label {
+  font-size: var(--text-xs, 12px);
+  color: var(--text-tertiary, #9ca3af);
+  margin-block-end: var(--space-1, 4px);
+}
+
+.payment-summary__amount-value {
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary, #111827);
+}
+
+.payment-summary__allocated-value {
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--success-600, #059669);
+}
+
+/* ---- Balance Status Box ---- */
+.payment-summary__balance {
+  padding: var(--space-4, 16px);
+  border-radius: var(--radius-md, 6px);
+  border: 2px solid;
+}
+
+.payment-summary__balance--success {
+  background: var(--success-50, #d1fae5);
+  border-color: var(--success-500, #10b981);
+}
+
+.payment-summary__balance--warning {
+  background: var(--warning-50, #fef3c7);
+  border-color: var(--warning-500, #f59e0b);
+}
+
+.payment-summary__balance--danger {
+  background: var(--error-50, #fee2e2);
+  border-color: var(--error-500, #dc2626);
+}
+
+.payment-summary__balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ---- Balance Label ---- */
+.payment-summary__balance-label {
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--font-semibold, 600);
+  margin-block-end: var(--space-1, 4px);
+}
+
+.payment-summary__balance-label--success {
+  color: var(--success-800, #065f46);
+}
+
+.payment-summary__balance-label--warning {
+  color: var(--warning-800, #92400e);
+}
+
+.payment-summary__balance-label--danger {
+  color: var(--error-900, #7f1d1d);
+}
+
+/* ---- Balance Amount ---- */
+.payment-summary__balance-amount {
+  font-size: var(--text-xl, 20px);
+  font-weight: var(--font-bold, 700);
+}
+
+.payment-summary__balance-amount--success {
+  color: var(--success-700, #047857);
+}
+
+.payment-summary__balance-amount--warning {
+  color: var(--warning-700, #b45309);
+}
+
+.payment-summary__balance-amount--danger {
+  color: var(--error-700, #b91c1c);
+}
+
+/* ---- Balance Icon ---- */
+.payment-summary__balance-icon {
+  font-size: 28px;
+}
+
+.payment-summary__balance-icon--success {
+  color: var(--success-500, #10b981);
+}
+
+.payment-summary__balance-icon--danger {
+  color: var(--error-500, #dc2626);
+}
+
+/* ---- Balance Hints ---- */
+.payment-summary__balance-hint {
+  font-size: var(--text-xs, 12px);
+  margin-block-start: var(--space-2, 8px);
+  padding: var(--space-2, 8px);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.payment-summary__balance-hint--warning {
+  color: var(--warning-800, #92400e);
+  background: var(--warning-100, #fffbeb);
+}
+
+.payment-summary__balance-hint--danger {
+  color: var(--error-900, #7f1d1d);
+  background: var(--error-100, #fef2f2);
+}

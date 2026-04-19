@@ -1,0 +1,16 @@
+/* ContractTab - BEM styles */
+
+.contract-tab__info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.contract-tab__attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.contract-tab__empty-attachments {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
