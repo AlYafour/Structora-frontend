@@ -1612,9 +1612,49 @@
   grid-template-columns: 16px 18px 1fr auto;
   align-items: center;
   gap: 8px;
-  direction: rtl;
+  /* direction: rtl; */
   text-align: right;
   width: 100%;
+}
+
+.pts-grp__header[dir="rtl"] {
+  display: grid !important;
+  grid-template-columns: 16px 18px 1fr auto;
+  direction: rtl;
+  text-align: right;
+}
+
+.pts-grp__header[dir="ltr"] {
+  display: grid !important;
+  grid-template-columns: 16px 18px 1fr auto;
+  direction: ltr;
+  text-align: left;
+}
+
+.pts-grp__header[dir="rtl"] > :nth-child(1),
+.pts-grp__header[dir="rtl"] > :nth-child(2),
+.pts-grp__name {
+  justify-self: start;
+}
+
+.pts-grp__header[dir="ltr"] > :nth-child(1),
+.pts-grp__header[dir="ltr"] > :nth-child(2) {
+  justify-self: start;
+}
+
+.pts-grp__header[dir="rtl"] .pts-grp__name {
+  text-align: right;
+}
+
+.pts-grp__header[dir="ltr"] .pts-grp__name {
+  text-align: left;
+}
+
+.pts-grp__header[dir="rtl"] .pts-grp__count,
+.pts-grp__header[dir="ltr"] .pts-grp__count {
+  justify-self: end;
+  direction: ltr;
+  text-align: left;
 }
 
 /* السهم */

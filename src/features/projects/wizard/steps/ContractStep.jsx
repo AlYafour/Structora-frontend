@@ -41,6 +41,7 @@ import { logger } from "../../../../utils/logger";
 import { getErrorMessage } from "../../../../utils/errorHandler";
 import { extractFileNameFromUrl, buildFileUrl } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import UniqueFieldInput from "../../../../components/forms/UniqueFieldInput";
 
 export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false }) {
   const { t } = useTranslation();
@@ -100,7 +101,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         }
       } catch (_e) { /* ignore */ }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   // Static lists — built from shared constants, translated at render time
@@ -326,7 +327,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         })),
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNewProject, siteplanSnapshot]);
 
   // Sync authorized owner from SitePlan as the source of truth (existing projects only)
@@ -482,6 +483,16 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
       }
     }
 
+    const ownerEmails = Array.isArray(form.official_communication?.owner?.emails)
+      ? form.official_communication.owner.emails
+      : [];
+
+    const getOwnerEmailError = (email) => {
+      if (!email) return "";
+      const err = validateEmail(email);
+      return err ? t(err) : "";
+    };
+
     // Validate contract PDF review (only if contract file exists and is PDF)
     const hasContractPdf = (form.contract_file instanceof File && form.contract_file.name?.endsWith(".pdf"))
       || (form.contract_file_url && form.contract_file_url.toLowerCase().endsWith(".pdf"));
@@ -593,7 +604,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
 
     Object.entries(jsonPayload).forEach(([k, v]) => {
       if (k === "contract_file" ||
-          k === "contract_appendix_file" || k === "contract_explanation_file") {
+        k === "contract_appendix_file" || k === "contract_explanation_file") {
         return;
       }
       if (k === "owners") {
@@ -627,8 +638,8 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         const hasType = att.type && String(att.type).trim() !== "";
         const hasFile = att.file instanceof File || (att.file_url && String(att.file_url).trim() !== "");
         const hasNotes = att.notes && String(att.notes).trim() !== "";
-          const hasPrice = att.price !== undefined && att.price !== null && String(att.price).trim() !== "";
-          return hasType || hasFile || hasNotes || hasPrice;
+        const hasPrice = att.price !== undefined && att.price !== null && String(att.price).trim() !== "";
+        return hasType || hasFile || hasNotes || hasPrice;
       });
 
       const attachmentsData = validAttachments.map((att) => {
@@ -1012,9 +1023,20 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
                   </Field>
                   <Field label={t("email")} className="wizard-col-full">
                     {viewMode ? (
-                      <div className="wizard-view-value">{consultantData.email || t("empty_value")}</div>
+                      <div className="wizard-view-value">
+                        {consultantData.email || t("empty_value")}
+                      </div>
                     ) : (
-                      <input className="input" type="email" value={consultantData.email || ""} onChange={(e) => setConsultantField("email", e.target.value)} placeholder={t("consultant_email_label")} />
+                      <UniqueFieldInput
+                        fieldType="email"
+                        value={consultantData.email || ""}
+                        onChange={(val) => setConsultantField("email", val)}
+                        excludeType="consultant"
+                        excludeId="" // or consultantData.id if you have it
+                        className="input"
+                        placeholder={t("consultant_email_label")}
+                        dir="ltr"
+                      />
                     )}
                   </Field>
                 </div>
@@ -1041,12 +1063,12 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
             </div>
 
             {!isPrivateFunding && (
-            <div className="wizard-funding-card">
-              <h5 className="wizard-funding-card__title">
-                {t("contract.fees.bank.title")}
-              </h5>
-              <ConsultantFeesSection prefix="bank" form={form} setF={setF} isView={viewMode} isAR={isAR} />
-            </div>
+              <div className="wizard-funding-card">
+                <h5 className="wizard-funding-card__title">
+                  {t("contract.fees.bank.title")}
+                </h5>
+                <ConsultantFeesSection prefix="bank" form={form} setF={setF} isView={viewMode} isAR={isAR} />
+              </div>
             )}
           </FormGrid>
         </FormSection>

@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import useTenantNavigate from '../../hooks/useTenantNavigate';
+import useTenantNavigate from "../../hooks/useTenantNavigate";
+import { useLanguage } from "../../hooks";
 import {
   FaPlus,
   FaSyncAlt,
@@ -18,6 +19,7 @@ const ACTION_CONFIG = {
 
 export default function DashboardActivity({ stats }) {
   const { t, i18n } = useTranslation();
+  const { isArabic: isAR } = useLanguage();
   const navigate = useTenantNavigate();
   const activity = stats.recent_activity || [];
   const isAr = i18n.language === "ar";
@@ -38,16 +40,22 @@ export default function DashboardActivity({ stats }) {
       <div className="dash-card__header">
         <h3 className="dash-card__title">{t("dash_recent_activity")}</h3>
       </div>
+
       <div className="dash-activity">
         {activity.map((item, i) => {
           const config = ACTION_CONFIG[item.action] || ACTION_CONFIG.updated;
           const Icon = config.icon;
+
           const timeAgo = item.date
             ? formatDistanceToNow(new Date(item.date), {
                 addSuffix: true,
                 locale: isAr ? ar : enUS,
               })
             : "";
+
+          const projectName = isAR
+            ? (item.project_name || item.project_name_en || "-")
+            : (item.project_name_en || item.project_name || "-");
 
           return (
             <div
@@ -64,9 +72,10 @@ export default function DashboardActivity({ stats }) {
                 </div>
                 {i < activity.length - 1 && <div className="dash-activity__connector" />}
               </div>
+
               <div className="dash-activity__content">
                 <span className="dash-activity__text">
-                  <strong>{item.project_name}</strong>
+                  <strong>{projectName}</strong>
                   <span className="dash-activity__action">{t(config.key)}</span>
                 </span>
                 <span className="dash-activity__time">{timeAgo}</span>

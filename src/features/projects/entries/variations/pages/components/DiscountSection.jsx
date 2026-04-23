@@ -5,6 +5,8 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 
 const DiscountSection = memo(({
   formData,
@@ -15,6 +17,8 @@ const DiscountSection = memo(({
   hasSelectedComponents,
   t
 }) => {
+  const { i18n } = useTranslation();
+  const isAR = i18n.language === 'ar';
   const handleDiscountTypeChange = (newType) => {
     onFormDataChange({
       ...formData,
@@ -53,14 +57,19 @@ const DiscountSection = memo(({
           />
         )}
         {formData.discount_type === 'amount' && (
-          <input
-            type="number"
-            step="0.01"
-            className="nvc-input nvc-input--sm"
-            value={formData.discount_amount ?? ''}
-            onChange={(e) => onFormDataChange({ ...formData, discount_amount: e.target.value })}
-            placeholder={t("currency_aed_short")}
-          />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <input
+              type="number"
+              step="0.01"
+              className="nvc-input nvc-input--sm"
+              value={formData.discount_amount ?? ''}
+              onChange={(e) => onFormDataChange({ ...formData, discount_amount: e.target.value })}
+              placeholder="0.00"
+            />
+            {isAR
+              ? <span style={{ fontSize: '11px', color: 'var(--muted, #9ca3af)' }}>د.إ</span>
+              : <DirhamsIcon size={10} color="#9ca3af" />}
+          </span>
         )}
         {formData.discount_type === 'final_amount' && (
           <input

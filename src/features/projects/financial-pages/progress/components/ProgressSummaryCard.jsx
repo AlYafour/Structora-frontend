@@ -1,7 +1,7 @@
 import React from 'react';
-import { formatPercent, formatMoney } from '../../../../../utils/formatters';
+import { formatPercent } from '../../../../../utils/formatters';
 import { MetricCard, MetricGrid } from '../../../../../components/common/MetricCard';
-// VatBreakdownPopover is used via MetricCard's vatBreakdown prop
+import DirhamsIcon from '../../../../../components/common/DirhamsIcon';
 
 function computeGap(totalInvoiced, totalPaidRegular) {
   if (totalInvoiced == null || totalPaidRegular == null) return null;
@@ -15,21 +15,44 @@ function gapVariant(val) {
   return 'success';
 }
 
+// Helper function to format money with conditional currency symbol
+function formatMoneyWithCurrency(value, isAR) {
+  if (value == null) return '-';
+  
+  const formatter = new Intl.NumberFormat(isAR ? 'ar-AE' : 'en-AE', {
+    style: 'currency',
+    currency: 'AED',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  
+  return formatter.format(value);
+}
 
-export default function ProgressSummaryCard({ projectData, isRTL, t }) {
+export default function ProgressSummaryCard({ projectData, isRTL, t, isAR }) {
   if (!projectData) return null;
 
   const fmtPct = (val) => formatPercent(val, { fallback: '-' });
+
+  const renderAmount = (val) => {
+    const str = formatMoneyWithCurrency(val, isAR);
+    if (!isAR) {
+      const numPart = str.replace(/AED\s?/, '').trim();
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+    }
+    return str;
+  };
   const amounts = projectData.progress_amounts;
 
   // Total project value — prefer net (excl VAT), fall back to legacy field
   const totalNet     = amounts ? (amounts.total_project_value ?? null)          : null;
-  const totalVat     = amounts ? (amounts.total_project_value_vat ?? null)      : null;
   const totalWithVat = amounts ? (amounts.total_project_value_with_vat ?? null) : null;
 
-  const projectValueSub = totalNet != null ? `${t('excluding_vat') || 'بدون ضريبة'}: ${formatMoney(totalNet)}` : null;
+  const projectValueSub = totalNet != null
+    ? <>{t('excluding_vat') || 'بدون ضريبة'}: {renderAmount(totalNet)}</>
+    : null;
   const vatBreakdown = totalNet != null
-    ? { net: totalNet, withVat: totalWithVat ?? totalNet * 1.05, format: formatMoney }
+    ? { net: totalNet, withVat: totalWithVat ?? totalNet * 1.05, format: renderAmount }
     : null;
 
   const totalInvoicedNet = amounts ? (amounts.total_invoiced_net != null ? amounts.total_invoiced_net : amounts.total_invoiced) : null;
@@ -37,8 +60,6 @@ export default function ProgressSummaryCard({ projectData, isRTL, t }) {
   const gap = computeGap(totalInvoicedNet, totalPaidRegular);
 
   const advanceAmount   = amounts ? amounts.advance_payment_amount : 0;
-  const advanceRecovered = amounts ? amounts.advance_recovered : 0;
-  const advanceRemaining = amounts ? amounts.advance_remaining : 0;
   const hasAdvance = advanceAmount > 0;
 
   const dueAmount = projectData.current_due_amount != null ? Number(projectData.current_due_amount) : null;
@@ -61,25 +82,25 @@ export default function ProgressSummaryCard({ projectData, isRTL, t }) {
         <MetricCard variant="emerald" icon="check" label={t('progress_buckets_technical_approved')} tip={t('progress_tip_technical_approved')}
           value={fmtPct(projectData.overall_technical_approved)}
           vatBreakdown={amounts && amounts.total_invoiced != null
-            ? { net: amounts.total_invoiced / 1.05, withVat: amounts.total_invoiced, format: formatMoney }
+            ? { net: amounts.total_invoiced / 1.05, withVat: amounts.total_invoiced, format: renderAmount }
             : null}
         />
         <MetricCard variant="amber" icon="dollar" label={t('progress_buckets_financial')} tip={t('progress_tip_financial')}
           value={fmtPct(projectData.overall_financial)}
           vatBreakdown={amounts && amounts.total_paid_regular != null
-            ? { net: amounts.total_paid_regular / 1.05, withVat: amounts.total_paid_regular, format: formatMoney }
+            ? { net: amounts.total_paid_regular / 1.05, withVat: amounts.total_paid_regular, format: renderAmount }
             : null}
         />
         <MetricCard variant="violet" icon="file" label={t('progress_buckets_invoice_approved')} tip={t('progress_tip_invoice_approved')}
           value={fmtPct(projectData.overall_invoice_approved)}
           vatBreakdown={amounts && amounts.contractor_entitlement != null
-            ? { net: amounts.contractor_entitlement / 1.05, withVat: amounts.contractor_entitlement, format: formatMoney }
+            ? { net: amounts.contractor_entitlement / 1.05, withVat: amounts.contractor_entitlement, format: renderAmount }
             : null}
         />
         <MetricCard variant={gapVariant(gap)} icon="scale" label={t('progress_buckets_gap')} tip={t('progress_tip_gap')}
-          value={gap != null ? formatMoney(Math.abs(gap)) : '-'}
+          value={gap != null ? renderAmount(Math.abs(gap)) : '-'}
           vatBreakdown={gap != null && gap !== 0
-            ? { net: Math.abs(gap) / 1.05, withVat: Math.abs(gap), format: formatMoney }
+            ? { net: Math.abs(gap) / 1.05, withVat: Math.abs(gap), format: renderAmount }
             : null}
           sub={gap != null && gap === 0 ? t('progress_gap_balanced') : (gap != null ? (gap > 0 ? t('progress_gap_owed') : t('progress_gap_excess')) : null)}
         />
@@ -88,15 +109,15 @@ export default function ProgressSummaryCard({ projectData, isRTL, t }) {
       {hasAdvance && (
         <MetricGrid sub>
           <MetricCard variant="slate" icon="wallet" label={t('progress_advance_payment')} tip={t('progress_tip_advance')}
-            value={formatMoney(advanceAmount)}
-            vatBreakdown={{ net: advanceAmount / 1.05, withVat: advanceAmount, format: formatMoney }}
+            value={renderAmount(advanceAmount)}
+            vatBreakdown={{ net: advanceAmount / 1.05, withVat: advanceAmount, format: renderAmount }}
           />
           <MetricCard
             variant={dueAmount > 0 ? 'danger' : dueAmount < 0 ? 'warning' : 'success'}
             icon="alert" label={t('progress_total_due')} tip={t('progress_tip_total_due')}
-            value={dueAmount != null ? formatMoney(Math.abs(dueAmount)) : '-'}
+            value={dueAmount != null ? renderAmount(Math.abs(dueAmount)) : '-'}
             vatBreakdown={dueAmount != null && dueAmount !== 0
-              ? { net: Math.abs(dueAmount) / 1.05, withVat: Math.abs(dueAmount), format: formatMoney }
+              ? { net: Math.abs(dueAmount) / 1.05, withVat: Math.abs(dueAmount), format: renderAmount }
               : null}
             sub={dueAmount != null && dueAmount !== 0 ? (dueAmount > 0 ? t('progress_gap_owed') : t('progress_gap_excess')) : null}
           />
@@ -108,8 +129,8 @@ export default function ProgressSummaryCard({ projectData, isRTL, t }) {
           <MetricCard
             variant={dueAmount > 0 ? 'danger' : 'warning'}
             icon="alert" label={t('progress_total_due')}
-            value={formatMoney(Math.abs(dueAmount))}
-            vatBreakdown={{ net: Math.abs(dueAmount) / 1.05, withVat: Math.abs(dueAmount), format: formatMoney }}
+            value={renderAmount(Math.abs(dueAmount))}
+            vatBreakdown={{ net: Math.abs(dueAmount) / 1.05, withVat: Math.abs(dueAmount), format: renderAmount }}
             sub={dueAmount > 0 ? t('progress_gap_owed') : t('progress_gap_excess')}
           />
         </MetricGrid>

@@ -1,13 +1,8 @@
-/**
- * VariationItemsTable — Unified table with omit/add toggle
- *
- * State stays split (omittedItems / addedItems) for backend compatibility.
- * UI shows one table at a time; user switches with a toggle.
- */
-
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import ItemRow from './ItemRow';
+import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 
 const VariationItemsTable = memo(({
   /* omitted */
@@ -29,18 +24,28 @@ const VariationItemsTable = memo(({
   t,
 }) => {
   const [activeTab, setActiveTab] = useState('omitted');
+  const { i18n } = useTranslation();
 
-  const isOmitted   = activeTab === 'omitted';
-  const items       = isOmitted ? omittedItems  : addedItems;
-  const expanded    = isOmitted ? expandedOmittedItems : expandedAddedItems;
-  const onUpdate    = isOmitted ? onUpdateOmittedItem  : onUpdateAddedItem;
-  const onRemove    = isOmitted ? onRemoveOmittedItem  : onRemoveAddedItem;
-  const onAdd       = isOmitted ? onAddOmittedItem     : onAddAddedItem;
-  const onToggle    = isOmitted ? onToggleOmittedExpand : onToggleAddedExpand;
+  const formatCurrency = (value) => {
+    const str = formatMoney(value, { lang: i18n.language });
+    if (i18n.language === 'en') {
+      const numPart = str.replace(/AED\s?/, '').trim();
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+    }
+    return str;
+  };
+
+  const isOmitted = activeTab === 'omitted';
+  const items = isOmitted ? omittedItems : addedItems;
+  const expanded = isOmitted ? expandedOmittedItems : expandedAddedItems;
+  const onUpdate = isOmitted ? onUpdateOmittedItem : onUpdateAddedItem;
+  const onRemove = isOmitted ? onRemoveOmittedItem : onRemoveAddedItem;
+  const onAdd = isOmitted ? onAddOmittedItem : onAddAddedItem;
+  const onToggle = isOmitted ? onToggleOmittedExpand : onToggleAddedExpand;
 
   const totalOmitted = omittedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-  const totalAdded   = addedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-  const activeTotal  = isOmitted ? totalOmitted : totalAdded;
+  const totalAdded = addedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+  const activeTotal = isOmitted ? totalOmitted : totalAdded;
 
   // colspan = desc + qty + unit + rate + [ohp if omit] + amount + [action if edit]
   const colSpan = isOmitted
@@ -49,11 +54,7 @@ const VariationItemsTable = memo(({
 
   return (
     <div className="nvt-wrapper nvc-section">
-
-      {/* ══════════ HEADER ══════════ */}
       <div className="nvt-header">
-
-        {/* Toggle pills */}
         <div className="nvt-toggle">
           <button
             type="button"
@@ -63,7 +64,9 @@ const VariationItemsTable = memo(({
             <span className="nvt-toggle__icon">−</span>
             <span className="nvt-toggle__label">{t('omitted_items')}</span>
             {totalOmitted > 0 && (
-              <span className="nvt-toggle__total nvt-toggle__total--neg">{formatMoney(totalOmitted)}</span>
+              <span className="nvt-toggle__total nvt-toggle__total--neg">
+                {formatCurrency(totalOmitted)}
+              </span>
             )}
             {omittedItems.length > 0 && (
               <span className="nvt-toggle__count">{omittedItems.length}</span>
@@ -78,7 +81,9 @@ const VariationItemsTable = memo(({
             <span className="nvt-toggle__icon">+</span>
             <span className="nvt-toggle__label">{t('added_items')}</span>
             {totalAdded > 0 && (
-              <span className="nvt-toggle__total nvt-toggle__total--pos">{formatMoney(totalAdded)}</span>
+              <span className="nvt-toggle__total nvt-toggle__total--pos">
+                {formatCurrency(totalAdded)}
+              </span>
             )}
             {addedItems.length > 0 && (
               <span className="nvt-toggle__count">{addedItems.length}</span>
@@ -86,30 +91,30 @@ const VariationItemsTable = memo(({
           </button>
         </div>
 
-        {/* Right: total + add button */}
         <div className="nvt-header__right">
           <div className="nvt-header__summary">
             <span className="nvt-header__summary-label">
               {isOmitted ? t('total_omitted') : t('total_added')}
             </span>
             <span className={`nvt-header__summary-value ${isOmitted ? 'nvt-val--neg' : 'nvt-val--pos'}`}>
-              {formatMoney(activeTotal)}
+              {formatCurrency(activeTotal)}
             </span>
           </div>
           {isEditMode && (
             <button
               type="button"
               className={`nvt-add-btn ${isOmitted ? 'nvt-add-btn--omit' : 'nvt-add-btn--add'}`}
-              onClick={(e) => { e.preventDefault(); onAdd(); }}
+              onClick={(e) => {
+                e.preventDefault();
+                onAdd();
+              }}
             >
               + {t('add_item')}
             </button>
           )}
         </div>
-
       </div>
 
-      {/* ══════════ TABLE ══════════ */}
       <div className="nvt-table-wrap">
         <table className="nvt-table">
           <thead>
@@ -135,7 +140,10 @@ const VariationItemsTable = memo(({
                     <button
                       type="button"
                       className={`nvt-add-btn ${isOmitted ? 'nvt-add-btn--omit' : 'nvt-add-btn--add'} no-print`}
-                      onClick={(e) => { e.preventDefault(); onAdd(); }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onAdd();
+                      }}
                     >
                       + {t('add_item')}
                     </button>
@@ -164,17 +172,15 @@ const VariationItemsTable = memo(({
         </table>
       </div>
 
-      {/* ══════════ FOOTER ══════════ */}
       <div className={`nvt-footer ${isOmitted ? 'nvt-footer--omit' : 'nvt-footer--add'}`}>
-        {/* mini summary of both sides */}
         <div className="nvt-footer__both">
           <span className="nvt-footer__pill nvt-footer__pill--neg">
-            − {formatMoney(totalOmitted)}
+            − {formatCurrency(totalOmitted)}
             <span className="nvt-footer__pill-lbl"> {t('omitted')}</span>
           </span>
           <span className="nvt-footer__sep">·</span>
           <span className="nvt-footer__pill nvt-footer__pill--pos">
-            + {formatMoney(totalAdded)}
+            + {formatCurrency(totalAdded)}
             <span className="nvt-footer__pill-lbl"> {t('added')}</span>
           </span>
         </div>
@@ -183,11 +189,10 @@ const VariationItemsTable = memo(({
             {isOmitted ? t('total_omitted') : t('total_added')}
           </span>
           <span className={`nvt-footer__active-val ${isOmitted ? 'nvt-val--neg' : 'nvt-val--pos'}`}>
-            {formatMoney(activeTotal)}
+            {formatCurrency(activeTotal)}
           </span>
         </div>
       </div>
-
     </div>
   );
 });

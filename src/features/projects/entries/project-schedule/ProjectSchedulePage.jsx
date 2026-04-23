@@ -11,8 +11,8 @@ import FinancialActionBar from "../../../../components/common/FinancialActionBar
 import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
 import DateInput from "../../../../components/forms/DateInput";
 import StaticContractAttachmentFile from "../../wizard/components/StaticContractAttachmentFile";
-import "./ProjectSchedulePage.css";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import "../entries.css";
 
 const FORM_ID = "project-schedule-form";
 
@@ -111,37 +111,45 @@ export default function ProjectSchedulePage() {
               {existingId ? t("edit_project_schedule") : t("add_project_schedule")}
             </div>
             <div className="card__body">
-              <div>
-                <label className="form-label">{t("project_start_date")} *</label>
+              <div className="form-field">
+                <label className="form-label required">{t("project_start_date")}</label>
                 <DateInput
                   className="prj-input"
                   value={formData.project_start_date}
                   onChange={(value) => setFormData((prev) => ({ ...prev, project_start_date: value }))}
                 />
               </div>
-              {formData.project_end_date && (
-                <div>
-                  <label className="form-label ds-text-secondary">
-                    {t("project_end_date")}
-                  </label>
-                  <div className="project-schedule__date-display">
+              
+              <div className="form-field">
+                <label className="form-label">{t("project_end_date")}</label>
+                {formData.project_end_date && !formData.project_end_date?.includes("Invalid") ? (
+                  <div className="date-display-readonly">
                     {formatDate(formData.project_end_date)}
                   </div>
-                </div>
-              )}
-              <StaticContractAttachmentFile
-                label={t("schedule_file")}
-                value={formData.schedule_file}
-                fileUrl={formData.schedule_file_url}
-                fileName={formData.schedule_file_name}
-                onChange={(file) => setFormData((prev) => ({ ...prev, schedule_file: file }))}
-                onRemoveExisting={() => setFormData((prev) => ({ ...prev, schedule_file: null, schedule_file_url: null, schedule_file_name: null }))}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                maxSizeMB={10}
-                isView={false}
-                projectId={projectId}
-                endpoint={`projects/${projectId}/project-schedule/`}
-              />
+                ) : (
+                  <DateInput
+                    className="prj-input"
+                    value={formData.project_end_date}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, project_end_date: value }))}
+                  />
+                )}
+              </div>
+              
+              <div className="form-field form-field-full">
+                <StaticContractAttachmentFile
+                  label={t("schedule_file")}
+                  value={formData.schedule_file}
+                  fileUrl={formData.schedule_file_url}
+                  fileName={formData.schedule_file_name}
+                  onChange={(file) => setFormData((prev) => ({ ...prev, schedule_file: file }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, schedule_file: null, schedule_file_url: null, schedule_file_name: null }))}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  maxSizeMB={10}
+                  isView={false}
+                  projectId={projectId}
+                  endpoint={`projects/${projectId}/project-schedule/`}
+                />
+              </div>
             </div>
           </div>
         </form>

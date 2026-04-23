@@ -154,13 +154,30 @@ export default function SelectProjectPage({
                         : `PRJ-${p?.id}`}
                     </div>
                     <div className="select-project__card-info">
-                      <div className="select-project__card-name">
-                        {projectName.ar || projectName.full || t("empty_value")}
-                      </div>
-                      {projectName.en && projectName.en !== projectName.ar && (
-                        <div className="select-project__card-name-en">
-                          {projectName.en}
-                        </div>
+                      {i18n.language === 'ar' ? (
+                        // Arabic language: Arabic on top, English below
+                        <>
+                          <div className="select-project__card-name">
+                            {projectName.ar || projectName.full || t("empty_value")}
+                          </div>
+                          {projectName.en && projectName.en !== projectName.ar && (
+                            <div className="select-project__card-name-en">
+                              {projectName.en}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        // Non-Arabic languages: English on top, Arabic below
+                        <>
+                          <div className="select-project__card-name">
+                            {projectName.en || projectName.full || t("empty_value")}
+                          </div>
+                          {projectName.ar && projectName.ar !== projectName.en && (
+                            <div className="select-project__card-name-ar">
+                              {projectName.ar}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

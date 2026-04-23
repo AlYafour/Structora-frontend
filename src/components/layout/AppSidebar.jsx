@@ -25,34 +25,34 @@ function useCompanyMenuItems() {
   const { hasPermission, isAdmin, canManageUsers, canManageRoles } = useAuth();
 
   // company_super_admin and Admin see everything — only check permissions for other roles
-  const canViewProjects     = isAdmin || hasPermission('project.view');
-  const canCreateProjects   = isAdmin || hasPermission('project.create');
-  const canApproveProjects  = isAdmin || hasPermission('project.approve');
-  const canViewPayments     = isAdmin || hasPermission('payment.view')   || hasPermission('project.view');
-  const canViewInvoices     = isAdmin || hasPermission('invoice.view')   || hasPermission('project.view');
-  const canViewVariations   = isAdmin || hasPermission('variation.view') || hasPermission('project.view');
-  const canViewOwners       = isAdmin || hasPermission('owner.view')     || hasPermission('project.view');
-  const canViewConsultants  = isAdmin || hasPermission('consultant.view')|| hasPermission('project.view');
-  const canViewSettings     = isAdmin || hasPermission('role.view');
+  const canViewProjects = isAdmin || hasPermission('project.view');
+  const canCreateProjects = isAdmin || hasPermission('project.create');
+  const canApproveProjects = isAdmin || hasPermission('project.approve');
+  const canViewPayments = isAdmin || hasPermission('payment.view') || hasPermission('project.view');
+  const canViewInvoices = isAdmin || hasPermission('invoice.view') || hasPermission('project.view');
+  const canViewVariations = isAdmin || hasPermission('variation.view') || hasPermission('project.view');
+  const canViewOwners = isAdmin || hasPermission('owner.view') || hasPermission('project.view');
+  const canViewConsultants = isAdmin || hasPermission('consultant.view') || hasPermission('project.view');
+  const canViewSettings = isAdmin || hasPermission('role.view');
 
   // Build project submenu dynamically
   const projectChildren = [
-    ...(canViewProjects   ? [{ key: 'projects-list',          icon: <FaList />,        label: t('projects_list') }] : []),
-    ...(canCreateProjects ? [{ key: 'add-project',            icon: <FaPlus />,        label: t('add_project') }] : []),
-    ...(canViewProjects   ? [{ key: 'divider-1', type: 'divider' }] : []),
-    ...(canViewProjects   ? [{ key: 'add-start-order',        icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
-    ...(canViewVariations ? [{ key: 'add-variation',          icon: <FaEdit />,        label: t('add_variation') }] : []),
-    ...(canViewProjects   ? [{ key: 'add-awarding',           icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
-    ...(canViewProjects   ? [{ key: 'add-extensions',         icon: <FaClock />,       label: t('add_extensions') }] : []),
-    ...(canViewProjects   ? [{ key: 'add-project-schedule',   icon: <FaClock />,       label: t('add_project_schedule') }] : []),
-    ...(canViewProjects   ? [{ key: 'add-excavation-notice',  icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
-    ...(canViewProjects   ? [{ key: 'add-progress',           icon: <FaEdit />,        label: t('sidebar_add_progress') }] : []),
+    ...(canViewProjects ? [{ key: 'projects-list', icon: <FaList />, label: t('projects_list') }] : []),
+    ...(canCreateProjects ? [{ key: 'add-project', icon: <FaPlus />, label: t('add_project') }] : []),
+    ...(canViewProjects ? [{ key: 'divider-1', type: 'divider' }] : []),
+    ...(canViewProjects ? [{ key: 'add-start-order', icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
+    ...(canViewVariations ? [{ key: 'add-variation', icon: <FaEdit />, label: t('add_variation') }] : []),
+    ...(canViewProjects ? [{ key: 'add-awarding', icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
+    ...(canViewProjects ? [{ key: 'add-extensions', icon: <FaClock />, label: t('add_extensions') }] : []),
+    ...(canViewProjects ? [{ key: 'add-project-schedule', icon: <FaClock />, label: t('add_project_schedule') }] : []),
+    ...(canViewProjects ? [{ key: 'add-excavation-notice', icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
+    ...(canViewProjects ? [{ key: 'add-progress', icon: <FaEdit />, label: t('sidebar_add_progress') }] : []),
     ...(canViewPayments || canViewInvoices ? [{ key: 'divider-2', type: 'divider' }] : []),
-    ...(canViewPayments   ? [{ key: 'add-payment',            icon: <FaMoneyBillWave />, label: t('add_payment') }] : []),
-    ...(canViewInvoices   ? [{ key: 'add-invoice',            icon: <FaReceipt />,     label: t('add_invoice') }] : []),
-    ...(canViewPayments   ? [{ key: 'add-payment-claim',      icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
-    ...(canViewProjects   ? [{ key: 'divider-3', type: 'divider' }] : []),
-    ...(canViewProjects   ? [{ key: 'import-data',            icon: <FaFileImport />,  label: t('import_data') }] : []),
+    ...(canViewPayments ? [{ key: 'add-payment', icon: <FaMoneyBillWave />, label: t('add_payment') }] : []),
+    ...(canViewInvoices ? [{ key: 'add-invoice', icon: <FaReceipt />, label: t('add_invoice') }] : []),
+    ...(canViewPayments ? [{ key: 'add-payment-claim', icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
+    ...(canViewProjects ? [{ key: 'divider-3', type: 'divider' }] : []),
+    ...(canViewProjects ? [{ key: 'import-data', icon: <FaFileImport />, label: t('import_data') }] : []),
   ];
 
   return [
@@ -63,14 +63,14 @@ function useCompanyMenuItems() {
       children: projectChildren,
     }] : []),
 
-    ...(canViewOwners       ? [{ key: 'owners',            icon: <FaUsers />,   label: t('sidebar_owners') }] : []),
-    ...(canViewConsultants  ? [{ key: 'consultants',       icon: <FaUserTie />, label: t('sidebar_consultants') }] : []),
-    ...(canApproveProjects  ? [{ key: 'pending-approvals', icon: <FaClock />,   label: t('sidebar_pending_approvals') }] : []),
+    ...(canViewOwners ? [{ key: 'owners', icon: <FaUsers />, label: t('sidebar_owners') }] : []),
+    ...(canViewConsultants ? [{ key: 'consultants', icon: <FaUserTie />, label: t('sidebar_consultants') }] : []),
+    ...(canApproveProjects ? [{ key: 'pending-approvals', icon: <FaClock />, label: t('sidebar_pending_approvals') }] : []),
 
     // Management section (admin / roles.manage)
-    ...(canManageUsers  ? [{ key: 'company-users',    icon: <FaUserCog />, label: t('sidebar_manage_users') }] : []),
-    ...(canManageRoles  ? [{ key: 'company-roles',    icon: <FaShieldAlt />, label: t('sidebar_manage_roles') }] : []),
-    ...(canViewSettings ? [{ key: 'company-settings', icon: <FaCog />,     label: t('sidebar_company_settings') }] : []),
+    ...(canManageUsers ? [{ key: 'company-users', icon: <FaUserCog />, label: t('sidebar_manage_users') }] : []),
+    ...(canManageRoles ? [{ key: 'company-roles', icon: <FaShieldAlt />, label: t('sidebar_manage_roles') }] : []),
+    ...(canViewSettings ? [{ key: 'company-settings', icon: <FaCog />, label: t('sidebar_company_settings') }] : []),
   ];
 }
 
@@ -430,8 +430,10 @@ export default function AppSidebar({ mode = 'company' }) {
             title={t('nav_change_language')}
             type="button"
           >
-            <FaGlobe />
-            {!collapsed && <span className="app-sidebar__action-label">{lang.toUpperCase()}</span>}
+            <span className="app-sidebar__action-content">
+              <FaGlobe />
+              {!collapsed && <span className="app-sidebar__action-label">{lang.toUpperCase()}</span>}
+            </span>
           </Button>
 
           <Button

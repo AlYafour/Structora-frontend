@@ -3,11 +3,23 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import Button from '../../../../../../components/common/Button';
+import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 
 const ItemRow = memo(
   ({ item, index, isOmitted, isEditMode, onUpdate, onRemove, itemsCount, t, isExpanded, onToggleExpand, colSpan }) => {
+    const { i18n } = useTranslation();
+    const formatCurrency = (value) => {
+      const str = formatMoney(value, { lang: i18n.language });
+      if (i18n.language === 'en') {
+        const numPart = str.replace(/AED\s?/, '').trim();
+        return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+      }
+      return str;
+    };
+
     const hasRemarks = !!(item.remarks && item.remarks.trim());
     const amount = typeof item.amount === 'number' ? item.amount : (parseFloat(item.amount) || 0);
 
@@ -57,7 +69,8 @@ const ItemRow = memo(
           {/* Qty */}
           <td className="nvi-td nvi-td--num">
             <input
-              type="number" step="0.01"
+              type="number"
+              step="0.01"
               className="nvi-input nvi-input--num"
               value={item.qty ?? ''}
               onChange={(e) => onUpdate && onUpdate(item.id, 'qty', e.target.value)}
@@ -83,7 +96,8 @@ const ItemRow = memo(
           {/* Rate */}
           <td className="nvi-td nvi-td--num">
             <input
-              type="number" step="0.01"
+              type="number"
+              step="0.01"
               className="nvi-input nvi-input--num"
               value={item.rate ?? ''}
               onChange={(e) => onUpdate && onUpdate(item.id, 'rate', e.target.value)}
@@ -117,7 +131,7 @@ const ItemRow = memo(
           {/* Amount */}
           <td className="nvi-td nvi-td--amount">
             <span className={`nvi-amount ${isOmitted ? 'nvi-amount--neg' : 'nvi-amount--pos'}`}>
-              {formatMoney(amount)}
+              {formatCurrency(amount)}
             </span>
           </td>
 

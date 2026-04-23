@@ -10,6 +10,7 @@ import { useProgressData } from '../financial-pages/progress/hooks/useProgressDa
 import ProgressSummaryCard from '../financial-pages/progress/components/ProgressSummaryCard';
 import ProgressHistoryTable from '../financial-pages/progress/components/ProgressHistoryTable';
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { useLanguage } from '../../../hooks';
 
 const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
   const navigate = useTenantNavigate();
@@ -20,6 +21,8 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const { isArabic: isAR } = useLanguage();
+
 
   const {
     loading,
@@ -97,6 +100,7 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
         projectData={projectData}
         isRTL={isRTL}
         t={t}
+        isAR={isAR}
       />
 
       <ProgressHistoryTable

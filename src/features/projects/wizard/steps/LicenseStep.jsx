@@ -190,6 +190,7 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
 
   // Save
   const saveAndNext = async () => {
+    setShowLicensePanel(false);
     // New project flow: validate and pass FormData up (no API call yet)
     if (isNewProject && onLicenseReady) {
       try {

@@ -11,6 +11,7 @@ import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
 import DateInput from "../../../../components/forms/DateInput";
 import StaticContractAttachmentFile from "../../wizard/components/StaticContractAttachmentFile";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import "../entries.css";
 
 const FORM_ID = "excavation-notice-form";
 
@@ -18,13 +19,17 @@ export default function ExcavationNoticePage() {
   const { projectId, itemId } = useParams();
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
-  const isEditMode = !!itemId;
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState(itemId || null);
-  const [formData, setFormData] = useState({ notice_date: "", notice_file: null, notice_file_url: null, notice_file_name: null });
+  const [formData, setFormData] = useState({ 
+    notice_date: "", 
+    notice_file: null, 
+    notice_file_url: null, 
+    notice_file_name: null 
+  });
   const { success, error: showError } = useNotifications();
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
   const navTimerRef = useRef(null);
@@ -97,7 +102,7 @@ export default function ExcavationNoticePage() {
               {existingId ? t("edit_excavation_notice") : t("add_excavation_notice")}
             </div>
             <div className="card__body">
-              <div>
+              <div className="form-field">
                 <label className="form-label">{t("notice_date")}</label>
                 <DateInput
                   className="prj-input"
@@ -105,19 +110,27 @@ export default function ExcavationNoticePage() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, notice_date: value }))}
                 />
               </div>
-              <StaticContractAttachmentFile
-                label={t("notice_file")}
-                value={formData.notice_file}
-                fileUrl={formData.notice_file_url}
-                fileName={formData.notice_file_name}
-                onChange={(file) => setFormData((prev) => ({ ...prev, notice_file: file }))}
-                onRemoveExisting={() => setFormData((prev) => ({ ...prev, notice_file: null, notice_file_url: null, notice_file_name: null }))}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                maxSizeMB={10}
-                isView={false}
-                projectId={projectId}
-                endpoint={`projects/${projectId}/excavation-notice/`}
-              />
+              
+              {/* Placeholder for symmetry - you can add another field here if needed */}
+              <div className="form-field">
+                {/* Empty field to maintain two-column layout */}
+              </div>
+              
+              <div className="form-field form-field-full">
+                <StaticContractAttachmentFile
+                  label={t("notice_file")}
+                  value={formData.notice_file}
+                  fileUrl={formData.notice_file_url}
+                  fileName={formData.notice_file_name}
+                  onChange={(file) => setFormData((prev) => ({ ...prev, notice_file: file }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, notice_file: null, notice_file_url: null, notice_file_name: null }))}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  maxSizeMB={10}
+                  isView={false}
+                  projectId={projectId}
+                  endpoint={`projects/${projectId}/excavation-notice/`}
+                />
+              </div>
             </div>
           </div>
         </form>

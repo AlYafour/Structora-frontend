@@ -12,7 +12,8 @@ import { formatInternalCode } from "../../utils/formatters/id";
  *   </FinancialActionBar>
  */
 const ProjectEntryInfo = memo(function ProjectEntryInfo({ project }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
 
   if (!project) return null;
 
@@ -26,10 +27,44 @@ const ProjectEntryInfo = memo(function ProjectEntryInfo({ project }) {
   return (
     <div className="project-entry-info">
       <div className="project-entry-info__names">
-        {nameAr && <span className="project-entry-info__name project-entry-info__name--ar">{nameAr}</span>}
-        {hasBothNames && <span className="project-entry-info__name project-entry-info__name--en">{nameEn}</span>}
-        {!hasBothNames && !nameAr && nameEn && (
-          <span className="project-entry-info__name project-entry-info__name--en">{nameEn}</span>
+        {isArabic ? (
+          // Arabic active: Arabic name gets primary style (--ar), English gets secondary style (--en)
+          <>
+            {nameAr && (
+              <span className="project-entry-info__name project-entry-info__name--ar">
+                {nameAr}
+              </span>
+            )}
+            {hasBothNames && nameEn && (
+              <span className="project-entry-info__name project-entry-info__name--en">
+                {nameEn}
+              </span>
+            )}
+            {!hasBothNames && !nameAr && nameEn && (
+              <span className="project-entry-info__name project-entry-info__name--en">
+                {nameEn}
+              </span>
+            )}
+          </>
+        ) : (
+          // English active: English name gets primary style (--ar), Arabic gets secondary style (--en)
+          <>
+            {nameEn && (
+              <span className="project-entry-info__name project-entry-info__name--ar">
+                {nameEn}
+              </span>
+            )}
+            {hasBothNames && nameAr && (
+              <span className="project-entry-info__name project-entry-info__name--en">
+                {nameAr}
+              </span>
+            )}
+            {!hasBothNames && !nameEn && nameAr && (
+              <span className="project-entry-info__name project-entry-info__name--en">
+                {nameAr}
+              </span>
+            )}
+          </>
         )}
       </div>
       {code && (

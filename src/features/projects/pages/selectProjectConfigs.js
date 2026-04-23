@@ -33,11 +33,11 @@ const selectProjectConfigs = {
     subtitleKey: "select_project_for_awarding_desc",
     buttonLabelKey: "add_awarding",
     emptyStateKey: "no_housing_loan_projects",
-    apiFilters: {},
-    customFilter: (p) => {
-      const cc = p?.contract_data?.contract_classification || p?.contract_classification;
-      return cc === "housing_loan_program";
-    },
+    // apiFilters: {},
+    // customFilter: (p) => {
+    //   const cc = p?.contract_data?.contract_classification || p?.contract_classification;
+    //   return cc === "housing_loan_program";
+    // },
   },
   extensions: {
     navigationTarget: "/projects/:id?tab=start_order",
@@ -45,8 +45,8 @@ const selectProjectConfigs = {
     subtitleKey: "select_project_for_extensions_desc",
     buttonLabelKey: "add_extensions",
     emptyStateKey: "no_projects_with_start_order",
-    apiFilters: {},
-    customFilter: (p) => p?.start_order_data && Object.keys(p.start_order_data).length > 0,
+    // apiFilters: {},
+    // customFilter: (p) => p?.start_order_data && Object.keys(p.start_order_data).length > 0,
   },
   payment: {
     navigationTarget: "/projects/:id?tab=payments",

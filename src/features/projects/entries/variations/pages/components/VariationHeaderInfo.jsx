@@ -3,6 +3,7 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getProjectName } from '../../../../utils/projectNameUtils.jsx';
 import { FaBuilding, FaHashtag, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaClock, FaAlignLeft } from 'react-icons/fa';
 
@@ -15,6 +16,9 @@ const VariationHeaderInfo = memo(({
   getProjectLocation,
   t
 }) => {
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+  
   const projectNameData = project ? getProjectName(project) : null;
   const projectNameAr = projectNameData?.ar || projectNameData?.full || '—';
   const projectNameEn = projectNameData?.en && projectNameData.en !== projectNameData.ar ? projectNameData.en : null;
@@ -39,8 +43,25 @@ const VariationHeaderInfo = memo(({
           <div className="nvh-card__icon"><FaBuilding /></div>
           <div className="nvh-card__body">
             <span className="nvh-card__label">{t('project_name')}</span>
-            <span className="nvh-card__value nvh-card__value--name">{projectNameAr}</span>
-            {projectNameEn && <span className="nvh-card__sub">{projectNameEn}</span>}
+            {isArabic ? (
+              // Arabic active: Arabic name primary, English secondary
+              <>
+                <span className="nvh-card__value nvh-card__value--name nvh-card__value--primary">
+                  {projectNameAr}
+                </span>
+                {projectNameEn && <span className="nvh-card__sub nvh-card__sub--secondary">{projectNameEn}</span>}
+              </>
+            ) : (
+              // English active: English name primary, Arabic secondary
+              <>
+                <span className="nvh-card__value nvh-card__value--name nvh-card__value--primary">
+                  {projectNameEn || projectNameAr}
+                </span>
+                {projectNameEn && projectNameAr !== projectNameEn && (
+                  <span className="nvh-card__sub nvh-card__sub--secondary">{projectNameAr}</span>
+                )}
+              </>
+            )}
           </div>
         </div>
 

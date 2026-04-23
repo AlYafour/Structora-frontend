@@ -4,19 +4,29 @@
    STRUCTORA Design: Deep Navy (#0B1629) + Gold (#C8A84E)
    ======================================== */
 
+/* ========================================
+   DESIGN SYSTEM — TOKENS
+   Single source of truth for all design variables
+   ======================================== */
+
 /* ==================== COLOR PALETTE ==================== */
 :root {
+  /* ---- 3 master colors for LIGHT mode ---- */
+  --theme-primary: #C8A84E;
+  --theme-secondary: #0B1629;
+  --theme-accent: #101E36;
+
   /* ---- Core Palette ---- */
   --color-black: #000000;
   --color-white: #FFFFFF;
   --color-grey: #E5E5E5;
 
-  /* ---- Brand Colors (Deep Navy + Gold) ---- */
-  --brand-primary: #0B1629;
-  --brand-secondary: #101E36;
-  --brand-accent: #C8A84E;
+  /* ---- Brand Colors ---- */
+  --brand-primary: var(--theme-secondary);
+  --brand-secondary: var(--theme-accent);
+  --brand-accent: var(--theme-primary);
 
-  /* ---- Neutral Scale (Navy-tinted) ---- */
+  /* ---- Neutral Scale ---- */
   --gray-25: #FAFBFC;
   --gray-50: #F4F1EB;
   --gray-100: #EDE9E0;
@@ -26,30 +36,30 @@
   --gray-500: #4A5E80;
   --gray-600: #3A4D6E;
   --gray-700: #1A3358;
-  --gray-800: #101E36;
-  --gray-900: #0B1629;
+  --gray-800: var(--theme-accent);
+  --gray-900: var(--theme-secondary);
   --gray-950: #060D1B;
 
-  /* ---- Primary Scale (Deep Navy) ---- */
-  --primary-50:  #E8EDF5;
+  /* ---- Primary Scale (navy family) ---- */
+  --primary-50: #E8EDF5;
   --primary-100: #D4DDEF;
   --primary-200: #A3BDD6;
   --primary-300: #6B8AB5;
   --primary-400: #3D5A80;
   --primary-500: #162848;
-  --primary-600: #101E36;
-  --primary-700: #0B1629;
+  --primary-600: var(--theme-accent);
+  --primary-700: var(--theme-secondary);
   --primary-800: #080F1E;
   --primary-900: #060D1B;
 
-  /* ---- Accent Scale (Gold) ---- */
-  --accent-50:  #FDF8ED;
+  /* ---- Accent Scale (gold family) ---- */
+  --accent-50: #FDF8ED;
   --accent-100: #F8EDCD;
   --accent-200: #F0DC9E;
   --accent-300: #E8CD72;
   --accent-400: #E2CC7E;
   --accent-500: #D4B85C;
-  --accent-600: #C8A84E;
+  --accent-600: var(--theme-primary);
   --accent-700: #A8893A;
   --accent-800: #8B7333;
   --accent-900: #6B5826;
@@ -65,7 +75,7 @@
   --warning-50: #FDF8ED;
   --warning-100: #F8EDCD;
   --warning-200: #F0DC9E;
-  --warning-500: #C8A84E;
+  --warning-500: var(--theme-primary);
   --warning-600: #A8893A;
   --warning-700: #8B7333;
 
@@ -84,7 +94,6 @@
   --info-600: #0288D1;
   --info-700: #01579B;
 
-  /* ---- Financial Colors ---- */
   --financial-positive: #5EBB7C;
   --financial-positive-bg: #ecfdf5;
   --financial-negative: #E85D56;
@@ -92,8 +101,7 @@
   --financial-neutral: #8A9BBF;
   --financial-neutral-bg: #F4F1EB;
 
-  /* ---- Extended Status Colors ---- */
-  --status-pending: #C8A84E;
+  --status-pending: var(--theme-primary);
   --status-pending-bg: #FDF8ED;
   --status-approved: #5EBB7C;
   --status-approved-bg: #ecfdf5;
@@ -105,23 +113,96 @@
   --status-inactive-bg: #F4F1EB;
   --status-draft: #8A9BBF;
   --status-draft-bg: #F4F1EB;
-  --status-trial: #C8A84E;
+  --status-trial: var(--theme-primary);
   --status-trial-bg: #FDF8ED;
   --status-expired: #E85D56;
   --status-expired-bg: #fef2f2;
 
-  /* ---- Invoice Type Colors ---- */
   --invoice-initial: var(--primary-50);
   --invoice-initial-text: var(--primary-800);
   --invoice-actual: #f3e8ff;
   --invoice-actual-text: #7c3aed;
 
-  /* ---- Drag & Drop States ---- */
   --drag-active: var(--primary-200);
   --drag-indicator: var(--accent-600);
   --drag-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
   --drop-target: var(--primary-100);
+
+  --shadow-focus: 0 0 0 3px rgba(200, 168, 78, 0.15);
+  --shadow-focus-error: 0 0 0 3px rgb(232 93 86 / 0.15);
+  --shadow-focus-success: 0 0 0 3px rgb(94 187 124 / 0.15);
+
+  --shadow-gold-sm: 0 4px 12px rgba(200, 168, 78, 0.15);
+  --shadow-gold-md: 0 8px 24px rgba(200, 168, 78, 0.25);
+  --shadow-gold-lg: 0 14px 40px rgba(200, 168, 78, 0.30);
 }
+
+/* ==================== DARK MODE COLOR OVERRIDES ==================== */
+[data-theme='dark'] {
+  --theme-primary: #D6B65A;
+  --theme-secondary: #060D1B;
+  --theme-accent: #1A3358;
+
+  --brand-primary: var(--theme-secondary);
+  --brand-secondary: var(--theme-accent);
+  --brand-accent: var(--theme-primary);
+
+  --gray-25: #0F1724;
+  --gray-50: #101826;
+  --gray-100: #162033;
+  --gray-200: #22314A;
+  --gray-300: #41536F;
+  --gray-400: #627694;
+  --gray-500: #8192AD;
+  --gray-600: #A0AEC0;
+  --gray-700: var(--theme-accent);
+  --gray-800: #13243F;
+  --gray-900: var(--theme-secondary);
+  --gray-950: #030712;
+
+  --primary-50: #132033;
+  --primary-100: #1A2940;
+  --primary-200: #243754;
+  --primary-300: #30476B;
+  --primary-400: #415C85;
+  --primary-500: #5671A1;
+  --primary-600: var(--theme-accent);
+  --primary-700: #13243F;
+  --primary-800: #0B1629;
+  --primary-900: var(--theme-secondary);
+
+  --accent-50: #2A2415;
+  --accent-100: #3A311C;
+  --accent-200: #5C4B27;
+  --accent-300: #7A6535;
+  --accent-400: #A8893A;
+  --accent-500: #C49F43;
+  --accent-600: var(--theme-primary);
+  --accent-700: #E0C26D;
+  --accent-800: #E9D38E;
+  --accent-900: #F4E6B8;
+
+  --warning-500: var(--theme-primary);
+  --status-pending: var(--theme-primary);
+  --status-trial: var(--theme-primary);
+
+  --financial-neutral-bg: #101826;
+  --status-inactive-bg: #101826;
+  --status-draft-bg: #101826;
+
+  --invoice-initial: #132033;
+  --invoice-initial-text: #DCE7F5;
+
+  --drag-active: var(--primary-200);
+  --drag-indicator: var(--accent-600);
+  --drop-target: var(--primary-100);
+
+  --shadow-focus: 0 0 0 3px rgba(214, 182, 90, 0.18);
+  --shadow-gold-sm: 0 4px 12px rgba(214, 182, 90, 0.18);
+  --shadow-gold-md: 0 8px 24px rgba(214, 182, 90, 0.28);
+  --shadow-gold-lg: 0 14px 40px rgba(214, 182, 90, 0.34);
+}
+
 
 /* ==================== TYPOGRAPHY ==================== */
 :root {

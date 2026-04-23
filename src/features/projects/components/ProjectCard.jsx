@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import DirhamsIcon from '../../../components/common/DirhamsIcon';
 import Checkbox from '../../../components/forms/Checkbox';
 import ActionMenu from '../../../components/common/ActionMenu';
 import { formatInternalCode } from '../../../utils/formatters/id';
@@ -97,7 +98,10 @@ const ProjectCard = React.memo(({
           <div className="projects-mobile-card-label">{t("table_current_due_amount")}</div>
           <div className="projects-mobile-card-value">
             {Number.isFinite(Number(project.current_due_amount))
-              ? `${Number(project.current_due_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${i18n.language === "ar" ? "د.إ" : "AED"}`
+              ? <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  {Number(project.current_due_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {i18n.language === "ar" ? " د.إ" : <DirhamsIcon size={10} color="#374151" />}
+                </span>
               : '-'}
           </div>
         </div>

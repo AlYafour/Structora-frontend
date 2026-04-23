@@ -17,6 +17,7 @@ import Button from '../../../../../components/common/Button';
 import FinancialActionBar from '../../../../../components/common/FinancialActionBar';
 import Dialog from '../../../../../components/common/Dialog';
 import { formatMoney } from '../../../../../utils/formatters';
+import DirhamsIcon from '../../../../../components/common/DirhamsIcon';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import { useNotifications } from '../../../../../contexts/NotificationContext';
 
@@ -97,6 +98,17 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const isEditMode = viewModeProp !== true && !isFinalApproved;
 
 
+  const { i18n } = useTranslation();
+  const lang = i18n?.language === 'en' ? 'en' : 'ar';
+
+  const renderAmount = (value) => {
+    const str = formatMoney(value, { lang });
+    if (lang === 'en') {
+      const numPart = str.replace(/AED\s?/, '').trim();
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+    }
+    return str;
+  };
 
   /**
    * Load variation data into form
@@ -552,11 +564,16 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           <div className="nvc-actionbar-info">
             <div className="nvc-actionbar-item">
               <span className="nvc-actionbar-label">{t('variation_no')}</span>
-              <span className="nvc-actionbar-value">{variation?.variation_number || formData.variation_number || '—'}</span>
+              <span className="nvc-actionbar-value">
+                {variation?.variation_number || formData.variation_number || '—'}
+              </span>
             </div>
+
             <div className="nvc-actionbar-item">
               <span className="nvc-actionbar-label">{t('total_amount')}</span>
-              <span className="nvc-actionbar-value nvc-actionbar-value--lg">{formatMoney(calculations.totalAmount)}</span>
+              <span className="nvc-actionbar-value nvc-actionbar-value--lg">
+                {renderAmount(calculations.totalAmount)}
+              </span>
             </div>
           </div>
         </FinancialActionBar>

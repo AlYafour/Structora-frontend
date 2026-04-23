@@ -10,12 +10,22 @@ import Button from "../../../components/common/Button";
 import ActionMenu from "../../../components/common/ActionMenu";
 import Dialog from "../../../components/common/Dialog";
 import { formatMoney, formatDate } from "../../../utils/formatters";
+import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import AdvancePaymentMonitor from "../entries/payments/pages/components/AdvancePaymentMonitor";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 
 const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload }) {
  const { t, i18n } = useTranslation();
+
+ const renderAmount = (value) => {
+  const str = formatMoney(value, { lang: i18n.language });
+  if (i18n.language === 'en') {
+   const numPart = str.replace(/AED\s?/, '').trim();
+   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+  }
+  return str;
+ };
  const { success, error: showError } = useNotifications();
  const navigate = useTenantNavigate();
 
@@ -218,13 +228,13 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  <div className="prj-tab-section">
  <div className="prj-tab-section__title">{t("payments_summary")}</div>
  <MetricGrid>
- <MetricCard variant="blue" icon="dollar" label={t("overall_total")} value={formatMoney(paymentStats.overallTotal)} />
- <MetricCard variant="emerald" icon="wallet" label={t("owner_total")} value={formatMoney(paymentStats.ownerTotal)} />
+ <MetricCard variant="blue" icon="dollar" label={t("overall_total")} value={renderAmount(paymentStats.overallTotal)} />
+ <MetricCard variant="emerald" icon="wallet" label={t("owner_total")} value={renderAmount(paymentStats.ownerTotal)} />
  <MetricCard variant="emerald" icon="hash" label={t("owner_payments_count")} value={paymentStats.ownerCount} />
- <MetricCard variant="blue" icon="building" label={t("bank_total")} value={formatMoney(paymentStats.bankTotal)} />
+ <MetricCard variant="blue" icon="building" label={t("bank_total")} value={renderAmount(paymentStats.bankTotal)} />
  <MetricCard variant="blue" icon="hash" label={t("bank_payments_count")} value={paymentStats.bankCount} />
  {totalCredit > 0 && (
- <MetricCard variant="violet" icon="creditCard" label={t("available_credit")} value={formatMoney(totalCredit)} />
+ <MetricCard variant="violet" icon="creditCard" label={t("available_credit")} value={renderAmount(totalCredit)} />
  )}
  </MetricGrid>
  </div>
@@ -233,12 +243,12 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  <div className="prj-tab-section">
  <div className="prj-tab-section__title">{t("payment_breakdown_title")}</div>
  <MetricGrid>
- <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={formatMoney(paymentStats.baseContractTotal)} />
+ <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={renderAmount(paymentStats.baseContractTotal)} />
  {paymentStats.variationsTotal > 0 && (
- <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={formatMoney(paymentStats.variationsTotal)} />
+ <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={renderAmount(paymentStats.variationsTotal)} />
  )}
  {paymentStats.bankVatTotal > 0 && (
- <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={formatMoney(paymentStats.bankVatTotal)} />
+ <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={renderAmount(paymentStats.bankVatTotal)} />
  )}
  </MetricGrid>
  </div>
@@ -288,7 +298,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  </td>
  <td>-</td>
  <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
- {formatMoney(row.amount)}
+ {renderAmount(row.amount)}
  </td>
  <td className="ds-text-right">-</td>
  <td className="ds-text-right">-</td>
@@ -344,7 +354,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  )}
  {!isVoided && parseFloat(payment.credit_balance) > 0 && (
  <span className="prj-badge prj-badge--purple" style={{ marginInlineStart: '4px' }}>
- {t("credit_balance")}: {formatMoney(payment.credit_balance)}
+ {t("credit_balance")}: {renderAmount(payment.credit_balance)}
  </span>
  )}
  </td>
@@ -352,19 +362,19 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  {payment.recipient_name || '-'}
  </td>
  <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
- {formatMoney(payment.amount)}
+ {renderAmount(payment.amount)}
  </td>
  <td className="prj-nowrap ds-text-right">
  {payment.breakdown?.base_contract && parseFloat(payment.breakdown.base_contract) > 0
-  ? formatMoney(payment.breakdown.base_contract) : '-'}
+  ? renderAmount(payment.breakdown.base_contract) : '-'}
  </td>
  <td className="prj-nowrap ds-text-right">
  {payment.breakdown?.variations && parseFloat(payment.breakdown.variations) > 0
-  ? formatMoney(payment.breakdown.variations) : '-'}
+  ? renderAmount(payment.breakdown.variations) : '-'}
  </td>
  <td className="prj-nowrap ds-text-right">
  {payment.breakdown?.bank_vat && parseFloat(payment.breakdown.bank_vat) > 0
-  ? formatMoney(payment.breakdown.bank_vat) : '-'}
+  ? renderAmount(payment.breakdown.bank_vat) : '-'}
  </td>
  <td onClick={(e) => e.stopPropagation()}>
  {(() => {
@@ -390,7 +400,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       className="payment-invoice-chip"
       onClick={(e) => { e.preventDefault(); navigate(`/invoices/${inv.invoice_id}/view`); }}
      >
-      {inv.invoice_number}: <span className="payment-invoice-chip__amount">{formatMoney(inv.allocated_amount)}</span>
+      {inv.invoice_number}: <span className="payment-invoice-chip__amount">{renderAmount(inv.allocated_amount)}</span>
      </a>
     ))}
    </div>

@@ -1,6 +1,7 @@
 // Unified component for consultant fees section
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import DirhamsIcon from "../../../../components/common/DirhamsIcon";
 import { VAT_RATE } from "../../../../utils/constants";
 import Field from "../../../../components/forms/Field";
 import ViewRow from "../../../../components/forms/ViewRow";
@@ -262,19 +263,19 @@ export default function ConsultantFeesSection({
                       <div className="consultant-fees__vat-row consultant-fees__vat-row--main">
                         <span>{t("contract.fees.vat_total_incl")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {cleanValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {cleanValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                       <div className="consultant-fees__vat-row">
                         <span>{t("contract.fees.vat_amount_excl")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {(cleanValue / 1.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {(cleanValue / 1.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                       <div className="consultant-fees__vat-row">
                         <span>{t("contract.fees.vat_5_percent")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {(cleanValue * 0.05 / 1.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {(cleanValue * 0.05 / 1.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                     </>
@@ -283,19 +284,19 @@ export default function ConsultantFeesSection({
                       <div className="consultant-fees__vat-row consultant-fees__vat-row--main">
                         <span>{t("contract.fees.vat_amount_excl")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {cleanValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {cleanValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                       <div className="consultant-fees__vat-row">
                         <span>{t("contract.fees.vat_5_percent")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {(cleanValue * 0.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {(cleanValue * 0.05).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                       <div className="consultant-fees__vat-row">
                         <span>{t("contract.fees.vat_total_incl")}</span>
                         <span className="consultant-fees__vat-amount">
-                          {(cleanValue * (1 + VAT_RATE)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : "AED"}
+                          {(cleanValue * (1 + VAT_RATE)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isAR ? "د.إ" : <DirhamsIcon size={10} color="#374151" />}
                         </span>
                       </div>
                     </>

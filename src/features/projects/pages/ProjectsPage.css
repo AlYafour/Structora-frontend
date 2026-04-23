@@ -2,6 +2,14 @@
 /* Base table styles come from design-system.css (ds-table / prj-table).
    This file only has page-specific overrides. */
 
+   :root {
+  --sticky-checkbox: 44px;
+  --sticky-number: 44px;
+  --sticky-code: 180px;
+  --sticky-name: 200px;
+  --sticky-consultant: 160px;
+}
+
 /* Container */
 .projects-page-container {
   width: 100%;
@@ -181,7 +189,16 @@ html.theme-dark .prj-tabs__btn--active {
 
 .projects-table {
   min-width: 3000px;
+  table-layout: fixed;   /* IMPORTANT FIX */
+  border-collapse: separate;
+  border-spacing: 0;
 }
+
+.col-checkbox   { width: var(--sticky-checkbox); min-width: var(--sticky-checkbox); }
+.col-number     { width: var(--sticky-number); min-width: var(--sticky-number); }
+.col-code       { width: var(--sticky-code); min-width: var(--sticky-code); }
+.col-name       { width: var(--sticky-name); min-width: var(--sticky-name); }
+.col-consultant { width: var(--sticky-consultant); min-width: var(--sticky-consultant); }
 
 /* All cells centered by default */
 .projects-table th,
@@ -200,8 +217,16 @@ html.theme-dark .prj-tabs__btn--active {
   letter-spacing: 0.03em;
   padding: 11px 14px;
   border-bottom: 2px solid var(--border);
-  white-space: nowrap;
   line-height: 1.4;
+  vertical-align: middle;
+}
+
+.projects-table thead th:not(.col-checkbox):not(.col-number):not(.col-code):not(.col-name):not(.col-consultant) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.2;
+  overflow: hidden;
 }
 
 html.theme-dark .projects-table thead th {
@@ -279,7 +304,7 @@ html.theme-dark .projects-table tbody tr:hover {
 /* Column widths */
 .col-checkbox   { width: 44px;  min-width: 44px; }
 .col-number     { width: 44px;  min-width: 44px; }
-.col-code       { width: 110px; min-width: 100px; }
+.col-code       { width: 180px; min-width: 160px; }
 .col-name       { width: 200px; min-width: 180px; }
 .col-consultant { width: 160px; min-width: 140px; }
 
@@ -296,46 +321,59 @@ html.theme-dark .projects-table tbody tr:hover {
 }
 
 /* ==================== STICKY COLUMNS ==================== */
+/* Checkbox */
 .projects-table th.col-checkbox,
 .projects-table td.col-checkbox {
   position: sticky;
   left: 0;
   z-index: 3;
-  background: var(--surface, #fff);
+  background: #fff;
 }
 
+/* Number */
 .projects-table th.col-number,
 .projects-table td.col-number {
   position: sticky;
-  left: 44px;
+  left: var(--sticky-checkbox);
   z-index: 3;
-  background: var(--surface, #fff);
+  background: #fff;
 }
 
+/* Code */
 .projects-table th.col-code,
 .projects-table td.col-code {
   position: sticky;
-  left: 88px;
+  left: calc(var(--sticky-checkbox) + var(--sticky-number));
   z-index: 3;
-  background: var(--surface, #fff);
+  background: #fff;
 }
 
+/* Name */
 .projects-table th.col-name,
 .projects-table td.col-name {
   position: sticky;
-  left: 198px;
+  left: calc(var(--sticky-checkbox) + var(--sticky-number) + var(--sticky-code));
   z-index: 3;
-  background: var(--surface, #fff);
+  background: #fff;
 }
 
+/* Consultant */
 .projects-table th.col-consultant,
 .projects-table td.col-consultant {
   position: sticky;
-  left: 398px;
+  left: calc(
+    var(--sticky-checkbox) +
+    var(--sticky-number) +
+    var(--sticky-code) +
+    var(--sticky-name)
+  );
   z-index: 3;
-  background: var(--surface, #fff);
-  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.08);
-  border-inline-end: 1.5px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.projects-table th,
+.projects-table td {
+  box-sizing: border-box;
 }
 
 /* Sticky header cells need higher z-index */
@@ -530,145 +568,6 @@ html.theme-dark .projects-table .ds-table__foot {
   .projects-table-mobile  { display: none; }
 }
 
-/* ==================== DRAFTS TAB ==================== */
-.drafts-tab-content {
-  padding: 4px 0;
-}
-
-.drafts-select-all {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0 8px;
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.drafts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
-}
-
-.draft-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.2s;
-}
-
-.draft-card:hover {
-  border-color: rgba(200, 168, 78, 0.25);
-  box-shadow: 0 2px 12px rgba(200, 168, 78, 0.06);
-}
-
-.draft-card--selected {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
-}
-
-html.theme-dark .draft-card {
-  background: rgba(13, 26, 48, 0.5);
-  border-color: rgba(200, 168, 78, 0.06);
-}
-
-html.theme-dark .draft-card:hover {
-  border-color: rgba(200, 168, 78, 0.15);
-}
-
-.draft-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.draft-card__title {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--ink);
-}
-
-.draft-card__badge {
-  padding: 3px 12px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  background: rgba(200, 168, 78, 0.1);
-  color: var(--accent, #C8A84E);
-  border: 1px solid rgba(200, 168, 78, 0.15);
-}
-
-.draft-card__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.draft-card__step,
-.draft-card__date {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--ink);
-}
-
-.draft-card__meta-label {
-  color: var(--muted);
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.draft-card__step-name {
-  font-weight: 600;
-  color: var(--accent, #C8A84E);
-}
-
-.draft-card__step-indicator {
-  display: flex;
-  gap: 4px;
-  margin-inline-start: auto;
-}
-
-.draft-card__step-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--gray-200, #e5e7eb);
-  transition: background 0.2s;
-}
-
-.draft-card__step-dot--active {
-  background: var(--accent, #C8A84E);
-}
-
-html.theme-dark .draft-card__step-dot {
-  background: var(--gray-700, #374151);
-}
-
-html.theme-dark .draft-card__step-dot--active {
-  background: var(--accent, #C8A84E);
-}
-
-.draft-card__actions {
-  display: flex;
-  gap: 8px;
-}
-
-.draft-card__delete-btn {
-  color: var(--muted) !important;
-}
-
-.draft-card__delete-btn:hover {
-  color: var(--error-600, #dc2626) !important;
-}
 
 /* ==================== PROGRESS COLUMN STACKS ==================== */
 .pct-stack {
@@ -879,3 +778,112 @@ html.theme-dark .progress-section--yellow { background: var(--yellow-950); }
 
 .projects-table-error__details summary { cursor: pointer; font-weight: 500; color: var(--ink); margin-bottom: var(--space-2); }
 .projects-table-error__details pre { font-size: var(--text-sm); color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+
+
+/* ==================== DRAFTS TAB ==================== */
+.drafts-tab-content {
+  padding: 4px 0;
+}
+
+.drafts-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  background: transparent;
+}
+
+.drafts-table {
+  width: 100%;
+  table-layout: auto;
+}
+
+/* no sticky columns in drafts */
+.drafts-table .drafts-col-checkbox,
+.drafts-table .drafts-col-number,
+.drafts-table .drafts-col-name,
+.drafts-table .drafts-col-step,
+.drafts-table .drafts-col-date,
+.drafts-table .drafts-col-actions {
+  position: static;
+  left: auto;
+  right: auto;
+  inset-inline-start: auto;
+  inset-inline-end: auto;
+  z-index: auto;
+}
+
+/* white rows like the other tables */
+.drafts-table tbody tr,
+.drafts-table tbody td,
+.drafts-table tbody tr:hover,
+.drafts-table tbody tr:hover td,
+.drafts-table tbody tr.is-selected,
+.drafts-table tbody tr.is-selected td {
+  background: var(--surface, #fff);
+}
+
+/* compact content */
+.drafts-col-checkbox {
+  width: 44px;
+}
+
+.drafts-col-number {
+  width: 56px;
+}
+
+.drafts-col-date {
+  white-space: nowrap;
+}
+
+.drafts-col-actions {
+  white-space: nowrap;
+}
+
+.drafts-table__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drafts-table__title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drafts-table__meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.drafts-table__step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drafts-table__step-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.drafts-table__step-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drafts-table__step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.drafts-table__step-dot--active {
+  background: var(--accent, #c8a84e);
+}
+
+.drafts-table__foot {
+  background: var(--surface, #fff);
+}

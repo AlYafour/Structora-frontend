@@ -599,6 +599,9 @@ button.dash-kpi { cursor: pointer; }
 }
 
 .dash-table__value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-weight: 600;
   color: var(--ink, #111827);
   direction: ltr;

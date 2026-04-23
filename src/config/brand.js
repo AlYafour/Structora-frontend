@@ -1,28 +1,25 @@
 /**
  * STRUCTORA Brand Configuration — Single Source of Truth
- *
- * Change the brand name, colors, or logo here and it updates everywhere:
- * - Admin sidebar, login page, landing page
- * - Registration page, branded loader
- * - Theme manager, MUI theme provider
- * - Company settings defaults, onboarding defaults
- *
- * The StructoraLogo SVG component is separate (components/common/StructoraLogo.jsx)
- * because it's an inline SVG icon, not the full logo image.
  */
 
 const BRAND = Object.freeze({
-  // ── Name ──
-  name: "STRUCTORA",
-  nameAr: "ستراكتورا",
+  name: 'STRUCTORA',
+  nameAr: 'ستراكتورا',
 
-  // ── Colors ──
-  primaryColor: "#C8A84E",     // Gold
-  primaryDark: "#8B7333",      // Gold dark
-  secondaryColor: "#0B1629",   // Deep Navy
+  logoPath: '/logo.png',
 
-  // ── Logo ──
-  logoPath: "/logo.png",       // Public folder asset
+  themeColors: {
+    light: {
+      primary: '#C8A84E',   // gold
+      secondary: '#A8893A', // deep navy
+      accent: '#C8A84E',    // mid navy
+    },
+    dark: {
+      primary: '#D6B65A',   // brighter gold for dark mode
+      secondary: '#060D1B', // deepest navy
+      accent: '#1A3358',    // lifted navy
+    },
+  },
 });
 
 export default BRAND;

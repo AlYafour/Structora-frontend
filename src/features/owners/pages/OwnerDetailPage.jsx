@@ -30,6 +30,7 @@ export default function OwnerDetailPage() {
  if (savedImage) {
  setProfileImage(savedImage);
  }
+ console.log("Owner data loaded from location state:", ownerData);
  } else {
  setError(t("owner_data_not_found"));
  setLoading(false);

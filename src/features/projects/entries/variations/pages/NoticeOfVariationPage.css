@@ -2519,6 +2519,33 @@
 .nfs-select { padding: 4px 8px; font-size: 11px; }
 .nfs-num-input { width: 90px !important; padding: 4px 8px !important; font-size: 11px !important; }
 
+.nfs-type-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-primary, #ccc);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.nfs-type-toggle__btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted, #6b7280);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+.nfs-type-toggle__btn--active {
+  background: var(--primary-500, #3D5A80);
+  color: #fff;
+}
+.nfs-type-toggle__btn:not(.nfs-type-toggle__btn--active):hover {
+  background: var(--bg-muted, #f3f4f6);
+}
+
 .nfs-check {
   display: flex;
   align-items: center;

@@ -187,7 +187,16 @@ export default function ContractSignerSection({ form, setF, viewMode, projectId 
                 className="input"
                 type="text"
                 value={authorizedPerson.name || ""}
-                onChange={(e) => updateAP("name", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // Allow only Arabic letters + spaces
+                  const arabicRegex = /^[\u0600-\u06FF\s]*$/;
+
+                  if (arabicRegex.test(value)) {
+                    updateAP("name", value);
+                  }
+                }}
                 placeholder={t("contract.authorized_person_name_placeholder") || "اسم المفوض"}
                 dir="rtl"
               />

@@ -11,6 +11,7 @@ import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
 import DateInput from "../../../../components/forms/DateInput";
 import StaticContractAttachmentFile from "../../wizard/components/StaticContractAttachmentFile";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import "../entries.css";
 
 const FORM_ID = "start-order-form";
 
@@ -18,7 +19,6 @@ export default function StartOrderPage() {
   const { projectId, itemId } = useParams();
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
-  const isEditMode = !!itemId;
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,6 @@ export default function StartOrderPage() {
     });
     try {
       const raw = await projectApi.getStartOrder(projectId);
-      // API returns array for list endpoint; extract first item
       const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
       if (data) {
         setExistingId(data.id);
@@ -107,7 +106,7 @@ export default function StartOrderPage() {
               {existingId ? t("edit_start_order") : t("add_start_order")}
             </div>
             <div className="card__body">
-              <div>
+              <div className="form-field">
                 <label className="form-label">{t("start_order_date")}</label>
                 <DateInput
                   className="prj-input"
@@ -115,20 +114,8 @@ export default function StartOrderPage() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, start_order_date: value }))}
                 />
               </div>
-              <StaticContractAttachmentFile
-                label={t("start_order_file")}
-                value={formData.start_order_file}
-                fileUrl={formData.start_order_file_url}
-                fileName={formData.start_order_file_name}
-                onChange={(file) => setFormData((prev) => ({ ...prev, start_order_file: file }))}
-                onRemoveExisting={() => setFormData((prev) => ({ ...prev, start_order_file: null, start_order_file_url: null, start_order_file_name: null }))}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                maxSizeMB={10}
-                isView={false}
-                projectId={projectId}
-                endpoint={`projects/${projectId}/start-order/`}
-              />
-              <div>
+              
+              <div className="form-field">
                 <label className="form-label">{t("start_order_notes")}</label>
                 <textarea
                   className="prj-input"
@@ -136,6 +123,22 @@ export default function StartOrderPage() {
                   value={formData.start_order_notes}
                   onChange={(e) => setFormData((prev) => ({ ...prev, start_order_notes: e.target.value }))}
                   placeholder={t("start_order_notes_placeholder")}
+                />
+              </div>
+              
+              <div className="form-field form-field-full">
+                <StaticContractAttachmentFile
+                  label={t("start_order_file")}
+                  value={formData.start_order_file}
+                  fileUrl={formData.start_order_file_url}
+                  fileName={formData.start_order_file_name}
+                  onChange={(file) => setFormData((prev) => ({ ...prev, start_order_file: file }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, start_order_file: null, start_order_file_url: null, start_order_file_name: null }))}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  maxSizeMB={10}
+                  isView={false}
+                  projectId={projectId}
+                  endpoint={`projects/${projectId}/start-order/`}
                 />
               </div>
             </div>

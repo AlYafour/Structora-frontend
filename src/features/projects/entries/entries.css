@@ -1,0 +1,148 @@
+/* entries.css - Shared form layout styles for all entry pages */
+
+.entry-form {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Form grid layout - two columns by default */
+.card__body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+/* Make full-width fields span both columns */
+.form-field-full,
+.full-width {
+  grid-column: span 2;
+}
+
+/* Individual form field styling */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  margin-bottom: 0;
+  color: #333;
+}
+
+.form-label.required::after {
+  content: " *";
+  color: #dc3545;
+}
+
+.prj-input {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.prj-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+}
+
+.prj-input:hover:not(:disabled) {
+  border-color: #0066cc;
+}
+
+textarea.prj-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Card styling */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card__header {
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Date picker styling */
+.date-input-wrapper {
+  width: 100%;
+}
+
+/* File attachment styling */
+.file-attachment {
+  width: 100%;
+}
+
+.file-attachment__preview {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Read-only date display */
+.date-display-readonly {
+  padding: 0.625rem;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .card__body {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .form-field-full,
+  .full-width {
+    grid-column: span 1;
+  }
+  
+  .entry-form {
+    padding: 0.5rem;
+  }
+}
+
+/* Spacing utilities */
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Error styling */
+.form-field.error .prj-input {
+  border-color: #dc3545;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}

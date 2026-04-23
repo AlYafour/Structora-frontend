@@ -7,6 +7,7 @@ import { formatInternalCode } from "../../../utils/formatters/id";
 import { buildFileUrl } from "../../../utils/helpers/file";
 import { api } from "../../../services/api";
 import { useNotifications } from "../../../contexts/NotificationContext";
+import { useLanguage } from "../../../hooks";
 
 const ProjectViewHeader = memo(function ProjectViewHeader({
   project,
@@ -26,6 +27,8 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
   const { error: showError } = useNotifications();
+  const { isArabic: isAR } = useLanguage();
+
 
   const handleDownloadAll = async () => {
     setDownloading(true);
@@ -108,10 +111,22 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 
         <div className="prj-view-header__top-content">
           {/* Owner Names */}
+          {/* Owner Names */}
           {(nameAr || nameEn) ? (
             <div className="prj-view-header__owner-names">
-              {nameAr && <div className="prj-view-header__owner-name">{nameAr}</div>}
-              {nameEn && <div className="prj-view-header__owner-name prj-view-header__owner-name--en">{nameEn}</div>}
+
+              {/* Top (based on language) */}
+              <div className="prj-view-header__owner-name">
+                {(isAR ? (nameAr || nameEn) : (nameEn || nameAr))}
+              </div>
+
+              {/* Bottom (if both exist and different) */}
+              {nameAr && nameEn && nameAr !== nameEn && (
+                <div className="prj-view-header__owner-name prj-view-header__owner-name--en">
+                  {isAR ? nameEn : nameAr}
+                </div>
+              )}
+
             </div>
           ) : (
             <h1 className="prj-view-header__top-title">{titleText}</h1>
@@ -167,9 +182,9 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
               <div className="prj-status-banner__content">
                 <div className="prj-status-banner__title">
                   {project.approval_status === 'pending' ? t("pending_approval_banner") :
-                   project.approval_status === 'approved' ? t("pending_final_approval_banner") :
-                   project.approval_status === 'draft' ? t("draft_banner") :
-                   t("rejected_banner")}
+                    project.approval_status === 'approved' ? t("pending_final_approval_banner") :
+                      project.approval_status === 'draft' ? t("draft_banner") :
+                        t("rejected_banner")}
                 </div>
                 {project.approval_status === 'pending' && project.last_approved_by && (
                   <div className="prj-status-banner__subtitle">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { projectApi } from "../../../services/projects";
 import { api, API_BASE_URL } from "../../../services/api";
@@ -20,13 +20,15 @@ import ContractStep from "./steps/ContractStep";
 import WizardStepper from "./components/WizardStepper";
 
 import "./components/wizard.css";
-import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import useTenantNavigate from "../../../hooks/useTenantNavigate";
 
-const STEP_INDEX_WITH_LICENSE    = { classification: 0, siteplan: 1, license: 2, contract: 3 };
+const STEP_INDEX_WITH_LICENSE = { classification: 0, siteplan: 1, license: 2, contract: 3 };
 const STEP_INDEX_WITHOUT_LICENSE = { classification: 0, siteplan: 1, contract: 2 };
 
 export default function WizardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAR = i18n.language === "ar";
+
   const { error: showError, success: showSuccess } = useNotifications();
   const navigate = useTenantNavigate();
   const location = useLocation();
@@ -34,7 +36,6 @@ export default function WizardPage() {
   const { projectId } = useParams();
   const [params] = useSearchParams();
 
-  // Check if this is a new project or resuming a draft
   const isNewProject = !projectId || location.pathname === "/wizard/new";
   const draftIdFromUrl = params.get("draftId");
 
@@ -43,49 +44,41 @@ export default function WizardPage() {
   const stepParam = (params.get("step") || "").toLowerCase();
   const sectionOnly = params.get("sectionOnly") === "true";
 
-  // Lifted view mode state
   const [viewMode, setViewMode] = useState(isViewFromUrl);
   const isView = viewMode;
 
   const { setup, setSetup } = useWizardState();
   const [project, setProject] = useState(null);
   const [index, setIndex] = useState(0);
-  // Track which steps have been visited — once visited, stay mounted
   const [visitedSteps, setVisitedSteps] = useState(() => new Set([0]));
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
-  // Flag: classification step completed, waiting for STEPS to expand before advancing
   const pendingAdvanceRef = useRef(false);
 
-  // Draft state — stores all wizard data for new projects
   const [draftId, setDraftId] = useState(draftIdFromUrl ? Number(draftIdFromUrl) : null);
   const [wizardData, setWizardData] = useState({
     setup: {},
-    siteplan: null,         // plain-object snapshot (for draft saving)
-    sitePlanFormData: null, // FormData (for API submission — not serializable)
-    license: null,          // plain-object snapshot (for draft saving)
-    licenseFormData: null,  // FormData (for API submission — not serializable)
+    siteplan: null,
+    sitePlanFormData: null,
+    license: null,
+    licenseFormData: null,
     contract: null,
   });
   const draftSaveTimerRef = useRef(null);
 
-  // Reset index to 0 when opening a new project
   useEffect(() => {
     if (isNewProject && !draftIdFromUrl) {
       setIndex(0);
     }
-    // For existing projects, all steps are immediately accessible
     if (!isNewProject) {
       setVisitedSteps(new Set([0, 1, 2, 3]));
     }
   }, [isNewProject, draftIdFromUrl]);
 
-  // Fetch project data for existing projects
   const projectData = useProjectData(isNewProject ? null : projectId);
   const { siteplan, license, contract: contractData, reload } = projectData;
 
-  // Listen for data update events
   useEffect(() => {
     if (isNewProject || !projectId || !reload) return;
 
@@ -100,7 +93,9 @@ export default function WizardPage() {
           if (Array.isArray(data) && data.length > 0 && data[0].contract_classification) {
             setSetup((prev) => ({ ...prev, contractClassification: data[0].contract_classification }));
           }
-        } catch (e) { logger.error("Error updating contract classification", e); }
+        } catch (e) {
+          logger.error("Error updating contract classification", e);
+        }
         reload();
       }
     };
@@ -116,19 +111,31 @@ export default function WizardPage() {
     };
   }, [projectId, isNewProject, reload, setSetup]);
 
-  // Load existing project setup data
   useEffect(() => {
     if (isNewProject) {
       if (!draftIdFromUrl) {
-        setSetup({ projectType: "", contractType: "", internalCode: "", legacyCode: "", contractClassification: "", projectCategory: "", maintenanceType: "", contractYear: new Date().getFullYear() });
-        try { localStorage.removeItem("wizard_setup_state_v1"); } catch (_e) {}
+        setSetup({
+          projectType: "",
+          contractType: "",
+          internalCode: "",
+          legacyCode: "",
+          contractClassification: "",
+          projectCategory: "",
+          maintenanceType: "",
+          contractYear: new Date().getFullYear(),
+        });
+        try {
+          localStorage.removeItem("wizard_setup_state_v1");
+        } catch (_e) {}
       }
       return;
     }
+
     if (!projectId) return;
+
     (async () => {
       try {
-        const data = await projectApi.getWithIncludes(projectId, ['siteplan', 'license', 'contract']);
+        const data = await projectApi.getWithIncludes(projectId, ["siteplan", "license", "contract"]);
         setProject(data);
         setSetup((prev) => ({
           projectType: data?.project_type || "",
@@ -141,11 +148,12 @@ export default function WizardPage() {
           contractYear: data?.contract_year || new Date().getFullYear(),
           _classification: data?.classification_data || prev?._classification || null,
         }));
-      } catch (_e) { logger.debug("WizardPage: setup load failed", _e); }
+      } catch (_e) {
+        logger.debug("WizardPage: setup load failed", _e);
+      }
     })();
   }, [projectId, setSetup, isNewProject, draftIdFromUrl]);
 
-  // Load draft data if resuming
   useEffect(() => {
     if (!draftIdFromUrl) return;
     (async () => {
@@ -163,7 +171,6 @@ export default function WizardPage() {
             contract: d.contract || null,
           });
           setDraftId(draft.id);
-          // Navigate to the step where user left off (backend uses "setup", we use "classification")
           const mappedStep = draft.current_step === "setup" ? "classification" : draft.current_step;
           const stepIdx = STEP_INDEX[mappedStep] ?? 0;
           setIndex(stepIdx);
@@ -178,25 +185,18 @@ export default function WizardPage() {
 
   const allowSitePlanFlow = !!setup.projectType && !!setup.contractType;
 
-  // When the project doesn't require a building permit, skip LicenseStep entirely
-  // requiresPermit lives inside _classification (set by ProjectTypeSelector and loaded from classification_data)
   const noPermit = setup._classification?.requiresPermit === "false" || setup.requiresPermit === "false";
 
-  // Step index map — depends on whether we show the license step
   const STEP_INDEX = noPermit ? STEP_INDEX_WITHOUT_LICENSE : STEP_INDEX_WITH_LICENSE;
 
-  // Contract step index shifts from 3 → 2 when there's no permit
   const contractStepIndex = noPermit ? 2 : 3;
 
-  // Auto-advance from classification step once setup is ready
   useEffect(() => {
     if (pendingAdvanceRef.current && allowSitePlanFlow && index === 0) {
       pendingAdvanceRef.current = false;
       setIndex(1);
     }
   }, [allowSitePlanFlow, index]);
-
-  // contract_classification is loaded by useContract inside ContractStep — no separate fetch needed here
 
   const labels = {
     setup: t("wizard_step_setup"),
@@ -209,27 +209,30 @@ export default function WizardPage() {
   const STEPS = useMemo(() => {
     const base = [{ id: "classification", title: labels.setup, Component: ProjectTypeSelector }];
     if (!allowSitePlanFlow) return base;
+
     const withPermit = [
       ...base,
       { id: "siteplan", title: labels.siteplan, Component: SitePlanStep },
       { id: "license", title: labels.license, Component: LicenseStep },
       { id: "contract", title: labels.contract, Component: ContractStep },
     ];
+
     const withoutPermit = [
       ...base,
       { id: "siteplan", title: labels.siteplan, Component: SitePlanStep },
       { id: "contract", title: labels.contract, Component: ContractStep },
     ];
+
     return noPermit ? withoutPermit : withPermit;
   }, [allowSitePlanFlow, noPermit, labels.setup, labels.siteplan, labels.license, labels.contract]);
 
   useEffect(() => {
-    if (!stepParam) return; // Only apply when URL has ?step= param
+    if (!stepParam) return;
     const wanted = STEP_INDEX[stepParam] ?? 0;
-    const maxIndex = allowSitePlanFlow ? (STEPS.length - 1) : 0;
+    const maxIndex = allowSitePlanFlow ? STEPS.length - 1 : 0;
     const target = Math.min(wanted, maxIndex);
     setIndex(target);
-    setVisitedSteps(p => new Set([...p, target]));
+    setVisitedSteps((p) => new Set([...p, target]));
   }, [stepParam, allowSitePlanFlow, STEPS.length]);
 
   useEffect(() => {
@@ -238,10 +241,21 @@ export default function WizardPage() {
 
   const isFirst = index === 0;
   const isLast = index === STEPS.length - 1;
-  const goPrev = () => !isFirst && setIndex((i) => { const n = i - 1; setVisitedSteps(p => new Set([...p, n])); return n; });
-  const goNext = () => !isLast && setIndex((i) => { const n = i + 1; setVisitedSteps(p => new Set([...p, n])); return n; });
+  const goPrev = () =>
+    !isFirst &&
+    setIndex((i) => {
+      const n = i - 1;
+      setVisitedSteps((p) => new Set([...p, n]));
+      return n;
+    });
+  const goNext = () =>
+    !isLast &&
+    setIndex((i) => {
+      const n = i + 1;
+      setVisitedSteps((p) => new Set([...p, n]));
+      return n;
+    });
 
-  // Step completion logic
   const isStepCompleted = (stepId) => {
     if (isNewProject) {
       switch (stepId) {
@@ -255,6 +269,7 @@ export default function WizardPage() {
           return false;
       }
     }
+
     switch (stepId) {
       case "classification":
         return setupHasAllSelections();
@@ -277,40 +292,46 @@ export default function WizardPage() {
     }
     return true;
   };
-  const onStepClick = (i) => { if (canEnter(i)) { setIndex(i); setVisitedSteps(p => new Set([...p, i])); } };
 
-  // ===== AUTO-SAVE DRAFT (for new projects) =====
-  const saveDraft = useCallback(async (currentStep) => {
-    if (!isNewProject) return;
-    const rawStep = STEPS[currentStep]?.id || "setup";
-    // Backend only accepts: setup, siteplan, license, contract
-    const stepName = rawStep === "classification" ? "setup" : rawStep;
-    // Exclude File objects from setup before serializing
-    const { _projectImageFile, ...serializableSetup } = setup;
-    const payload = {
-      title: setup.legacyCode || setup.internalCode || t("untitled_draft"),
-      current_step: stepName,
-      data: {
-        setup: serializableSetup,
-        // siteplan and license are plain-object snapshots (not FormData)
-        siteplan: wizardData.siteplan && typeof wizardData.siteplan === "object" ? wizardData.siteplan : null,
-        license: wizardData.license && typeof wizardData.license === "object" ? wizardData.license : null,
-        contract: wizardData.contract,
-      },
-    };
-    try {
-      if (draftId) {
-        await projectApi.updateDraft(draftId, payload);
-      } else {
-        const created = await projectApi.createDraft(payload);
-        if (created?.id) setDraftId(created.id);
-      }
-    } catch (e) {
-      logger.warn("Draft auto-save failed", e);
+  const onStepClick = (i) => {
+    if (canEnter(i)) {
+      setIndex(i);
+      setVisitedSteps((p) => new Set([...p, i]));
     }
-  }, [isNewProject, setup, wizardData, draftId, STEPS, t]);
+  };
 
-  // Auto-save draft when moving between steps (for new projects)
+  const saveDraft = useCallback(
+    async (currentStep) => {
+      if (!isNewProject) return;
+      const rawStep = STEPS[currentStep]?.id || "setup";
+      const stepName = rawStep === "classification" ? "setup" : rawStep;
+      const { _projectImageFile, ...serializableSetup } = setup;
+
+      const payload = {
+        title: setup.legacyCode || setup.internalCode || t("untitled_draft"),
+        current_step: stepName,
+        data: {
+          setup: serializableSetup,
+          siteplan: wizardData.siteplan && typeof wizardData.siteplan === "object" ? wizardData.siteplan : null,
+          license: wizardData.license && typeof wizardData.license === "object" ? wizardData.license : null,
+          contract: wizardData.contract,
+        },
+      };
+
+      try {
+        if (draftId) {
+          await projectApi.updateDraft(draftId, payload);
+        } else {
+          const created = await projectApi.createDraft(payload);
+          if (created?.id) setDraftId(created.id);
+        }
+      } catch (e) {
+        logger.warn("Draft auto-save failed", e);
+      }
+    },
+    [isNewProject, setup, wizardData, draftId, STEPS, t]
+  );
+
   useEffect(() => {
     if (!isNewProject || !setupHasAllSelections()) return;
     clearTimeout(draftSaveTimerRef.current);
@@ -318,12 +339,10 @@ export default function WizardPage() {
     return () => clearTimeout(draftSaveTimerRef.current);
   }, [index, isNewProject, saveDraft]);
 
-  // ===== CREATE PROJECT AT CONTRACT STEP =====
   const createProjectAndSaveAllData = async (contractFormData) => {
     try {
       setIsCreatingProject(true);
 
-      // 1. Create the base project (code is auto-generated by backend)
       const projectPayload = {
         status: "draft",
         project_type: setup.projectType || "",
@@ -334,11 +353,11 @@ export default function WizardPage() {
         legacy_code: setup.legacyCode || "",
         classification_data: setup._classification || {},
       };
+
       const projectRes = await projectApi.create(projectPayload);
       const newProjectId = projectRes?.id || projectRes?.data?.id;
       if (!newProjectId) throw new Error("Failed to create project");
 
-      // 2. Upload project image if present
       if (setup._projectImageFile && setup._projectImageFile.size > 0) {
         try {
           const { getCsrfToken } = await import("../../../utils/cookies");
@@ -347,31 +366,34 @@ export default function WizardPage() {
           const headers = {};
           const csrf = getCsrfToken();
           if (csrf) headers["X-CSRFToken"] = csrf;
+
           await fetch(`${API_BASE_URL}projects/${newProjectId}/`, {
-            method: "PATCH", credentials: "include", headers, body: imgForm,
+            method: "PATCH",
+            credentials: "include",
+            headers,
+            body: imgForm,
           });
-        } catch (e) { logger.warn("Could not upload project image", e); }
+        } catch (e) {
+          logger.warn("Could not upload project image", e);
+        }
       }
 
-      // 3. Save site plan data (stored from SitePlanStep)
       if (wizardData.sitePlanFormData) {
         await projectApi.createSitePlan(newProjectId, wizardData.sitePlanFormData);
       }
 
-      // 4. Save license data (stored from LicenseStep) — skipped when noPermit
       if (!noPermit && wizardData.licenseFormData) {
         try {
           await api.post(`projects/${newProjectId}/license/`, wizardData.licenseFormData);
-        } catch (e) { logger.warn("Could not save license", e); }
+        } catch (e) {
+          logger.warn("Could not save license", e);
+        }
       }
 
-      // 5. Save contract data
       if (contractFormData) {
-        // Update owners in contract FormData to remove is_authorized
         await api.post(`projects/${newProjectId}/contract/`, contractFormData);
       }
 
-      // 6. Save contract_classification
       if (setup.contractClassification && !contractFormData) {
         try {
           await projectApi.saveContract(newProjectId, {
@@ -380,17 +402,17 @@ export default function WizardPage() {
         } catch (_e) {}
       }
 
-      // 7. Delete the draft (project created successfully)
       if (draftId) {
-        try { await projectApi.deleteDraft(draftId); } catch (_e) {}
+        try {
+          await projectApi.deleteDraft(draftId);
+        } catch (_e) {}
       }
 
-      // Clear wizard localStorage
-      try { localStorage.removeItem("wizard_setup_state_v1"); } catch (_e) {}
+      try {
+        localStorage.removeItem("wizard_setup_state_v1");
+      } catch (_e) {}
 
-      // 8. Navigate to the new project
       navigate(`/projects/${newProjectId}`);
-
     } catch (err) {
       logger.error("Error creating project", err);
       const msg = err?.response?.data
@@ -418,7 +440,14 @@ export default function WizardPage() {
     }
   };
 
-  // Show loading overlay during project creation
+  const projectTitle = isNewProject
+    ? t("new_project")
+    : (
+        isAR
+          ? project?.display_name || project?.name
+          : project?.display_name_en || project?.name
+      ) || labels.projectPrefix;
+
   if (isCreatingProject) {
     return (
       <div className="container">
@@ -439,7 +468,6 @@ export default function WizardPage() {
 
   return (
     <div className="container">
-      {/* Back Confirmation Dialog */}
       <Dialog
         open={showBackConfirm}
         title={t("wizard.confirm_return_title")}
@@ -449,7 +477,6 @@ export default function WizardPage() {
         onClose={() => setShowBackConfirm(false)}
         onConfirm={() => {
           setShowBackConfirm(false);
-          // Auto-save draft before leaving
           if (isNewProject && setupHasAllSelections()) {
             saveDraft(index);
           }
@@ -458,13 +485,16 @@ export default function WizardPage() {
         onCancel={() => setShowBackConfirm(false)}
       />
 
-      {/* Header */}
       <PageHeader
         onBack={handleBackToProjects}
         backLabel={sectionOnly ? t("back") : t("wizard.back_to_projects")}
-        title={isNewProject ? t("new_project") : (project?.name || labels.projectPrefix)}
+        title={projectTitle}
         subtitle={!isNewProject && project?.internal_code ? project.internal_code : undefined}
-        className={!sectionOnly && STEPS.length > 1 ? 'wizard-page-header' : 'wizard-page-header wizard-page-header--no-stepper'}
+        className={
+          !sectionOnly && STEPS.length > 1
+            ? "wizard-page-header"
+            : "wizard-page-header wizard-page-header--no-stepper"
+        }
         actions={
           viewMode && !isNewProject ? (
             <Button variant="primary" size="sm" onClick={() => setViewMode(false)}>
@@ -478,7 +508,6 @@ export default function WizardPage() {
         }
       />
 
-      {/* Stepper */}
       {!sectionOnly && STEPS.length > 1 && (
         <div className="wizard-stepper-wrapper">
           <WizardStepper
@@ -491,14 +520,14 @@ export default function WizardPage() {
         </div>
       )}
 
-      {/* Content Area — mount-once: each step mounts the first time it becomes active,
-           then stays mounted (hidden via CSS) to preserve unsaved state */}
       <div className="wizard-content">
         <div style={{ display: index === 0 ? undefined : "none" }}>
           {STEPS.length > 0 && (
             <ProjectTypeSelector
               onChange={setSetup}
-              onNext={() => { pendingAdvanceRef.current = true; }}
+              onNext={() => {
+                pendingAdvanceRef.current = true;
+              }}
               initialData={!isNewProject ? setup._classification : null}
             />
           )}
@@ -506,7 +535,6 @@ export default function WizardPage() {
 
         {allowSitePlanFlow && (
           <>
-            {/* SitePlanStep: mount when user first reaches step 1 */}
             {(index >= 1 || visitedSteps.has(1)) && (
               <div style={{ display: index === 1 ? undefined : "none" }}>
                 <SitePlanStep
@@ -528,7 +556,7 @@ export default function WizardPage() {
                 />
               </div>
             )}
-            {/* LicenseStep: only shown when project requires a building permit */}
+
             {!noPermit && (index >= 2 || visitedSteps.has(2)) && (
               <div style={{ display: index === 2 ? undefined : "none" }}>
                 <LicenseStep
@@ -551,12 +579,14 @@ export default function WizardPage() {
           </>
         )}
 
-        {/* ContractStep: in edit mode, mount immediately when projectId is available
-            so useContract can start loading data right away — never toggled by allowSitePlanFlow.
-            In new project mode, only mount once allowSitePlanFlow is true (steps expanded).
-            Contract index is 3 (with license) or 2 (without license / noPermit). */}
-        {(!isNewProject ? !!projectId : allowSitePlanFlow && (index >= contractStepIndex || visitedSteps.has(contractStepIndex))) && (
-          <div style={{ display: index === contractStepIndex && allowSitePlanFlow ? undefined : "none" }}>
+        {(!isNewProject
+          ? !!projectId
+          : allowSitePlanFlow && (index >= contractStepIndex || visitedSteps.has(contractStepIndex))) && (
+          <div
+            style={{
+              display: index === contractStepIndex && allowSitePlanFlow ? undefined : "none",
+            }}
+          >
             <ContractStep
               projectId={isNewProject ? null : projectId}
               onPrev={sectionOnly ? undefined : goPrev}

@@ -256,3 +256,73 @@ export const numberToArabicWords = (num) => {
 
   return parts.join(" و ");
 };
+
+/**
+ * Convert number to English words
+ * @param {string|number} num - Number to convert
+ * @returns {string} English word representation
+ */
+export const numberToEnglishWords = (num) => {
+  if (num === null || num === undefined || num === "") return "";
+
+  num = Number(String(num).replace(/,/g, ""));
+  if (isNaN(num)) return "";
+
+  if (num === 0) return "zero";
+
+  const ones = [
+    "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+    "seventeen", "eighteen", "nineteen"
+  ];
+  
+  const tens = [
+    "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
+  ];
+  
+  const scales = ["", "thousand", "million", "billion", "trillion"];
+
+  const convertHundred = (n) => {
+    let result = "";
+    const hundred = Math.floor(n / 100);
+    const remainder = n % 100;
+    
+    if (hundred > 0) {
+      result += ones[hundred] + " hundred";
+      if (remainder > 0) result += " ";
+    }
+    
+    if (remainder > 0) {
+      if (remainder < 20) {
+        result += ones[remainder];
+      } else {
+        const ten = Math.floor(remainder / 10);
+        const one = remainder % 10;
+        result += tens[ten];
+        if (one > 0) result += "-" + ones[one];
+      }
+    }
+    
+    return result;
+  };
+
+  const parts = [];
+  let scaleIndex = 0;
+
+  while (num > 0) {
+    const chunk = num % 1000;
+    num = Math.floor(num / 1000);
+
+    if (chunk > 0) {
+      let text = convertHundred(chunk);
+      if (scaleIndex > 0) {
+        text += " " + scales[scaleIndex];
+      }
+      parts.unshift(text);
+    }
+
+    scaleIndex++;
+  }
+
+  return parts.join(" ");
+};

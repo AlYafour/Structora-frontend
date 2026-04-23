@@ -4,9 +4,11 @@ import {
   FaCheckDouble,
   FaReceipt,
 } from "react-icons/fa";
+import DirhamsIcon from "../../components/common/DirhamsIcon";
 
 export default function DashboardFinancials({ stats, fmtCurrency, currencyLabel = "AED" }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currency = i18n.language === "ar" ? currencyLabel : <DirhamsIcon size={10} color="#374151" />;
   const budget = stats.budget_utilization || {};
   const financials = stats.financials || {};
   const totalBudget = budget.total_budget || 0;
@@ -35,7 +37,7 @@ export default function DashboardFinancials({ stats, fmtCurrency, currencyLabel 
           </div>
           <div className="dash-fin-item__body">
             <span className="dash-fin-item__label">{t("dash_total_budget")}</span>
-            <span className="dash-fin-item__value">{fmtCurrency(totalBudget)} <small className="dash-fin-item__currency">{currencyLabel}</small></span>
+            <span className="dash-fin-item__value">{fmtCurrency(totalBudget)} <small className="dash-fin-item__currency">{currency}</small></span>
           </div>
         </div>
 
@@ -45,7 +47,7 @@ export default function DashboardFinancials({ stats, fmtCurrency, currencyLabel 
           </div>
           <div className="dash-fin-item__body">
             <span className="dash-fin-item__label">{t("dash_total_paid")}</span>
-            <span className="dash-fin-item__value">{fmtCurrency(totalPaid)} <small className="dash-fin-item__currency">{currencyLabel}</small></span>
+            <span className="dash-fin-item__value">{fmtCurrency(totalPaid)} <small className="dash-fin-item__currency">{currency}</small></span>
           </div>
         </div>
 
@@ -55,7 +57,7 @@ export default function DashboardFinancials({ stats, fmtCurrency, currencyLabel 
           </div>
           <div className="dash-fin-item__body">
             <span className="dash-fin-item__label">{t("dash_remaining")}</span>
-            <span className="dash-fin-item__value">{fmtCurrency(remaining > 0 ? remaining : 0)} <small className="dash-fin-item__currency">{currencyLabel}</small></span>
+            <span className="dash-fin-item__value">{fmtCurrency(remaining > 0 ? remaining : 0)} <small className="dash-fin-item__currency">{currency}</small></span>
           </div>
         </div>
       </div>
@@ -83,12 +85,12 @@ export default function DashboardFinancials({ stats, fmtCurrency, currencyLabel 
       <div className="dash-fin-split">
         <div className="dash-fin-split__item">
           <span className="dash-fin-split__label">{t("total_bank_value")}</span>
-          <span className="dash-fin-split__value">{fmtCurrency(financials.total_bank_value || 0)} {currencyLabel}</span>
+          <span className="dash-fin-split__value">{fmtCurrency(financials.total_bank_value || 0)} {currency}</span>
         </div>
         <div className="dash-fin-split__divider" />
         <div className="dash-fin-split__item">
           <span className="dash-fin-split__label">{t("total_owner_value")}</span>
-          <span className="dash-fin-split__value">{fmtCurrency(financials.total_owner_value || 0)} {currencyLabel}</span>
+          <span className="dash-fin-split__value">{fmtCurrency(financials.total_owner_value || 0)} {currency}</span>
         </div>
       </div>
     </div>

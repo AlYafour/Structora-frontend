@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import Button from "../../components/common/Button";
-import useTenantNavigate from '../../hooks/useTenantNavigate';
-
+import useTenantNavigate from "../../hooks/useTenantNavigate";
+import { useLanguage } from "../../hooks";
+import DirhamsIcon from "../../components/common/DirhamsIcon";
 const STATUS_COLORS = {
   not_started: "#6b7280",
   execution_started: "#3b82f6",
@@ -14,8 +15,13 @@ const STATUS_COLORS = {
   in_progress: "#60a5fa",
 };
 
-export default function DashboardTopProjects({ stats, fmtCurrency, currencyLabel = "AED" }) {
+export default function DashboardTopProjects({
+  stats,
+  fmtCurrency,
+  currencyLabel = "AED",
+}) {
   const { t } = useTranslation();
+  const { isArabic: isAR } = useLanguage();
   const navigate = useTenantNavigate();
   const projects = stats.top_projects || [];
 
@@ -34,10 +40,15 @@ export default function DashboardTopProjects({ stats, fmtCurrency, currencyLabel
     <div className="dash-card dash-card--full">
       <div className="dash-card__header">
         <h3 className="dash-card__title">{t("dash_top_projects")}</h3>
-        <Button variant="ghost" className="dash-card__link" onClick={() => navigate("/projects")}>
+        <Button
+          variant="ghost"
+          className="dash-card__link"
+          onClick={() => navigate("/projects")}
+        >
           {t("dash_view_all")}
         </Button>
       </div>
+
       <div className="dash-table-wrap">
         <table className="dash-table">
           <thead>
@@ -48,6 +59,7 @@ export default function DashboardTopProjects({ stats, fmtCurrency, currencyLabel
               <th>{t("dash_status")}</th>
             </tr>
           </thead>
+
           <tbody>
             {projects.map((p, i) => (
               <tr
@@ -56,8 +68,23 @@ export default function DashboardTopProjects({ stats, fmtCurrency, currencyLabel
                 onClick={() => navigate(`/projects/${p.id}`)}
               >
                 <td className="dash-table__rank">{i + 1}</td>
-                <td className="dash-table__name">{p.name}</td>
-                <td className="dash-table__value">{fmtCurrency(p.value)} {currencyLabel}</td>
+
+                <td className="dash-table__name">
+                  {isAR
+                    ? (p.name || p.name_en || "-")
+                    : (p.name_en || p.name || "-")}
+                </td>
+
+                <td className="dash-table__value">
+                  {fmtCurrency(p.value)}
+
+                  {isAR ? (
+                    <span>{currencyLabel}</span>
+                  ) : (
+                    <DirhamsIcon size={10} color="#374151" />
+                  )}
+                </td>
+
                 <td>
                   <span
                     className="dash-table__status"

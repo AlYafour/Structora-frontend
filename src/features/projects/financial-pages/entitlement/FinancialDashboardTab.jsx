@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import DirhamsIcon from "../../../../components/common/DirhamsIcon";
 import Button from "../../../../components/common/Button";
 import { formatMoney } from "../../../../utils/formatters";
 import { MetricCard, MetricGrid } from "../../../../components/common/MetricCard";
@@ -20,6 +21,18 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
   payments = [],
 }) {
   const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language === 'en';
+
+  const formatCurrency = (value) => formatMoney(value);
+
+  const renderAmount = (value) => {
+    const str = formatCurrency(value);
+    if (isEnglish) {
+      const numPart = str.replace(/د\.إ\s?/, '').trim();
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+    }
+    return str;
+  };
 
   // Advance payment summary
   const [advanceSummary, setAdvanceSummary] = useState(null);
@@ -174,37 +187,37 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
               variant="blue"
               icon="building"
               label={t("total_contract_value")}
-              value={formatMoney(financialStats.contractValue)}
-              vatBreakdown={{ net: financialStats.contractValue, withVat: financialStats.contractValue * 1.05, format: formatMoney }}
+              value={renderAmount(financialStats.contractValue)}
+              vatBreakdown={{ net: financialStats.contractValue, withVat: financialStats.contractValue * 1.05, format: renderAmount }}
             />
             <MetricCard
               variant="violet"
               icon="layers"
               label={t("variations_total")}
-              value={formatMoney(financialStats.totalVariationsValue)}
+              value={renderAmount(financialStats.totalVariationsValue)}
               sub={`${financialStats.approvedVariationsCount} ${t("approved")}`}
-              vatBreakdown={{ net: financialStats.totalVariationsValue, withVat: financialStats.totalVariationsValue * 1.05, format: formatMoney }}
+              vatBreakdown={{ net: financialStats.totalVariationsValue, withVat: financialStats.totalVariationsValue * 1.05, format: renderAmount }}
             />
             <MetricCard
               variant="emerald"
               icon="dollar"
               label={t("total_payments")}
-              value={formatMoney(financialStats.totalPayments)}
-              sub={`${t("including_vat") || "شامل الضريبة"} · ${t("vat_amount") || "الضريبة"}: ${formatMoney(financialStats.totalPaymentsVAT)}`}
+              value={renderAmount(financialStats.totalPayments)}
+              sub={<>{t("including_vat") || "شامل الضريبة"} · {t("vat_amount") || "الضريبة"}: {renderAmount(financialStats.totalPaymentsVAT)}</>}
             />
             <MetricCard
               variant={financialStats.isOverpaid ? "emerald" : "amber"}
               icon={financialStats.isOverpaid ? "arrowUp" : "clock"}
               label={financialStats.isOverpaid ? (t("surplus_amount") || "مبلغ زائد") : t("remaining_amount")}
-              value={formatMoney(financialStats.remainingAmount)}
+              value={renderAmount(financialStats.remainingAmount)}
               sub={financialStats.isOverpaid
                 ? (t("overpaid_note") || "العميل دفع أكثر من قيمة العقد")
                 : (t("including_vat") || "شامل الضريبة")}
             />
             {advanceSummary && (
               <MetricCard variant="slate" icon="wallet" label={t("advance_payment")}
-                value={formatMoney(parseFloat(advanceSummary.totals.total_amount) || 0)}
-                sub={`${t("recovered")}: ${formatMoney(parseFloat(advanceSummary.totals.total_recovered) || 0)} | ${t("remaining")}: ${formatMoney(parseFloat(advanceSummary.totals.total_remaining) || 0)}`}
+                value={renderAmount(parseFloat(advanceSummary.totals.total_amount) || 0)}
+                sub={<>{t("recovered")}: {renderAmount(parseFloat(advanceSummary.totals.total_recovered) || 0)} | {t("remaining")}: {renderAmount(parseFloat(advanceSummary.totals.total_remaining) || 0)}</>}
               />
             )}
           </MetricGrid>
@@ -227,14 +240,14 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
             </div>
             <div className="financial-progress__footer">
               <span>
-                {t("paid") || "المدفوع"}: {formatMoney(financialStats.totalPayments)}
+                {t("paid") || "المدفوع"}: {renderAmount(financialStats.totalPayments)}
               </span>
               <span>
-                {t("total_label") || "الإجمالي"}:{" "}
+                {t("invoices_total_label")}:{" "}
                 <VatAmount
                   net={financialStats.totalContractWithVariations}
                   withVat={financialStats.totalContractWithVariationsWithVAT}
-                  format={formatMoney}
+                  format={renderAmount}
                   showBtn={false}
                 />
               </span>
@@ -260,7 +273,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         {t("bank_share")}
                       </span>
                       <span className="financial-breakdown__value">
-                        {formatMoney(financialStats.bankValue)}
+                        {renderAmount(financialStats.bankValue)}
                       </span>
                     </div>
                     <div className="financial-breakdown__row">
@@ -268,7 +281,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         {t("owner_share")}
                       </span>
                       <span className="financial-breakdown__value">
-                        {formatMoney(financialStats.ownerValue)}
+                        {renderAmount(financialStats.ownerValue)}
                       </span>
                     </div>
                     <div className="financial-breakdown__divider" />
@@ -280,7 +293,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{t("excluding_vat") || "بدون ضريبة"}</span>
                   </span>
                   <span className="financial-breakdown__value">
-                    {formatMoney(financialStats.contractValue)}
+                    {renderAmount(financialStats.contractValue)}
                   </span>
                 </div>
                 <div className="financial-breakdown__row">
@@ -289,7 +302,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{t("excluding_vat") || "بدون ضريبة"}</span>
                   </span>
                   <span className="financial-breakdown__value financial-breakdown__value--highlight">
-                    + {formatMoney(financialStats.totalVariationsValue)}
+                    + {renderAmount(financialStats.totalVariationsValue)}
                   </span>
                 </div>
                 <div className="financial-breakdown__divider" />
@@ -301,7 +314,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <VatAmount
                       net={financialStats.totalContractWithVariations}
                       withVat={financialStats.totalContractWithVariationsWithVAT}
-                      format={formatMoney}
+                      format={renderAmount}
                     />
                   </span>
                 </div>
@@ -325,7 +338,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         {t("bank_payments")}
                       </span>
                       <span className="financial-breakdown__value">
-                        {formatMoney(financialStats.bankPayments)}
+                        {renderAmount(financialStats.bankPayments)}
                       </span>
                     </div>
                     <div className="financial-breakdown__row">
@@ -333,7 +346,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         {t("owner_payments")}
                       </span>
                       <span className="financial-breakdown__value">
-                        {formatMoney(financialStats.ownerPayments)}
+                        {renderAmount(financialStats.ownerPayments)}
                       </span>
                     </div>
                     <div className="financial-breakdown__divider" />
@@ -345,7 +358,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{t("including_vat") || "شامل الضريبة"}</span>
                   </span>
                   <span className="financial-breakdown__value financial-breakdown__value--success">
-                    {formatMoney(financialStats.totalPayments)}
+                    {renderAmount(financialStats.totalPayments)}
                   </span>
                 </div>
                 <div className="financial-breakdown__row">
@@ -353,7 +366,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     {t("vat_included_in_payments") || "منها ضريبة القيمة المضافة"}
                   </span>
                   <span className="financial-breakdown__value" style={{ fontSize: '0.85em', opacity: 0.75 }}>
-                    {formatMoney(financialStats.totalPaymentsVAT)}
+                    {renderAmount(financialStats.totalPaymentsVAT)}
                   </span>
                 </div>
                 <div className="financial-breakdown__divider" />
@@ -365,7 +378,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{t("including_vat") || "شامل الضريبة"}</span>
                   </span>
                   <span className={`financial-breakdown__value ${financialStats.isOverpaid ? 'financial-breakdown__value--success' : 'financial-breakdown__value--warning'}`}>
-                    {financialStats.isOverpaid ? '+ ' : ''}{formatMoney(financialStats.remainingAmount)}
+                    {financialStats.isOverpaid ? '+ ' : ''}{renderAmount(financialStats.remainingAmount)}
                   </span>
                 </div>
               </div>

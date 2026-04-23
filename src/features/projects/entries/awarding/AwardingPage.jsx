@@ -14,6 +14,7 @@ import DateInput from "../../../../components/forms/DateInput";
 import StaticContractAttachmentFile from "../../wizard/components/StaticContractAttachmentFile";
 import useContractorDefaults from "../../wizard/hooks/useContractorDefaults";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import "../entries.css";
 
 const FORM_ID = "awarding-form";
 
@@ -39,10 +40,8 @@ export default function AwardingPage() {
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
   const navTimerRef = useRef(null);
 
-  // Auto-populate contractor_registration_number from company settings
   const setAwardingField = (key, value) => {
     setFormData(prev => {
-      // Only set if field is currently empty (don't overwrite existing data)
       if (prev[key]) return prev;
       return { ...prev, [key]: value };
     });
@@ -133,7 +132,7 @@ export default function AwardingPage() {
               {existingId ? t("edit_awarding") : t("add_awarding")}
             </div>
             <div className="card__body">
-              <div>
+              <div className="form-field">
                 <label className="form-label">{t("award_date")}</label>
                 <DateInput
                   className="prj-input"
@@ -141,7 +140,8 @@ export default function AwardingPage() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, award_date: value }))}
                 />
               </div>
-              <div>
+              
+              <div className="form-field">
                 <label className="form-label">{t("project_number")}</label>
                 <input
                   className="prj-input"
@@ -151,7 +151,8 @@ export default function AwardingPage() {
                   placeholder={t("enter_project_number")}
                 />
               </div>
-              <div>
+              
+              <div className="form-field">
                 <label className="form-label">{t("consultant_registration_number")}</label>
                 <input
                   className="prj-input"
@@ -161,7 +162,8 @@ export default function AwardingPage() {
                   placeholder={t("enter_consultant_registration_number")}
                 />
               </div>
-              <div>
+              
+              <div className="form-field">
                 <label className="form-label">{t("contractor_registration_number")}</label>
                 <input
                   className="prj-input"
@@ -171,19 +173,22 @@ export default function AwardingPage() {
                   placeholder={t("enter_contractor_registration_number")}
                 />
               </div>
-              <StaticContractAttachmentFile
-                label={t("awarding_file")}
-                value={formData.awarding_file}
-                fileUrl={formData.awarding_file_url}
-                fileName={formData.awarding_file_name}
-                onChange={(file) => setFormData((prev) => ({ ...prev, awarding_file: file }))}
-                onRemoveExisting={() => setFormData((prev) => ({ ...prev, awarding_file: null, awarding_file_url: null, awarding_file_name: null }))}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                maxSizeMB={10}
-                isView={false}
-                projectId={projectId}
-                endpoint={`projects/${projectId}/awarding/`}
-              />
+              
+              <div className="form-field form-field-full">
+                <StaticContractAttachmentFile
+                  label={t("awarding_file")}
+                  value={formData.awarding_file}
+                  fileUrl={formData.awarding_file_url}
+                  fileName={formData.awarding_file_name}
+                  onChange={(file) => setFormData((prev) => ({ ...prev, awarding_file: file }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, awarding_file: null, awarding_file_url: null, awarding_file_name: null }))}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  maxSizeMB={10}
+                  isView={false}
+                  projectId={projectId}
+                  endpoint={`projects/${projectId}/awarding/`}
+                />
+              </div>
             </div>
           </div>
         </form>

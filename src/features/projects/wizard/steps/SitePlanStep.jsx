@@ -534,6 +534,8 @@ export default function SitePlanStep({
    * Save and proceed to next step or create new project
    */
   const saveAndNext = async () => {
+    setShowPdfPanel(false);
+    setShowIdPanel(false);
     // noPermit + user chose "no" or "later" → skip siteplan entirely
     if (noPermit && (hasSitePlan === "no" || hasSitePlan === "later")) {
       if (onSitePlanReady) {
@@ -809,21 +811,21 @@ export default function SitePlanStep({
               <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setPdfZoom(z => Math.max(50, z - 25))}>−</button>
               <span className="siteplan-pdf-panel__zoom-val">{pdfZoom}%</span>
               <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setPdfZoom(z => Math.min(300, z + 25))}>+</button>
-              <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setPdfZoom(100)} style={{fontSize:"0.8rem",color:"rgba(255,255,255,0.4)"}}>↺</button>
+              <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setPdfZoom(100)} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)" }}>↺</button>
             </div>
             <button className="siteplan-pdf-panel__close" onClick={() => setShowPdfPanel(false)} title={t("close")}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
           <div className="siteplan-pdf-panel__body">
-              <iframe
-                src={form.site_plan_file instanceof File ? URL.createObjectURL(form.site_plan_file) : sitePlanFileUrl}
-                title={t("attach_land_site_plan")}
-                className="siteplan-pdf-panel__iframe"
-                style={{ zoom: `${pdfZoom}%` }}
-              />
+            <iframe
+              src={form.site_plan_file instanceof File ? URL.createObjectURL(form.site_plan_file) : sitePlanFileUrl}
+              title={t("attach_land_site_plan")}
+              className="siteplan-pdf-panel__iframe"
+              style={{ zoom: `${pdfZoom}%` }}
+            />
           </div>
         </div>
       )}
@@ -844,21 +846,21 @@ export default function SitePlanStep({
                 <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setIdZoom(z => Math.max(50, z - 25))}>−</button>
                 <span className="siteplan-pdf-panel__zoom-val">{idZoom}%</span>
                 <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setIdZoom(z => Math.min(300, z + 25))}>+</button>
-                <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setIdZoom(100)} style={{fontSize:"0.8rem",color:"rgba(255,255,255,0.4)"}}>↺</button>
+                <button className="siteplan-pdf-panel__zoom-btn" onClick={() => setIdZoom(100)} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)" }}>↺</button>
               </div>
               <button className="siteplan-pdf-panel__close" onClick={() => setShowIdPanel(false)} title={t("close")}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
             <div className="siteplan-pdf-panel__body">
-                <iframe
-                  src={idSrc}
-                  title={t("id_attachment")}
-                  className="siteplan-pdf-panel__iframe"
-                  style={{ zoom: `${idZoom}%` }}
-                />
+              <iframe
+                src={idSrc}
+                title={t("id_attachment")}
+                className="siteplan-pdf-panel__iframe"
+                style={{ zoom: `${idZoom}%` }}
+              />
             </div>
           </div>
         );
@@ -948,9 +950,9 @@ export default function SitePlanStep({
           {isNewProject && !sitePlanUploaded && !viewMode && (
             <div className="siteplan-upload-hint">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <span>{t("upload_siteplan_to_continue")}</span>
             </div>

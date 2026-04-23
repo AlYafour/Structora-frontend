@@ -24,6 +24,7 @@ import { enrichProjectsWithTranslations } from "../utils/projectHelpers";
 import projectApi from "../../../services/projects/projectApi";
 import './ProjectsPage.css';
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import DraftsTable from "../components/DraftsTable";
 
 export default function ProjectsPage() {
   const { t, i18n } = useTranslation();
@@ -269,369 +270,357 @@ export default function ProjectsPage() {
   return (
     <PageLayout loading={loading} loadingText={t("loading_projects")}>
       <div className="projects-page-modern">
-          {/* Page Header Bar - Title + Search + Actions all in one bar */}
-          <PageHeader
-            title={t("projects_title")}
-            actions={
-              <Button onClick={createProject} variant="primary" size="sm">
-                {t("homepage_cta")}
-              </Button>
-            }
-          >
-            {/* Search + Filter inline in the header */}
-            <div className="prj-toolbar__search">
-              <div className="prj-toolbar__search-box">
-                <svg className="prj-toolbar__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input
-                  className="prj-toolbar__search-input"
-                  type="text"
-                  placeholder={t("general_search")}
-                  value={filters.q}
-                  onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-                />
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"/>
-                      <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </Button>
-                )}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setFilterDrawerOpen(true)}
-              >
-                {t("filters")}
-                {hasActiveFilters && <span className="prj-toolbar__filter-dot" />}
-              </Button>
-            </div>
-          </PageHeader>
-
-          {/* Approval status tabs — visible to all users */}
-          <div className="prj-tabs">
-            <Button
-              variant="ghost"
-              className={`prj-tabs__btn ${approvalStatusFilter === "all" ? "prj-tabs__btn--active" : ""}`}
-              onClick={() => setApprovalStatusFilter("all")}
-            >
-              {t("all_projects")}
+        {/* Page Header Bar - Title + Search + Actions all in one bar */}
+        <PageHeader
+          title={t("projects_title")}
+          actions={
+            <Button onClick={createProject} variant="primary" size="sm">
+              {t("homepage_cta")}
             </Button>
-            <Button
-              variant="ghost"
-              className={`prj-tabs__btn ${approvalStatusFilter === "pending_approvals" ? "prj-tabs__btn--active" : ""}`}
-              onClick={() => setApprovalStatusFilter("pending_approvals")}
-            >
-              {t("pending_approvals")}
-            </Button>
-            {(isManager || isSuperAdmin) && (
-              <Button
-                variant="ghost"
-                className={`prj-tabs__btn ${approvalStatusFilter === "approved" ? "prj-tabs__btn--active" : ""}`}
-                onClick={() => setApprovalStatusFilter("approved")}
-              >
-                {t("final_approvals")}
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              className={`prj-tabs__btn ${approvalStatusFilter === "final_approved" ? "prj-tabs__btn--active" : ""}`}
-              onClick={() => setApprovalStatusFilter("final_approved")}
-            >
-              {t("approved_projects")}
-            </Button>
-            <Button
-              variant="ghost"
-              className={`prj-tabs__btn ${isDraftsTab ? "prj-tabs__btn--active" : ""}`}
-              onClick={() => setApprovalStatusFilter("drafts")}
-            >
-              {t("drafts_tab")}
-            </Button>
-          </div>
-
-          {/* Drafts Tab Content */}
-          {isDraftsTab ? (
-            <div className="drafts-tab-content">
-              {draftsLoading ? (
-                <div className="projects-loading-skeleton">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={`draft-skeleton-${i}`} className="projects-skeleton-row">
-                      <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
-                      <div className="projects-skeleton-cell projects-skeleton-cell--sm"></div>
-                      <div className="projects-skeleton-cell projects-skeleton-cell--flex"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : drafts.length === 0 ? (
-                <NoDataFound
-                  icon="📝"
-                  title={t("no_drafts")}
-                  description={t("no_drafts_desc")}
-                  onCreate={createProject}
-                />
-              ) : (
-                <>
-                  {selectedDraftIds.size > 0 && (
-                    <BulkActionsBar
-                      selectedCount={selectedDraftIds.size}
-                      onClear={() => setSelectedDraftIds(new Set())}
-                      actions={[{ label: t("delete_selected"), onClick: () => setBulkDraftConfirmOpen(true), variant: "danger" }]}
-                    />
-                  )}
-                  <div className="drafts-grid">
-                    <div className="drafts-select-all">
-                      <Checkbox
-                        checked={isAllDraftsSelected}
-                        onChange={toggleSelectAllDrafts}
-                        aria-label={t("select_all")}
-                      />
-                      <span>{t("select_all")}</span>
-                    </div>
-                  {drafts.map((draft) => {
-                    const stepInfo = STEP_MAP[draft.current_step] || STEP_MAP.setup;
-                    const stepLabel = t(stepInfo.key);
-                    const title = draft.title || draft.data?.project_name || t("untitled_draft");
-                    const updatedAt = formatDate(draft.updated_at);
-
-                    return (
-                      <div key={draft.id} className={`draft-card ${selectedDraftIds.has(draft.id) ? "draft-card--selected" : ""}`}>
-                        <div className="draft-card__header">
-                          <Checkbox
-                            checked={selectedDraftIds.has(draft.id)}
-                            onChange={() => toggleDraftSelect(draft.id)}
-                          />
-                          <div className="draft-card__title">{title}</div>
-                          <span className="draft-card__badge">{t("draft")}</span>
-                        </div>
-
-                        <div className="draft-card__meta">
-                          <div className="draft-card__step">
-                            <span className="draft-card__meta-label">{t("draft_step_label")}:</span>
-                            <span className="draft-card__step-name">{stepLabel}</span>
-                            <span className="draft-card__step-indicator">
-                              {[0, 1, 2, 3].map((s) => (
-                                <span
-                                  key={s}
-                                  className={`draft-card__step-dot ${s <= stepInfo.index ? "draft-card__step-dot--active" : ""}`}
-                                />
-                              ))}
-                            </span>
-                          </div>
-                          <div className="draft-card__date">
-                            <span className="draft-card__meta-label">{t("draft_last_updated")}:</span>
-                            <span>{updatedAt}</span>
-                          </div>
-                        </div>
-
-                        <div className="draft-card__actions">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleResumeDraft(draft)}
-                          >
-                            {t("resume_draft")}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="draft-card__delete-btn"
-                            onClick={() => handleDeleteDraft(draft.id)}
-                            disabled={deletingDraftId === draft.id}
-                          >
-                            {deletingDraftId === draft.id ? t("deleting") : t("delete_draft")}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  </div>
-                </>
+          }
+        >
+          {/* Search + Filter inline in the header */}
+          <div className="prj-toolbar__search">
+            <div className="prj-toolbar__search-box">
+              <svg className="prj-toolbar__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                className="prj-toolbar__search-input"
+                type="text"
+                placeholder={t("general_search")}
+                value={filters.q}
+                onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+              />
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </Button>
               )}
             </div>
-          ) : (
-          <>
-          {/* Bulk actions bar */}
-          {selectedCount > 0 && (
-            <BulkActionsBar
-              selectedCount={selectedCount}
-              onClear={() => clearSelection()}
-              actions={[
-                {
-                  label: t("delete_selected"),
-                  onClick: askBulkDelete,
-                  variant: "danger"
-                }
-              ]}
-            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setFilterDrawerOpen(true)}
+            >
+              {t("filters")}
+              {hasActiveFilters && <span className="prj-toolbar__filter-dot" />}
+            </Button>
+          </div>
+        </PageHeader>
+
+        {/* Approval status tabs — visible to all users */}
+        <div className="prj-tabs">
+          <Button
+            variant="ghost"
+            className={`prj-tabs__btn ${approvalStatusFilter === "all" ? "prj-tabs__btn--active" : ""}`}
+            onClick={() => setApprovalStatusFilter("all")}
+          >
+            {t("all_projects")}
+          </Button>
+          <Button
+            variant="ghost"
+            className={`prj-tabs__btn ${approvalStatusFilter === "pending_approvals" ? "prj-tabs__btn--active" : ""}`}
+            onClick={() => setApprovalStatusFilter("pending_approvals")}
+          >
+            {t("pending_approvals")}
+          </Button>
+          {(isManager || isSuperAdmin) && (
+            <Button
+              variant="ghost"
+              className={`prj-tabs__btn ${approvalStatusFilter === "approved" ? "prj-tabs__btn--active" : ""}`}
+              onClick={() => setApprovalStatusFilter("approved")}
+            >
+              {t("final_approvals")}
+            </Button>
           )}
+          <Button
+            variant="ghost"
+            className={`prj-tabs__btn ${approvalStatusFilter === "final_approved" ? "prj-tabs__btn--active" : ""}`}
+            onClick={() => setApprovalStatusFilter("final_approved")}
+          >
+            {t("approved_projects")}
+          </Button>
+          <Button
+            variant="ghost"
+            className={`prj-tabs__btn ${isDraftsTab ? "prj-tabs__btn--active" : ""}`}
+            onClick={() => setApprovalStatusFilter("drafts")}
+          >
+            {t("drafts_tab")}
+          </Button>
+        </div>
 
-          {loading ? (
-            <div className="projects-loading-skeleton">
-              {[...Array(5)].map((_, i) => (
-                <div key={`skeleton-${i}`} className="projects-skeleton-row">
-                  <div className="projects-skeleton-cell projects-skeleton-cell--xs"></div>
-                  <div className="projects-skeleton-cell projects-skeleton-cell--xs"></div>
-                  <div className="projects-skeleton-cell projects-skeleton-cell--sm"></div>
-                  <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
-                  <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
-                  <div className="projects-skeleton-cell projects-skeleton-cell--flex"></div>
+        {/* Drafts Tab Content */}
+        {isDraftsTab ? (
+          <div className="drafts-tab-content">
+            {draftsLoading ? (
+              <div className="projects-loading-skeleton">
+                {[...Array(3)].map((_, i) => (
+                  <div key={`draft-skeleton-${i}`} className="projects-skeleton-row">
+                    <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--sm"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--flex"></div>
+                  </div>
+                ))}
+              </div>
+            ) : drafts.length === 0 ? (
+              <NoDataFound
+                icon="📝"
+                title={t("no_drafts")}
+                description={t("no_drafts_desc")}
+                onCreate={createProject}
+              />
+            ) : (
+              <>
+                {selectedDraftIds.size > 0 && (
+                  <BulkActionsBar
+                    selectedCount={selectedDraftIds.size}
+                    onClear={() => setSelectedDraftIds(new Set())}
+                    actions={[
+                      {
+                        label: t("delete_selected"),
+                        onClick: () => setBulkDraftConfirmOpen(true),
+                        variant: "danger",
+                      },
+                    ]}
+                  />
+                )}
+
+                <DraftsTable
+                  drafts={drafts}
+                  selectedDraftIds={selectedDraftIds}
+                  isAllDraftsSelected={isAllDraftsSelected}
+                  toggleSelectAllDrafts={toggleSelectAllDrafts}
+                  toggleDraftSelect={toggleDraftSelect}
+                  handleResumeDraft={handleResumeDraft}
+                  handleDeleteDraft={handleDeleteDraft}
+                  deletingDraftId={deletingDraftId}
+                  formatDate={formatDate}
+                />
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Bulk actions bar */}
+            {selectedCount > 0 && (
+              <BulkActionsBar
+                selectedCount={selectedCount}
+                onClear={() => clearSelection()}
+                actions={[
+                  {
+                    label: t("delete_selected"),
+                    onClick: askBulkDelete,
+                    variant: "danger"
+                  }
+                ]}
+              />
+            )}
+
+            {loading ? (
+              <div className="projects-loading-skeleton">
+                {[...Array(5)].map((_, i) => (
+                  <div key={`skeleton-${i}`} className="projects-skeleton-row">
+                    <div className="projects-skeleton-cell projects-skeleton-cell--xs"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--xs"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--sm"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--md"></div>
+                    <div className="projects-skeleton-cell projects-skeleton-cell--flex"></div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredProjects.length === 0 ? (
+              <NoDataFound
+                icon="📋"
+                title={
+                  approvalStatusFilter === "final_approved"
+                    ? (t("no_approved_projects"))
+                    : approvalStatusFilter === "approved"
+                      ? (t("no_final_approvals"))
+                      : approvalStatusFilter === "pending_approvals"
+                        ? (t("no_pending_approvals"))
+                        : (t("no_projects_match"))
+                }
+                description={
+                  approvalStatusFilter === "final_approved"
+                    ? (t("no_approved_projects_desc"))
+                    : approvalStatusFilter === "approved"
+                      ? (t("no_final_approvals_description"))
+                      : approvalStatusFilter === "pending_approvals"
+                        ? (t("no_pending_approvals_desc"))
+                        : (t("no_projects_desc"))
+                }
+                onCreate={approvalStatusFilter === "all" ? createProject : undefined}
+              />
+            ) : (
+              <>
+                {/* Desktop Table View */}
+                <div className="projects-table-desktop">
+                  <ProjectsTableErrorBoundary>
+                    <div
+                      ref={tableContainerRef}
+                      className="ds-table__wrap projects-table-container"
+                      style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'auto' }}
+                    >
+                      <table className={`ds-table projects-table ${isCompactTable ? 'projects-table--compact' : ''}`}>
+                        <thead>
+                          <tr>
+                            <th className="col-checkbox">
+                              <Checkbox
+                                checked={isAllSelected}
+                                onChange={() => {
+                                  toggleSelectAll();
+                                }}
+                                aria-label={t("select_all")}
+                              />
+                            </th>
+                            <th className="col-number">#</th>
+                            <th
+                              className={`col-code ds-table__sortable ${sortBy === 'internal_code' ? 'active' : ''}`}
+                              onClick={() => handleSort('internal_code')}
+                              title={`${t("project_view_internal_code").replace(":", "")} - ${t("click_to_sort")}`}
+                            >
+                              {t("project_view_internal_code").replace(":", "")}
+                              <span className="ds-table__sort-icon">{getSortIcon('internal_code')}</span>
+                            </th>
+                            <th
+                              className={`col-name ds-table__sortable ${sortBy === 'project_name' ? 'active' : ''}`}
+                              onClick={() => handleSort('project_name')}
+                              title={`${t("project_name")} - ${t("click_to_sort")}`}
+                            >
+                              {t("project_name")}
+                              <span className="ds-table__sort-icon">{getSortIcon('project_name')}</span>
+                            </th>
+                            <th
+                              className={`col-consultant ds-table__sortable ${sortBy === 'consultant' ? 'active' : ''}`}
+                              onClick={() => handleSort('consultant')}
+                              title={`${t("consultant")} - ${t("click_to_sort")}`}
+                            >
+                              {t("consultant")}
+                              <span className="ds-table__sort-icon">{getSortIcon('consultant')}</span>
+                            </th>
+                            {!isCompactTable && (
+                              <>
+                                <th
+                                  className={`col-date ds-table__sortable ${sortBy === 'project_end_date' ? 'active' : ''}`}
+                                  onClick={() => handleSort('project_end_date')}
+                                  title={`${t("project_end_date")} - ${t("click_to_sort")}`}
+                                >
+                                  {t("project_end_date")}
+                                  <span className="ds-table__sort-icon">{getSortIcon('project_end_date')}</span>
+                                </th>
+                                <th
+                                  className={`col-status ds-table__sortable ${sortBy === 'status' ? 'active' : ''}`}
+                                  onClick={() => handleSort('status')}
+                                  title={`${t("project_status")} - ${t("click_to_sort")}`}
+                                >
+                                  {t("project_status")}
+                                  <span className="ds-table__sort-icon">{getSortIcon('status')}</span>
+                                </th>
+                                <th className="col-location" title={t("table_location")}>{t("table_location")}</th>
+                                <th className="col-date" title={t("table_start_order_date")}>{t("table_start_order_date")}</th>
+                                <th className="col-date" title={t("table_planned_completion")}>{t("table_planned_completion")}</th>
+                                <th className="col-days" title={t("table_elapsed_duration")}>{t("table_elapsed_duration")}</th>
+                                <th className="col-days" title={t("table_time_delay")}>{t("table_time_delay")}</th>
+                                <th className="col-pct" title={t("progress_col_actual_current")}>{t("progress_col_actual_current")}</th>
+                                <th className="col-pct" title={t("progress_col_technical")}>{t("progress_col_technical")}</th>
+                                <th className="col-pct" title={t("progress_col_technical_approved")}>{t("progress_col_technical_approved")}</th>
+                                <th className="col-pct" title={t("progress_col_financial")}>{t("progress_col_financial")}</th>
+                                <th className="col-pct" title={t("progress_col_financial_approved")}>{t("progress_col_financial_approved")}</th>
+                                <th className="col-pct" title={t("progress_col_gap")}>{t("progress_col_gap")}</th>
+                                <th className="col-status" title={t("table_payment_status")}>{t("table_payment_status")}</th>
+                                <th className="col-amount" title={t("table_current_due_amount")}>{t("table_current_due_amount")}</th>
+                                <th className="col-days" title={t("table_payment_delay_days")}>{t("table_payment_delay_days")}</th>
+                                <th className="col-status" title={t("table_project_closure_status")}>{t("table_project_closure_status")}</th>
+                                <th className="col-icon" title={t("table_financial_status")}>{t("table_financial_status")}</th>
+                              </>
+                            )}
+                            <th className="col-actions" title={t("action")}>{t("action")}</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {useVirtual ? (
+                            <>
+                              {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }}>
+                                  <td colSpan={isCompactTable ? 6 : 26} className="ds-p-0 ds-border-none" />
+                                </tr>
+                              )}
+                              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const p = filteredProjects[virtualRow.index];
+                                return (
+                                  <ProjectTableRow
+                                    key={p?.id ?? virtualRow.index}
+                                    project={p}
+                                    index={virtualRow.index}
+                                    isSelected={selectedIds.has(p.id)}
+                                    onToggle={() => toggleSelect(p.id)}
+                                    onDelete={() => askDelete(p)}
+                                    onApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'approve', projectId: p.id, open: true }) : undefined}
+                                    onReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'reject', projectId: p.id, open: true }) : undefined}
+                                    onFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved" ? () => setApprovalDialogState({ type: 'finalApprove', projectId: p.id, open: true }) : undefined}
+                                    onProgressClick={() => setSelectedProjectForProgress(p)}
+                                    showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
+                                    showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
+                                    showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
+                                    compact={isCompactTable}
+                                    formatDate={formatDate}
+                                    isRTL={isRTL}
+                                  />
+                                );
+                              })}
+                              {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0)}px` }}>
+                                  <td colSpan={isCompactTable ? 6 : 26} className="ds-p-0 ds-border-none" />
+                                </tr>
+                              )}
+                            </>
+                          ) : (
+                            filteredProjects.map((p, i) => (
+                              <ProjectTableRow
+                                key={p?.id ?? i}
+                                project={p}
+                                index={i}
+                                isSelected={selectedIds.has(p.id)}
+                                onToggle={() => toggleSelect(p.id)}
+                                onDelete={() => askDelete(p)}
+                                onApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'approve', projectId: p.id, open: true }) : undefined}
+                                onReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'reject', projectId: p.id, open: true }) : undefined}
+                                onFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved" ? () => setApprovalDialogState({ type: 'finalApprove', projectId: p.id, open: true }) : undefined}
+                                onProgressClick={() => setSelectedProjectForProgress(p)}
+                                showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
+                                showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
+                                showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
+                                compact={isCompactTable}
+                                formatDate={formatDate}
+                                isRTL={isRTL}
+                              />
+                            ))
+                          )}
+                        </tbody>
+
+                        <tfoot>
+                          <tr>
+                            <td colSpan={isCompactTable ? 6 : 26} className="ds-table__foot">
+                              {t("matching_total", { count: filteredProjects.length, total: projects.length })}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </ProjectsTableErrorBoundary>
                 </div>
-              ))}
-            </div>
-          ) : filteredProjects.length === 0 ? (
-            <NoDataFound
-              icon="📋"
-              title={
-                approvalStatusFilter === "final_approved"
-                  ? (t("no_approved_projects"))
-                  : approvalStatusFilter === "approved"
-                  ? (t("no_final_approvals"))
-                  : approvalStatusFilter === "pending_approvals"
-                  ? (t("no_pending_approvals"))
-                  : (t("no_projects_match"))
-              }
-              description={
-                approvalStatusFilter === "final_approved"
-                  ? (t("no_approved_projects_desc"))
-                  : approvalStatusFilter === "approved"
-                  ? (t("no_final_approvals_description"))
-                  : approvalStatusFilter === "pending_approvals"
-                  ? (t("no_pending_approvals_desc"))
-                  : (t("no_projects_desc"))
-              }
-              onCreate={approvalStatusFilter === "all" ? createProject : undefined}
-            />
-          ) : (
-            <>
-            {/* Desktop Table View */}
-            <div className="projects-table-desktop">
-              <ProjectsTableErrorBoundary>
-              <div
-                ref={tableContainerRef}
-                className="ds-table__wrap projects-table-container"
-                style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'auto' }}
-              >
-                <table className={`ds-table projects-table ${isCompactTable ? 'projects-table--compact' : ''}`}>
-              <thead>
-                <tr>
-                  <th className="col-checkbox">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onChange={() => {
-                        toggleSelectAll();
-                      }}
-                      aria-label={t("select_all")}
-                    />
-                  </th>
-                  <th className="col-number">#</th>
-                  <th
-                    className={`col-code ds-table__sortable ${sortBy === 'internal_code' ? 'active' : ''}`}
-                    onClick={() => handleSort('internal_code')}
-                    title={`${t("project_view_internal_code").replace(":", "")} - ${t("click_to_sort")}`}
-                  >
-                    {t("project_view_internal_code").replace(":", "")}
-                    <span className="ds-table__sort-icon">{getSortIcon('internal_code')}</span>
-                  </th>
-                  <th
-                    className={`col-name ds-table__sortable ${sortBy === 'project_name' ? 'active' : ''}`}
-                    onClick={() => handleSort('project_name')}
-                    title={`${t("project_name")} - ${t("click_to_sort")}`}
-                  >
-                    {t("project_name")}
-                    <span className="ds-table__sort-icon">{getSortIcon('project_name')}</span>
-                  </th>
-                  <th
-                    className={`col-consultant ds-table__sortable ${sortBy === 'consultant' ? 'active' : ''}`}
-                    onClick={() => handleSort('consultant')}
-                    title={`${t("consultant")} - ${t("click_to_sort")}`}
-                  >
-                    {t("consultant")}
-                    <span className="ds-table__sort-icon">{getSortIcon('consultant')}</span>
-                  </th>
-                  {!isCompactTable && (
-                    <>
-                  <th
-                    className={`col-date ds-table__sortable ${sortBy === 'project_end_date' ? 'active' : ''}`}
-                    onClick={() => handleSort('project_end_date')}
-                    title={`${t("project_end_date")} - ${t("click_to_sort")}`}
-                  >
-                    {t("project_end_date")}
-                    <span className="ds-table__sort-icon">{getSortIcon('project_end_date')}</span>
-                  </th>
-                  <th
-                    className={`col-status ds-table__sortable ${sortBy === 'status' ? 'active' : ''}`}
-                    onClick={() => handleSort('status')}
-                    title={`${t("project_status")} - ${t("click_to_sort")}`}
-                  >
-                    {t("project_status")}
-                    <span className="ds-table__sort-icon">{getSortIcon('status')}</span>
-                  </th>
-                  <th className="col-location" title={t("table_location")}>{t("table_location")}</th>
-                  <th className="col-date" title={t("table_start_order_date")}>{t("table_start_order_date")}</th>
-                  <th className="col-date" title={t("table_planned_completion")}>{t("table_planned_completion")}</th>
-                  <th className="col-days" title={t("table_elapsed_duration")}>{t("table_elapsed_duration")}</th>
-                  <th className="col-days" title={t("table_time_delay")}>{t("table_time_delay")}</th>
-                  <th className="col-pct" title={t("progress_col_actual_current")}>{t("progress_col_actual_current")}</th>
-                  <th className="col-pct" title={t("progress_col_technical")}>{t("progress_col_technical")}</th>
-                  <th className="col-pct" title={t("progress_col_technical_approved")}>{t("progress_col_technical_approved")}</th>
-                  <th className="col-pct" title={t("progress_col_financial")}>{t("progress_col_financial")}</th>
-                  <th className="col-pct" title={t("progress_col_financial_approved")}>{t("progress_col_financial_approved")}</th>
-                  <th className="col-pct" title={t("progress_col_gap")}>{t("progress_col_gap")}</th>
-                  <th className="col-status" title={t("table_payment_status")}>{t("table_payment_status")}</th>
-                  <th className="col-amount" title={t("table_current_due_amount")}>{t("table_current_due_amount")}</th>
-                  <th className="col-days" title={t("table_payment_delay_days")}>{t("table_payment_delay_days")}</th>
-                  <th className="col-status" title={t("table_project_closure_status")}>{t("table_project_closure_status")}</th>
-                  <th className="col-icon" title={t("table_financial_status")}>{t("table_financial_status")}</th>
-                    </>
-                  )}
-                  <th className="col-actions" title={t("action")}>{t("action")}</th>
-                </tr>
-              </thead>
 
-              <tbody>
-                {useVirtual ? (
-                  <>
-                    {rowVirtualizer.getVirtualItems().length > 0 && (
-                      <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }}>
-                        <td colSpan={isCompactTable ? 6 : 26} className="ds-p-0 ds-border-none" />
-                      </tr>
-                    )}
-                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                      const p = filteredProjects[virtualRow.index];
-                      return (
-                        <ProjectTableRow
-                          key={p?.id ?? virtualRow.index}
-                          project={p}
-                          index={virtualRow.index}
-                          isSelected={selectedIds.has(p.id)}
-                          onToggle={() => toggleSelect(p.id)}
-                          onDelete={() => askDelete(p)}
-                          onApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'approve', projectId: p.id, open: true }) : undefined}
-                          onReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'reject', projectId: p.id, open: true }) : undefined}
-                          onFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved" ? () => setApprovalDialogState({ type: 'finalApprove', projectId: p.id, open: true }) : undefined}
-                          onProgressClick={() => setSelectedProjectForProgress(p)}
-                          showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
-                          showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
-                          showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
-                          compact={isCompactTable}
-                          formatDate={formatDate}
-                          isRTL={isRTL}
-                        />
-                      );
-                    })}
-                    {rowVirtualizer.getVirtualItems().length > 0 && (
-                      <tr style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0)}px` }}>
-                        <td colSpan={isCompactTable ? 6 : 26} className="ds-p-0 ds-border-none" />
-                      </tr>
-                    )}
-                  </>
-                ) : (
-                  filteredProjects.map((p, i) => (
-                    <ProjectTableRow
+                {/* Mobile Card View */}
+                <div className="projects-table-mobile">
+                  {filteredProjects.map((p, i) => (
+                    <ProjectCard
                       key={p?.id ?? i}
                       project={p}
                       index={i}
@@ -641,53 +630,16 @@ export default function ProjectsPage() {
                       onApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'approve', projectId: p.id, open: true }) : undefined}
                       onReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'reject', projectId: p.id, open: true }) : undefined}
                       onFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved" ? () => setApprovalDialogState({ type: 'finalApprove', projectId: p.id, open: true }) : undefined}
-                      onProgressClick={() => setSelectedProjectForProgress(p)}
                       showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                       showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                       showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
-                      compact={isCompactTable}
-                      formatDate={formatDate}
-                      isRTL={isRTL}
                     />
-                  ))
-                )}
-              </tbody>
-
-              <tfoot>
-                <tr>
-                  <td colSpan={isCompactTable ? 6 : 26} className="ds-table__foot">
-                    {t("matching_total", { count: filteredProjects.length, total: projects.length })}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-              </div>
-              </ProjectsTableErrorBoundary>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="projects-table-mobile">
-              {filteredProjects.map((p, i) => (
-                <ProjectCard
-                  key={p?.id ?? i}
-                  project={p}
-                  index={i}
-                  isSelected={selectedIds.has(p.id)}
-                  onToggle={() => toggleSelect(p.id)}
-                  onDelete={() => askDelete(p)}
-                  onApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'approve', projectId: p.id, open: true }) : undefined}
-                  onReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending" ? () => setApprovalDialogState({ type: 'reject', projectId: p.id, open: true }) : undefined}
-                  onFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved" ? () => setApprovalDialogState({ type: 'finalApprove', projectId: p.id, open: true }) : undefined}
-                  showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
-                  showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
-                  showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
-                />
-              ))}
-            </div>
-            </>
-          )}
+                  ))}
+                </div>
+              </>
+            )}
           </>
-          )}
+        )}
 
         {/* Filter Drawer */}
         <FilterDrawer
@@ -722,7 +674,7 @@ export default function ProjectsPage() {
           desc={
             <>
               {t("confirm_delete_desc")}{" "}
-              <strong className="dialog-highlight">{targetProject?.name}</strong>?<br/>
+              <strong className="dialog-highlight">{targetProject?.name}</strong>?<br />
               {t("delete_cannot_undo")}
             </>
           }
@@ -742,7 +694,7 @@ export default function ProjectsPage() {
             <>
               {t("bulk_delete_desc")}{" "}
               <strong>{selectedDraftIds.size}</strong>{" "}
-              {t("bulk_delete_desc2")}<br/>
+              {t("bulk_delete_desc2")}<br />
               {t("bulk_delete_continue")}
             </>
           }
@@ -762,7 +714,7 @@ export default function ProjectsPage() {
             <>
               {t("bulk_delete_desc")}{" "}
               <strong>{selectedCount}</strong>{" "}
-              {t("bulk_delete_desc2")}<br/>
+              {t("bulk_delete_desc2")}<br />
               {t("bulk_delete_continue")}
             </>
           }

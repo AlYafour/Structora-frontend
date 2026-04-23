@@ -125,78 +125,149 @@ const OverviewTab = memo(function OverviewTab({ projectId, project, contract, si
       </div>
       
       {/* Project Information Cards - Compact Professional Layout */}
-      <div className="ds-grid-auto-240 ds-mt-6">
-        {project?.internal_code && (
-          <Card className="ds-info-card">
-            <div className="prj-info-label">{t("project_view_internal_code")}</div>
-            <div className="prj-info-value overview-tab__code-value">
-              <span className="mono overview-tab__code-text">
-                {formatInternalCode(project.internal_code)}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyCode}
-                className={`overview-tab__copy-btn ${copied ? "overview-tab__copy-btn--copied" : ""}`}
-                title={copied ? t("copied") : t("copy_code")}
-              >
-                {copied ? t("copied") : t("copy_code")}
-              </Button>
-            </div>
-          </Card>
-        )}
-        
-        <Card className="ds-info-card">
-          <div className="prj-info-label">{t("project_type_label")}</div>
-          <div className="prj-info-value">
-            {hasNewClassification ? (
-              <div className="overview-tab__classification">
-                <span>
-                  {[categoryLabel, buildingTypeLabel].filter(Boolean).join(" • ")}
-                </span>
-                {subClassLabel && (
-                  <div className="overview-tab__classification-sub">{subClassLabel}</div>
-                )}
-              </div>
-            ) : (
-              allocationTypeLabel || t("empty_value")
-            )}
-          </div>
-        </Card>
+     {/* Project Site Ribbon */}
+<div className="overview-ribbon ds-mt-6">
+  <div className="overview-ribbon__top-stripe" />
 
-        
-        {project?.status && (
-          <Card className="ds-info-card">
-            <div className="prj-info-label">{t("project_status")}</div>
-            <div className="prj-info-value">
-              <div className="ds-flex ds-items-center ds-gap-2">
-                <span
-                  className="overview-tab__status-dot"
-                  style={{ backgroundColor: getProjectStatusColor(project.status) }}
-                />
-                <span>{getProjectStatusLabel(project.status, i18n.language)}</span>
-              </div>
-            </div>
-          </Card>
-        )}
-        
-        {contractTypeLabel && (
-          <Card className="ds-info-card">
-            <div className="prj-info-label">{t("contract_type_label")}</div>
-            <div className="prj-info-value">
-              {contractTypeLabel}
-            </div>
-          </Card>
-        )}
-        
-        <Card className="ds-info-card">
-          <div className="prj-info-label">{t("contract.sections.classification")}</div>
-          <div className="prj-info-value">
-            {contractClassificationLabel}
-          </div>
-        </Card>
+  <div
+    className="overview-ribbon__hero"
+    style={{ backgroundImage: "url('/construction-1.jpg')" }}
+  >
+    <div className="overview-ribbon__hero-overlay" />
+
+    <div className="overview-ribbon__hero-label">
+      ▲ SITE · {contractTypeLabel || t("contract_type_label")} · {allocationTypeLabel || t("project_type_label")}
+    </div>
+
+    <div className="overview-ribbon__hero-content">
+      <div className="overview-ribbon__hero-title">
+        {project?.internal_code
+          ? `PROJECT ${formatInternalCode(project.internal_code)}`
+          : project?.name || t("project_view_internal_code")}
       </div>
+
+      <div className="overview-ribbon__hero-subtitle">
+        · {project?.name || t("project_type_label")} · {contractClassificationLabel}
+      </div>
+    </div>
+
+    {project?.status && (
+      <div className="overview-ribbon__status-badge">
+        <span
+          className="overview-ribbon__status-dot"
+          style={{ backgroundColor: getProjectStatusColor(project.status) }}
+        />
+        {getProjectStatusLabel(project.status, i18n.language)}
+      </div>
+    )}
+  </div>
+
+  <div className="overview-ribbon__data">
+    <div className="overview-ribbon__slots">
+      {project?.internal_code && (
+        <div className="overview-ribbon__slot">
+          <div className="overview-ribbon__slot-top">
+            <span className="overview-ribbon__slot-num">/ 01</span>
+          </div>
+
+          <div className="overview-ribbon__slot-label">
+            {t("project_view_internal_code")}
+          </div>
+
+          <div className="overview-ribbon__slot-value overview-ribbon__slot-value--mono">
+            {formatInternalCode(project.internal_code)}
+          </div>
+
+          <div className="overview-ribbon__slot-subrow">
+            <div className="overview-ribbon__slot-sub">Reference ID</div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyCode}
+              className={`overview-ribbon__copy-btn ${copied ? "overview-ribbon__copy-btn--copied" : ""}`}
+              title={copied ? t("copied") : t("copy_code")}
+            >
+              {copied ? t("copied") : t("copy_code")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="overview-ribbon__slot">
+        <div className="overview-ribbon__slot-top">
+          <span className="overview-ribbon__slot-num">/ 02</span>
+        </div>
+
+        <div className="overview-ribbon__slot-label">{t("project_type_label")}</div>
+
+        <div className="overview-ribbon__slot-value">
+          {hasNewClassification
+            ? [categoryLabel, buildingTypeLabel].filter(Boolean).join(" · ")
+            : allocationTypeLabel || t("empty_value")}
+        </div>
+
+        <div className="overview-ribbon__slot-sub">
+          {hasNewClassification
+            ? subClassLabel || landUseLabel || t("empty_value")
+            : landUseLabel || t("empty_value")}
+        </div>
+      </div>
+
+      {project?.status && (
+        <div className="overview-ribbon__slot">
+          <div className="overview-ribbon__slot-top">
+            <span className="overview-ribbon__slot-num">/ 03</span>
+          </div>
+
+          <div className="overview-ribbon__slot-label">{t("project_status")}</div>
+
+          <div className="overview-ribbon__slot-value overview-ribbon__slot-value--status">
+            <span
+              className="overview-ribbon__status-dot overview-ribbon__status-dot--inline"
+              style={{ backgroundColor: getProjectStatusColor(project.status) }}
+            />
+            {getProjectStatusLabel(project.status, i18n.language)}
+          </div>
+
+          <div className="overview-ribbon__slot-sub">Awaiting approval</div>
+        </div>
+      )}
+
+      {contractTypeLabel && (
+        <div className="overview-ribbon__slot">
+          <div className="overview-ribbon__slot-top">
+            <span className="overview-ribbon__slot-num">/ 04</span>
+          </div>
+
+          <div className="overview-ribbon__slot-label">{t("contract_type_label")}</div>
+
+          <div className="overview-ribbon__slot-value">{contractTypeLabel}</div>
+
+          <div className="overview-ribbon__slot-sub">Project contract structure</div>
+        </div>
+      )}
+
+      <div className="overview-ribbon__slot overview-ribbon__slot--last">
+        <div className="overview-ribbon__slot-top">
+          <span className="overview-ribbon__slot-num">/ 05</span>
+        </div>
+
+        <div className="overview-ribbon__slot-label">
+          {t("contract.sections.classification")}
+        </div>
+
+        <div className="overview-ribbon__slot-value">
+          {contractClassificationLabel}
+        </div>
+
+        <div className="overview-ribbon__slot-sub">Funding classification</div>
+      </div>
+    </div>
+
+    <div className="overview-ribbon__bottom-stripe" />
+  </div>
+</div>
     </div>
   );
 });
