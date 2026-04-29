@@ -12,11 +12,16 @@ import { formatMoney, formatDate } from "../../../utils/formatters";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { VatAmount } from "../../../components/common/VatBreakdownPopover";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload }) {
  const { t, i18n } = useTranslation();
  const { success, error: showError } = useNotifications();
  const navigate = useTenantNavigate();
+ const { hasPermission, isAdmin } = useAuth();
+ const canCreateInvoice = isAdmin || hasPermission('invoices.create');
+ const canEditInvoice   = isAdmin || hasPermission('invoices.edit');
+ const canVoidInvoice   = isAdmin || hasPermission('invoices.approve');
 
  // Void state
  const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
@@ -163,9 +168,11 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
  <div className="prj-tab-panel">
  <div className="prj-tab-header">
  <div className="prj-tab-actions">
+ {canCreateInvoice && (
  <Button as={Link} to={`/invoices/create?project=${projectId}`} variant="primary" size="md">
  {t("add_invoice")}
  </Button>
+ )}
  <Button variant="outline" size="md" onClick={() => setShowVoided(!showVoided)}>
   {showVoided ? t("hide_voided") : t("show_voided")}
  </Button>
@@ -337,8 +344,8 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
  <td className="col-actions" onClick={(e) => e.stopPropagation()}>
  {!isVoided && (
  <ActionMenu items={[
- { label: t("edit"), to: `/invoices/${invoice.id}/edit`, type: "link" },
- { label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingInvoiceId(invoice.id); setVoidConfirmOpen(true); } },
+ ...(canEditInvoice ? [{ label: t("edit"), to: `/invoices/${invoice.id}/edit`, type: "link" }] : []),
+ ...(canVoidInvoice ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingInvoiceId(invoice.id); setVoidConfirmOpen(true); } }] : []),
  ]} />
  )}
  </td>

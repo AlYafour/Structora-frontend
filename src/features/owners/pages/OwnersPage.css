@@ -9,3 +9,26 @@
   text-align: left;
   display: inline-block;
 }
+
+.owners-page__name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.owners-page__name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+
+.owners-page__name-primary {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.owners-page__name-secondary {
+  font-size: 0.85rem;
+  font-weight: 500;
+}

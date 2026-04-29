@@ -212,49 +212,50 @@
 
 /* ==================== DARK MODE ==================== */
 html.theme-dark .fe-section {
-  border-color: var(--gray-700, #374151);
-  background: var(--gray-900, #111827);
+  border-color: var(--border, rgba(200, 168, 78, 0.14));
+  background: var(--surface, #0D1A30);
 }
 
 html.theme-dark .fe-section__header {
-  background: var(--color-primary, #14213D);
+  background: var(--theme-accent, #1A3358);
+  color: #F0F4FF;
 }
 
 html.theme-dark .fe-table th {
-  background: var(--gray-800, #1f2937);
-  border-color: var(--gray-700, #374151);
-  color: var(--gray-300, #d1d5db);
+  background: var(--surface-2, #101E36);
+  border-color: var(--border, rgba(200, 168, 78, 0.14));
+  color: var(--muted, rgba(240, 244, 255, 0.6));
 }
 
 html.theme-dark .fe-table td {
-  background: var(--gray-900, #111827);
-  border-color: var(--gray-700, #374151);
-  color: var(--gray-200, #e5e7eb);
+  background: var(--surface, #0D1A30);
+  border-color: var(--border, rgba(200, 168, 78, 0.14));
+  color: var(--ink, #F0F4FF);
 }
 
 html.theme-dark .fe-row--total td {
-  background: rgba(20, 33, 61, 0.1);
+  background: rgba(200, 168, 78, 0.06);
 }
 
 html.theme-dark .fe-row--total .fe-td-value {
-  color: var(--color-primary, #14213D);
+  color: var(--accent, #D6B65A);
 }
 
 html.theme-dark .fe-row--highlight td {
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(200, 168, 78, 0.08);
 }
 
 html.theme-dark .fe-status-badge--balanced {
-  background: rgba(22, 163, 74, 0.15);
-  color: #4ade80;
+  background: rgba(94, 187, 124, 0.15);
+  color: #86efac;
 }
 
 html.theme-dark .fe-status-badge--outstanding {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
+  background: rgba(214, 182, 90, 0.15);
+  color: #e2cc7e;
 }
 
 html.theme-dark .fe-status-badge--overpaid {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: rgba(232, 93, 86, 0.15);
+  color: #fca5a5;
 }

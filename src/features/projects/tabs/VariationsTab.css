@@ -7,3 +7,14 @@
 .variations-tab__description-cell {
   max-width: 300px;
 }
+
+.prj-money-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prj-money-with-icon__icon {
+  width: 12px;
+  height: 12px;
+}

@@ -2,9 +2,12 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/common/Button";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const FinancialTab = memo(function FinancialTab({ projectId }) {
   const { t } = useTranslation();
+  const { hasPermission, isAdmin } = useAuth();
+  const canViewFinancial = isAdmin || hasPermission('financial.view');
 
   return (
     <div className="prj-tab-panel">
@@ -20,11 +23,13 @@ const FinancialTab = memo(function FinancialTab({ projectId }) {
             <div className="prj-info-value">{t("financial_summary_desc")}</div>
           </div>
         </div>
-        <div className="prj-tab-actions">
-          <Button as={Link} variant="primary" to={`/projects/${projectId}/summary`} size="md">
-            {t("view")} {t("project_financial_summary")}
-          </Button>
-        </div>
+        {canViewFinancial && (
+          <div className="prj-tab-actions">
+            <Button as={Link} variant="primary" to={`/projects/${projectId}/summary`} size="md">
+              {t("view")} {t("project_financial_summary")}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Financial Entitlement Section */}
@@ -36,11 +41,13 @@ const FinancialTab = memo(function FinancialTab({ projectId }) {
             <div className="prj-info-value">{t("financial_entitlement_desc")}</div>
           </div>
         </div>
-        <div className="prj-tab-actions">
-          <Button as={Link} variant="primary" to={`/projects/${projectId}/financial-entitlement`} size="md">
-            {t("view")} {t("financial_entitlement")}
-          </Button>
-        </div>
+        {canViewFinancial && (
+          <div className="prj-tab-actions">
+            <Button as={Link} variant="primary" to={`/projects/${projectId}/financial-entitlement`} size="md">
+              {t("view")} {t("financial_entitlement")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

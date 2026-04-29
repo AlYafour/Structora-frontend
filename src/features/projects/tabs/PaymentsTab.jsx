@@ -14,9 +14,14 @@ import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import AdvancePaymentMonitor from "../entries/payments/pages/components/AdvancePaymentMonitor";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload }) {
  const { t, i18n } = useTranslation();
+ const { hasPermission, isAdmin } = useAuth();
+ const canCreatePayment = isAdmin || hasPermission('payments.create');
+ const canEditPayment   = isAdmin || hasPermission('payments.edit');
+ const canVoidPayment   = isAdmin || hasPermission('payments.approve');
 
  const renderAmount = (value) => {
   const str = formatMoney(value, { lang: i18n.language });
@@ -211,9 +216,11 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  <div className="prj-tab-panel">
  <div className="prj-tab-header">
  <div className="prj-tab-actions">
+ {canCreatePayment && (
  <Button onClick={handleAddPayment} variant="primary" size="md">
  {t("add_payment")}
  </Button>
+ )}
  <Button variant="outline" size="md" onClick={() => setShowVoided(!showVoided)}>
   {showVoided ? t("hide_voided") : t("show_voided")}
  </Button>
@@ -417,8 +424,8 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
  <td className="col-actions" onClick={(e) => e.stopPropagation()}>
  {!isVoided && (
  <ActionMenu items={[
- { label: t("edit"), type: "button", onClick: () => handleEditPayment(payment) },
- { label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingPaymentId(payment.id); setVoidConfirmOpen(true); } },
+ ...(canEditPayment ? [{ label: t("edit"), type: "button", onClick: () => handleEditPayment(payment) }] : []),
+ ...(canVoidPayment ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingPaymentId(payment.id); setVoidConfirmOpen(true); } }] : []),
  ]} />
  )}
  </td>

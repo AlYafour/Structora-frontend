@@ -10,6 +10,7 @@ import { formatDate } from "../../../utils/formatters";
 import { getProjectName } from "../utils/projectNameUtils.jsx";
 import { useSelectProject } from "../hooks/useSelectProject";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import PageHeader from "../../../components/layout/PageHeader.jsx";
 
 /**
  * Reusable SelectProjectPage component
@@ -72,7 +73,7 @@ export default function SelectProjectPage({
     <PageLayout loading={loading} loadingText={t("loading")}>
       <div className="select-project">
         {/* Header — single title, no subtitle repetition */}
-        <div className="select-project__header">
+        {/* <div className="select-project__header">
           <h1 className="select-project__title">{t(titleKey)}</h1>
           <div className="select-project__toolbar">
             {projects.length > 0 && (
@@ -108,7 +109,49 @@ export default function SelectProjectPage({
               {t(buttonLabelKey)}
             </Button>
           </div>
-        </div>
+        </div> */}
+
+        <PageHeader
+          title={t(titleKey)}
+          onBack={() => navigate(-1)} // or your custom back logic
+          actions={
+            <>
+              {projects.length > 0 && (
+                <div className="select-project__search">
+                  <FaSearch className="select-project__search-icon" />
+                  <input
+                    type="text"
+                    className="select-project__search-input"
+                    placeholder={t("search")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  {search && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="select-project__search-clear"
+                      onClick={() => setSearch("")}
+                    >
+                      <FaTimes />
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="primary"
+                className="select-project__btn"
+                onClick={handleContinue}
+                disabled={!selectedProjectId || projects.length === 0}
+              >
+                {t(buttonLabelKey)}
+              </Button>
+            </>
+          }
+        />
 
         {/* Count */}
         {projects.length > 0 && (

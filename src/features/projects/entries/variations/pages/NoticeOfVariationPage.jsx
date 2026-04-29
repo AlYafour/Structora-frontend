@@ -37,8 +37,21 @@ import RemarksAttachmentsSection from './components/RemarksAttachmentsSection';
 import { validateVariationSubmit } from './utils/variationValidation';
 import { round2 } from './utils/variationCalculations';
 
+import { getProjectName } from '../../../utils/projectNameUtils.jsx';
 import './NoticeOfVariationPage.css';
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
+
+const computeNextVariationNumber = async (projectId) => {
+  try {
+    const variations = await projectApi.getVariations(projectId);
+    const nums = (variations || [])
+      .map(v => parseInt(v.variation_number, 10))
+      .filter(n => !isNaN(n));
+    return nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  } catch {
+    return 1;
+  }
+};
 
 export default function NoticeOfVariationPage({ variation: variationProp, project: projectProp, viewMode: viewModeProp }) {
   const { variationId, projectId } = useParams();
@@ -247,6 +260,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         if (variationProp.variation_invoice_file) {
           setExistingVariationAttachment(variationProp.variation_invoice_file);
         }
+      } else {
+        computeNextVariationNumber(projectProp.id).then(nextNum => {
+          const padded = String(nextNum).padStart(4, '0');
+          updateFormData({
+            variation_number: padded,
+            reference_no: `VAR${padded}`
+          });
+        });
       }
       setLoading(false);
       return;
@@ -256,14 +277,19 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       loadVariation();
     } else if (projectFromQuery) {
       loadProject(projectFromQuery)
-        .then(projectData => {
+        .then(async projectData => {
           const contractDescription = projectData?.contract_data?.project_description || '';
+          const nextNum = await computeNextVariationNumber(projectFromQuery);
+          const padded = String(nextNum).padStart(4, '0');
+          const updates = {
+            variation_number: padded,
+            reference_no: `VAR${padded}`
+          };
           if (contractDescription) {
-            updateFormData({
-              project_description: contractDescription,
-              variation_description: contractDescription
-            });
+            updates.project_description = contractDescription;
+            updates.variation_description = contractDescription;
           }
+          updateFormData(updates);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -382,7 +408,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
       const variationData = {
         project: project.id,
-        variation_number: formData.variation_number || '',
+        // Empty on create so backend atomically assigns the next available number (avoids concurrent-submit conflicts)
+        variation_number: variationId ? (formData.variation_number || '') : '',
         description: JSON.stringify(noticeData),
         amount: finalVariationAmount.toString(),
         final_amount: finalVariationAmount.toString(),
@@ -401,7 +428,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       if (hasNewFile) {
         // Only use FormData when there's a new file to upload
         const formDataToSend = new FormData();
-        Object.keys(variationData).forEach(key => formDataToSend.append(key, variationData[key]));
+        // Sanitize: JSON.stringify converts NaN→null (backend accepts), but FormData converts NaN→"NaN" (backend rejects DecimalField)
+        const safeVal = (v) => {
+          const s = String(v ?? '0');
+          return (s === 'NaN' || s === 'Infinity' || s === '-Infinity') ? '0' : s;
+        };
+        Object.keys(variationData).forEach(key => formDataToSend.append(key, safeVal(variationData[key])));
         formDataToSend.append('variation_invoice_file', variationAttachment);
 
         if (variationId) {
@@ -485,6 +517,25 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     return project.contract_data?.tender_no || project.awarding_data?.project_number || project.siteplan?.project_no || project.internal_code || `PRJ-${project.id}`;
   };
 
+  const getProjectTitle = () => {
+    if (!project) return '';
+    const nameData = getProjectName(project);
+    if (!nameData) return '';
+    const ar = nameData.ar || nameData.full || '';
+    const en = nameData.en || '';
+    return lang === 'en' ? (en || ar) : (ar || en);
+  };
+
+  const getProjectSubtitle = () => {
+    if (!project) return '';
+    const nameData = getProjectName(project);
+    if (!nameData) return '';
+    const ar = nameData.ar || nameData.full || '';
+    const en = nameData.en || '';
+    if (!ar || !en || ar === en) return '';
+    return lang === 'en' ? ar : en;
+  };
+
   /**
    * Render error state
    */
@@ -560,13 +611,25 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           onSave={undefined}
           saving={saving}
           formId="notice-variation-form"
+          title={getProjectTitle()}
+          subtitle={getProjectSubtitle()}
         >
           <div className="nvc-actionbar-info">
             <div className="nvc-actionbar-item">
               <span className="nvc-actionbar-label">{t('variation_no')}</span>
-              <span className="nvc-actionbar-value">
-                {variation?.variation_number || formData.variation_number || '—'}
-              </span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={formData.variation_number ?? ''}
+                  onChange={e => updateFormData({ variation_number: e.target.value })}
+                  className="nvc-actionbar-input"
+                  placeholder="0001"
+                />
+              ) : (
+                <span className="nvc-actionbar-value">
+                  {variation?.variation_number || formData.variation_number || '—'}
+                </span>
+              )}
             </div>
 
             <div className="nvc-actionbar-item">
@@ -580,20 +643,19 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       )}
 
       {/* Embedded Save Button */}
-      {isEmbeddedMode && isEditMode && (
+      {/* {isEmbeddedMode && isEditMode && (
         <div className="nvc-embedded-save-bar no-print">
           <Button type="submit" form="notice-variation-form" variant="primary" disabled={saving}>
             {saving ? t('saving') : t('save')}
           </Button>
         </div>
-      )}
+      )} */}
 
       {/* Main Document */}
       <form id="notice-variation-form" onSubmit={handleSubmit}>
         <div className="nvc-document">
           {/* Header Info */}
           <VariationHeaderInfo
-            project={project}
             formData={formData}
             isEditMode={isEditMode}
             onFormDataChange={setFormData}

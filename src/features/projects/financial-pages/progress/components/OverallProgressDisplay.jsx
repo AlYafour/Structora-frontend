@@ -1,61 +1,41 @@
 import React from 'react';
 import { formatPercent } from '../../../../../utils/formatters';
 
-export default function OverallProgressDisplay({ projectData, isRTL, t }) {
-  const formatVal = (val) => formatPercent(val, { showSymbol: false, fallback: '-' });
+const METRICS = [
+  { key: 'overall_actual_current',     labelKey: 'progress_actual_current' },
+  { key: 'overall_technical_current',  labelKey: 'progress_buckets_technical_current' },
+  { key: 'overall_technical_approved', labelKey: 'progress_buckets_technical_approved' },
+  { key: 'overall_financial',          labelKey: 'progress_buckets_financial' },
+  { key: 'overall_invoice_approved',   labelKey: 'progress_buckets_invoice_approved' },
+];
+
+export default function OverallProgressDisplay({ projectData, t }) {
+  const toPercent = (val) => {
+    const n = parseFloat(val);
+    return isNaN(n) ? 0 : Math.min(100, Math.max(0, n));
+  };
+
+  const display = (val) => {
+    const formatted = formatPercent(val, { showSymbol: false, fallback: null });
+    return formatted !== null ? `${formatted}%` : '—';
+  };
 
   return (
-    <div className="progress-section">
-      <h3 className="progress-section__title">
-        {t('progress_buckets_overall')} <span className="progress-section__subtitle">({t('progress_calculated_readonly')})</span>
-      </h3>
-      <div className="progress-section__grid progress-section__grid--5">
-        <div className="progress-field">
-          <label className="progress-field__label">{t('progress_actual_current')}</label>
-          <input
-            type="text"
-            className="prj-input"
-            value={formatVal(projectData?.overall_actual_current)}
-            disabled
-          />
-        </div>
-        <div className="progress-field">
-          <label className="progress-field__label">{t('progress_buckets_technical_current')}</label>
-          <input
-            type="text"
-            className="prj-input"
-            value={formatVal(projectData?.overall_technical_current)}
-            disabled
-          />
-        </div>
-        <div className="progress-field">
-          <label className="progress-field__label">{t('progress_buckets_technical_approved')}</label>
-          <input
-            type="text"
-            className="prj-input"
-            value={formatVal(projectData?.overall_technical_approved)}
-            disabled
-          />
-        </div>
-        <div className="progress-field">
-          <label className="progress-field__label">{t('progress_buckets_financial')}</label>
-          <input
-            type="text"
-            className="prj-input"
-            value={formatVal(projectData?.overall_financial)}
-            disabled
-          />
-        </div>
-        <div className="progress-field">
-          <label className="progress-field__label">{t('progress_buckets_invoice_approved')}</label>
-          <input
-            type="text"
-            className="prj-input"
-            value={formatVal(projectData?.overall_invoice_approved)}
-            disabled
-          />
-        </div>
-      </div>
+    <div className="progress-bars-grid">
+      {METRICS.map(({ key, labelKey }) => {
+        const pct = toPercent(projectData?.[key]);
+        return (
+          <div key={key} className="progress-bar-item">
+            <div className="progress-bar-item__header">
+              <span className="progress-bar-item__label">{t(labelKey)}</span>
+              <span className="progress-bar-item__value">{display(projectData?.[key])}</span>
+            </div>
+            <div className="progress-bar-track">
+              <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

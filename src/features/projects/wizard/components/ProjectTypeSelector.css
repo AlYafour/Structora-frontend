@@ -90,7 +90,10 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
-
+html.theme-dark .pts-ai-search__bar {
+  background: #1f2937;
+  border-color: #374151;
+}
 .pts-ai-search__icon {
   color: var(--muted);
   flex-shrink: 0;
@@ -1181,6 +1184,16 @@
 
 .pts-sr:focus-within {
   border-color: var(--accent);
+}
+
+html.theme-dark .pts-sr {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+html.theme-dark .pts-sr:focus-within {
+  border-color: #C8A84E;
+  box-shadow: 0 0 0 1px rgba(200, 168, 78, 0.25);
 }
 
 .pts-sr__icon {

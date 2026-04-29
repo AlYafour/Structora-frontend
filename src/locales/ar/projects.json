@@ -305,6 +305,8 @@
   "progress_delete_success": "تم حذف إدخال نسبة الإنجاز بنجاح",
   "progress_delete_error": "فشل حذف إدخال نسبة الإنجاز",
   "progress_delete_confirm": "هل أنت متأكد من حذف هذا الإدخال؟",
+  "project_details": "تفاصيل المشروع",
+
   "progress_buckets_overall": "الإجمالي",
   "progress_buckets_owner": "المالك (العقد الأساسي)",
   "progress_buckets_bank": "البنك (العقد الأساسي)",
@@ -521,6 +523,7 @@
   "id_placeholder": "784-XXXX-XXXXXXX-X",
   "verify_field": "تأكيد البيانات",
   "all_fields_must_be_verified": "يجب تأكيد جميع الحقول قبل المتابعة",
+  "verify_ai_fields_required": "يرجى تأكيد جميع الحقول المستخرجة تلقائياً من المستند قبل المتابعة",
   "confirm_default": "تأكيد",
   "cancel_default": "إلغاء",
   "file_attached_label": "تم إرفاق الملف",

@@ -13,6 +13,7 @@ import UnifiedSelect from "../../../../../components/common/Select";
 import DateInput from "../../../../../components/forms/DateInput";
 import CurrencyField from "../../../../../components/forms/CurrencyField";
 import { formatMoney } from "../../../../../utils/formatters";
+import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { removeCommas } from "../../../../../utils/formatters/number";
 import Button from "../../../../../components/common/Button";
 import { logger } from "../../../../../utils/logger";
@@ -34,9 +35,24 @@ const EMPTY_ITEM = () => ({
 
 export default function CreateActualInvoicePage() {
   const { invoiceId } = useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { success, error: showError } = useNotifications();
   const navigate = useTenantNavigate();
+
+  const formatAmountString = (value) => formatMoney(value, { lang: i18n.language });
+  const renderAmount = (value) => {
+    const str = formatAmountString(value);
+    if (i18n.language === 'en') {
+      const numPart = str.replace(/AED\s?/, '').trim();
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {numPart} <DirhamsIcon size={10} color="#374151" />
+        </span>
+      );
+    }
+    return str;
+  };
+
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const isEditMode = !!invoiceId;
@@ -70,12 +86,12 @@ export default function CreateActualInvoicePage() {
         const inclVat = Math.round(net * (1 + VAT_RATE) * 100) / 100;
         const vat = Math.round((inclVat - net) * 100) / 100;
         return {
-          description:    it.description || "",
+          description: it.description || "",
           amount_incl_vat: inclVat ? String(inclVat.toFixed(2)) : "",
-          total:          net,
-          vat:            vat,
-          source:         it.source === "bank_vat" ? "bank_vat" : it.variation_id ? "variation" : "base_contract",
-          variation_id:   it.variation_id || null,
+          total: net,
+          vat: vat,
+          source: it.source === "bank_vat" ? "bank_vat" : it.variation_id ? "variation" : "base_contract",
+          variation_id: it.variation_id || null,
         };
       }));
     }
@@ -106,8 +122,8 @@ export default function CreateActualInvoicePage() {
   });
 
   // Bank pays only its net share (no VAT) — owner pays VAT on bank's share
-  const bankActualFixed         = fin?.rebuiltContract?.bankActualFixed              || 0;
-  const bankVATpaidByOwner      = Math.round(bankActualFixed * 0.05 * 100) / 100;
+  const bankActualFixed = fin?.rebuiltContract?.bankActualFixed || 0;
+  const bankVATpaidByOwner = Math.round(bankActualFixed * 0.05 * 100) / 100;
 
   const payer = formData.payer || "owner";
 
@@ -177,58 +193,58 @@ export default function CreateActualInvoicePage() {
 
   // ── Owner base contract obligation & due ──────────────────────────
   // ownerTotalOriginal = owner.net + owner.fee (excl consultant fees paid to consultant)
-  const ownerTotalOriginal     = fin?.rebuiltContract?.ownerTotalOriginal || 0;
+  const ownerTotalOriginal = fin?.rebuiltContract?.ownerTotalOriginal || 0;
   // Owner's share obligation (incl VAT on owner's share only)
-  const ownerShareOblig        = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * 100) / 100;
+  const ownerShareOblig = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * 100) / 100;
   // Owner's TOTAL obligation to contractor includes owner share + bank VAT
-  const ownerBaseObligInclVAT  = Math.round((ownerShareOblig + bankVATpaidByOwner) * 100) / 100;
+  const ownerBaseObligInclVAT = Math.round((ownerShareOblig + bankVATpaidByOwner) * 100) / 100;
 
   // Cumulative amounts due by progress
-  const ownerShareDueCumul     = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * ownerBaseProgress / 100 * 100) / 100;
+  const ownerShareDueCumul = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * ownerBaseProgress / 100 * 100) / 100;
   // Bank VAT due is proportional to bank's progress (not owner's)
-  const bankVATdueByCumul      = Math.round(bankVATpaidByOwner * bankBaseProgress / 100 * 100) / 100;
+  const bankVATdueByCumul = Math.round(bankVATpaidByOwner * bankBaseProgress / 100 * 100) / 100;
   // Combined cumulative (for overall tracking)
-  const ownerBaseDueCumul      = ownerShareDueCumul + bankVATdueByCumul;
+  const ownerBaseDueCumul = ownerShareDueCumul + bankVATdueByCumul;
 
   // ── SEPARATED due this cycle (the key fix) ──
   // Base contract due = owner share cumulative − previous base contract invoices
   const ownerBaseOnlyDueThisCycle = Math.max(0, ownerShareDueCumul - prevOwnerBaseInvoiced);
   // Bank VAT due = bank VAT cumulative − previous bank VAT invoices
-  const bankVATDueThisCycle     = Math.max(0, bankVATdueByCumul - prevBankVATInvoiced);
+  const bankVATDueThisCycle = Math.max(0, bankVATdueByCumul - prevBankVATInvoiced);
   // Combined (for overall tracking)
-  const ownerBaseDueThisCycle   = ownerBaseOnlyDueThisCycle + bankVATDueThisCycle;
+  const ownerBaseDueThisCycle = ownerBaseOnlyDueThisCycle + bankVATDueThisCycle;
 
   // Remaining
-  const ownerBaseOnlyRemaining  = Math.max(0, ownerShareOblig - prevOwnerBaseInvoiced);
-  const bankVATRemaining        = Math.max(0, bankVATpaidByOwner - prevBankVATInvoiced);
-  const ownerBaseRemaining      = ownerBaseOnlyRemaining + bankVATRemaining;
+  const ownerBaseOnlyRemaining = Math.max(0, ownerShareOblig - prevOwnerBaseInvoiced);
+  const bankVATRemaining = Math.max(0, bankVATpaidByOwner - prevBankVATInvoiced);
+  const ownerBaseRemaining = ownerBaseOnlyRemaining + bankVATRemaining;
 
   // ── Bank obligation & due (bank pays NO VAT — owner pays VAT on bank's share) ──
   const bankObligationToContractor = bankActualFixed;  // net only, no VAT
-  const bankRemaining      = Math.max(0, bankObligationToContractor - prevBankInvoiced);
-  const bankDueCumul       = bankObligationToContractor * bankBaseProgress / 100;
-  const bankDueThisCycle   = Math.max(0, bankDueCumul - prevBankInvoiced);
+  const bankRemaining = Math.max(0, bankObligationToContractor - prevBankInvoiced);
+  const bankDueCumul = bankObligationToContractor * bankBaseProgress / 100;
+  const bankDueThisCycle = Math.max(0, bankDueCumul - prevBankInvoiced);
 
   // ── VO info per variation (using per-VO progress) ─────────────────
   const getVOInfo = useCallback((vo) => {
     if (!vo) return { obligation: 0, prevInvoiced: 0, dueThisCycle: 0, remaining: 0, progress: 0 };
-    const obligation   = parseFloat(vo.total_amount || 0) * (1 + VAT_RATE);
-    const prevInv      = getPrevVOInvoiced(vo.id);
-    const voProg       = getVOProgress(vo.id);
-    const dueCumul     = obligation * voProg / 100;
+    const obligation = parseFloat(vo.total_amount || 0) * (1 + VAT_RATE);
+    const prevInv = getPrevVOInvoiced(vo.id);
+    const voProg = getVOProgress(vo.id);
+    const dueCumul = obligation * voProg / 100;
     const dueThisCycle = Math.max(0, dueCumul - prevInv);
-    const remaining    = Math.max(0, obligation - prevInv);
+    const remaining = Math.max(0, obligation - prevInv);
     return { obligation, prevInvoiced: prevInv, dueThisCycle, remaining, progress: voProg };
   }, [getPrevVOInvoiced, getVOProgress]);
 
   // ── Totals for owner ──────────────────────────────────────────────
   // Owner total obligation to contractor = base contract + all VOs (all incl VAT)
-  const totalVOsObligation     = variations.reduce((sum, vo) => sum + getVOInfo(vo).obligation, 0);
+  const totalVOsObligation = variations.reduce((sum, vo) => sum + getVOInfo(vo).obligation, 0);
   const ownerInvoiceObligation = ownerBaseObligInclVAT + totalVOsObligation;
-  const ownerRemaining         = Math.max(0, ownerInvoiceObligation - prevOwnerInvoiced);
-  const totalVOsDueThisCycle   = variations.reduce((sum, vo) => sum + getVOInfo(vo).dueThisCycle, 0);
-  const ownerDueThisCycle      = ownerBaseDueThisCycle + totalVOsDueThisCycle;
-  const totalVOsRemaining      = variations.reduce((sum, vo) => sum + getVOInfo(vo).remaining, 0);
+  const ownerRemaining = Math.max(0, ownerInvoiceObligation - prevOwnerInvoiced);
+  const totalVOsDueThisCycle = variations.reduce((sum, vo) => sum + getVOInfo(vo).dueThisCycle, 0);
+  const ownerDueThisCycle = ownerBaseDueThisCycle + totalVOsDueThisCycle;
+  const totalVOsRemaining = variations.reduce((sum, vo) => sum + getVOInfo(vo).remaining, 0);
 
   // ── VOs selected in the items table (unique) ─────────────────────
   const selectedVOsInItems = items
@@ -290,9 +306,9 @@ export default function CreateActualInvoicePage() {
   };
 
   // ── Totals ────────────────────────────────────────────────────────
-  const totalInclVAT   = items.reduce((s, it) => s + (parseFloat(removeCommas(it.amount_incl_vat || "0")) || 0), 0);
-  const totalExclVAT   = items.reduce((s, it) => s + (parseFloat(it.total) || 0), 0);
-  const vatAmount      = Math.round((totalInclVAT - totalExclVAT) * 100) / 100;
+  const totalInclVAT = items.reduce((s, it) => s + (parseFloat(removeCommas(it.amount_incl_vat || "0")) || 0), 0);
+  const totalExclVAT = items.reduce((s, it) => s + (parseFloat(it.total) || 0), 0);
+  const vatAmount = Math.round((totalInclVAT - totalExclVAT) * 100) / 100;
 
   // Calculate deduction preview when owner invoice amount changes
   useEffect(() => {
@@ -306,7 +322,7 @@ export default function CreateActualInvoicePage() {
     } else {
       setDeductionPreview(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.project, payer, totalInclVAT, advanceSummary, applyAdvanceDeduction]);
 
   // ── Validation ────────────────────────────────────────────────────
@@ -365,7 +381,7 @@ export default function CreateActualInvoicePage() {
         const baseAmountInclVAT = (parseFloat(removeCommas(baseItem.amount_incl_vat || "0")) || 0);
         if (baseAmountInclVAT > ownerBaseOnlyDueThisCycle + 0.01) {
           const confirmed = window.confirm(
-            `${t("base_amount_exceeds_due") || "تحذير: مبلغ العقد الأساسي"} (${formatMoney(baseAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatMoney(ownerBaseOnlyDueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
+            `${t("base_amount_exceeds_due") || "تحذير: مبلغ العقد الأساسي"} (${formatAmountString(baseAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(ownerBaseOnlyDueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
           );
           if (!confirmed) return false;
         }
@@ -379,7 +395,7 @@ export default function CreateActualInvoicePage() {
             const voAmountInclVAT = (parseFloat(removeCommas(item.amount_incl_vat || "0")) || 0);
             if (voAmountInclVAT > voInfo.dueThisCycle + 0.01) {
               const confirmed = window.confirm(
-                `${t("vo_amount_exceeds_due") || "تحذير: مبلغ أمر التغيير"} (${formatMoney(voAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatMoney(voInfo.dueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
+                `${t("vo_amount_exceeds_due") || "تحذير: مبلغ أمر التغيير"} (${formatAmountString(voAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(voInfo.dueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
               );
               if (!confirmed) return false;
             }
@@ -400,24 +416,24 @@ export default function CreateActualInvoicePage() {
     try {
       const r2 = (v) => Math.round((parseFloat(v) || 0) * 100) / 100;
       const payload = {
-        project:        parseInt(formData.project),
-        payment:        null,
-        payer:          payer,
-        amount:         r2(totalInclVAT),
-        invoice_date:   formData.invoice_date,
+        project: parseInt(formData.project),
+        payment: null,
+        payer: payer,
+        amount: r2(totalInclVAT),
+        invoice_date: formData.invoice_date,
         invoice_number: formData.invoice_number?.trim() || null,
-        description:    formData.description || "",
+        description: formData.description || "",
         skip_advance_deduction: !applyAdvanceDeduction,
         items: items.map(it => ({
-          description:  it.description || (
+          description: it.description || (
             it.source === "variation" ? `${t("invoice_item_variation_prefix")} #${it.variation_id}` :
-            it.source === "bank_vat"  ? t("bank_vat_paid_by_owner") :
+            it.source === "bank_vat" ? t("bank_vat_paid_by_owner") :
             t("invoice_item_base_contract")
           ),
-          quantity:     1,
-          unit_price:   r2(it.total),
-          total:        r2(it.total),
-          source:       it.source || "base_contract",
+          quantity: 1,
+          unit_price: r2(it.total),
+          total: r2(it.total),
+          source: it.source || "base_contract",
           variation_id: it.source === "variation" ? (parseInt(it.variation_id) || null) : null,
         })),
       };
@@ -432,7 +448,6 @@ export default function CreateActualInvoicePage() {
       }
 
       invalidateProjectQueries(queryClient, projectId);
-
       navigate(`/projects/${projectId}?tab=invoices`);
     } catch (err) {
       logger.error("Error saving invoice", err);
@@ -477,12 +492,10 @@ export default function CreateActualInvoicePage() {
         </FinancialActionBar>
 
         <form id="create-invoice-form" onSubmit={handleSubmit} className="create-invoice-form">
-
           {/* ── Card 1: Invoice Details ── */}
           <div className="card">
             <div className="card__header">{t("invoice_details")}</div>
             <div className="card__body">
-
               {/* Row 1: Project + Payer + Date */}
               <div className="invoice-form__row invoice-form__row--3">
                 <div className="invoice-form__field">
@@ -575,9 +588,7 @@ export default function CreateActualInvoicePage() {
               {/* ── Info bar ── */}
               {showInfoBar && (
                 <div className="invoice-form__info-bar">
-
                   {payer === "bank" ? (
-                    /* ── Bank block — bank pays NO VAT, owner pays VAT on bank's share ── */
                     <>
                       <div className="invoice-form__info-item">
                         <span className="invoice-form__info-label">{t("current_progress")}</span>
@@ -587,33 +598,31 @@ export default function CreateActualInvoicePage() {
                       </div>
                       <div className="invoice-form__info-item">
                         <span className="invoice-form__info-label">{t("bank_total_obligation")}</span>
-                        <span className="invoice-form__info-value">{formatMoney(bankObligationToContractor)}</span>
+                        <span className="invoice-form__info-value">{renderAmount(bankObligationToContractor)}</span>
                       </div>
                       <div className="invoice-form__info-item">
                         <span className="invoice-form__info-label">{t("previously_invoiced_bank")}</span>
                         <span className="invoice-form__info-value invoice-form__info-value--warning">
-                          {formatMoney(prevBankInvoiced)}
+                          {renderAmount(prevBankInvoiced)}
                         </span>
                       </div>
                       {bankBaseProgress > 0 && (
                         <div className="invoice-form__info-item">
                           <span className="invoice-form__info-label">{t("required_amount_by_progress")}</span>
                           <span className="invoice-form__info-value invoice-form__info-value--success">
-                            {formatMoney(bankDueThisCycle)}
+                            {renderAmount(bankDueThisCycle)}
                           </span>
                         </div>
                       )}
                       <div className="invoice-form__info-item">
                         <span className="invoice-form__info-label">{t("remaining_bank_obligation")}</span>
                         <span className="invoice-form__info-value invoice-form__info-value--success">
-                          {formatMoney(bankRemaining)}
+                          {renderAmount(bankRemaining)}
                         </span>
                       </div>
                     </>
                   ) : (
-                    /* ── Owner block — redesigned step-by-step ── */
                     <>
-                      {/* Advance payment info banner */}
                       {advanceSummary && (
                         <div className="inv-info__banner inv-info__banner--advance">
                           <div className="inv-info__banner-header">
@@ -631,29 +640,27 @@ export default function CreateActualInvoicePage() {
                             .filter(ap => ap.status === 'active')
                             .map((ap) => (
                               <div key={ap.id || ap.percentage} className="inv-info__banner-row">
-                                <span>{t("advance_payment")} ({ap.percentage}%): {formatMoney(ap.amount)}</span>
-                                <span>{t("recovered")}: {formatMoney(ap.recovered_amount)} | {t("remaining")}: {formatMoney(ap.remaining_amount)}</span>
+                                <span>{t("advance_payment")} ({ap.percentage}%): {renderAmount(ap.amount)}</span>
+                                <span>{t("recovered")}: {renderAmount(ap.recovered_amount)} | {t("remaining")}: {renderAmount(ap.remaining_amount)}</span>
                               </div>
                             ))}
                         </div>
                       )}
 
-                      {/* Credit balance info banner */}
                       {creditSummary && (
                         <div className="inv-info__banner inv-info__banner--credit">
                           <div className="inv-info__banner-header">
                             <span className="inv-info__banner-title">
-                              {t("available_credit")}: {formatMoney(parseFloat(creditSummary.total_credit) || 0)}
+                              {t("available_credit")}: {renderAmount(parseFloat(creditSummary.total_credit) || 0)}
                             </span>
                           </div>
                           {creditSummary.credits?.map((cr) => (
                             <div key={cr.payment_id} className="inv-info__banner-row">
-                              <span>{t("credit_from_payment")} #{cr.payment_id} — {formatMoney(parseFloat(cr.credit_balance) || 0)}</span>
+                              <span>{t("credit_from_payment")} #{cr.payment_id} — {renderAmount(parseFloat(cr.credit_balance) || 0)}</span>
                             </div>
                           ))}
                         </div>
                       )}
-
                     </>
                   )}
                 </div>
@@ -694,20 +701,19 @@ export default function CreateActualInvoicePage() {
                   <tbody>
                     {items.map((item, idx) => {
                       const selectedVO = variations.find(v => String(v.id) === String(item.variation_id)) || null;
-                      const voInfo     = selectedVO ? getVOInfo(selectedVO) : null;
+                      const voInfo = selectedVO ? getVOInfo(selectedVO) : null;
 
                       // IDs already used in OTHER rows (for duplicate prevention)
-                      const usedVOIds        = items.filter((_, i) => i !== idx && items[i].variation_id).map(it => String(it.variation_id));
-                      const baseUsedInOther  = items.some((it, i) => i !== idx && it.source === "base_contract");
+                      const usedVOIds = items.filter((_, i) => i !== idx && items[i].variation_id).map(it => String(it.variation_id));
+                      const baseUsedInOther = items.some((it, i) => i !== idx && it.source === "base_contract");
                       const bankVatUsedInOther = items.some((it, i) => i !== idx && it.source === "bank_vat");
-                      const baseConflict     = item.source === "base_contract" && baseUsedInOther;
-                      const bankVatConflict  = item.source === "bank_vat" && bankVatUsedInOther;
+                      const baseConflict = item.source === "base_contract" && baseUsedInOther;
+                      const bankVatConflict = item.source === "bank_vat" && bankVatUsedInOther;
 
                       return (
                         <tr key={`item-${idx}`} className="invoice-items-table__row">
                           {/* Source column */}
                           <td className="invoice-items-table__td invoice-items-table__td--source">
-
                             {/* Source type selector */}
                             <select
                               className="prj-select w-full"
@@ -738,32 +744,36 @@ export default function CreateActualInvoicePage() {
                             {/* Base contract info panel — horizontal (owner share only, excl bank VAT) */}
                             {item.source === "base_contract" && payer === "owner" && ownerBaseProgress > 0 && (
                               <div className="inv-item-chips">
-                                <span className="inv-item-chip">{t("owner_share_obligation")}: <b>{formatMoney(ownerShareOblig)}</b></span>
+                                <span className="inv-item-chip">{t("owner_share_obligation")}: <b>{renderAmount(ownerShareOblig)}</b></span>
                                 <span className="inv-item-chip">{t("base_contract_progress")}: <b className="inv-item-chip__val--primary">{Number(ownerBaseProgress).toFixed(1)}%</b></span>
-                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{formatMoney(ownerShareDueCumul)}</b></span>
-                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_base")}: <b>−{formatMoney(prevOwnerBaseInvoiced)}</b></span>
+                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{renderAmount(ownerShareDueCumul)}</b></span>
+                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_base")}: <b>−{renderAmount(prevOwnerBaseInvoiced)}</b></span>
                                 <span
                                   className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
                                   title={t("click_to_fill_amount")}
                                   onClick={() => updateItem(idx, { amount_incl_vat: ownerBaseOnlyDueThisCycle.toFixed(2) })}
-                                >{t("due_from_base_contract")}: <b>{formatMoney(ownerBaseOnlyDueThisCycle)}</b></span>
-                                <span className="inv-item-chip">{t("remaining_base_contract")}: <b>{formatMoney(ownerBaseOnlyRemaining)}</b></span>
+                                >
+                                  {t("due_from_base_contract")}: <b>{formatAmountString(ownerBaseOnlyDueThisCycle)}</b>
+                                </span>
+                                <span className="inv-item-chip">{t("remaining_base_contract")}: <b>{renderAmount(ownerBaseOnlyRemaining)}</b></span>
                               </div>
                             )}
 
                             {/* Bank payer: base contract info panel */}
                             {item.source === "base_contract" && payer === "bank" && bankBaseProgress > 0 && (
                               <div className="inv-item-chips">
-                                <span className="inv-item-chip">{t("bank_obligation_no_vat")}: <b>{formatMoney(bankObligationToContractor)}</b></span>
+                                <span className="inv-item-chip">{t("bank_obligation_no_vat")}: <b>{renderAmount(bankObligationToContractor)}</b></span>
                                 <span className="inv-item-chip">{t("bank_progress")}: <b className="inv-item-chip__val--primary">{Number(bankBaseProgress).toFixed(1)}%</b></span>
-                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{formatMoney(bankDueCumul)}</b></span>
-                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_bank")}: <b>−{formatMoney(prevBankInvoiced)}</b></span>
+                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{renderAmount(bankDueCumul)}</b></span>
+                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_bank")}: <b>−{renderAmount(prevBankInvoiced)}</b></span>
                                 <span
                                   className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
                                   title={t("click_to_fill_amount")}
                                   onClick={() => updateItem(idx, { amount_incl_vat: bankDueThisCycle.toFixed(2) })}
-                                >{t("due_from_base_contract")}: <b>{formatMoney(bankDueThisCycle)}</b></span>
-                                <span className="inv-item-chip">{t("remaining_bank_obligation")}: <b>{formatMoney(bankRemaining)}</b></span>
+                                >
+                                  {t("due_from_base_contract")}: <b>{renderAmount(bankDueThisCycle)}</b>
+                                </span>
+                                <span className="inv-item-chip">{t("remaining_bank_obligation")}: <b>{renderAmount(bankRemaining)}</b></span>
                               </div>
                             )}
 
@@ -777,15 +787,17 @@ export default function CreateActualInvoicePage() {
                             {/* Bank VAT info panel — horizontal */}
                             {item.source === "bank_vat" && payer === "owner" && (
                               <div className="inv-item-chips" style={{ marginTop: "6px" }}>
-                                <span className="inv-item-chip">{t("bank_vat_total")}: <b>{formatMoney(bankVATpaidByOwner)}</b></span>
+                                <span className="inv-item-chip">{t("bank_vat_total")}: <b>{renderAmount(bankVATpaidByOwner)}</b></span>
                                 <span className="inv-item-chip">{t("bank_progress")}: <b className="inv-item-chip__val--primary">{Number(bankBaseProgress).toFixed(1)}%</b></span>
-                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{formatMoney(bankVATdueByCumul)}</b></span>
-                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_bank_vat")}: <b>−{formatMoney(prevBankVATInvoiced)}</b></span>
+                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{renderAmount(bankVATdueByCumul)}</b></span>
+                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_bank_vat")}: <b>−{renderAmount(prevBankVATInvoiced)}</b></span>
                                 <span
                                   className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
                                   title={t("click_to_fill_amount")}
                                   onClick={() => updateItem(idx, { amount_incl_vat: bankVATDueThisCycle.toFixed(2) })}
-                                >{t("due_bank_vat")}: <b>{formatMoney(bankVATDueThisCycle)}</b></span>
+                                >
+                                  {t("due_bank_vat")}: <b>{renderAmount(bankVATDueThisCycle)}</b>
+                                </span>
                               </div>
                             )}
 
@@ -803,7 +815,7 @@ export default function CreateActualInvoicePage() {
                                     const alreadyUsed = usedVOIds.includes(String(vo.id));
                                     return (
                                       <option key={vo.id} value={vo.id} disabled={alreadyUsed}>
-                                        {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {formatMoney(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
+                                        {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
                                       </option>
                                     );
                                   })}
@@ -812,15 +824,17 @@ export default function CreateActualInvoicePage() {
                                 {/* VO details panel — horizontal chips */}
                                 {voInfo && selectedVO && (
                                   <div className="inv-item-chips">
-                                    <span className="inv-item-chip">{t("vo_obligation_incl_vat")}: <b>{formatMoney(voInfo.obligation)}</b></span>
+                                    <span className="inv-item-chip">{t("vo_obligation_incl_vat")}: <b>{renderAmount(voInfo.obligation)}</b></span>
                                     <span className="inv-item-chip">{t("current_progress")}: <b className="inv-item-chip__val--primary">{Number(voInfo.progress).toFixed(1)}%</b></span>
-                                    <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_vo")}: <b>−{formatMoney(voInfo.prevInvoiced)}</b></span>
+                                    <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_vo")}: <b>−{renderAmount(voInfo.prevInvoiced)}</b></span>
                                     <span
                                       className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
                                       title={t("click_to_fill_amount")}
                                       onClick={() => updateItem(idx, { amount_incl_vat: voInfo.dueThisCycle.toFixed(2) })}
-                                    >{t("vo_due_by_progress")}: <b>{formatMoney(voInfo.dueThisCycle)}</b></span>
-                                    <span className="inv-item-chip">{t("remaining_vo_obligation")}: <b>{formatMoney(voInfo.remaining)}</b></span>
+                                    >
+                                      {t("vo_due_by_progress")}: <b>{formatAmountString(voInfo.dueThisCycle)}</b>
+                                    </span>
+                                    <span className="inv-item-chip">{t("remaining_vo_obligation")}: <b>{renderAmount(voInfo.remaining)}</b></span>
                                   </div>
                                 )}
                               </div>
@@ -852,14 +866,14 @@ export default function CreateActualInvoicePage() {
                           {/* Net Amount (excl VAT) — only for owner */}
                           {payer !== "bank" && (
                             <td className="invoice-items-table__td invoice-items-table__td--total">
-                              {formatMoney(item.total)}
+                              {renderAmount(item.total)}
                             </td>
                           )}
 
                           {/* VAT — only for owner */}
                           {payer !== "bank" && (
                             <td className="invoice-items-table__td invoice-items-table__td--total">
-                              {formatMoney(item.vat)}
+                              {renderAmount(item.vat)}
                             </td>
                           )}
 
@@ -896,10 +910,11 @@ export default function CreateActualInvoicePage() {
                         {payer === "bank" ? t("total_amount") : t("invoice_amount_incl_vat")}
                       </td>
                       <td className="invoice-items-table__footer-total">
-                        {formatMoney(totalInclVAT)}
+                        {renderAmount(totalInclVAT)}
                       </td>
                       {payer !== "bank" && <td colSpan={2} />}
                     </tr>
+
                     {payer !== "bank" && (
                       <>
                         <tr className="invoice-items-table__footer">
@@ -908,7 +923,7 @@ export default function CreateActualInvoicePage() {
                             {t("invoice_net_amount")}
                           </td>
                           <td className="invoice-items-table__footer-total">
-                            {formatMoney(totalExclVAT)}
+                            {renderAmount(totalExclVAT)}
                           </td>
                           <td colSpan={2} />
                         </tr>
@@ -918,12 +933,13 @@ export default function CreateActualInvoicePage() {
                             {t("vat_5")}
                           </td>
                           <td className="invoice-items-table__footer-total">
-                            {formatMoney(vatAmount)}
+                            {renderAmount(vatAmount)}
                           </td>
                           <td colSpan={2} />
                         </tr>
                       </>
                     )}
+
                     {/* Advance payment deduction preview */}
                     {deductionPreview && payer === "owner" && (
                       <>
@@ -933,7 +949,7 @@ export default function CreateActualInvoicePage() {
                             {t("advance_deduction")} ({deductionPreview.advances?.map(a => `${parseFloat(a.owner_progress || 0).toFixed(0)}%`).join(' + ') || ''})
                           </td>
                           <td className="invoice-items-table__footer-total invoice-items-table__footer-total--deduction">
-                            - {formatMoney(deductionPreview.total_deduction)}
+                            - {renderAmount(deductionPreview.total_deduction)}
                           </td>
                           {payer !== "bank" && <td colSpan={2} />}
                         </tr>
@@ -943,7 +959,7 @@ export default function CreateActualInvoicePage() {
                             {t("net_after_deduction")}
                           </td>
                           <td className="invoice-items-table__footer-total invoice-items-table__footer-total--net">
-                            {formatMoney(deductionPreview.net_amount)}
+                            {renderAmount(deductionPreview.net_amount)}
                           </td>
                           {payer !== "bank" && <td colSpan={2} />}
                         </tr>
@@ -954,7 +970,6 @@ export default function CreateActualInvoicePage() {
               </div>
             </div>
           </div>
-
         </form>
       </div>
     </PageLayout>

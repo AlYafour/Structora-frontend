@@ -6,7 +6,7 @@ import { projectApi, companyApi } from "../../../../../services";
 import { logger } from "../../../../../utils/logger";
 import { downloadBlob } from "../../../../../utils/helpers/file";
 import PageLayout from "../../../../../components/layout/PageLayout";
-import PageHeader from "../../../../../components/layout/PageHeader";
+import { getProjectName } from "../../../utils/projectNameUtils.jsx";
 import Button from "../../../../../components/common/Button";
 import Dialog from "../../../../../components/common/Dialog";
 import { formatDate } from "../../../../../utils/formatters";
@@ -207,6 +207,14 @@ export default function VariationViewPage() {
   const statusConfig = getStatusConfig(variationStatus);
   const StatusIcon = statusConfig.icon;
 
+  const projectNameData = project ? getProjectName(project) : null;
+  const _pnAr = projectNameData?.ar || projectNameData?.full || '';
+  const _pnEn = projectNameData?.en || '';
+  const _hasBothNames = !!_pnAr && !!_pnEn && _pnAr !== _pnEn;
+  const projectNamePrimary = isAR ? (_pnAr || _pnEn || t('variation_order')) : (_pnEn || _pnAr || t('variation_order'));
+  const projectNameSecondary = _hasBothNames ? (isAR ? _pnEn : _pnAr) : null;
+  console.log(projectNameData)
+
   return (
     <PageLayout>
       <div className="var-view-container">
@@ -251,45 +259,135 @@ export default function VariationViewPage() {
           </div>
         )}
 
-        {/* ========== PAGE HEADER ========== */}
-        <PageHeader
-          title={t("variation_order")}
-          onBack={() => navigate(`/projects/${project.id}?tab=variations`)}
-          className="no-print"
-          actions={
-            <>
+        {/* ========== UNIFIED STICKY HEADER ========== */}
+        <div className="var-unified-header no-print">
+
+          {/* TOP ROW: back + project name + meta + actions */}
+          <div className="var-unified-header__top">
+            <button
+              type="button"
+              className="page-bar__back"
+              onClick={() => navigate(`/projects/${project.id}?tab=variations`)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{t("back")}</span>
+            </button>
+
+            <div className="var-unified-header__name-group">
+              <span className="var-unified-header__project">{projectNamePrimary}</span>
+              {projectNameSecondary && (
+                <span className="var-unified-header__project-sub">{projectNameSecondary}</span>
+              )}
+            </div>
+
+            <div className="var-unified-header__meta">
+              <div className="var-header-meta__chip">
+                <span className="var-header-meta__label">{t("variation_no")}</span>
+                <span className="var-header-meta__value">{variation?.variation_number || `VAR-${variation?.id}`}</span>
+              </div>
+              <div className={`var-status-pill var-status-pill--${variationStatus}`}>
+                <StatusIcon />
+                <span>{getStatusLabel(variationStatus, t)}</span>
+              </div>
+            </div>
+
+            <div className="var-unified-header__actions">
               <Button variant="ghost" size="sm" onClick={handlePrint} title={t("print")}>
                 <FaPrint />
               </Button>
               <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={pdfLoading} title={t("export_pdf")}>
                 <FaFilePdf />
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
+            </div>
+          </div>
+
+          {/* BOTTOM ROW: tabs + approval actions */}
+          <div className="var-unified-header__toolbar">
+            <div className="var-toolbar__tabs">
+              <button
+                className={`var-toolbar__tab ${activeTab === "view" ? "var-toolbar__tab--active" : ""}`}
+                onClick={() => setActiveTab("view")}
+              >
+                {t("view")}
+              </button>
+              <button
+                className={`var-toolbar__tab ${activeTab === "edit" ? "var-toolbar__tab--active" : ""} ${!permissions.canEdit ? "var-toolbar__tab--disabled" : ""}`}
                 onClick={() => {
                   if (!permissions.canEdit) { setBlockEditDialogOpen(true); return; }
                   setActiveTab("edit");
                 }}
-                disabled={!permissions.canEdit}
                 title={!permissions.canEdit ? t("cannot_edit_approved") : ""}
               >
                 {t("edit")}
-              </Button>
-            </>
-          }
-        >
-          <div className="var-header-meta no-print">
-            <div className="var-header-meta__chip">
-              <span className="var-header-meta__label">{t("variation_no")}</span>
-              <span className="var-header-meta__value">{variation?.variation_number || `VAR-${variation?.id}`}</span>
+              </button>
+              <button
+                className={`var-toolbar__tab ${activeTab === "approvals" ? "var-toolbar__tab--active" : ""}`}
+                onClick={() => setActiveTab("approvals")}
+              >
+                {t("approvals")}
+              </button>
             </div>
-            <div className={`var-status-pill var-status-pill--${variationStatus}`}>
-              <StatusIcon />
-              <span>{getStatusLabel(variationStatus, t)}</span>
-            </div>
+
+            {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
+              permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
+              permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
+              permissions.canApproveGeneralManagerFinal) && (
+                <div className="var-toolbar__actions">
+                  {activeTab === "edit" && permissions.canEdit && (
+                    <>
+                      <span className="var-toolbar__actions-label">{t("actions")}</span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        type="submit"
+                        form="notice-variation-form"
+                      >
+                        {t("save")}
+                      </Button>
+                    </>
+                  )}
+                  <span className="var-toolbar__actions-label">{t("available_actions")}</span>
+                  {permissions.canApproveProjectManager && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
+                      <FaCheckCircle /> {t("approve_project_manager_initial")}
+                    </Button>
+                  )}
+                  {permissions.canRejectProjectManager && (
+                    <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
+                      <FaTimesCircle /> {t("reject")}
+                    </Button>
+                  )}
+                  {permissions.canApproveGeneralManagerInitial && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerInitialDialogOpen(true)}>
+                      <FaCheckCircle /> {t("approve_general_manager_initial")}
+                    </Button>
+                  )}
+                  {permissions.canRejectGeneralManager && (
+                    <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGeneralManagerDialogOpen(true)}>
+                      <FaTimesCircle /> {t("reject")}
+                    </Button>
+                  )}
+                  {permissions.canConfirmOwnerApproval && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmOwnerApprovalDialogOpen(true)}>
+                      <FaCheckCircle /> {t("confirm_owner_approval")}
+                    </Button>
+                  )}
+                  {permissions.canConfirmConsultantApproval && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
+                      <FaCheckCircle /> {t("confirm_consultant_approval")}
+                    </Button>
+                  )}
+                  {permissions.canApproveGeneralManagerFinal && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerFinalDialogOpen(true)}>
+                      <FaCheckCircle /> {t("approve_general_manager_final")}
+                    </Button>
+                  )}
+                </div>
+              )}
           </div>
-        </PageHeader>
+        </div>
 
 
         {/* ========== REJECTION WARNING ========== */}
@@ -313,80 +411,6 @@ export default function VariationViewPage() {
             </div>
           </div>
         )}
-
-        {/* ========== TOOLBAR: TABS + APPROVAL ACTIONS IN ONE ROW ========== */}
-        <div className="var-toolbar no-print">
-          {/* Tabs */}
-          <div className="var-toolbar__tabs">
-            <button
-              className={`var-toolbar__tab ${activeTab === "view" ? "var-toolbar__tab--active" : ""}`}
-              onClick={() => setActiveTab("view")}
-            >
-              {t("view")}
-            </button>
-            <button
-              className={`var-toolbar__tab ${activeTab === "edit" ? "var-toolbar__tab--active" : ""} ${!permissions.canEdit ? "var-toolbar__tab--disabled" : ""}`}
-              onClick={() => {
-                if (!permissions.canEdit) { setBlockEditDialogOpen(true); return; }
-                setActiveTab("edit");
-              }}
-              title={!permissions.canEdit ? t("cannot_edit_approved") : ""}
-            >
-              {t("edit")}
-            </button>
-            <button
-              className={`var-toolbar__tab ${activeTab === "approvals" ? "var-toolbar__tab--active" : ""}`}
-              onClick={() => setActiveTab("approvals")}
-            >
-              {t("approvals")}
-            </button>
-          </div>
-
-          {/* Approval Actions (inline, right side) */}
-          {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
-            permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
-            permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
-            permissions.canApproveGeneralManagerFinal) && (
-            <div className="var-toolbar__actions">
-              <span className="var-toolbar__actions-label">{t("available_actions")}</span>
-              {permissions.canApproveProjectManager && (
-                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
-                  <FaCheckCircle /> {t("approve_project_manager_initial")}
-                </Button>
-              )}
-              {permissions.canRejectProjectManager && (
-                <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
-                  <FaTimesCircle /> {t("reject")}
-                </Button>
-              )}
-              {permissions.canApproveGeneralManagerInitial && (
-                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerInitialDialogOpen(true)}>
-                  <FaCheckCircle /> {t("approve_general_manager_initial")}
-                </Button>
-              )}
-              {permissions.canRejectGeneralManager && (
-                <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGeneralManagerDialogOpen(true)}>
-                  <FaTimesCircle /> {t("reject")}
-                </Button>
-              )}
-              {permissions.canConfirmOwnerApproval && (
-                <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmOwnerApprovalDialogOpen(true)}>
-                  <FaCheckCircle /> {t("confirm_owner_approval")}
-                </Button>
-              )}
-              {permissions.canConfirmConsultantApproval && (
-                <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
-                  <FaCheckCircle /> {t("confirm_consultant_approval")}
-                </Button>
-              )}
-              {permissions.canApproveGeneralManagerFinal && (
-                <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerFinalDialogOpen(true)}>
-                  <FaCheckCircle /> {t("approve_general_manager_final")}
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* ========== TAB CONTENT ========== */}
         <div className="var-content prj-tab-panel">
@@ -479,22 +503,22 @@ export default function VariationViewPage() {
                       <div className="var-audit-timeline">
                         {auditLogs.map((log, index) => {
                           const isApprove = log.action === 'approve' || log.action?.includes('approv');
-                          const isReject  = log.action === 'reject'  || log.action?.includes('reject');
-                          const isCreate  = log.action === 'create'  || log.action?.includes('creat');
-                          const isEdit    = log.action === 'update'  || log.action?.includes('edit') || log.action?.includes('updat');
+                          const isReject = log.action === 'reject' || log.action?.includes('reject');
+                          const isCreate = log.action === 'create' || log.action?.includes('creat');
+                          const isEdit = log.action === 'update' || log.action?.includes('edit') || log.action?.includes('updat');
                           let logClass = '';
-                          if (isApprove)      logClass = 'var-audit-entry--approve';
-                          else if (isReject)  logClass = 'var-audit-entry--reject';
-                          else if (isCreate)  logClass = 'var-audit-entry--create';
-                          else if (isEdit)    logClass = 'var-audit-entry--edit';
+                          if (isApprove) logClass = 'var-audit-entry--approve';
+                          else if (isReject) logClass = 'var-audit-entry--reject';
+                          else if (isCreate) logClass = 'var-audit-entry--create';
+                          else if (isEdit) logClass = 'var-audit-entry--edit';
 
                           return (
                             <div key={log.id || index} className={`var-audit-entry ${logClass}`}>
                               <div className="var-audit-entry__dot">
                                 {isApprove && <FaCheckCircle />}
-                                {isReject  && <FaTimesCircle />}
-                                {isCreate  && <FaFileAlt />}
-                                {isEdit    && <FaEdit />}
+                                {isReject && <FaTimesCircle />}
+                                {isCreate && <FaFileAlt />}
+                                {isEdit && <FaEdit />}
                                 {!isApprove && !isReject && !isCreate && !isEdit && <FaExchangeAlt />}
                               </div>
                               <div className="var-audit-entry__body">
@@ -545,9 +569,9 @@ export default function VariationViewPage() {
           {activeTab === "edit" && (
             <div className="var-edit-content no-print">
               <div className="var-edit-header">
-                <Button variant="secondary" onClick={() => setActiveTab("view")}>
+                {/* <Button variant="secondary" onClick={() => setActiveTab("view")}>
                   {t("back_to_view")}
-                </Button>
+                </Button> */}
               </div>
               <NoticeOfVariationPage variation={variation} project={project} viewMode={false} />
             </div>

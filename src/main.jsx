@@ -20,6 +20,7 @@ import * as Sentry from '@sentry/react';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { VatDisplayProvider } from './contexts/VatDisplayContext';
+import { ThemeContextProvider } from './contexts/ThemeContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import ThemeProvider from './theme/ThemeProvider';
 import App from './App.jsx';
@@ -71,15 +72,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ThemeProvider>
-            <NotificationProvider>
-              <VatDisplayProvider>
-                <App />
-              </VatDisplayProvider>
-            </NotificationProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeContextProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              <NotificationProvider>
+                <VatDisplayProvider>
+                  <App />
+                </VatDisplayProvider>
+              </NotificationProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </ThemeContextProvider>
         {/* React Query Devtools (development only) */}
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>

@@ -208,7 +208,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 <Button variant="primary" onClick={onSubmitClick} size="md" fullWidth>
                   {t("submit_for_approval")}
                 </Button>
-              )}
+              )}  
 
               {/* Final Approve - Super Admin (from draft or pending) */}
               {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (

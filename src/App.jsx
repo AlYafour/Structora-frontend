@@ -145,11 +145,11 @@ function TenantRoutes() {
       <Route path="projects/pending-approvals" element={<ProtectedRoute><PendingApprovalsPage /></ProtectedRoute>} />
       <Route path="projects/select/:type" element={<ProtectedRoute><SelectProjectForType /></ProtectedRoute>} />
       <Route path="projects/:projectId" element={<ProtectedRoute><ProjectView /></ProtectedRoute>} />
-      <Route path="projects/:projectId/wizard" element={<ProtectedRoute><WizardPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/wizard" element={<ProtectedRoute permission="projects.create"><WizardPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/progress/add" element={<ProtectedRoute><AddProgressPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/progress/:entryId/view" element={<ProtectedRoute><ViewProgressEntryPage /></ProtectedRoute>} />
-      <Route path="projects/:projectId/summary" element={<ProtectedRoute><ViewSummary /></ProtectedRoute>} />
-      <Route path="projects/:projectId/financial-entitlement" element={<ProtectedRoute><ProjectFinancialEntitlementPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/summary" element={<ProtectedRoute permission="financial.view"><ViewSummary /></ProtectedRoute>} />
+      <Route path="projects/:projectId/financial-entitlement" element={<ProtectedRoute permission="financial.view"><ProjectFinancialEntitlementPage /></ProtectedRoute>} />
       <Route path="projects/wizard" element={<Navigate to="projects" replace />} />
 
       {/* Project phases (view only) */}
@@ -183,27 +183,27 @@ function TenantRoutes() {
       <Route path="projects/:projectId/awarding/view" element={<ProtectedRoute><ViewAwardingPage /></ProtectedRoute>} />
 
       {/* Wizard for new project */}
-      <Route path="wizard/new" element={<ProtectedRoute><WizardPage /></ProtectedRoute>} />
+      <Route path="wizard/new" element={<ProtectedRoute permission="projects.create"><WizardPage /></ProtectedRoute>} />
 
       {/* Payments */}
-      <Route path="payments/create" element={<ProtectedRoute><CreatePaymentPage /></ProtectedRoute>} />
-      <Route path="payments/:paymentId/view" element={<ProtectedRoute><ViewPaymentPage /></ProtectedRoute>} />
-      <Route path="payments/:paymentId/edit" element={<ProtectedRoute><CreatePaymentPage /></ProtectedRoute>} />
+      <Route path="payments/create" element={<ProtectedRoute permission="payments.create"><CreatePaymentPage /></ProtectedRoute>} />
+      <Route path="payments/:paymentId/view" element={<ProtectedRoute permission="payments.view"><ViewPaymentPage /></ProtectedRoute>} />
+      <Route path="payments/:paymentId/edit" element={<ProtectedRoute permission="payments.edit"><CreatePaymentPage /></ProtectedRoute>} />
       <Route path="receipt-vouchers/:voucherId/view" element={<ProtectedRoute><ViewReceiptVoucherPage /></ProtectedRoute>} />
       <Route path="tax-invoices/:taxInvoiceId/view" element={<ProtectedRoute><ViewTaxInvoicePage /></ProtectedRoute>} />
 
       {/* Variations */}
-      <Route path="variations/create" element={<ProtectedRoute><NoticeOfVariationPage /></ProtectedRoute>} />
-      <Route path="variations/:variationId/view" element={<ProtectedRoute><VariationViewPage /></ProtectedRoute>} />
-      <Route path="variations/:variationId/edit" element={<ProtectedRoute><NoticeOfVariationPage /></ProtectedRoute>} />
-      <Route path="variations/:variationId/notice" element={<ProtectedRoute><NoticeOfVariationPage /></ProtectedRoute>} />
-      <Route path="projects/:projectId/variations/notice" element={<ProtectedRoute><NoticeOfVariationPage /></ProtectedRoute>} />
+      <Route path="variations/create" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
+      <Route path="variations/:variationId/view" element={<ProtectedRoute permission="variations.view"><VariationViewPage /></ProtectedRoute>} />
+      <Route path="variations/:variationId/edit" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
+      <Route path="variations/:variationId/notice" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/variations/notice" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
 
       {/* Invoices */}
       <Route path="invoices" element={<Navigate to="projects" replace />} />
-      <Route path="invoices/create" element={<ProtectedRoute><CreateActualInvoicePage /></ProtectedRoute>} />
-      <Route path="invoices/:invoiceId/edit" element={<ProtectedRoute><CreateActualInvoicePage /></ProtectedRoute>} />
-      <Route path="invoices/:invoiceId/view" element={<ProtectedRoute><InvoiceViewPage /></ProtectedRoute>} />
+      <Route path="invoices/create" element={<ProtectedRoute permission="invoices.create"><CreateActualInvoicePage /></ProtectedRoute>} />
+      <Route path="invoices/:invoiceId/edit" element={<ProtectedRoute permission="invoices.edit"><CreateActualInvoicePage /></ProtectedRoute>} />
+      <Route path="invoices/:invoiceId/view" element={<ProtectedRoute permission="invoices.view"><InvoiceViewPage /></ProtectedRoute>} />
 
       {/* Owners */}
       <Route path="owners" element={<ProtectedRoute><OwnersPage /></ProtectedRoute>} />
@@ -221,8 +221,8 @@ function TenantRoutes() {
       <Route path="boq/:projectId" element={<ProtectedRoute><BOQPage /></ProtectedRoute>} />
 
       {/* Payment Claims */}
-      <Route path="payment-claims/create" element={<ProtectedRoute><CreatePaymentClaimPage /></ProtectedRoute>} />
-      <Route path="payment-claims/:claimId/edit" element={<ProtectedRoute><CreatePaymentClaimPage /></ProtectedRoute>} />
+      <Route path="payment-claims/create" element={<ProtectedRoute permission="financial.create"><CreatePaymentClaimPage /></ProtectedRoute>} />
+      <Route path="payment-claims/:claimId/edit" element={<ProtectedRoute permission="financial.create"><CreatePaymentClaimPage /></ProtectedRoute>} />
       <Route path="payment-claims/:claimId/view" element={<ProtectedRoute><ViewPaymentClaimPage /></ProtectedRoute>} />
 
       {/* Company management */}

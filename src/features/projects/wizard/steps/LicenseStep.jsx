@@ -54,6 +54,7 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
   const [showLicensePanel, setShowLicensePanel] = useState(false);
   const [licenseZoom, setLicenseZoom] = useState(100);
   const [verifiedFields, setVerifiedFields] = useState({});
+  const [aiFilledFields, setAiFilledFields] = useState([]);
   const toggleVerify = (fieldName) => setVerifiedFields(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
 
   // Sync body class so wizard-content shrinks when panel is open
@@ -95,6 +96,22 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
           }
           return next;
         });
+      }
+      // Track which fields were populated by AI so user must verify them
+      if (result?.data && Object.keys(result.data).length > 0) {
+        const d = result.data;
+        const newAiFields = [];
+        if (d.license_type)                      newAiFields.push("license_type");
+        if (d.license_project_no)                newAiFields.push("license_project_no");
+        if (d.license_no)                        newAiFields.push("license_no");
+        if (d.issue_date)                        newAiFields.push("issue_date");
+        if (d.design_consultant_name)            newAiFields.push("design_name");
+        if (d.design_consultant_name_en)         newAiFields.push("design_name_en");
+        if (d.design_consultant_license_no)      newAiFields.push("design_license");
+        if (d.design_consultant_registration_no) newAiFields.push("design_registration");
+        if (newAiFields.length > 0) {
+          setAiFilledFields((prev) => [...new Set([...prev, ...newAiFields])]);
+        }
       }
     } catch (err) {
       logger.warn("Could not extract data from license file", err);
@@ -191,6 +208,14 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
   // Save
   const saveAndNext = async () => {
     setShowLicensePanel(false);
+
+    // Require verification of all AI-extracted fields before saving
+    const unverifiedAiFields = aiFilledFields.filter((f) => !verifiedFields[f]);
+    if (unverifiedAiFields.length > 0) {
+      setErrorMsg(t("verify_ai_fields_required"));
+      return;
+    }
+
     // New project flow: validate and pass FormData up (no API call yet)
     if (isNewProject && onLicenseReady) {
       try {

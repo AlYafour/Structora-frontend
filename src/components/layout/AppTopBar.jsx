@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FaSearch, FaBars, FaBell, FaCheck, FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaSearch, FaBars, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaTimes } from 'react-icons/fa';
 import { useSidebar } from './SidebarContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import Button from '../common/Button';
@@ -47,8 +47,8 @@ export default function AppTopBar({ showSearch = true }) {
   const isAr = i18n.language?.startsWith('ar');
   const navigate = useNavigate();
   const { collapsed, setCollapsed } = useSidebar();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
-
+  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
+  console.log('Notifications:', notifications, 'Unread count:', unreadCount);
   const [searchFocused, setSearchFocused] = useState(false);
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
@@ -70,6 +70,7 @@ export default function AppTopBar({ showSearch = true }) {
       try {
         const url = new URL(n.link, window.location.origin);
         if (url.origin === window.location.origin) {
+          console.log('Navigating to:', url.pathname + url.search);
           navigate(url.pathname + url.search);
           setOpen(false);
           return;
@@ -185,13 +186,26 @@ export default function AppTopBar({ showSearch = true }) {
                         <span style={{ color: TYPE_COLOR[n.type] || TYPE_COLOR.info }}>●</span>
                       </div>
                       <div className="ntf-item__body">
-                        <p className="ntf-item__title">{n.title}</p>
-                        <p className="ntf-item__msg">{n.message}</p>
+                        <p className="ntf-item__title">
+                          {isAr ? n.title : n.titleEn || n.title}
+                        </p>
+
+                        <p className="ntf-item__msg">
+                          {isAr ? n.message : n.messageEn || n.message}
+                        </p>
                         <p className="ntf-item__time">{timeAgo(n.createdAt, isAr)}</p>
                       </div>
                       <div className="ntf-item__meta">
                         {!n.read && <span className="ntf-item__unread-dot" />}
                         {n.link && <FaExternalLinkAlt className="ntf-item__link-icon" />}
+                        <button
+                          className="ntf-item__delete-btn"
+                          onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                          title={t('delete_notification', 'حذف الإشعار')}
+                          type="button"
+                        >
+                          <FaTimes />
+                        </button>
                       </div>
                     </div>
                   ))

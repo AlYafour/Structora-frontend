@@ -26,11 +26,14 @@
   flex-direction: column;
   gap: 0.5rem;
 }
-
+.form-field-full {
+  grid-column: 1 / -1;
+  width: 100%;
+}
 .form-label {
   font-weight: 600;
   margin-bottom: 0;
-  color: #333;
+  color: var(--ink);
 }
 
 .form-label.required::after {
@@ -73,11 +76,11 @@ textarea.prj-input {
 
 .card__header {
   padding: 1rem 1.5rem;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background-color: var(--surface-secondary, #f8f9fa);
+  border-bottom: 1px solid var(--border, #e9ecef);
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
 }
 
 /* Date picker styling */
@@ -145,4 +148,63 @@ textarea.prj-input {
   color: #dc3545;
   font-size: 0.875rem;
   margin-top: 0.25rem;
+}
+
+/* ==================== DARK MODE ==================== */
+html.theme-dark .form-label {
+  color: var(--ink, rgba(255, 255, 255, 0.85));
+}
+
+html.theme-dark .prj-input {
+  background-color: var(--surface, #0D1A30);
+  border-color: var(--border, rgba(200, 168, 78, 0.12));
+  color: var(--ink, #F0F4FF);
+}
+
+html.theme-dark .prj-input:focus {
+  border-color: var(--accent, #D6B65A);
+  box-shadow: 0 0 0 3px rgba(214, 182, 90, 0.12);
+}
+
+html.theme-dark .prj-input:hover:not(:disabled) {
+  border-color: rgba(200, 168, 78, 0.35);
+}
+
+html.theme-dark .prj-input::placeholder {
+  color: var(--muted, rgba(255, 255, 255, 0.4));
+}
+
+html.theme-dark .card {
+  background: var(--surface, #0D1A30);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border, rgba(200, 168, 78, 0.12));
+}
+
+html.theme-dark .card__header {
+  background-color: var(--surface-2, #101E36);
+  border-bottom-color: var(--border, rgba(200, 168, 78, 0.12));
+  color: var(--ink, #F0F4FF);
+}
+
+html.theme-dark .card__body {
+  color: var(--text, rgba(255, 255, 255, 0.85));
+}
+
+html.theme-dark .file-attachment__preview {
+  background-color: var(--surface-2, #101E36);
+  border-color: var(--border, rgba(200, 168, 78, 0.12));
+}
+
+html.theme-dark .date-display-readonly {
+  background-color: var(--surface-2, #101E36);
+  border-color: var(--border, rgba(200, 168, 78, 0.12));
+  color: var(--muted, rgba(255, 255, 255, 0.55));
+}
+
+html.theme-dark .error-message {
+  color: #f87171;
+}
+
+html.theme-dark .form-field.error .prj-input {
+  border-color: #f87171;
 }

@@ -95,6 +95,7 @@ export default function SitePlanStep({
   const [isExtracting, setIsExtracting] = useState(false);
   const [contractOwners, setContractOwners] = useState([]);
   const [verifiedFields, setVerifiedFields] = useState({});
+  const [aiFilledFields, setAiFilledFields] = useState([]);
   const [showPdfPanel, setShowPdfPanel] = useState(false);
   const [pdfZoom, setPdfZoom] = useState(100);
   const [showIdPanel, setShowIdPanel] = useState(false);
@@ -338,6 +339,23 @@ export default function SitePlanStep({
 
         // Owner names come from ID card upload only — not from the site plan PDF
 
+        // Track which fields were populated by AI so user must verify them
+        const newAiFields = [];
+        if (d.municipality) newAiFields.push("municipality");
+        if (d.zone) newAiFields.push("zone");
+        if (d.sector) newAiFields.push("sector");
+        if (d.land_no) newAiFields.push("land_no");
+        if (d.allocation_type) newAiFields.push("allocation_type");
+        if (d.land_use) newAiFields.push("land_use");
+        if (d.construction_status) newAiFields.push("construction_status");
+        if (d.allocation_date) newAiFields.push("allocation_date");
+        if (d.application_date) newAiFields.push("application_date");
+        if (d.application_number) newAiFields.push("application_number");
+        if (d.plot_area_sqm) newAiFields.push("plot_area_sqm");
+        if (d.plot_area_sqft) newAiFields.push("plot_area_sqft");
+        if (newAiFields.length > 0) {
+          setAiFilledFields((prev) => [...new Set([...prev, ...newAiFields])]);
+        }
       }
     } catch (err) {
       logger.warn("Could not extract data from site plan PDF", err);
@@ -392,6 +410,18 @@ export default function SitePlanStep({
           };
           return updated;
         });
+      }
+      // Track which owner fields were populated by AI so user must verify them
+      const newAiFields = [];
+      const i = ownerIndex;
+      if (result?.data?.owner_name_ar) newAiFields.push(`owner_name_ar_${i}`);
+      if (result?.data?.owner_name_en) newAiFields.push(`owner_name_en_${i}`);
+      if (result?.data?.id_number) newAiFields.push(`id_number_${i}`);
+      if (result?.data?.nationality) newAiFields.push(`nationality_${i}`);
+      if (result?.data?.id_expiry_date) newAiFields.push(`id_expiry_date_${i}`);
+      if (result?.data?.gender === "male" || result?.data?.gender === "female") newAiFields.push(`gender_${i}`);
+      if (newAiFields.length > 0) {
+        setAiFilledFields((prev) => [...new Set([...prev, ...newAiFields])]);
       }
     } catch (err) {
       logger.warn("Could not extract data from ID card", err);
@@ -543,6 +573,13 @@ export default function SitePlanStep({
       } else if (typeof onNext === "function") {
         onNext();
       }
+      return;
+    }
+
+    // Require verification of all AI-extracted fields before saving
+    const unverifiedAiFields = aiFilledFields.filter((f) => !verifiedFields[f]);
+    if (unverifiedAiFields.length > 0) {
+      setErrorMsg(t("verify_ai_fields_required"));
       return;
     }
 

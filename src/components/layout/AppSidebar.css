@@ -470,13 +470,15 @@ html.theme-dark .app-sidebar {
   background: var(--surface, #1f2937);
   border-color: var(--border, #374151);
 }
-
-html.theme-dark .app-sidebar__brand-name {
-  color: var(--gray-50, #f9fafb);
+html.theme-dark .app-sidebar__brand-tagline {
+  color: var(--accent-400); /* slightly lighter for dark bg */
 }
+/* html.theme-dark .app-sidebar__brand-name {
+  color: var(--ink);
+} */
 
 html.theme-dark .app-sidebar__brand-name-secondary {
-  color: var(--gray-400, #9ca3af);
+  color: var(--muted);
 }
 
 html.theme-dark .app-sidebar__nav::-webkit-scrollbar-thumb {

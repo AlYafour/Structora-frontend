@@ -6,12 +6,6 @@ import { api } from '../api';
 import { handleError } from '../../utils/errorHandler';
 
 class AuthService {
-  /**
-   * Login user
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @returns {Promise} Auth tokens and user data
-   */
   async login(email, password) {
     try {
       const { data } = await api.post('auth/login/', { email, password });
@@ -21,14 +15,8 @@ class AuthService {
     }
   }
 
-  /**
-   * Register company
-   * @param {FormData|Object} payload - Registration data
-   * @returns {Promise} Registration response
-   */
   async registerCompany(payload) {
     try {
-      // FIX: Don't set Content-Type for FormData
       const { data } = await api.post('auth/register/', payload);
       return data;
     } catch (error) {
@@ -36,14 +24,8 @@ class AuthService {
     }
   }
 
-  /**
-   * Register company (alternative endpoint)
-   * @param {FormData|Object} payload - Registration data
-   * @returns {Promise} Registration response
-   */
   async registerCompanyAlt(payload) {
     try {
-      // FIX: Don't set Content-Type for FormData
       const { data } = await api.post('auth/register-company/', payload);
       return data;
     } catch (error) {
@@ -51,11 +33,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Get public company info by slug
-   * @param {string} slug - Company slug
-   * @returns {Promise} Company info
-   */
   async getPublicCompanyInfo(slug) {
     try {
       const { data } = await api.get(`public/company-info/${slug}/`);
@@ -65,11 +42,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Refresh access token
-   * @param {string} refreshToken - Refresh token
-   * @returns {Promise} New access token
-   */
   async refreshToken(refreshToken) {
     try {
       const { data } = await api.post('auth/token/refresh/', { refresh: refreshToken });
@@ -79,10 +51,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Logout user
-   * @returns {Promise} Void
-   */
   async logout() {
     try {
       await api.post('auth/users/logout/');
@@ -92,10 +60,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Get current user
-   * @returns {Promise} User data
-   */
   async getCurrentUser() {
     try {
       const { data } = await api.get('auth/users/profile/');
@@ -105,14 +69,8 @@ class AuthService {
     }
   }
 
-  /**
-   * Update user profile
-   * @param {FormData|Object} payload - User data
-   * @returns {Promise} Updated user data
-   */
   async updateProfile(payload) {
     try {
-      // FIX: Don't set Content-Type for FormData
       const { data } = await api.patch('auth/users/update_profile/', payload);
       return data;
     } catch (error) {
@@ -120,11 +78,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Create company user
-   * @param {Object} payload - User data
-   * @returns {Promise} Created user data
-   */
   async createUser(payload) {
     try {
       const { data } = await api.post('auth/users/', payload);
@@ -134,12 +87,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Update company user
-   * @param {string|number} id - User ID
-   * @param {Object} payload - User data
-   * @returns {Promise} Updated user data
-   */
   async updateUser(id, payload) {
     try {
       const { data } = await api.patch(`auth/users/${id}/`, payload);
@@ -149,11 +96,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Delete company user
-   * @param {string|number} id - User ID
-   * @returns {Promise} Void
-   */
   async deleteUser(id) {
     try {
       await api.delete(`auth/users/${id}/`);
@@ -163,11 +105,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Toggle user active status
-   * @param {string|number} id - User ID
-   * @returns {Promise} Updated user data
-   */
   async toggleUserStatus(id) {
     try {
       const { data } = await api.post(`auth/users/${id}/toggle-status/`);
@@ -177,13 +114,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Change password (requires old password)
-   * @param {string} oldPassword - Current password
-   * @param {string} newPassword - New password
-   * @param {string} confirmPassword - Confirm new password
-   * @returns {Promise} Success message
-   */
   async changePassword(oldPassword, newPassword, confirmPassword) {
     try {
       const { data } = await api.post('auth/users/change-password/', {
@@ -197,14 +127,29 @@ class AuthService {
     }
   }
 
-  // ============ WebAuthn / Biometric ============
+  async requestPasswordReset(email) {
+    try {
+      const { data } = await api.post('auth/password-reset/request/', { email });
+      return data;
+    } catch (error) {
+      throw handleError(error, 'AuthService.requestPasswordReset');
+    }
+  }
+
+  async confirmPasswordReset(payload) {
+    try {
+      const { data } = await api.post('auth/password-reset/confirm/', payload);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'AuthService.confirmPasswordReset');
+    }
+  }
 
   async checkBiometric(email) {
     try {
       const { data } = await api.post('auth/webauthn/check/', { email });
       return data;
     } catch {
-      /* biometric check is best-effort; return false if unavailable */
       return { has_biometric: false };
     }
   }

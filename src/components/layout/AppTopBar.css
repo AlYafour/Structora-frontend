@@ -170,6 +170,31 @@
   box-shadow: 0 0 0 2px var(--surface, #fff);
 }
 
+/* Bell pulse when there are unread notifications */
+@keyframes bellRing {
+  0%   { transform: rotate(0deg); }
+  10%  { transform: rotate(14deg); }
+  20%  { transform: rotate(-10deg); }
+  30%  { transform: rotate(14deg); }
+  40%  { transform: rotate(-4deg); }
+  50%  { transform: rotate(10deg); }
+  60%  { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--surface, #fff), 0 0 0 4px rgba(252,163,17,0); }
+  50%       { box-shadow: 0 0 0 2px var(--surface, #fff), 0 0 0 5px rgba(252,163,17,0.45); }
+}
+
+.app-topbar__action-btn--ringing svg {
+  animation: bellRing 1.4s ease 0.2s both;
+}
+
+.app-topbar__action-btn--ringing .app-topbar__badge {
+  animation: badgePulse 1.8s ease-in-out infinite;
+}
+
 .app-topbar__dropdown {
   position: absolute;
   top: calc(100% + 6px);
@@ -355,6 +380,22 @@
   background: #3b82f6;
 }
 .ntf-item__link-icon { font-size: 10px; color: var(--muted, #9ca3af); }
+.ntf-item__delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--muted, #9ca3af);
+  font-size: 10px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.ntf-item:hover .ntf-item__delete-btn { opacity: 1; }
+.ntf-item__delete-btn:hover { color: #ef4444; }
 
 /* Dark mode for notification panel */
 html.theme-dark .ntf-panel__header { border-color: var(--border, #374151); }

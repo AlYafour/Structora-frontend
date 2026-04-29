@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '@mui/material';
@@ -11,63 +11,131 @@ import {
   FaUserCog, FaCog, FaEdit, FaFileInvoice, FaCheckCircle,
   FaClock, FaPlus, FaList, FaReceipt, FaChevronRight,
   FaFileImport, FaBuilding, FaChartLine, FaBox, FaShieldAlt,
-  FaTruck, FaSun, FaMoon, FaGlobe, FaSignOutAlt,
+  FaSun, FaMoon, FaGlobe, FaSignOutAlt,
   FaChevronLeft,
 } from 'react-icons/fa';
 import Button from '../common/Button';
 import BrandLogo from '../common/BrandLogo';
 import './AppSidebar.css';
 
-// ─── Menu configuration ──────────────────────────────────────
-
 function useCompanyMenuItems() {
   const { t } = useTranslation();
-  const { hasPermission, isAdmin, canManageUsers, canManageRoles } = useAuth();
+  const {
+    hasPermission,
+    hasAnyPermission,
+    isAdmin,
+    canManageUsers,
+    canManageRoles,
+  } = useAuth();
 
-  // company_super_admin and Admin see everything — only check permissions for other roles
-  const canViewProjects = isAdmin || hasPermission('project.view');
-  const canCreateProjects = isAdmin || hasPermission('project.create');
-  const canApproveProjects = isAdmin || hasPermission('project.approve');
-  const canViewPayments = isAdmin || hasPermission('payment.view') || hasPermission('project.view');
-  const canViewInvoices = isAdmin || hasPermission('invoice.view') || hasPermission('project.view');
-  const canViewVariations = isAdmin || hasPermission('variation.view') || hasPermission('project.view');
-  const canViewOwners = isAdmin || hasPermission('owner.view') || hasPermission('project.view');
-  const canViewConsultants = isAdmin || hasPermission('consultant.view') || hasPermission('project.view');
-  const canViewSettings = isAdmin || hasPermission('role.view');
+  const canViewProjects    = isAdmin || hasPermission('projects.view');
+  const canCreateProjects  = isAdmin || hasPermission('projects.create');
+  const canEditProjects    = isAdmin || hasPermission('projects.edit') || hasPermission('projects.create');
+  const canApproveProjects = isAdmin || hasPermission('projects.approve');
 
-  // Build project submenu dynamically
+  const canCreateVariations = isAdmin || hasPermission('variations.create');
+  const canViewVariations   = isAdmin || hasPermission('variations.view') || canCreateVariations;
+
+  const canViewOwners =
+    isAdmin ||
+    hasPermission('owners.view') ||
+    hasPermission('owners.create');
+
+  const canViewConsultants =
+    isAdmin ||
+    hasPermission('consultants.view') ||
+    hasPermission('consultants.create');
+
+  const canViewSettings = isAdmin || hasPermission('roles.manage');
+
+  // Financial is now independent from Projects
+  const canAccessFinancial =
+    isAdmin ||
+    hasAnyPermission([
+      'financial.view',
+      'financial.create',
+      'financial.edit',
+      'financial.approve',
+      'payments.view',
+      'payments.create',
+      'payments.edit',
+      'payments.approve',
+      'invoices.view',
+      'invoices.create',
+      'invoices.edit',
+      'invoices.approve',
+    ]);
+
+  const canAccessPayments =
+    isAdmin ||
+    hasAnyPermission([
+      'financial.view',
+      'financial.create',
+      'financial.edit',
+      'financial.approve',
+      'payments.view',
+      'payments.create',
+      'payments.edit',
+      'payments.approve',
+    ]);
+
+  const canAccessInvoices =
+    isAdmin ||
+    hasAnyPermission([
+      'financial.view',
+      'financial.create',
+      'financial.edit',
+      'financial.approve',
+      'invoices.view',
+      'invoices.create',
+      'invoices.edit',
+      'invoices.approve',
+    ]);
+
+  const canAccessBoq = isAdmin || hasPermission('boq.view') || hasPermission('boq.edit');
+
   const projectChildren = [
     ...(canViewProjects ? [{ key: 'projects-list', icon: <FaList />, label: t('projects_list') }] : []),
     ...(canCreateProjects ? [{ key: 'add-project', icon: <FaPlus />, label: t('add_project') }] : []),
-    ...(canViewProjects ? [{ key: 'divider-1', type: 'divider' }] : []),
-    ...(canViewProjects ? [{ key: 'add-start-order', icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
-    ...(canViewVariations ? [{ key: 'add-variation', icon: <FaEdit />, label: t('add_variation') }] : []),
-    ...(canViewProjects ? [{ key: 'add-awarding', icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
-    ...(canViewProjects ? [{ key: 'add-extensions', icon: <FaClock />, label: t('add_extensions') }] : []),
-    ...(canViewProjects ? [{ key: 'add-project-schedule', icon: <FaClock />, label: t('add_project_schedule') }] : []),
-    ...(canViewProjects ? [{ key: 'add-excavation-notice', icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
-    ...(canViewProjects ? [{ key: 'add-progress', icon: <FaEdit />, label: t('sidebar_add_progress') }] : []),
-    ...(canViewPayments || canViewInvoices ? [{ key: 'divider-2', type: 'divider' }] : []),
-    ...(canViewPayments ? [{ key: 'add-payment', icon: <FaMoneyBillWave />, label: t('add_payment') }] : []),
-    ...(canViewInvoices ? [{ key: 'add-invoice', icon: <FaReceipt />, label: t('add_invoice') }] : []),
-    ...(canViewPayments ? [{ key: 'add-payment-claim', icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
-    ...(canViewProjects ? [{ key: 'divider-3', type: 'divider' }] : []),
-    ...(canViewProjects ? [{ key: 'import-data', icon: <FaFileImport />, label: t('import_data') }] : []),
+    ...((canCreateProjects || canEditProjects) ? [{ key: 'divider-1', type: 'divider' }] : []),
+    ...(canEditProjects ? [{ key: 'add-start-order', icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
+    ...(canCreateVariations ? [{ key: 'add-variation', icon: <FaEdit />, label: t('add_variation') }] : []),
+    ...(canEditProjects ? [{ key: 'add-awarding', icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
+    ...(canEditProjects ? [{ key: 'add-extensions', icon: <FaClock />, label: t('add_extensions') }] : []),
+    ...(canEditProjects ? [{ key: 'add-project-schedule', icon: <FaClock />, label: t('add_project_schedule') }] : []),
+    ...(canEditProjects ? [{ key: 'add-excavation-notice', icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
+    ...(canEditProjects ? [{ key: 'add-progress', icon: <FaEdit />, label: t('sidebar_add_progress') }] : []),
+    ...(canAccessBoq ? [{ key: 'divider-3', type: 'divider' }] : []),
+    ...(canAccessBoq ? [{ key: 'import-data', icon: <FaFileImport />, label: t('import_data') }] : []),
+  ];
+
+  const financialChildren = [
+    ...(canAccessPayments ? [{ key: 'add-payment', icon: <FaMoneyBillWave />, label: t('add_payment') }] : []),
+    ...(canAccessInvoices ? [{ key: 'add-invoice', icon: <FaReceipt />, label: t('add_invoice') }] : []),
+    ...(canAccessPayments ? [{ key: 'add-payment-claim', icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
   ];
 
   return [
     { key: 'home', icon: <FaHome />, label: t('sidebar_home') },
 
-    ...(canViewProjects ? [{
-      key: 'projects', icon: <FaFolderOpen />, label: t('sidebar_projects'),
+    ...(projectChildren.length > 0 ? [{
+      key: 'projects',
+      icon: <FaFolderOpen />,
+      label: t('sidebar_projects'),
       children: projectChildren,
+    }] : []),
+
+    ...(canAccessFinancial ? [{
+      key: 'financial',
+      icon: <FaMoneyBillWave />,
+      label: t('sidebar_financial', { defaultValue: 'Financial' }),
+      children: financialChildren,
     }] : []),
 
     ...(canViewOwners ? [{ key: 'owners', icon: <FaUsers />, label: t('sidebar_owners') }] : []),
     ...(canViewConsultants ? [{ key: 'consultants', icon: <FaUserTie />, label: t('sidebar_consultants') }] : []),
     ...(canApproveProjects ? [{ key: 'pending-approvals', icon: <FaClock />, label: t('sidebar_pending_approvals') }] : []),
 
-    // Management section (admin / roles.manage)
     ...(canManageUsers ? [{ key: 'company-users', icon: <FaUserCog />, label: t('sidebar_manage_users') }] : []),
     ...(canManageRoles ? [{ key: 'company-roles', icon: <FaShieldAlt />, label: t('sidebar_manage_roles') }] : []),
     ...(canViewSettings ? [{ key: 'company-settings', icon: <FaCog />, label: t('sidebar_company_settings') }] : []),
@@ -86,15 +154,13 @@ function useAdminMenuItems() {
   ];
 }
 
-// ─── Navigation helpers ──────────────────────────────────────
-
 const COMPANY_NAV_MAP = {
-  'home': '/dashboard',
+  home: '/dashboard',
   'projects-list': '/projects',
   'add-project': '/wizard/new',
   'import-data': '/boq',
-  'owners': '/owners',
-  'consultants': '/consultants',
+  owners: '/owners',
+  consultants: '/consultants',
   'pending-approvals': '/projects/pending-approvals',
   'company-users': '/company/users',
   'company-roles': '/company/roles',
@@ -105,8 +171,10 @@ function getCompanyActiveKey(pathname) {
   if (pathname === '/dashboard' || pathname === '/' || pathname === '/home') return 'home';
   if (pathname === '/projects' || pathname === '/projects/') return 'projects-list';
   if (pathname === '/wizard/new') return 'add-project';
+
   const selectMatch = pathname.match(/^\/projects\/select\/(.+)$/);
   if (selectMatch) return `add-${selectMatch[1]}`;
+
   if (pathname.startsWith('/payment-claims')) return 'add-payment-claim';
   if (pathname.startsWith('/projects/') && pathname.includes('/progress')) return 'add-progress';
   if (pathname === '/projects/pending-approvals') return 'pending-approvals';
@@ -117,23 +185,23 @@ function getCompanyActiveKey(pathname) {
   if (pathname === '/company/users') return 'company-users';
   if (pathname === '/company/roles') return 'company-roles';
   if (pathname === '/company/settings') return 'company-settings';
+
   return 'home';
 }
 
 function handleCompanyNav(key, navigate) {
   if (key?.includes('divider')) return;
+
   const path = COMPANY_NAV_MAP[key];
   if (path) {
     navigate(path);
     return;
   }
-  // Project operations: add-start-order, add-variation, etc.
+
   if (key?.startsWith('add-')) {
     navigate(`/projects/select/${key.replace('add-', '')}`);
   }
 }
-
-// ─── Logo component ──────────────────────────────────────────
 
 function SidebarLogo({ isAdmin, logoUrl, companyName }) {
   return (
@@ -149,19 +217,18 @@ function SidebarLogo({ isAdmin, logoUrl, companyName }) {
   );
 }
 
-// ─── Menu item renderer ──────────────────────────────────────
-
 function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }) {
   if (item.type === 'divider') {
     return <div className="app-sidebar__divider" />;
   }
 
   const hasChildren = item.children?.length > 0;
-  const isChildActive = hasChildren && item.children.some(c => c.type !== 'divider' && activeKey === c.key);
+  const isChildActive =
+    hasChildren && item.children.some(c => c.type !== 'divider' && activeKey === c.key);
+
   const isActive = activeKey === item.key || isChildActive;
   const isOpen = openKeys.includes(item.key) || isChildActive;
 
-  // Admin mode: items have `to` prop for Link
   if (item.to) {
     return (
       <Link
@@ -175,7 +242,6 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
     );
   }
 
-  // Expandable item with children
   if (hasChildren) {
     if (collapsed) {
       return (
@@ -186,7 +252,12 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
           tabIndex={0}
           aria-expanded={isOpen}
           onClick={() => onToggle(item.key)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(item.key); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggle(item.key);
+            }
+          }}
         >
           <span className="app-sidebar__item-icon">{item.icon}</span>
         </div>
@@ -201,7 +272,12 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
           tabIndex={0}
           aria-expanded={isOpen}
           onClick={() => onToggle(item.key)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(item.key); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggle(item.key);
+            }
+          }}
         >
           <span className="app-sidebar__item-icon">{item.icon}</span>
           <span className="app-sidebar__item-label">{item.label}</span>
@@ -209,6 +285,7 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
             <FaChevronRight />
           </span>
         </div>
+
         {isOpen && (
           <div className="app-sidebar__submenu">
             {item.children.map(child => (
@@ -228,14 +305,18 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
     );
   }
 
-  // Simple item
   return (
     <div
       className={`app-sidebar__item ${isActive ? 'app-sidebar__item--active' : ''}`}
       role="button"
       tabIndex={0}
       onClick={() => onNavigate(item.key)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(item.key); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onNavigate(item.key);
+        }
+      }}
       title={collapsed ? item.label : undefined}
     >
       <span className="app-sidebar__item-icon">{item.icon}</span>
@@ -243,8 +324,6 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
     </div>
   );
 }
-
-// ─── Main component ──────────────────────────────────────────
 
 export default function AppSidebar({ mode = 'company' }) {
   const { pathname } = useLocation();
@@ -255,38 +334,39 @@ export default function AppSidebar({ mode = 'company' }) {
   const { user, logout, tenantTheme } = useAuth();
   const { collapsed, setCollapsed } = useSidebar();
   const { theme, toggleTheme } = useTheme();
+
   const lang = i18n.language;
   const isRTL = lang === 'ar';
-
   const isAdmin = mode === 'admin';
 
-  // Menu items
   const companyItems = useCompanyMenuItems();
   const adminItems = useAdminMenuItems();
   const menuItems = isAdmin ? adminItems : companyItems;
 
-  // Active key — strip tenant slug from pathname for matching
   const logicalPath = isAdmin ? pathname : stripTenantSlug(pathname, slug);
-  const activeKey = isAdmin
-    ? pathname
-    : getCompanyActiveKey(logicalPath);
+  const activeKey = isAdmin ? pathname : getCompanyActiveKey(logicalPath);
 
-  // Open submenus — projects always open by default
-  const [openKeys, setOpenKeys] = useState(['projects']);
+  const [openKeys, setOpenKeys] = useState(['projects', 'financial']);
 
   useEffect(() => {
     if (!isAdmin) {
-      setOpenKeys(prev => prev.includes('projects') ? prev : [...prev, 'projects']);
+      setOpenKeys(prev => {
+        const next = [...prev];
+        if (!next.includes('projects')) next.push('projects');
+        if (!next.includes('financial')) next.push('financial');
+        return next;
+      });
     }
   }, [pathname, isAdmin]);
 
   const toggleOpenKey = (key) => {
     setOpenKeys(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+      prev.includes(key)
+        ? prev.filter(k => k !== key)
+        : [...prev, key]
     );
   };
 
-  // Navigation handler
   const handleNav = (key) => {
     if (isAdmin) {
       navigate(key);
@@ -295,16 +375,15 @@ export default function AppSidebar({ mode = 'company' }) {
     }
   };
 
-  // Logo config — admin uses STRUCTORA bars, company uses tenant logo
   const logoUrl = isAdmin ? null : tenantTheme?.logo_url;
 
-  // Bilingual company name — primary follows current language
-  // For tenant users: use tenant name from theme OR from user object, NEVER "STRUCTORA"
   const tenantName = user?.tenant?.name || '';
   const companyNameAr = isAdmin ? '' : (tenantTheme?.company_name || tenantName || '');
   const companyNameEn = isAdmin ? '' : (tenantTheme?.contractor_name_en || '');
 
-  let brandName, brandNameSecondary;
+  let brandName;
+  let brandNameSecondary;
+
   if (isAdmin) {
     brandName = t('super_admin_panel');
     brandNameSecondary = '';
@@ -315,29 +394,39 @@ export default function AppSidebar({ mode = 'company' }) {
     brandName = companyNameEn || companyNameAr || t('nav_company');
     brandNameSecondary = companyNameEn ? companyNameAr : '';
   }
+
   const brandTagline = isAdmin
     ? t('system_administration')
     : t('nav_control_panel');
 
-  // User info
   const currentUser = user?.email || user?.get_full_name || t('nav_user');
+
   const getUserRoleDisplay = (roleName) => {
     if (!roleName) return t('nav_user');
+
     const map = {
-      'company_super_admin': t('nav_role_company_super_admin'),
-      'Manager': t('nav_role_manager'),
-      'Admin': t('nav_role_admin'),
-      'User': t('nav_user'),
-      'user': t('nav_user'),
+      company_super_admin: t('nav_role_company_super_admin'),
+      Manager: t('nav_role_manager'),
+      Admin: t('nav_role_admin'),
+      User: t('nav_user'),
+      user: t('nav_user'),
     };
+
     return map[roleName] || roleName;
   };
-  const userRole = isAdmin ? t('nav_super_admin') : getUserRoleDisplay(user?.role?.name);
-  const userInitial = user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U';
 
-  // Language switcher
+  const userRole = isAdmin
+    ? t('nav_super_admin')
+    : getUserRoleDisplay(user?.role?.name);
+
+  const userInitial =
+    user?.first_name?.[0] ||
+    user?.email?.[0]?.toUpperCase() ||
+    'U';
+
   const handleLanguageChange = () => {
     const newLang = lang === 'ar' ? 'en' : 'ar';
+
     try {
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -345,33 +434,45 @@ export default function AppSidebar({ mode = 'company' }) {
         u.preferred_language = newLang;
         localStorage.setItem('user', JSON.stringify(u));
       }
-    } catch (_) { /* silent */ }
+    } catch (_) {
+      // silent
+    }
+
     i18n.changeLanguage(newLang);
   };
 
-  // Admin active check
-  const isAdminActive = (to) => pathname === to || pathname.startsWith(to + '/');
+  const isAdminActive = (to) =>
+    pathname === to || pathname.startsWith(to + '/');
 
   return (
     <aside
       className={`app-sidebar ${collapsed ? 'app-sidebar--collapsed' : ''}`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      {/* ── Header: Logo + Brand ── */}
       <div className="app-sidebar__header">
-        <SidebarLogo isAdmin={isAdmin} logoUrl={logoUrl} companyName={brandName} />
+        <SidebarLogo
+          isAdmin={isAdmin}
+          logoUrl={logoUrl}
+          companyName={brandName}
+        />
+
         {!collapsed && (
           <div className="app-sidebar__brand">
             <div className="app-sidebar__brand-name">{brandName}</div>
+
             {brandNameSecondary && (
-              <div className="app-sidebar__brand-name-secondary">{brandNameSecondary}</div>
+              <div className="app-sidebar__brand-name-secondary">
+                {brandNameSecondary}
+              </div>
             )}
-            <div className="app-sidebar__brand-tagline">{brandTagline}</div>
+
+            <div className="app-sidebar__brand-tagline">
+              {brandTagline}
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── Navigation ── */}
       <nav className="app-sidebar__nav">
         {menuItems.map(item => (
           <MenuItem
@@ -386,13 +487,17 @@ export default function AppSidebar({ mode = 'company' }) {
         ))}
       </nav>
 
-      {/* ── Footer: User + Actions ── */}
       <div className="app-sidebar__footer">
-        {/* User info */}
-        <Link to={isAdmin ? "/admin/profile" : tp("/profile")} className="app-sidebar__user">
+        <Link
+          to={isAdmin ? '/admin/profile' : tp('/profile')}
+          className="app-sidebar__user"
+        >
           <div className="app-sidebar__user-avatar">
             {user?.avatar_url ? (
-              <Avatar src={user.avatar_url} sx={{ width: 36, height: 36, fontSize: '0.875rem' }}>
+              <Avatar
+                src={user.avatar_url}
+                sx={{ width: 36, height: 36, fontSize: '0.875rem' }}
+              >
                 {userInitial}
               </Avatar>
             ) : (
@@ -401,6 +506,7 @@ export default function AppSidebar({ mode = 'company' }) {
               </div>
             )}
           </div>
+
           {!collapsed && (
             <div className="app-sidebar__user-info">
               <div className="app-sidebar__user-name">{currentUser}</div>
@@ -409,7 +515,6 @@ export default function AppSidebar({ mode = 'company' }) {
           )}
         </Link>
 
-        {/* Action buttons */}
         <div className="app-sidebar__actions">
           <Button
             variant="ghost"
@@ -432,7 +537,11 @@ export default function AppSidebar({ mode = 'company' }) {
           >
             <span className="app-sidebar__action-content">
               <FaGlobe />
-              {!collapsed && <span className="app-sidebar__action-label">{lang.toUpperCase()}</span>}
+              {!collapsed && (
+                <span className="app-sidebar__action-label">
+                  {lang.toUpperCase()}
+                </span>
+              )}
             </span>
           </Button>
 
@@ -448,7 +557,6 @@ export default function AppSidebar({ mode = 'company' }) {
           </Button>
         </div>
 
-        {/* Collapse toggle */}
         <Button
           variant="ghost"
           size="sm"
@@ -459,8 +567,7 @@ export default function AppSidebar({ mode = 'company' }) {
         >
           {collapsed
             ? (isRTL ? <FaChevronLeft /> : <FaChevronRight />)
-            : (isRTL ? <FaChevronRight /> : <FaChevronLeft />)
-          }
+            : (isRTL ? <FaChevronRight /> : <FaChevronLeft />)}
         </Button>
       </div>
     </aside>

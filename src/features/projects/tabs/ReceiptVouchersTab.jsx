@@ -8,12 +8,22 @@ import Button from "../../../components/common/Button";
 import Dialog from "../../../components/common/Dialog";
 import ActionMenu from "../../../components/common/ActionMenu";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
+import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useNotifications } from "../../../contexts/NotificationContext";
 
 const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
  const { t, i18n } = useTranslation();
  const navigate = useTenantNavigate();
+
+ const renderAmount = (value) => {
+  const str = formatMoney(value, { lang: i18n.language });
+  if (i18n.language === 'en') {
+   const numPart = str.replace(/AED\s?/, '').trim();
+   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{numPart} <DirhamsIcon size={10} color="#374151" /></span>;
+  }
+  return str;
+ };
  const { success, error: showError } = useNotifications();
 
  const [vouchers, setVouchers] = useState([]);
@@ -96,6 +106,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
    </div>
   );
  }
+ 
 
  return (
   <div className="prj-tab-panel">
@@ -117,9 +128,9 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
       <div className="prj-tab-section__title">{t("rv_tab_summary")}</div>
       <MetricGrid>
        <MetricCard variant="blue" icon="hash" label={t("rv_tab_total_vouchers")} value={stats.count} />
-       <MetricCard variant="emerald" icon="dollar" label={t("rv_tab_total_amount")} value={formatMoney(stats.total)} />
+       <MetricCard variant="emerald" icon="dollar" label={t("rv_tab_total_amount")} value={renderAmount(stats.total)} />
        {stats.totalCreditRemaining > 0 && (
-        <MetricCard variant="violet" icon="creditCard" label={t("rv_tab_credit_remaining")} value={formatMoney(stats.totalCreditRemaining)} />
+        <MetricCard variant="violet" icon="creditCard" label={t("rv_tab_credit_remaining")} value={renderAmount(stats.totalCreditRemaining)} />
        )}
       </MetricGrid>
      </div>
@@ -161,9 +172,9 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
             </span>
            </td>
            <td className="prj-nowrap">{formatDate(v.date, i18n.language)}</td>
-           <td>{v.received_from || '-'}</td>
+           <td>{(i18n.language === 'ar' ? (v.received_from_ar || v.received_from) : (v.received_from_en || v.received_from)) || '-'}</td>
            <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-            {formatMoney(v.amount)}
+            {renderAmount(v.amount)}
            </td>
            <td>
             <span style={{ fontSize: '13px', maxWidth: '200px', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -174,7 +185,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
            <td>
             {creditRemaining > 0 && (
              <span className="prj-badge prj-badge--purple">
-              {t("rv_tab_remaining")}: {formatMoney(creditRemaining)}
+              {t("rv_tab_remaining")}: {renderAmount(creditRemaining)}
              </span>
             )}
             {creditDeducted > 0 && v.credit_source_voucher_number && (

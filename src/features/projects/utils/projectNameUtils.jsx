@@ -33,7 +33,7 @@ export function getProjectName(project) {
   const displayName = project?.display_name || project?.name || "";
   return {
     ar: project?.name_ar || displayName,
-    en: project?.name_en || "",
+    en: project?.display_name_en || project?.name_en || "",
     full: displayName
   };
 }

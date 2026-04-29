@@ -19,6 +19,7 @@ export default function FinancialActionBar({
   formId,
   className = "",
   title,
+  subtitle,
   children,
 }) {
   const { t } = useTranslation();
@@ -42,6 +43,7 @@ export default function FinancialActionBar({
   return (
     <PageHeader
       title={title}
+      subtitle={subtitle}
       onBack={showBack ? onBack : undefined}
       backLabel={backLabel}
       actions={saveButton}

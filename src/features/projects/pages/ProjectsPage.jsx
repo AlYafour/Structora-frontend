@@ -29,13 +29,14 @@ import DraftsTable from "../components/DraftsTable";
 export default function ProjectsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
-  const { user } = useAuth();
+  const { user, hasPermission, isAdmin } = useAuth();
   const { isArabic: isAR, isRTL } = useLanguage();
   const { success, error: showError } = useNotifications();
 
   // Role flags
   const isManager = user?.role?.name === 'Manager';
   const isSuperAdmin = user?.is_superuser || user?.role?.name === 'company_super_admin';
+  const canCreate = isAdmin || hasPermission('projects.create');
 
   // Approval status filter — visible to ALL users, default "all"
   const [approvalStatusFilter, setApprovalStatusFilter] = useState("all");
@@ -274,9 +275,11 @@ export default function ProjectsPage() {
         <PageHeader
           title={t("projects_title")}
           actions={
-            <Button onClick={createProject} variant="primary" size="sm">
-              {t("homepage_cta")}
-            </Button>
+            canCreate && (
+              <Button onClick={createProject} variant="primary" size="sm">
+                {t("homepage_cta")}
+              </Button>
+            )
           }
         >
           {/* Search + Filter inline in the header */}
@@ -372,7 +375,7 @@ export default function ProjectsPage() {
                 icon="📝"
                 title={t("no_drafts")}
                 description={t("no_drafts_desc")}
-                onCreate={createProject}
+                onCreate={canCreate ? createProject : undefined}
               />
             ) : (
               <>
@@ -455,7 +458,7 @@ export default function ProjectsPage() {
                         ? (t("no_pending_approvals_desc"))
                         : (t("no_projects_desc"))
                 }
-                onCreate={approvalStatusFilter === "all" ? createProject : undefined}
+                onCreate={approvalStatusFilter === "all" && canCreate ? createProject : undefined}
               />
             ) : (
               <>

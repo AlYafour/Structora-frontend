@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import PageLayout from "../../../../components/layout/PageLayout";
 import ViewPageHeader from "../../../../components/ui/ViewPageHeader";
 import InfoTip from "../../../../components/common/InfoTip";
+import DirhamsIcon from "../../../../components/common/DirhamsIcon";
 import useProjectData from "../../../../hooks/useProjectData";
 import useFinancialEntitlement from "./hooks/useFinancialEntitlement";
 import { formatMoney } from "../../../../utils/formatters";
@@ -39,6 +40,20 @@ export default function ProjectFinancialEntitlementPage() {
     contractorDeferredAmount: 0,
     reportDate: new Date().toISOString().split('T')[0],
   });
+
+  const formatAmountString = (value) => formatMoney(round(value || 0), { lang: i18n.language });
+  const renderAmount = (value) => {
+    const str = formatAmountString(value);
+    if (i18n.language === "en") {
+      const numPart = str.replace(/AED\s?/, "").trim();
+      return (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          {numPart} <DirhamsIcon size={10} color="#374151" />
+        </span>
+      );
+    }
+    return str;
+  };
 
   if (dataLoading) {
     return (
@@ -78,9 +93,9 @@ export default function ProjectFinancialEntitlementPage() {
   const Row = ({ label, amount, percentage, note, isTotal, isHighlight, custom, showVAT }) => {
     let amtExcl = amount, amtVAT = 0, amtIncl = amount;
     if (amount != null && showVAT) {
-    amtExcl = round(amount);
-    amtVAT  = round(amount * vatRate);
-    amtIncl = amtExcl + amtVAT;
+      amtExcl = round(amount);
+      amtVAT = round(amount * vatRate);
+      amtIncl = amtExcl + amtVAT;
     }
 
     const rowCls = [
@@ -89,7 +104,7 @@ export default function ProjectFinancialEntitlementPage() {
     ].filter(Boolean).join(" ");
 
     const val = custom != null ? custom :
-      amount != null ? formatMoney(round(amount)) :
+      amount != null ? renderAmount(amount) :
       percentage != null ? `${round(percentage).toFixed(2)}%` : "—";
 
     return (
@@ -102,9 +117,9 @@ export default function ProjectFinancialEntitlementPage() {
         </td>
         {showVAT ? (
           <>
-            <td className="fe-td-value">{amount != null ? formatMoney(round(amtExcl)) : "—"}</td>
-            <td className="fe-td-value">{amount != null ? formatMoney(amtVAT) : "—"}</td>
-            <td className="fe-td-value">{amount != null ? formatMoney(round(amtIncl)) : "—"}</td>
+            <td className="fe-td-value">{amount != null ? renderAmount(amtExcl) : "—"}</td>
+            <td className="fe-td-value">{amount != null ? renderAmount(amtVAT) : "—"}</td>
+            <td className="fe-td-value">{amount != null ? renderAmount(amtIncl) : "—"}</td>
           </>
         ) : (
           <td className="fe-td-value">{val}</td>

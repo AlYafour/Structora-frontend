@@ -11,9 +11,12 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import useTableSelection from "../hooks/useTableSelection";
 import BulkActionsBar from "../../../components/common/BulkActionsBar";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const PaymentClaimsTab = memo(function PaymentClaimsTab({ projectId, onReload }) {
  const { t, i18n } = useTranslation();
+ const { hasPermission, isAdmin } = useAuth();
+ const canCreateClaim = isAdmin || hasPermission('financial.create');
  const { success, error: showError } = useNotifications();
  const navigate = useTenantNavigate();
  const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
@@ -244,6 +247,7 @@ const PaymentClaimsTab = memo(function PaymentClaimsTab({ projectId, onReload })
  {/* Header with Actions */}
  <div className="prj-tab-header">
  <div className="prj-tab-actions">
+ {canCreateClaim && (
  <Button
  variant="primary"
  size="md"
@@ -251,6 +255,7 @@ const PaymentClaimsTab = memo(function PaymentClaimsTab({ projectId, onReload })
  >
  {t("add_payment_claim")}
  </Button>
+ )}
  </div>
  </div>
 

@@ -108,7 +108,7 @@ html.theme-dark .prj-toolbar__search-box:focus-within {
 }
 
 html.theme-dark .prj-toolbar__search-input {
-  color: var(--gray-200, #e5e7eb);
+  color: var(--ink);
 }
 
 @media (max-width: 640px) {

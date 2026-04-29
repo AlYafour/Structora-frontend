@@ -86,7 +86,7 @@ html.theme-dark .dash__company-logo-wrap {
 }
 
 html.theme-dark .dash__company-name {
-  color: var(--gray-50, #f9fafb);
+  color: var(--ink);
 }
 
 /* ── Welcome Section ── */
@@ -708,7 +708,11 @@ button.dash-kpi { cursor: pointer; }
 /* ============================================================
    Dark Mode
    ============================================================ */
-html.theme-dark .dash__welcome-title { color: var(--gray-50, #f9fafb); }
+html.theme-dark .dash__welcome-title { color: var(--accent-500, #f9fafb); }
+
+html.theme-dark .dash__welcome-today {
+  color: var(--accent-400, #93c5fd); /* or any lighter tone */
+}
 
 html.theme-dark .dash-kpi {
   background: var(--surface, #1f2937);

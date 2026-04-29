@@ -93,13 +93,13 @@ export default function ProjectView() {
  />
  )}
  {activeTab === "siteplan" && (
- <TabComponent projectId={projectId} siteplan={siteplan} />
+ <TabComponent projectId={projectId} siteplan={siteplan} projectPermissions={projectPermissions} />
  )}
  {activeTab === "license" && (
- <TabComponent projectId={projectId} license={license} />
+ <TabComponent projectId={projectId} license={license} projectPermissions={projectPermissions} />
  )}
  {activeTab === "contract" && (
- <TabComponent projectId={projectId} contract={contract} startOrder={startOrder} />
+ <TabComponent projectId={projectId} contract={contract} startOrder={startOrder} projectPermissions={projectPermissions} />
  )}
  {activeTab === "awarding" && (
  <TabComponent projectId={projectId} awarding={awarding} />

@@ -6,11 +6,25 @@ import { formatMoney, formatDate } from "../../../utils/formatters";
 import Button from "../../../components/common/Button";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { VatAmount } from "../../../components/common/VatBreakdownPopover";
+import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 
 const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
  const { t, i18n } = useTranslation();
  const navigate = useTenantNavigate();
+
+ const renderAmount = (value) => {
+  const str = formatMoney(value, { lang: i18n.language });
+  if (i18n.language === 'en') {
+   const numPart = str.replace(/AED\s?/, '').trim();
+   return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+     {numPart} <DirhamsIcon size={10} color="#374151" />
+    </span>
+   );
+  }
+  return str;
+ };
 
  const [invoices, setInvoices] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -94,11 +108,14 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
       <div className="prj-tab-section__title">{t("ti_tab_summary")}</div>
       <MetricGrid columns={4}>
        <MetricCard variant="blue" icon="hash" label={t("ti_tab_total_invoices")} value={stats.count} />
-       <MetricCard variant="emerald" icon="dollar" label={t("ti_tab_total_net")} value={formatMoney(stats.totalNet)} />
-       <MetricCard variant="amber" icon="percent" label={t("ti_tab_total_vat")} value={formatMoney(stats.totalVat)} />
-       <MetricCard variant="emerald" icon="check" label={t("ti_tab_total_gross")}
-        value={formatMoney(stats.totalGross)}
-        vatBreakdown={{ net: stats.totalNet, withVat: stats.totalGross, format: formatMoney }}
+       <MetricCard variant="emerald" icon="dollar" label={t("ti_tab_total_net")} value={renderAmount(stats.totalNet)} />
+       <MetricCard variant="amber" icon="percent" label={t("ti_tab_total_vat")} value={renderAmount(stats.totalVat)} />
+       <MetricCard
+        variant="emerald"
+        icon="check"
+        label={t("ti_tab_total_gross")}
+        value={renderAmount(stats.totalGross)}
+        vatBreakdown={{ net: stats.totalNet, withVat: stats.totalGross, format: renderAmount }}
        />
       </MetricGrid>
      </div>
@@ -139,19 +156,19 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
            <td className="prj-nowrap">{formatDate(inv.date, i18n.language)}</td>
            <td>{inv.invoice_number || '-'}</td>
            <td className="prj-nowrap ds-text-right ds-font-semibold">
-            {formatMoney(inv.net_amount)}
+            {renderAmount(inv.net_amount)}
            </td>
            <td className="ds-text-center">
             {parseFloat(inv.vat_rate) || 5}%
            </td>
            <td className="prj-nowrap ds-text-right">
-            {formatMoney(inv.vat_amount)}
+            {renderAmount(inv.vat_amount)}
            </td>
            <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
             <VatAmount
              net={parseFloat(inv.net_amount) || 0}
              withVat={parseFloat(inv.gross_amount) || 0}
-             format={formatMoney}
+             format={renderAmount}
              showBtn={false}
             />
            </td>

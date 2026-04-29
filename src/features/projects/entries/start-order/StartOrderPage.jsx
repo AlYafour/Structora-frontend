@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from 'react-router-dom';
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../../../../contexts/NotificationContext";
 import { projectApi } from "../../../../services/projects";
@@ -10,7 +10,7 @@ import FinancialActionBar from "../../../../components/common/FinancialActionBar
 import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
 import DateInput from "../../../../components/forms/DateInput";
 import StaticContractAttachmentFile from "../../wizard/components/StaticContractAttachmentFile";
-import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import useTenantNavigate from "../../../../hooks/useTenantNavigate";
 import "../entries.css";
 
 const FORM_ID = "start-order-form";
@@ -31,8 +31,11 @@ export default function StartOrderPage() {
     start_order_file_url: null,
     start_order_file_name: null,
   });
+
   const { success, error: showError } = useNotifications();
-  const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
+  const showToast = (type, msg) =>
+    type === "success" ? success(msg) : showError(msg);
+
   const navTimerRef = useRef(null);
 
   useEffect(() => {
@@ -44,12 +47,17 @@ export default function StartOrderPage() {
   }, [projectId]);
 
   const loadData = async () => {
-    projectApi.getById(projectId).then(setProject).catch((err) => {
-      logger.debug("Failed to load project", err);
-    });
+    projectApi
+      .getById(projectId)
+      .then(setProject)
+      .catch((err) => {
+        logger.debug("Failed to load project", err);
+      });
+
     try {
       const raw = await projectApi.getStartOrder(projectId);
       const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
+
       if (data) {
         setExistingId(data.id);
         setFormData({
@@ -70,19 +78,32 @@ export default function StartOrderPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+
     try {
       const fd = new FormData();
-      if (formData.start_order_date) fd.append("start_order_date", formData.start_order_date);
-      if (formData.start_order_notes) fd.append("start_order_notes", formData.start_order_notes);
-      if (formData.start_order_file instanceof File) fd.append("start_order_file", formData.start_order_file);
+
+      if (formData.start_order_date) {
+        fd.append("start_order_date", formData.start_order_date);
+      }
+
+      if (formData.start_order_notes) {
+        fd.append("start_order_notes", formData.start_order_notes);
+      }
+
+      if (formData.start_order_file instanceof File) {
+        fd.append("start_order_file", formData.start_order_file);
+      }
 
       if (existingId) {
         await projectApi.updateStartOrder(projectId, existingId, fd);
       } else {
         await projectApi.createStartOrder(projectId, fd);
       }
+
       showToast("success", t("save_success"));
-      navTimerRef.current = setTimeout(() => navigate(`/projects/${projectId}?tab=start_order`), 1200);
+      navTimerRef.current = setTimeout(() => {
+        navigate(`/projects/${projectId}?tab=start_order`);
+      }, 1200);
     } catch (error) {
       const handledError = handleError(error, "StartOrderPage.handleSubmit");
       logger.error("Error saving start order", handledError);
@@ -100,40 +121,64 @@ export default function StartOrderPage() {
         <FinancialActionBar onBack={handleBack} saving={saving} formId={FORM_ID}>
           <ProjectEntryInfo project={project} />
         </FinancialActionBar>
+
         <form id={FORM_ID} onSubmit={handleSubmit}>
           <div className="card">
             <div className="card__header">
               {existingId ? t("edit_start_order") : t("add_start_order")}
             </div>
+
             <div className="card__body">
               <div className="form-field">
                 <label className="form-label">{t("start_order_date")}</label>
                 <DateInput
                   className="prj-input"
                   value={formData.start_order_date}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, start_order_date: value }))}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_order_date: value,
+                    }))
+                  }
                 />
               </div>
-              
-              <div className="form-field">
+
+              <div className="form-field form-field-full">
                 <label className="form-label">{t("start_order_notes")}</label>
                 <textarea
                   className="prj-input"
                   rows={4}
                   value={formData.start_order_notes}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, start_order_notes: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_order_notes: e.target.value,
+                    }))
+                  }
                   placeholder={t("start_order_notes_placeholder")}
                 />
               </div>
-              
+
               <div className="form-field form-field-full">
                 <StaticContractAttachmentFile
                   label={t("start_order_file")}
                   value={formData.start_order_file}
                   fileUrl={formData.start_order_file_url}
                   fileName={formData.start_order_file_name}
-                  onChange={(file) => setFormData((prev) => ({ ...prev, start_order_file: file }))}
-                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, start_order_file: null, start_order_file_url: null, start_order_file_name: null }))}
+                  onChange={(file) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_order_file: file,
+                    }))
+                  }
+                  onRemoveExisting={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_order_file: null,
+                      start_order_file_url: null,
+                      start_order_file_name: null,
+                    }))
+                  }
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   maxSizeMB={10}
                   isView={false}

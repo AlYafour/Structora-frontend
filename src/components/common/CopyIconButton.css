@@ -1,0 +1,30 @@
+.copy-icon-btn {
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 6px;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+/* Hover = clear affordance */
+.copy-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Active (click) feedback */
+.copy-icon-btn:active {
+  transform: scale(0.9);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Focus accessibility */
+.copy-icon-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

@@ -9,6 +9,7 @@ import { useContractData } from "./hooks/useContractData";
 import ContractAmountCards from "./ContractAmountCards";
 import ContractBreakdownTables from "./ContractBreakdownTables";
 import ContractVATTable from "./ContractVATTable";
+import DirhamsIcon from "../../../../components/common/DirhamsIcon";
 import "../../wizard/components/wizard.css";
 
 /* ===== Row renderers (extracted from inline functions) ===== */
@@ -46,7 +47,7 @@ const RowVAT = (A, vatFn, incFn) => (label, amt, isTotal = false) => (
 
 /* =================== Main =================== */
 export default function ContractFinancialSummary({ projectId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { contract, variations, loading, error } = useContractData(projectId, t);
 
   // All calculations are performed here safely - PRESERVED VERBATIM
@@ -193,7 +194,19 @@ export default function ContractFinancialSummary({ projectId }) {
       const payableAmount = grossOwner - ownerFeesExcludedFromPayable + bankFinal.net;
 
       // Display functions
-      const A = (v) => formatMoney(round(n(v)));
+      const formatAmountString = (v) => formatMoney(round(n(v)), { lang: i18n.language });
+      const A = (v) => {
+        const str = formatAmountString(v);
+        if (i18n.language === "en") {
+          const numPart = str.replace(/AED\s?/, "").trim();
+          return (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              {numPart} <DirhamsIcon size={10} color="#374151" />
+            </span>
+          );
+        }
+        return str;
+      };
       const vatFn = (v) => round(n(v) * VAT_RATE);
       const incFn = (v) => round(n(v) + vatFn(v));
 
@@ -210,7 +223,7 @@ export default function ContractFinancialSummary({ projectId }) {
     } catch (e) {
       return { error: e, data: null };
     }
-  }, [contract, variations]);
+  }, [contract, variations, i18n.language]);
 
   // Loading / Error / Empty states
   if (loading) {

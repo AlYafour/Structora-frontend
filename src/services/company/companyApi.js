@@ -102,6 +102,19 @@ class CompanyService {
       throw handleError(error, 'CompanyService.getRoles');
     }
   }
+
+  /**
+   * Get all permissions grouped by category
+   * @returns {Promise} Object keyed by category, each with label_ar, label_en, permissions[]
+   */
+  async getPermissionsByCategory() {
+    try {
+      const { data } = await api.get('auth/permissions/by_category/');
+      return data;
+    } catch (error) {
+      throw handleError(error, 'CompanyService.getPermissionsByCategory');
+    }
+  }
 }
 
 export const companyApi = new CompanyService();
