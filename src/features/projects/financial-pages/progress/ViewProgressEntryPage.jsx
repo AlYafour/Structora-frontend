@@ -15,6 +15,7 @@ import { extractFileNameFromUrl } from "../../../../utils/helpers/file";
 import { parseAttachmentData } from '../../../../utils/helpers/parsing';
 import { parseVariationProgress } from './utils/progressCalculations';
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
+import './ViewProgressEntryPage.css';
 
 export default function ViewProgressEntryPage() {
   const { projectId, entryId } = useParams();

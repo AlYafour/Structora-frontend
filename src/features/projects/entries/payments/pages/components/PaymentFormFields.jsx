@@ -250,7 +250,7 @@ const PaymentFormFields = memo(({
       <div className="ds-grid ds-grid-cols-2 ds-gap-4">
        <div>
         <label className="payment-form-fields__label">
-         {t('advance_percentage', 'نسبة الدفعة المقدمة (%)')}
+         {t('advance_payment_percentage', 'نسبة الدفعة المقدمة (%)')}
         </label>
         <input
          type="number"
@@ -272,7 +272,7 @@ const PaymentFormFields = memo(({
        </div>
        <div>
         <label className="payment-form-fields__label">
-         {t('advance_amount', 'مبلغ الدفعة المقدمة')}
+         {t('advance_payment_amount', 'مبلغ الدفعة المقدمة')}
         </label>
         <CurrencyField
          value={formData.amount}

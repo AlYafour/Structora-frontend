@@ -67,6 +67,19 @@ function getErrorTypeMessage(error, context = "") {
 }
 
 /**
+ * Try to translate a string as an i18n key; returns original string if no translation exists.
+ */
+function tryTranslate(key) {
+  if (!key || typeof key !== 'string') return key;
+  try {
+    const translated = i18n.t(key);
+    return translated !== key ? translated : key;
+  } catch {
+    return key;
+  }
+}
+
+/**
  * Format server errors with context information
  */
 export function formatError(error, context = "") {
@@ -102,6 +115,9 @@ export function formatError(error, context = "") {
       // General message from the server
       if (data.detail) {
         const detail = Array.isArray(data.detail) ? data.detail[0] : data.detail;
+        const translated = tryTranslate(String(detail));
+        // If a real translation was found, show only that (no generic HTTP prefix)
+        if (translated !== String(detail)) return translated;
         return `${httpMessage}\n\n${detail}`;
       }
       
@@ -200,10 +216,13 @@ function formatFieldErrors(data, context = "") {
 
   // Process general errors
   if (errorData.non_field_errors) {
-    const generalErrors = Array.isArray(errorData.non_field_errors) 
-      ? errorData.non_field_errors 
+    const generalErrors = Array.isArray(errorData.non_field_errors)
+      ? errorData.non_field_errors
       : [errorData.non_field_errors];
-    generalErrors.forEach(err => messages.push(`• ${err}`));
+    generalErrors.forEach(err => {
+      const translated = tryTranslate(String(err));
+      messages.push(`• ${translated}`);
+    });
   }
 
   // If no errors found in errorData, try data directly

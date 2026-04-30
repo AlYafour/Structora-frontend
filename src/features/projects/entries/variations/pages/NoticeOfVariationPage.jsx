@@ -59,7 +59,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const queryClient = useQueryClient();
-  useAuth(); // For authentication context
+  const { user } = useAuth();
   const projectFromQuery = searchParams.get('project') || projectId;
   const isEmbeddedMode = !!variationProp && !!projectProp;
 
@@ -108,7 +108,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     !!effectiveVariation?.general_manager_final_approved_by ||
     effectiveVariation?.status === 'approved' ||
     effectiveVariation?.workflow_status === 'approved';
-  const isEditMode = viewModeProp !== true && !isFinalApproved;
+  const isStaffUser = !user?.is_superuser &&
+    user?.role?.name !== 'Manager' &&
+    user?.role?.name !== 'company_super_admin';
+  const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
+  const isEditMode = viewModeProp !== true && !isFinalApproved && !(isStaffUser && isPMInitialApproved);
 
 
   const { i18n } = useTranslation();
@@ -611,6 +615,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           onSave={undefined}
           saving={saving}
           formId="notice-variation-form"
+          showSave={isEditMode}
           title={getProjectTitle()}
           subtitle={getProjectSubtitle()}
         >

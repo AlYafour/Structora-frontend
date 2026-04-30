@@ -116,13 +116,13 @@ const VariationHeaderInfo = memo(({
           {isEditMode ? (
             <input
               type="text"
-              value={formData.item_description ?? ''}
-              onChange={(e) => onFormDataChange({ ...formData, item_description: e.target.value })}
+              value={formData.variation_cause ?? ''}
+              onChange={(e) => onFormDataChange({ ...formData, variation_cause: e.target.value })}
               className="nvc-input"
               placeholder={t('variation_cause')}
             />
           ) : (
-            <span className="nvh-strip__value">{formData.item_description || '—'}</span>
+            <span className="nvh-strip__value">{formData.variation_cause || '—'}</span>
           )}
         </div>
 

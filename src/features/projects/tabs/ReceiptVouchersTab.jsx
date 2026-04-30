@@ -92,7 +92,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
    setDeleteTarget(null);
    loadVouchers(showVoided);
   } catch (err) {
-   const msg = err?.response?.data?.error || err?.message || t("delete_error");
+   const msg = err?.message || t("delete_error");
    showError(msg);
   } finally {
    setIsDeleting(false);
@@ -157,7 +157,6 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
          const creditRemaining = parseFloat(v.credit_remaining) || 0;
          const creditDeducted = parseFloat(v.credit_deducted) || 0;
          const isVoided = v.status === 'voided';
-
          return (
           <tr
            key={v.id}
@@ -172,7 +171,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
             </span>
            </td>
            <td className="prj-nowrap">{formatDate(v.date, i18n.language)}</td>
-           <td>{(i18n.language === 'ar' ? (v.received_from_ar || v.received_from) : (v.received_from_en || v.received_from)) || '-'}</td>
+           <td>{(i18n.language === 'en' ? (v.received_from_en || v.received_from) : v.received_from) || '-'}</td>
            <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
             {renderAmount(v.amount)}
            </td>

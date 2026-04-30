@@ -45,8 +45,9 @@ export default function ContractAttachmentsSection({
     return false;
   };
 
-  const hasContractFile = form.contract_file || form.contract_file_url;
-  const contractIsPdf = isPdf(form.contract_file, form.contract_file_url);
+
+  const hasNewContractFile = form.contract_file instanceof File;
+  const contractIsPdf = isPdf(form.contract_file, null);
 
   // Authorization document review
   const hasAuthDoc = authDocFile || authDocFileUrl;
@@ -59,7 +60,7 @@ export default function ContractAttachmentsSection({
     let allDone = true;
 
     // Contract review
-    if (hasContractFile && contractIsPdf) {
+    if (hasNewContractFile && contractIsPdf) {
       hasAnyReview = true;
       const contractDone = contractReviewState?.confirmedPages?.size > 0
         && contractReviewState.confirmedPages.size === contractReviewState.totalPages;
@@ -104,14 +105,26 @@ export default function ContractAttachmentsSection({
             fileName={form.contract_file_name}
             onChange={(file) => {
               setF("contract_file", file);
-              // Reset review when file changes
-              onContractReviewStateChange?.({ confirmedPages: new Set(), totalPages: 0 });
+
+              // reset review ONLY when a new file is selected
+              onContractReviewStateChange?.({
+                confirmedPages: new Set(),
+                totalPages: 0,
+              });
+
+              onContractReviewComplete?.(false);
             }}
             onRemoveExisting={() => {
               setF("contract_file_url", null);
               setF("contract_file_name", null);
               setF("contract_file", null);
-              onContractReviewStateChange?.({ confirmedPages: new Set(), totalPages: 0 });
+
+              onContractReviewStateChange?.({
+                confirmedPages: new Set(),
+                totalPages: 0,
+              });
+
+              onContractReviewComplete?.(false);
             }}
             accept=".pdf"
             maxSizeMB={10}
@@ -182,7 +195,7 @@ export default function ContractAttachmentsSection({
       </div>
 
       {/* PDF Review for contract file */}
-      {!viewMode && hasContractFile && contractIsPdf && (
+      {!viewMode && hasNewContractFile && contractIsPdf && (
         <Suspense fallback={<div style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>{t("contract_review.loading")}</div>}>
           <ContractPdfReviewer
             file={form.contract_file}

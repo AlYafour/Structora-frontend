@@ -68,11 +68,20 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
     const isGeneralManager = isCompanySuperAdmin || isSuperAdmin;
     const canApproveVariations = isGeneralManager || isProjectManager;
     const canRejectAnyStatus = isGeneralManager || isSuperAdmin;
+    // Staff = not PM, not GM/admin, not superuser
+    const isStaff = !isProjectManager && !isGeneralManager;
 
     const [variationStatusFilter, setVariationStatusFilter] = useState("");
     const [approvingVariationId, setApprovingVariationId] = useState(null);
     const [cancellingVariationId, setCancellingVariationId] = useState(null);
     const [rejectingVariationId, setRejectingVariationId] = useState(null);
+
+    // Alteration request state
+    const [alterationDialogOpen, setAlterationDialogOpen] = useState(false);
+    const [alterationVariation, setAlterationVariation] = useState(null);
+    const [alterationRequestType, setAlterationRequestType] = useState("edit");
+    const [alterationReason, setAlterationReason] = useState("");
+    const [submittingAlteration, setSubmittingAlteration] = useState(false);
     const [revokingVariationId, setRevokingVariationId] = useState(null);
     const [approveVariationConfirmOpen, setApproveVariationConfirmOpen] = useState(false);
     const [cancelVariationConfirmOpen, setCancelVariationConfirmOpen] = useState(false);
@@ -185,10 +194,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
         try {
             setApprovingVariationId(actionVariation.id);
             await projectApi.approveVariation(projectId, actionVariation.id);
-            onReload();
             showToast("success", t("variation_approved"));
-            setApproveVariationConfirmOpen(false);
-            setActionVariation(null);
         } catch (error) {
             const handledError = handleError(error, "VariationsTab.handleApproveVariation");
             let errorMessage = handledError.message || t("approve_error");
@@ -200,6 +206,9 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             showToast("error", errorMessage);
         } finally {
             setApprovingVariationId(null);
+            setApproveVariationConfirmOpen(false);
+            setActionVariation(null);
+            onReload();
         }
     };
 
@@ -290,6 +299,33 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             showError(t("error_generic", "حدث خطأ"));
         } finally {
             setRevokingVariationId(null);
+        }
+    };
+
+    const openAlterationDialog = (variation, requestType) => {
+        setAlterationVariation(variation);
+        setAlterationRequestType(requestType);
+        setAlterationReason("");
+        setAlterationDialogOpen(true);
+    };
+
+    const handleSubmitAlterationRequest = async () => {
+        if (!alterationVariation?.id || !projectId || !alterationReason.trim()) return;
+        try {
+            setSubmittingAlteration(true);
+            await projectApi.createAlterationRequest(projectId, alterationVariation.id, {
+                request_type: alterationRequestType,
+                reason: alterationReason.trim(),
+            });
+            showToast("success", t("alteration_request_sent", "تم إرسال الطلب إلى مدير المشروع"));
+            onReload();
+        } catch (e) {
+            const msg = e?.response?.data?.error || e?.message || t("error_generic", "حدث خطأ");
+            showToast("error", msg);
+        } finally {
+            setSubmittingAlteration(false);
+            setAlterationDialogOpen(false);
+            setAlterationVariation(null);
         }
     };
 
@@ -408,7 +444,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
         setDeletingVariations(true);
 
         try {
-            const ids = Array.from(selectedVariationIds);
+            const ids = Array.from(selectedVariationIds).filter(id => {
+                if (!isStaff) return true;
+                const v = filteredVariations.find(v => v.id === id);
+                return v && canStaffDeleteVariation(v);
+            });
             let successCount = 0;
             let failCount = 0;
 
@@ -440,6 +480,16 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             setDeletingVariations(false);
         }
     };
+
+    const canStaffDeleteVariation = (variation) => {
+        const s = getVariationStatus(variation);
+        return s === "draft" || s === "pending_project_manager";
+    };
+
+    const staffCanDeleteSelected = !isStaff || [...selectedVariationIds].every(id => {
+        const v = filteredVariations.find(v => v.id === id);
+        return v && canStaffDeleteVariation(v);
+    });
 
     const canApproveThisVariation = (variation) => {
         if (!canApproveVariations) return false;
@@ -518,12 +568,16 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
                             },
                         ]
                         : []),
-                    {
-                        label: t("delete"),
-                        onClick: () => setDeleteVariationsConfirmOpen(true),
-                        variant: "danger",
-                        disabled: deletingVariations || bulkApprovingVariations || bulkRejectingVariations,
-                    },
+                    ...(!isStaff || staffCanDeleteSelected
+                        ? [
+                            {
+                                label: t("delete"),
+                                onClick: () => setDeleteVariationsConfirmOpen(true),
+                                variant: "danger",
+                                disabled: deletingVariations || bulkApprovingVariations || bulkRejectingVariations || !staffCanDeleteSelected,
+                            },
+                        ]
+                        : []),
                 ]}
             />
 
@@ -637,7 +691,40 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
                                             <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                                                 <ActionMenu
                                                     items={[
-                                                        ...(canEditVariation ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }] : []),
+                                                        // Staff: show request-edit/delete when PM has initially approved; hide direct edit/delete
+                                                        ...(isStaff && status === "pending_general_manager_initial"
+                                                            ? [
+                                                                ...(!variation.pending_alteration_request
+                                                                    ? [
+                                                                        {
+                                                                            label: t("request_edit", "طلب تعديل"),
+                                                                            type: "button",
+                                                                            variant: "warning",
+                                                                            onClick: () => openAlterationDialog(variation, "edit"),
+                                                                        },
+                                                                        {
+                                                                            label: t("request_delete", "طلب حذف"),
+                                                                            type: "button",
+                                                                            variant: "danger",
+                                                                            onClick: () => openAlterationDialog(variation, "delete"),
+                                                                        },
+                                                                    ]
+                                                                    : [
+                                                                        {
+                                                                            label: t("request_pending", "طلب قيد الانتظار"),
+                                                                            type: "button",
+                                                                            variant: "ghost",
+                                                                            disabled: true,
+                                                                        },
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                            : [
+                                                                ...(canEditVariation && !(isStaff && status === "pending_general_manager_initial")
+                                                                    ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
+                                                                    : []),
+                                                            ]
+                                                        ),
                                                         ...(canApproveThis
                                                             ? [
                                                                 {
@@ -806,6 +893,45 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
                 onConfirm={handleDeleteVariations}
                 busy={deletingVariations}
                 danger
+            />
+
+            {/* Alteration Request Dialog (staff → PM) */}
+            <Dialog
+                open={alterationDialogOpen}
+                title={
+                    alterationRequestType === "edit"
+                        ? t("request_edit", "طلب تعديل أمر التغيير")
+                        : t("request_delete", "طلب حذف أمر التغيير")
+                }
+                desc={
+                    <div>
+                        <p className="ds-mb-3">
+                            {alterationRequestType === "edit"
+                                ? t("request_edit_desc", "سيتم إرسال طلب التعديل إلى مدير المشروع للموافقة عليه.")
+                                : t("request_delete_desc", "سيتم إرسال طلب الحذف إلى مدير المشروع للموافقة عليه.")}
+                        </p>
+                        <textarea
+                            className="prj-input ds-w-full ds-mt-2"
+                            rows={4}
+                            value={alterationReason}
+                            onChange={(e) => setAlterationReason(e.target.value)}
+                            placeholder={t("alteration_reason_placeholder", "اذكر سبب طلبك...")}
+                            required
+                        />
+                    </div>
+                }
+                confirmLabel={submittingAlteration ? t("sending", "جارٍ الإرسال...") : t("send_request", "إرسال الطلب")}
+                cancelLabel={t("cancel")}
+                onClose={() => {
+                    if (!submittingAlteration) {
+                        setAlterationDialogOpen(false);
+                        setAlterationReason("");
+                        setAlterationVariation(null);
+                    }
+                }}
+                onConfirm={handleSubmitAlterationRequest}
+                busy={submittingAlteration}
+                danger={alterationRequestType === "delete"}
             />
         </div>
     );

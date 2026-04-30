@@ -473,6 +473,52 @@ class ProjectService extends BaseService {
     }
   }
 
+  async createAlterationRequest(projectId, variationId, { request_type, reason }) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/alteration-requests/create/`,
+        { request_type, reason }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.createAlterationRequest');
+    }
+  }
+
+  async listAlterationRequests(projectId, variationId) {
+    try {
+      const { data } = await api.get(
+        `${this.basePath}${projectId}/variations/${variationId}/alteration-requests/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.listAlterationRequests');
+    }
+  }
+
+  async getAlterationRequest(projectId, variationId, requestId) {
+    try {
+      const { data } = await api.get(
+        `${this.basePath}${projectId}/variations/${variationId}/alteration-requests/${requestId}/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getAlterationRequest');
+    }
+  }
+
+  async respondToAlterationRequest(projectId, variationId, requestId, { status, response_reason }) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/alteration-requests/${requestId}/respond/`,
+        { status, response_reason }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.respondToAlterationRequest');
+    }
+  }
+
   /**
    * Get audit log history for a variation
    * @param {string|number} projectId - Project ID

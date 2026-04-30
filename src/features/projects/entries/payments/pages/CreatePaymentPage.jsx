@@ -413,6 +413,25 @@ export default function CreatePaymentPage() {
             </div>
           </div>
 
+          {/* No-invoice warning (hidden for advance payments and edit mode) */}
+          {formData.project && filteredInvoices.length === 0 && !formData.is_advance_payment && !isEditMode && (
+            <div className="card">
+              <div className="card__body">
+                <div style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  background: '#fef3c7',
+                  border: '1px solid #f59e0b',
+                  color: '#92400e',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                }}>
+                  ⚠️ {t('no_invoices_for_payer')}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Invoice Allocation Card (hidden for advance payments) */}
           {formData.project && filteredInvoices.length > 0 && !formData.is_advance_payment && (
             <div className="card">

@@ -16,6 +16,7 @@ import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { removeCommas } from "../../../../../utils/formatters/number";
 import Button from "../../../../../components/common/Button";
+import Dialog from "../../../../../components/common/Dialog";
 import { logger } from "../../../../../utils/logger";
 import { useInvoiceForm } from "../hooks/useInvoiceForm";
 import useFinancialEntitlement from "../../../financial-pages/entitlement/hooks/useFinancialEntitlement";
@@ -59,6 +60,7 @@ export default function CreateActualInvoicePage() {
   const projectFromQuery = searchParams.get("project");
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState([EMPTY_ITEM()]);
+  const [warningDialog, setWarningDialog] = useState({ open: false, warnings: [] });
 
   // Advance payment state
   const [deductionPreview, setDeductionPreview] = useState(null);
@@ -374,19 +376,21 @@ export default function CreateActualInvoicePage() {
       return false;
     }
 
-    // Warn if base contract amount exceeds due by progress (uses owner share only, excl bank VAT)
+    return true;
+  };
+
+  const collectWarnings = () => {
+    const warnings = [];
     if (payer === "owner" && ownerBaseProgress > 0) {
       const baseItem = items.find(it => it.source === "base_contract");
       if (baseItem) {
         const baseAmountInclVAT = (parseFloat(removeCommas(baseItem.amount_incl_vat || "0")) || 0);
         if (baseAmountInclVAT > ownerBaseOnlyDueThisCycle + 0.01) {
-          const confirmed = window.confirm(
-            `${t("base_amount_exceeds_due") || "تحذير: مبلغ العقد الأساسي"} (${formatAmountString(baseAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(ownerBaseOnlyDueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
+          warnings.push(
+            `${t("base_amount_exceeds_due") || "تحذير: مبلغ العقد الأساسي"} (${formatAmountString(baseAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(ownerBaseOnlyDueThisCycle)})`
           );
-          if (!confirmed) return false;
         }
       }
-      // Same check for each VO
       for (const item of items) {
         if (item.source === "variation" && item.variation_id) {
           const vo = variations.find(v => String(v.id) === String(item.variation_id));
@@ -394,24 +398,19 @@ export default function CreateActualInvoicePage() {
             const voInfo = getVOInfo(vo);
             const voAmountInclVAT = (parseFloat(removeCommas(item.amount_incl_vat || "0")) || 0);
             if (voAmountInclVAT > voInfo.dueThisCycle + 0.01) {
-              const confirmed = window.confirm(
-                `${t("vo_amount_exceeds_due") || "تحذير: مبلغ أمر التغيير"} (${formatAmountString(voAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(voInfo.dueThisCycle)}).\n\n${t("confirm_proceed") || "هل تريد المتابعة؟"}`
+              warnings.push(
+                `${t("vo_amount_exceeds_due") || "تحذير: مبلغ أمر التغيير"} (${formatAmountString(voAmountInclVAT)}) ${t("exceeds_due_amount") || "أعلى من المستحق حسب الإنجاز"} (${formatAmountString(voInfo.dueThisCycle)})`
               );
-              if (!confirmed) return false;
             }
           }
         }
       }
     }
-
-    return true;
+    return warnings;
   };
 
   // ── Submit ────────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const doSubmit = async () => {
     setSaving(true);
     try {
       const r2 = (v) => Math.round((parseFloat(v) || 0) * 100) / 100;
@@ -427,8 +426,8 @@ export default function CreateActualInvoicePage() {
         items: items.map(it => ({
           description: it.description || (
             it.source === "variation" ? `${t("invoice_item_variation_prefix")} #${it.variation_id}` :
-            it.source === "bank_vat" ? t("bank_vat_paid_by_owner") :
-            t("invoice_item_base_contract")
+              it.source === "bank_vat" ? t("bank_vat_paid_by_owner") :
+                t("invoice_item_base_contract")
           ),
           quantity: 1,
           unit_price: r2(it.total),
@@ -479,10 +478,23 @@ export default function CreateActualInvoicePage() {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    const warnings = collectWarnings();
+    if (warnings.length > 0) {
+      setWarningDialog({ open: true, warnings });
+      return;
+    }
+    await doSubmit();
+  };
+
   const handleBack = () => {
     const projectId = formData.project || projectFromQuery;
     navigate(projectId ? `/projects/${projectId}?tab=invoices` : "/projects");
   };
+
+  console.log(getProjectName(selectedProject, t), formData.project, projects);
 
   return (
     <PageLayout loading={loading} loadingText={t("loading")}>
@@ -511,7 +523,18 @@ export default function CreateActualInvoicePage() {
                     getOptionLabel={(opt) => {
                       const owners = Array.isArray(opt.owners) ? opt.owners : [];
                       const name = getProjectName({ ...opt, __owners_data: owners }, t);
-                      return name.ar || name.full || opt.display_name || opt.name || `${t("project")} #${opt.id}`;
+
+                      const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
+
+                      return (
+                        name?.[lang] ||
+                        name?.full ||
+                        name?.en ||
+                        name?.ar ||
+                        opt.display_name ||
+                        opt.name ||
+                        `${t("project")} #${opt.id}`
+                      );
                     }}
                     getOptionValue={(opt) => opt.id?.toString()}
                   />
@@ -972,6 +995,25 @@ export default function CreateActualInvoicePage() {
           </div>
         </form>
       </div>
+
+      <Dialog
+        open={warningDialog.open}
+        title={t("warning") || "تحذير"}
+        onClose={() => setWarningDialog({ open: false, warnings: [] })}
+        onConfirm={async () => {
+          setWarningDialog({ open: false, warnings: [] });
+          await doSubmit();
+        }}
+        danger
+        size="small"
+      >
+        <div>
+          {warningDialog.warnings.map((w, i) => (
+            <p key={i} style={{ marginBottom: i < warningDialog.warnings.length - 1 ? "8px" : 0 }}>{w}</p>
+          ))}
+          <p style={{ marginTop: "12px" }}>{t("confirm_proceed") || "هل تريد المتابعة؟"}</p>
+        </div>
+      </Dialog>
     </PageLayout>
   );
 }

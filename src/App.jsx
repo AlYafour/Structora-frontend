@@ -88,6 +88,7 @@ const ViewTaxInvoicePage = lazy(() => import("./features/projects/entries/taxInv
 // ====== Variations Pages ======
 const VariationViewPage = lazy(() => import("./features/projects/entries/variations/pages/VariationViewPage"));
 const NoticeOfVariationPage = lazy(() => import("./features/projects/entries/variations/pages/NoticeOfVariationPage"));
+const VariationAlterationRequestPage = lazy(() => import("./features/projects/entries/variations/pages/VariationAlterationRequestPage"));
 
 // ====== Invoices Pages ======
 const InvoiceViewPage = lazy(() => import("./features/projects/entries/invoices/pages/InvoiceViewPage"));
@@ -197,6 +198,7 @@ function TenantRoutes() {
       <Route path="variations/:variationId/view" element={<ProtectedRoute permission="variations.view"><VariationViewPage /></ProtectedRoute>} />
       <Route path="variations/:variationId/edit" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
       <Route path="variations/:variationId/notice" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
+      <Route path="variations/:variationId/alteration-requests/:requestId" element={<ProtectedRoute permission="variations.view"><VariationAlterationRequestPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/variations/notice" element={<ProtectedRoute permission="variations.create"><NoticeOfVariationPage /></ProtectedRoute>} />
 
       {/* Invoices */}

@@ -130,8 +130,8 @@ export default function AddProgressPage() {
     await handleSave(
       validateAll,
       variations,
-      () => {},
-      () => {},
+      () => { },
+      () => { },
       setError,
       (msg) => {
         showSuccess(msg);
@@ -145,6 +145,8 @@ export default function AddProgressPage() {
   const handleBack = () => {
     navigate(`/projects/${projectId}?tab=progress`);
   };
+  const showBankBaseContract = Number(projectData?.progress_amounts?.gross_bank || 0) > 0;
+  const approvedVariations = variations.filter((v) => v.status === 'approved');
 
   return (
     <PageLayout loading={loading && initializing} loadingText={t('loading')}>
@@ -193,30 +195,32 @@ export default function AddProgressPage() {
                       />
                     </div>
 
-                    <div className="progress-buckets-grid__item">
-                      <BucketProgressInput
-                        bucketType="bank"
-                        formData={formData}
-                        latestProgress={latestProgress}
-                        handleChange={onInputChange}
-                        handleBlur={onInputBlur}
-                        error={error}
-                        isRTL={isRTL}
-                        t={t}
-                      />
-                    </div>
+                    {showBankBaseContract && (
+                      <div className="progress-buckets-grid__item">
+                        <BucketProgressInput
+                          bucketType="bank"
+                          formData={formData}
+                          latestProgress={latestProgress}
+                          handleChange={onInputChange}
+                          handleBlur={onInputBlur}
+                          error={error}
+                          isRTL={isRTL}
+                          t={t}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
 
-              {variations.length > 0 && (
+              {approvedVariations.length > 0 && (
                 <section className="progress-panel">
                   <div className="progress-panel__header">
                     {t('progress_variations_individual')}
                   </div>
                   <div className="progress-panel__body progress-panel__body--spaced">
                     <VariationsIndividualSection
-                      variations={variations}
+                      variations={approvedVariations}
                       formData={formData}
                       latestProgress={latestProgress}
                       setFormData={setFormData}
@@ -227,7 +231,7 @@ export default function AddProgressPage() {
                     />
 
                     <VariationsTotalSection
-                      variations={variations}
+                      variations={approvedVariations}
                       formData={formData}
                       isRTL={isRTL}
                       t={t}

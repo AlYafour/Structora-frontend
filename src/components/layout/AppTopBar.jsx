@@ -48,7 +48,6 @@ export default function AppTopBar({ showSearch = true }) {
   const navigate = useNavigate();
   const { collapsed, setCollapsed } = useSidebar();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
-  console.log('Notifications:', notifications, 'Unread count:', unreadCount);
   const [searchFocused, setSearchFocused] = useState(false);
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
@@ -70,7 +69,6 @@ export default function AppTopBar({ showSearch = true }) {
       try {
         const url = new URL(n.link, window.location.origin);
         if (url.origin === window.location.origin) {
-          console.log('Navigating to:', url.pathname + url.search);
           navigate(url.pathname + url.search);
           setOpen(false);
           return;

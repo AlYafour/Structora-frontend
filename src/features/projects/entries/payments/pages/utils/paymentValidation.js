@@ -91,6 +91,17 @@ export function validatePaymentSubmission(formData, allocations, actualInvoices,
     return { isValid: errors.length === 0, errors };
   }
 
+  // Block if a project is selected but has no invoices for the chosen payer
+  if (!isEditMode && formData.project) {
+    const payerInvoices = actualInvoices.filter(inv => inv.payer === formData.payer);
+    if (payerInvoices.length === 0) {
+      return {
+        isValid: false,
+        errors: [t('no_invoices_for_payer')]
+      };
+    }
+  }
+
   const formValidation = validatePaymentForm(formData, t);
   if (!formValidation.isValid) {
     return formValidation;

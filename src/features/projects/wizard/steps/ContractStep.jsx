@@ -221,13 +221,28 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   // Auto-calculate owner funding
   useEffect(() => {
     const total = num(form.total_project_value, 0);
-    const bank = num(form.total_bank_value, 0);
-    const owner = Math.max(0, total - bank);
+    const isHousing = !noPermit && form.contract_classification === "housing_loan_program";
+
+    const bank = isHousing ? num(form.total_bank_value, 0) : 0;
+    const owner = isHousing ? Math.max(0, total - bank) : total;
+
     const currentOwner = num(form.total_owner_value, 0);
+
     if (Math.abs(owner - currentOwner) > 0.01) {
       setF("total_owner_value", String(owner));
     }
-  }, [form.total_project_value, form.total_bank_value, form.total_owner_value, setF]);
+
+    if (!isHousing && num(form.total_bank_value, 0) !== 0) {
+      setF("total_bank_value", "0");
+    }
+  }, [
+    form.contract_classification,
+    form.total_project_value,
+    form.total_bank_value,
+    form.total_owner_value,
+    noPermit,
+    setF,
+  ]);
 
   // File URLs and attachments are loaded by useContract — no separate fetch needed here
 
@@ -408,8 +423,9 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
     }
 
     const isHousing = !noPermit && form.contract_classification === "housing_loan_program";
-    let bank = num(form.total_bank_value, isHousing ? NaN : 0);
-    let owner = Math.max(0, total - bank);
+
+    let bank = isHousing ? num(form.total_bank_value, NaN) : 0;
+    let owner = isHousing ? Math.max(0, total - bank) : total;
 
     const MAX_VALUE = 999999999999.99;
 
@@ -494,9 +510,11 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
     };
 
     // Validate contract PDF review (only if contract file exists and is PDF)
-    const hasContractPdf = (form.contract_file instanceof File && form.contract_file.name?.endsWith(".pdf"))
-      || (form.contract_file_url && form.contract_file_url.toLowerCase().endsWith(".pdf"));
-    if (hasContractPdf && !contractReviewDone) {
+    const hasNewContractPdf =
+      form.contract_file instanceof File &&
+      form.contract_file.name?.toLowerCase().endsWith(".pdf");
+
+    if (hasNewContractPdf && !contractReviewDone) {
       throw new Error(t("contract_review.review_required"));
     }
 
@@ -528,8 +546,8 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
     }
 
     // Validate acknowledgment checkbox (if any reviewable PDF exists)
-    const hasAnyReviewablePdf = hasContractPdf || appendixPdfs.length > 0 || hasAuthDoc;
-    const allReviewsDone = (!hasContractPdf || contractReviewDone)
+    const hasAnyReviewablePdf = hasNewContractPdf || appendixPdfs.length > 0 || hasAuthDoc;
+    const allReviewsDone = (!hasNewContractPdf || contractReviewDone)
       && appendixPdfs.every(({ key }) => appendixReviewDone[key])
       && (!hasAuthDoc || authDocReviewDone);
     if (hasAnyReviewablePdf && allReviewsDone && !acknowledgmentChecked) {

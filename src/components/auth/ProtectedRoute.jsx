@@ -110,7 +110,7 @@ export default function ProtectedRoute({
   const isCompanyAdmin = user.role?.name === 'company_super_admin' || user.role?.name === 'Admin';
   if (requireAdmin && !user.is_superuser && !user.is_staff && !isCompanyAdmin) {
     if (showAccessDenied) {
-      return fallback || <AccessDenied message={t('admin_required', 'هذه الصفحة للمديرين فقط')} />;
+      return fallback || <AccessDenied message={t('admin_required', '')} />;
     }
     const slug = tenantSlug || localStorage.getItem('tenant_slug');
     return <Navigate to={redirectTo || (slug ? `/${slug}/dashboard` : '/')} replace />;

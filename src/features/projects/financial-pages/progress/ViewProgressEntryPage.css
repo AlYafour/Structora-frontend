@@ -1,0 +1,180 @@
+/* ============================================================
+   View Progress Entry Page
+   ============================================================ */
+
+/* ── Buckets grid ── */
+.progress-view__buckets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .progress-view__buckets {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Single bucket card ── */
+.progress-view__bucket {
+  border-radius: 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  overflow: hidden;
+}
+
+.progress-view__bucket-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.progress-view__bucket-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.progress-view__bucket-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.progress-view__bucket-rows {
+  padding: 4px 0 8px;
+}
+
+.progress-view__bucket-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 16px;
+  font-size: 13px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.progress-view__bucket-row:first-child {
+  border-top: none;
+}
+
+.progress-view__bucket-label {
+  color: var(--text-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.progress-view__bucket-value {
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Bucket color variants ── */
+.progress-view__bucket--info .progress-view__bucket-header {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-bottom: 1px solid #bfdbfe;
+}
+.progress-view__bucket--info .progress-view__bucket-value {
+  color: #1d4ed8;
+}
+
+.progress-view__bucket--success .progress-view__bucket-header {
+  background: #f0fdf4;
+  color: #15803d;
+  border-bottom: 1px solid #bbf7d0;
+}
+.progress-view__bucket--success .progress-view__bucket-value {
+  color: #15803d;
+}
+
+.progress-view__bucket--warning .progress-view__bucket-header {
+  background: #fffbeb;
+  color: #b45309;
+  border-bottom: 1px solid #fde68a;
+}
+.progress-view__bucket--warning .progress-view__bucket-value {
+  color: #b45309;
+}
+
+/* ── Individual variations table ── */
+.progress-view__variations-table-wrap {
+  overflow-x: auto;
+}
+
+.progress-view__variations-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.progress-view__variations-table th {
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 9px 14px;
+  font-weight: 600;
+  color: var(--text-secondary, #374151);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.progress-view__variations-table td {
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 9px 14px;
+  vertical-align: middle;
+}
+
+.progress-view__variations-table tbody tr:hover {
+  background: var(--gray-50, #f9fafb);
+}
+
+.progress-view__var-number {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary, #14213d);
+  display: block;
+}
+
+.progress-view__var-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  margin-top: 2px;
+}
+
+.progress-view__var-val {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary, #14213d);
+  white-space: nowrap;
+}
+
+/* ── Notes ── */
+.progress-view__notes {
+  margin-top: 20px;
+}
+
+.progress-view__notes-text {
+  margin-top: 6px;
+  padding: 12px 16px;
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary, #111827);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ── Attachments ── */
+.progress-view__attachments {
+  margin-top: 20px;
+}
+
+.progress-view__files {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

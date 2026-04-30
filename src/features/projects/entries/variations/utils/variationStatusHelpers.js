@@ -91,9 +91,11 @@ export const calculatePermissions = (variation, user) => {
 
   const finallyApproved = isFinallyApproved(variation);
   const rejected = isRejected(variation);
+  const isStaff = !isProjectManager && !isGeneralManager;
 
-  // Edit permission: cannot edit if finally approved
-  const canEdit = !finallyApproved;
+  // Staff can only edit draft/pending_project_manager; privileged users can edit anything not finally approved
+  const canEdit = !finallyApproved &&
+    (!isStaff || status === 'draft' || status === 'pending_project_manager');
 
   // Can approve/reject only if not rejected (must edit first if rejected)
   const canApproveOrReject = !rejected;

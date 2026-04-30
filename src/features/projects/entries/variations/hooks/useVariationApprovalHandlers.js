@@ -38,12 +38,12 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     setProcessingApproval(true);
     try {
       await projectApi.approveVariationProjectManager(project.id, variation.id);
-      toast.success(t("variation_approved") || "Variation approved successfully");
+      toast("success", t("variation_approved") || "Variation approved successfully");
       setApproveProjectManagerDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -54,12 +54,12 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     setProcessingApproval(true);
     try {
       await projectApi.approveVariationGeneralManagerInitial(project.id, variation.id);
-      toast.success(t("variation_approved") || "Variation approved successfully");
+      toast("success", t("variation_approved") || "Variation approved successfully");
       setApproveGeneralManagerInitialDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -70,12 +70,12 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     setProcessingApproval(true);
     try {
       await projectApi.confirmOwnerApproval(project.id, variation.id);
-      toast.success(t("owner_approval_confirmed") || "Owner approval confirmed");
+      toast("success", t("owner_approval_confirmed") || "Owner approval confirmed");
       setConfirmOwnerApprovalDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("confirm_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("confirm_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -86,12 +86,12 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     setProcessingApproval(true);
     try {
       await projectApi.confirmConsultantApproval(project.id, variation.id);
-      toast.success(t("consultant_approval_confirmed") || "Consultant approval confirmed");
+      toast("success", t("consultant_approval_confirmed") || "Consultant approval confirmed");
       setConfirmConsultantApprovalDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("confirm_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("confirm_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -102,12 +102,12 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     setProcessingApproval(true);
     try {
       await projectApi.approveVariation(project.id, variation.id);
-      toast.success(t("variation_final_approved") || "Variation finally approved");
+      toast("success", t("variation_final_approved") || "Variation finally approved");
       setApproveGeneralManagerFinalDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -116,18 +116,18 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
   const handleRejectProjectManager = async () => {
     if (!variation || !project) return;
     if (!actionNotes?.trim()) {
-      toast.error(t("rejection_reason_required") || "Rejection reason is required");
+      toast("error", t("rejection_reason_required") || "Rejection reason is required");
       return;
     }
     setProcessingApproval(true);
     try {
       await projectApi.rejectVariationProjectManager(project.id, variation.id, actionNotes.trim());
-      toast.success(t("variation_rejected") || "Variation rejected");
+      toast("success", t("variation_rejected") || "Variation rejected");
       setRejectProjectManagerDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -136,18 +136,18 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
   const handleRejectGeneralManager = async () => {
     if (!variation || !project) return;
     if (!actionNotes?.trim()) {
-      toast.error(t("rejection_reason_required") || "Rejection reason is required");
+      toast("error", t("rejection_reason_required") || "Rejection reason is required");
       return;
     }
     setProcessingApproval(true);
     try {
       await projectApi.rejectVariation(project.id, variation.id, actionNotes.trim());
-      toast.success(t("variation_rejected") || "Variation rejected");
+      toast("success", t("variation_rejected") || "Variation rejected");
       setRejectGeneralManagerDialogOpen(false);
       setActionNotes("");
       invalidateAndRefresh();
     } catch (e) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
     } finally {
       setProcessingApproval(false);
     }

@@ -70,6 +70,20 @@ export function validateDiscount(formData, totalVariationAmount, contractorOHP, 
  * Validate variation before submit
  */
 export function validateVariationSubmit(formData, calculations, omittedItems, addedItems, t, formatMoney) {
+  const hasText = (value) => String(value ?? '').trim().length > 0;
+
+  if (!hasText(formData.variation_description)) {
+    return t('variation_description_required') || 'Variation description is required';
+  }
+
+  if (!hasText(formData.variation_cause)) {
+    return t('variation_cause_required') || 'Variation cause is required';
+  }
+
+  if ((omittedItems?.length || 0) + (addedItems?.length || 0) === 0) {
+    return t('variation_item_required') || 'Please add at least one variation item';
+  }
+
   // Validate at least one component is selected when discount is applied
   if (formData.discount_type !== 'none') {
     const hasSelectedComponents =
@@ -81,15 +95,14 @@ export function validateVariationSubmit(formData, calculations, omittedItems, ad
       return t('select_at_least_one_component') || 'يجب اختيار بند واحد على الأقل لتطبيق الخصم عليه';
     }
 
-    // Calculate discount base
     const discountBase =
       (formData.discount_applies_to_variation ? calculations.totalVariationAmount : 0) +
       (formData.discount_applies_to_contractor_ohp ? calculations.contractorOHP : 0) +
       (formData.discount_applies_to_consultant_fees ? calculations.consultantFees : 0);
 
-    // Validate discount amount doesn't exceed base
     if (formData.discount_type === 'amount') {
       const enteredDiscount = parseFloat(formData.discount_amount || 0);
+
       if (enteredDiscount > discountBase) {
         return (
           t('discount_exceeds_base') ||
@@ -97,13 +110,15 @@ export function validateVariationSubmit(formData, calculations, omittedItems, ad
         );
       }
     } else if (formData.discount_type === 'final_amount') {
-      const enteredFinalAmount = parseFloat(formData.final_amount_after_discount || calculations.totalAmountBeforeDiscount);
+      const enteredFinalAmount = parseFloat(
+        formData.final_amount_after_discount || calculations.totalAmountBeforeDiscount
+      );
 
-      // Calculate min and max amounts
       const nonSelectedAmount =
         (formData.discount_applies_to_variation ? 0 : calculations.totalVariationAmount) +
         (formData.discount_applies_to_contractor_ohp ? 0 : calculations.contractorOHP) +
         (formData.discount_applies_to_consultant_fees ? 0 : calculations.consultantFees);
+
       const maxAmount = calculations.totalAmountBeforeDiscount;
       const minAmount = nonSelectedAmount;
 

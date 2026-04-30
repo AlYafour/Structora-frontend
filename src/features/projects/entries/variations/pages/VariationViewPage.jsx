@@ -330,7 +330,8 @@ export default function VariationViewPage() {
               </button>
             </div>
 
-            {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
+            {(activeTab === "edit" && permissions.canEdit ||
+              permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
               permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
               permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
               permissions.canApproveGeneralManagerFinal) && (
@@ -348,41 +349,48 @@ export default function VariationViewPage() {
                       </Button>
                     </>
                   )}
-                  <span className="var-toolbar__actions-label">{t("available_actions")}</span>
-                  {permissions.canApproveProjectManager && (
-                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
-                      <FaCheckCircle /> {t("approve_project_manager_initial")}
-                    </Button>
-                  )}
-                  {permissions.canRejectProjectManager && (
-                    <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
-                      <FaTimesCircle /> {t("reject")}
-                    </Button>
-                  )}
-                  {permissions.canApproveGeneralManagerInitial && (
-                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerInitialDialogOpen(true)}>
-                      <FaCheckCircle /> {t("approve_general_manager_initial")}
-                    </Button>
-                  )}
-                  {permissions.canRejectGeneralManager && (
-                    <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGeneralManagerDialogOpen(true)}>
-                      <FaTimesCircle /> {t("reject")}
-                    </Button>
-                  )}
-                  {permissions.canConfirmOwnerApproval && (
-                    <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmOwnerApprovalDialogOpen(true)}>
-                      <FaCheckCircle /> {t("confirm_owner_approval")}
-                    </Button>
-                  )}
-                  {permissions.canConfirmConsultantApproval && (
-                    <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
-                      <FaCheckCircle /> {t("confirm_consultant_approval")}
-                    </Button>
-                  )}
-                  {permissions.canApproveGeneralManagerFinal && (
-                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerFinalDialogOpen(true)}>
-                      <FaCheckCircle /> {t("approve_general_manager_final")}
-                    </Button>
+                  {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
+                    permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
+                    permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
+                    permissions.canApproveGeneralManagerFinal) && (
+                    <>
+                      <span className="var-toolbar__actions-label">{t("available_actions")}</span>
+                      {permissions.canApproveProjectManager && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
+                          <FaCheckCircle /> {t("approve_project_manager_initial")}
+                        </Button>
+                      )}
+                      {permissions.canRejectProjectManager && (
+                        <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
+                          <FaTimesCircle /> {t("reject")}
+                        </Button>
+                      )}
+                      {permissions.canApproveGeneralManagerInitial && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerInitialDialogOpen(true)}>
+                          <FaCheckCircle /> {t("approve_general_manager_initial")}
+                        </Button>
+                      )}
+                      {permissions.canRejectGeneralManager && (
+                        <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGeneralManagerDialogOpen(true)}>
+                          <FaTimesCircle /> {t("reject")}
+                        </Button>
+                      )}
+                      {permissions.canConfirmOwnerApproval && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmOwnerApprovalDialogOpen(true)}>
+                          <FaCheckCircle /> {t("confirm_owner_approval")}
+                        </Button>
+                      )}
+                      {permissions.canConfirmConsultantApproval && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
+                          <FaCheckCircle /> {t("confirm_consultant_approval")}
+                        </Button>
+                      )}
+                      {permissions.canApproveGeneralManagerFinal && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGeneralManagerFinalDialogOpen(true)}>
+                          <FaCheckCircle /> {t("approve_general_manager_final")}
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
