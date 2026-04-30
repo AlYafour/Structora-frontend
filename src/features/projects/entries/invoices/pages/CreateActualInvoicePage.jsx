@@ -609,85 +609,142 @@ export default function CreateActualInvoicePage() {
               </div>
 
               {/* ── Info bar ── */}
-              {showInfoBar && (
-                <div className="invoice-form__info-bar">
-                  {payer === "bank" ? (
-                    <>
-                      <div className="invoice-form__info-item">
-                        <span className="invoice-form__info-label">{t("current_progress")}</span>
-                        <span className="invoice-form__info-value invoice-form__info-value--primary">
-                          {Number(bankBaseProgress).toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="invoice-form__info-item">
-                        <span className="invoice-form__info-label">{t("bank_total_obligation")}</span>
-                        <span className="invoice-form__info-value">{renderAmount(bankObligationToContractor)}</span>
-                      </div>
-                      <div className="invoice-form__info-item">
-                        <span className="invoice-form__info-label">{t("previously_invoiced_bank")}</span>
-                        <span className="invoice-form__info-value invoice-form__info-value--warning">
-                          {renderAmount(prevBankInvoiced)}
-                        </span>
-                      </div>
-                      {bankBaseProgress > 0 && (
-                        <div className="invoice-form__info-item">
-                          <span className="invoice-form__info-label">{t("required_amount_by_progress")}</span>
-                          <span className="invoice-form__info-value invoice-form__info-value--success">
-                            {renderAmount(bankDueThisCycle)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="invoice-form__info-item">
-                        <span className="invoice-form__info-label">{t("remaining_bank_obligation")}</span>
-                        <span className="invoice-form__info-value invoice-form__info-value--success">
-                          {renderAmount(bankRemaining)}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {advanceSummary && (
-                        <div className="inv-info__banner inv-info__banner--advance">
-                          <div className="inv-info__banner-header">
-                            <span className="inv-info__banner-title">{t("advance_payment_active")}</span>
-                            <label className="inv-info__banner-check">
-                              <input
-                                type="checkbox"
-                                checked={applyAdvanceDeduction}
-                                onChange={(e) => setApplyAdvanceDeduction(e.target.checked)}
-                              />
-                              {t("apply_advance_deduction")}
-                            </label>
-                          </div>
-                          {advanceSummary.advances
-                            .filter(ap => ap.status === 'active')
-                            .map((ap) => (
-                              <div key={ap.id || ap.percentage} className="inv-info__banner-row">
-                                <span>{t("advance_payment")} ({ap.percentage}%): {renderAmount(ap.amount)}</span>
-                                <span>{t("recovered")}: {renderAmount(ap.recovered_amount)} | {t("remaining")}: {renderAmount(ap.remaining_amount)}</span>
-                              </div>
-                            ))}
-                        </div>
-                      )}
+             {showInfoBar && (
+  <div className="invoice-form__info-bar">
+    {payer === "bank" ? (
+      <>
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("current_progress")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--primary">
+            {Number(bankBaseProgress).toFixed(2)}%
+          </span>
+        </div>
 
-                      {creditSummary && (
-                        <div className="inv-info__banner inv-info__banner--credit">
-                          <div className="inv-info__banner-header">
-                            <span className="inv-info__banner-title">
-                              {t("available_credit")}: {renderAmount(parseFloat(creditSummary.total_credit) || 0)}
-                            </span>
-                          </div>
-                          {creditSummary.credits?.map((cr) => (
-                            <div key={cr.payment_id} className="inv-info__banner-row">
-                              <span>{t("credit_from_payment")} #{cr.payment_id} — {renderAmount(parseFloat(cr.credit_balance) || 0)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("bank_total_obligation")}</span>
+          <span className="invoice-form__info-value">
+            {renderAmount(bankObligationToContractor)}
+          </span>
+        </div>
+
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("previously_invoiced_bank")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--warning">
+            {renderAmount(prevBankInvoiced)}
+          </span>
+        </div>
+
+        {bankBaseProgress > 0 && (
+          <div className="invoice-form__info-item">
+            <span className="invoice-form__info-label">{t("required_amount_by_progress")}</span>
+            <span className="invoice-form__info-value invoice-form__info-value--success">
+              {renderAmount(bankDueThisCycle)}
+            </span>
+          </div>
+        )}
+
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("remaining_bank_obligation")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--success">
+            {renderAmount(bankRemaining)}
+          </span>
+        </div>
+      </>
+    ) : (
+      <>
+        {/* ✅ OWNER INFO (RESTORED) */}
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("current_progress")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--primary">
+            {Number(ownerBaseProgress).toFixed(2)}%
+          </span>
+        </div>
+
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("owner_total_obligation")}</span>
+          <span className="invoice-form__info-value">
+            {renderAmount(ownerInvoiceObligation)}
+          </span>
+        </div>
+
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("previously_invoiced_owner")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--warning">
+            {renderAmount(prevOwnerInvoiced)}
+          </span>
+        </div>
+
+        {ownerBaseProgress > 0 && (
+          <div className="invoice-form__info-item">
+            <span className="invoice-form__info-label">{t("required_amount_by_progress")}</span>
+            <span className="invoice-form__info-value invoice-form__info-value--success">
+              {renderAmount(ownerDueThisCycle)}
+            </span>
+          </div>
+        )}
+
+        <div className="invoice-form__info-item">
+          <span className="invoice-form__info-label">{t("remaining_owner_obligation")}</span>
+          <span className="invoice-form__info-value invoice-form__info-value--success">
+            {renderAmount(ownerRemaining)}
+          </span>
+        </div>
+
+        {/* ✅ ADVANCE BANNER */}
+        {advanceSummary && (
+          <div className="inv-info__banner inv-info__banner--advance">
+            <div className="inv-info__banner-header">
+              <span className="inv-info__banner-title">{t("advance_payment_active")}</span>
+              <label className="inv-info__banner-check">
+                <input
+                  type="checkbox"
+                  checked={applyAdvanceDeduction}
+                  onChange={(e) => setApplyAdvanceDeduction(e.target.checked)}
+                />
+                {t("apply_advance_deduction")}
+              </label>
+            </div>
+
+            {advanceSummary.advances
+              .filter((ap) => ap.status === "active")
+              .map((ap) => (
+                <div key={ap.id || ap.percentage} className="inv-info__banner-row">
+                  <span>
+                    {t("advance_payment")} ({ap.percentage}%): {renderAmount(ap.amount)}
+                  </span>
+                  <span>
+                    {t("recovered")}: {renderAmount(ap.recovered_amount)} |{" "}
+                    {t("remaining")}: {renderAmount(ap.remaining_amount)}
+                  </span>
                 </div>
-              )}
+              ))}
+          </div>
+        )}
+
+        {/* ✅ CREDIT BANNER */}
+        {creditSummary && (
+          <div className="inv-info__banner inv-info__banner--credit">
+            <div className="inv-info__banner-header">
+              <span className="inv-info__banner-title">
+                {t("available_credit")}:{" "}
+                {renderAmount(parseFloat(creditSummary.total_credit) || 0)}
+              </span>
+            </div>
+
+            {creditSummary.credits?.map((cr) => (
+              <div key={cr.payment_id} className="inv-info__banner-row">
+                <span>
+                  {t("credit_from_payment")} #{cr.payment_id} —{" "}
+                  {renderAmount(parseFloat(cr.credit_balance) || 0)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )}
+  </div>
+)}
             </div>
           </div>
 
