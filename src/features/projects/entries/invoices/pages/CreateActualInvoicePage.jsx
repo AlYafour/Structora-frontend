@@ -494,8 +494,6 @@ export default function CreateActualInvoicePage() {
     navigate(projectId ? `/projects/${projectId}?tab=invoices` : "/projects");
   };
 
-  console.log(getProjectName(selectedProject, t), formData.project, projects);
-
   return (
     <PageLayout loading={loading} loadingText={t("loading")}>
       <div className="entry-form entry-form--wide">
@@ -514,30 +512,42 @@ export default function CreateActualInvoicePage() {
                   <label className="invoice-form__label">
                     {t("project_name")} <span className="invoice-form__required">*</span>
                   </label>
-                  <UnifiedSelect
-                    options={projects}
-                    value={formData.project}
-                    onChange={handleProjectChange}
-                    placeholder={t("select_project")}
-                    isDisabled={isEditMode}
-                    getOptionLabel={(opt) => {
-                      const owners = Array.isArray(opt.owners) ? opt.owners : [];
-                      const name = getProjectName({ ...opt, __owners_data: owners }, t);
-
-                      const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
-
-                      return (
-                        name?.[lang] ||
-                        name?.full ||
-                        name?.en ||
-                        name?.ar ||
-                        opt.display_name ||
-                        opt.name ||
-                        `${t("project")} #${opt.id}`
-                      );
-                    }}
-                    getOptionValue={(opt) => opt.id?.toString()}
-                  />
+                  {selectedProject ? (
+                    <input
+                      type="text"
+                      className="prj-input invoice-form__readonly-input"
+                      value={(() => {
+                        const owners = Array.isArray(selectedProject.owners) ? selectedProject.owners : [];
+                        const name = getProjectName({ ...selectedProject, __owners_data: owners }, t);
+                        const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
+                        return name?.[lang] || name?.full || name?.en || name?.ar || selectedProject.display_name || selectedProject.name || `${t("project")} #${selectedProject.id}`;
+                      })()}
+                      readOnly
+                    />
+                  ) : (
+                    <UnifiedSelect
+                      options={projects}
+                      value={formData.project}
+                      onChange={handleProjectChange}
+                      placeholder={t("select_project")}
+                      isDisabled={isEditMode}
+                      getOptionLabel={(opt) => {
+                        const owners = Array.isArray(opt.owners) ? opt.owners : [];
+                        const name = getProjectName({ ...opt, __owners_data: owners }, t);
+                        const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
+                        return (
+                          name?.[lang] ||
+                          name?.full ||
+                          name?.en ||
+                          name?.ar ||
+                          opt.display_name ||
+                          opt.name ||
+                          `${t("project")} #${opt.id}`
+                        );
+                      }}
+                      getOptionValue={(opt) => opt.id?.toString()}
+                    />
+                  )}
                 </div>
 
                 <div className="invoice-form__field">
