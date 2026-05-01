@@ -120,7 +120,10 @@ export default function DraftsTable({
         <tfoot>
           <tr>
             <td colSpan={6} className="drafts-table__foot">
-              {t("matching_total", { count: drafts.length, total: drafts.length })}
+              <span className="drafts-table__foot-inner">
+                <span className="drafts-table__foot-badge">{drafts.length}</span>
+                {t("matching_total", { count: drafts.length, total: drafts.length })}
+              </span>
             </td>
           </tr>
         </tfoot>

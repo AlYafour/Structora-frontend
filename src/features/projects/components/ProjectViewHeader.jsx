@@ -39,7 +39,10 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${project?.name || "project"}_attachments.zip`;
+      const projectName = isAR
+        ? (project?.display_name || project?.name || "project")
+        : (project?.display_name_en || project?.display_name || project?.name || "project");
+      link.download = `${projectName}_attachments.zip`;
       document.body.appendChild(link);
       link.click();
       link.remove();

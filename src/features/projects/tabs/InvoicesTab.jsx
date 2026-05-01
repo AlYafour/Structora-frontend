@@ -11,12 +11,26 @@ import Dialog from "../../../components/common/Dialog";
 import { formatMoney, formatDate } from "../../../utils/formatters";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { VatAmount } from "../../../components/common/VatBreakdownPopover";
+import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload }) {
  const { t, i18n } = useTranslation();
  const { success, error: showError } = useNotifications();
+
+ const renderAmount = (value) => {
+  const str = formatMoney(value, { lang: i18n.language });
+  if (i18n.language === 'en') {
+   const numPart = str.replace(/AED\s?/, '').trim();
+   return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+     {numPart} <DirhamsIcon size={10} color="#374151" />
+    </span>
+   );
+  }
+  return str;
+ };
  const navigate = useTenantNavigate();
  const { hasPermission, isAdmin } = useAuth();
  const canCreateInvoice = isAdmin || hasPermission('invoices.create');
@@ -185,14 +199,14 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
  <MetricGrid columns={stats.advanceDeduction > 0 ? 5 : 4}>
  <MetricCard variant="blue" icon="hash" label={t("invoices_count")} value={stats.count} />
  <MetricCard variant="emerald" icon="dollar" label={t("total_amount")}
-  value={formatMoney(stats.total)}
-  vatBreakdown={{ net: stats.totalNet, withVat: stats.total, format: formatMoney }}
+  value={renderAmount(stats.total)}
+  vatBreakdown={{ net: stats.totalNet, withVat: stats.total, format: (v) => formatMoney(v, { lang: i18n.language }) }}
  />
  {stats.advanceDeduction > 0 && (
- <MetricCard variant="amber" icon="minus" label={t("advance_deduction_total")} value={formatMoney(stats.advanceDeduction)} />
+ <MetricCard variant="amber" icon="minus" label={t("advance_deduction_total")} value={renderAmount(stats.advanceDeduction)} />
  )}
- <MetricCard variant="emerald" icon="check" label={t("paid_amount")} value={formatMoney(stats.paid)} />
- <MetricCard variant="amber" icon="alert" label={t("remaining_amount")} value={formatMoney(stats.remaining)} />
+ <MetricCard variant="emerald" icon="check" label={t("paid_amount")} value={renderAmount(stats.paid)} />
+ <MetricCard variant="amber" icon="alert" label={t("remaining_amount")} value={renderAmount(stats.remaining)} />
  </MetricGrid>
 
  {/* Math flow bar — shows calculation breakdown when advance deduction exists */}
@@ -200,27 +214,27 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
  <div className="invoices-math-flow">
   <span className="invoices-math-flow__item">
    <span className="invoices-math-flow__label">{t("invoices_total_label")}:</span>
-   <span className="invoices-math-flow__value">{formatMoney(stats.total)}</span>
+   <span className="invoices-math-flow__value">{renderAmount(stats.total)}</span>
   </span>
   <span className="invoices-math-flow__op">{t("minus_sign")}</span>
   <span className="invoices-math-flow__item">
    <span className="invoices-math-flow__label">{t("advance_deduction_total")}:</span>
-   <span className="invoices-math-flow__value invoices-math-flow__value--warning">{formatMoney(stats.advanceDeduction)}</span>
+   <span className="invoices-math-flow__value invoices-math-flow__value--warning">{renderAmount(stats.advanceDeduction)}</span>
   </span>
   <span className="invoices-math-flow__op">{t("equals_sign")}</span>
   <span className="invoices-math-flow__item">
    <span className="invoices-math-flow__label">{t("net_due_label")}:</span>
-   <span className="invoices-math-flow__value">{formatMoney(stats.netDue)}</span>
+   <span className="invoices-math-flow__value">{renderAmount(stats.netDue)}</span>
   </span>
   <span className="invoices-math-flow__op">{t("minus_sign")}</span>
   <span className="invoices-math-flow__item">
    <span className="invoices-math-flow__label">{t("paid_label")}:</span>
-   <span className="invoices-math-flow__value invoices-math-flow__value--success">{formatMoney(stats.paid)}</span>
+   <span className="invoices-math-flow__value invoices-math-flow__value--success">{renderAmount(stats.paid)}</span>
   </span>
   <span className="invoices-math-flow__op">{t("equals_sign")}</span>
   <span className="invoices-math-flow__item">
    <span className="invoices-math-flow__label">{t("remaining_label")}:</span>
-   <span className="invoices-math-flow__value">{formatMoney(stats.remaining)}</span>
+   <span className="invoices-math-flow__value">{renderAmount(stats.remaining)}</span>
   </span>
  </div>
  )}
@@ -308,15 +322,15 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
  <VatAmount
   net={parseFloat(invoice.net_amount) || totalAmount / 1.05}
   withVat={totalAmount}
-  format={formatMoney}
+  format={(v) => formatMoney(v, { lang: i18n.language })}
   showBtn={false}
  />
  </td>
  <td className="prj-nowrap ds-text-right prj-td--paid" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
- {formatMoney(paidAmount)}
+ {renderAmount(paidAmount)}
  </td>
  <td className={`prj-nowrap ds-text-right ${!isVoided && remainingAmount > 0.01 ? 'prj-td--remaining-warning' : 'prj-td--remaining-ok'}`} onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
- {formatMoney(remainingAmount)}
+ {renderAmount(remainingAmount)}
  </td>
  <td className="ds-text-center" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
  <div className="prj-td--status-col">
@@ -362,7 +376,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
     <div className="invoice-linked-docs__section-title">{t("advance_deduction_label")}</div>
     {advanceDetails.map((ded) => (
      <span key={ded.id || ded.advance_percentage} className="invoice-linked-docs__deduction">
-      {formatMoney(ded.deduction_amount)}
+      {renderAmount(ded.deduction_amount)}
       {ded.advance_percentage && ` (${ded.advance_percentage}%)`}
      </span>
     ))}
@@ -382,7 +396,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
        </div>
        <div className="invoice-linked-docs__payment-card-row">
         <span className="invoice-linked-docs__payment-card-label">{t("allocated_amount_label")}</span>
-        <span className="invoice-linked-docs__payment-card-value">{formatMoney(lp.allocated_amount)}</span>
+        <span className="invoice-linked-docs__payment-card-value">{renderAmount(lp.allocated_amount)}</span>
        </div>
        {lp.receipt_voucher_number && (
         <div className="invoice-linked-docs__payment-card-row">

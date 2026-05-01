@@ -5,8 +5,10 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../../../../components/common/Button';
 import CurrencyField from '../../../../../../components/forms/CurrencyField';
+import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 import { formatMoney } from '../../../../../../utils/formatters';
 import { removeCommas } from '../../../../../../utils/formatters/number';
 import './InvoiceAllocationTable.css';
@@ -27,6 +29,21 @@ const InvoiceAllocationTable = memo(({
  onClickRemaining,
  t
 }) => {
+ const { i18n } = useTranslation();
+
+ const renderAmount = (value) => {
+  const str = formatMoney(value, { lang: i18n.language });
+  if (i18n.language === 'en') {
+   const numPart = str.replace(/AED\s?/, '').trim();
+   return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+     {numPart} <DirhamsIcon size={10} color="#374151" />
+    </span>
+   );
+  }
+  return str;
+ };
+
  if (allocations.length === 0 && allocationMode !== 'manual') {
  return null;
  }
@@ -55,8 +72,8 @@ const InvoiceAllocationTable = memo(({
      .map(invoice => (
       <option key={invoice.id} value={invoice.id}>
        {invoice.invoice_number || `${t('invoice')} #${invoice.id}`} -{' '}
-       {formatMoney(invoice.amount)} ({t('remaining_amount')}:{' '}
-       {formatMoney(invoice.remaining_amount || invoice.amount)})
+       {formatMoney(invoice.amount, { lang: i18n.language })} ({t('remaining_amount')}:{' '}
+       {formatMoney(invoice.remaining_amount || invoice.amount, { lang: i18n.language })})
       </option>
      ))}
    </select>
@@ -93,7 +110,7 @@ const InvoiceAllocationTable = memo(({
          {alloc.invoice_number}
         </td>
         <td className="invoice-allocation__td">
-         {formatMoney(alloc.total_amount)}
+         {renderAmount(alloc.total_amount)}
         </td>
         <td className="invoice-allocation__td invoice-allocation__remaining-original">
          {allocationMode === 'manual' && onClickRemaining ? (
@@ -102,10 +119,10 @@ const InvoiceAllocationTable = memo(({
            title={t('click_to_fill_amount')}
            onClick={() => onClickRemaining(alloc.invoice_id, alloc.remaining_amount)}
           >
-           {formatMoney(alloc.remaining_amount)}
+           {renderAmount(alloc.remaining_amount)}
           </span>
          ) : (
-          formatMoney(alloc.remaining_amount)
+          renderAmount(alloc.remaining_amount)
          )}
         </td>
         <td className="invoice-allocation__td">
@@ -119,13 +136,13 @@ const InvoiceAllocationTable = memo(({
           />
          ) : (
           <span className="invoice-allocation__allocated-display">
-           {formatMoney(allocated)}
+           {renderAmount(allocated)}
           </span>
          )}
         </td>
         <td className="invoice-allocation__td">
          <div className={`invoice-allocation__remaining-value ${statusClass}`}>
-          {formatMoney(remainingAfter)}
+          {renderAmount(remainingAfter)}
          </div>
          {remainingAfter === 0 && (
           <div className="invoice-allocation__fully-paid">

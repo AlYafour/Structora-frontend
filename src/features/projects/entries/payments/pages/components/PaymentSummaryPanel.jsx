@@ -5,6 +5,8 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 import { formatMoney } from '../../../../../../utils/formatters';
 import './PaymentSummaryPanel.css';
 
@@ -22,6 +24,21 @@ const PaymentSummaryPanel = memo(({
   creditAmountUsed = 0,
   t
 }) => {
+  const { i18n } = useTranslation();
+
+  const renderAmount = (value) => {
+    const str = formatMoney(value, { lang: i18n.language });
+    if (i18n.language === 'en') {
+      const numPart = str.replace(/AED\s?/, '').trim();
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {numPart} <DirhamsIcon size={10} color="#374151" />
+        </span>
+      );
+    }
+    return str;
+  };
+
   if (allocations.length === 0) {
     return null;
   }
@@ -39,10 +56,10 @@ const PaymentSummaryPanel = memo(({
             {t('payment_amount')}
           </div>
           <div className="payment-summary__amount-value">
-            {formatMoney(paymentAmount)}
+            {renderAmount(paymentAmount)}
             {creditAmountUsed > 0 && (
               <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
-                {t('cash_amount', 'كاش')}: {formatMoney(paymentAmount - creditAmountUsed)} + {t('credit', 'رصيد')}: {formatMoney(creditAmountUsed)}
+                {t('cash_amount', 'كاش')}: {renderAmount(paymentAmount - creditAmountUsed)} + {t('credit', 'رصيد')}: {renderAmount(creditAmountUsed)}
               </div>
             )}
           </div>
@@ -52,7 +69,7 @@ const PaymentSummaryPanel = memo(({
             {t('total_allocated')}
           </div>
           <div className="payment-summary__allocated-value">
-            {formatMoney(totalAllocated)}
+            {renderAmount(totalAllocated)}
           </div>
         </div>
       </div>
@@ -69,7 +86,7 @@ const PaymentSummaryPanel = memo(({
                 : t('over_allocation')}
             </div>
             <div className={`payment-summary__balance-amount payment-summary__balance-amount--${status}`}>
-              {formatMoney(Math.abs(creditBalance))}
+              {renderAmount(Math.abs(creditBalance))}
             </div>
           </div>
           {status === 'success' && (

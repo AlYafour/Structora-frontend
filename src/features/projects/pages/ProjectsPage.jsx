@@ -185,11 +185,29 @@ export default function ProjectsPage() {
     }
   };
 
+  const getProjectDisplayName = (p) => {
+    if (!p) return "";
+
+    if (isAR) {
+      return p.display_name || p.name || p.siteplan_data?.owners?.[0]?.owner_name_ar;
+    }
+
+    return (
+      p.display_name_en ||
+      p.siteplan_data?.owners?.[0]?.owner_name_en ||
+      p.display_name ||
+      p.name
+    );
+  };
+
   const askDelete = useCallback((p) => {
-    const title = p?.display_name || p?.name || `${t("wizard_project_prefix")} #${p?.id}`;
+    const title =
+      getProjectDisplayName(p) ||
+      `${t("wizard_project_prefix")} #${p?.id}`;
+
     setTargetProject({ id: p.id, name: title });
     setConfirmOpen(true);
-  }, [t]);
+  }, [t, isAR]);
 
   const handleDelete = () => {
     if (!targetProject?.id) return;
@@ -267,6 +285,7 @@ export default function ProjectsPage() {
     overscan: 15,
     enabled: useVirtual,
   });
+  console.log("filtered projects", filteredProjects)
 
   return (
     <PageLayout loading={loading} loadingText={t("loading_projects")}>
