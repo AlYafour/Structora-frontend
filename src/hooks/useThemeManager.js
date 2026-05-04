@@ -10,7 +10,7 @@ import { isLoggedIn } from "../utils/cookies";
 import { buildFileUrl } from "../utils/helpers/file";
 import BRAND from "../config/brand";
 
-/** STRUCTORA fixed theme — never overridden by tenant settings */
+/** STRUCTORA admin theme — only for superuser / logged-out context */
 const STRUCTORA_THEME = {
   company_name: BRAND.name,
   logo_url: BRAND.logoPath,
@@ -18,16 +18,24 @@ const STRUCTORA_THEME = {
   secondary_color: BRAND.secondaryColor,
 };
 
-/** Get initial theme — use cached tenant theme if available, otherwise STRUCTORA */
+/** Empty theme for tenant users — fills in after loadTenantTheme() resolves */
+const EMPTY_TENANT_THEME = {
+  company_name: '',
+  logo_url: null,
+  primary_color: BRAND.primaryColor,
+  secondary_color: BRAND.secondaryColor,
+};
+
+/** Get initial theme — use cached tenant theme if available, otherwise empty */
 function getInitialTheme() {
   try {
     const cached = localStorage.getItem("tenant_theme");
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed?.company_name) return parsed;
+      if (parsed && typeof parsed === 'object') return parsed;
     }
   } catch { /* ignore parse errors */ }
-  return STRUCTORA_THEME;
+  return EMPTY_TENANT_THEME;
 }
 
 export default function useThemeManager(userRef) {
@@ -45,11 +53,11 @@ export default function useThemeManager(userRef) {
 
       // Tenant context: use tenant's own name & logo, NEVER STRUCTORA's
       const merged = {
-        ...STRUCTORA_THEME,
+        ...EMPTY_TENANT_THEME,
         company_name: themeData?.company_name || "",
         contractor_name_en: themeData?.contractor_name_en || "",
         tenant_id: themeData?.tenant_id || null,
-        logo_url: null, // Start with no logo — only set if tenant has one
+        logo_url: null,
       };
 
       // Build full logo URL from tenant settings
@@ -89,17 +97,23 @@ export default function useThemeManager(userRef) {
         }
       }
 
+      // Flush any stale STRUCTORA-branded cache before saving tenant data
+      const existing = localStorage.getItem("tenant_theme");
+      if (existing) {
+        try {
+          const prev = JSON.parse(existing);
+          if (prev?.company_name === BRAND.name) localStorage.removeItem("tenant_theme");
+        } catch { /* ignore */ }
+      }
       setTenantTheme(merged);
       localStorage.setItem("tenant_theme", JSON.stringify(merged));
       return merged;
     } catch (error) {
       logger.debug("Theme load fallback", error?.message);
-      // On error, use tenant name from user object — never STRUCTORA for tenant users
       const currentUser = userRef.current || JSON.parse(localStorage.getItem("user") || "{}");
       const fallback = {
-        ...STRUCTORA_THEME,
+        ...EMPTY_TENANT_THEME,
         company_name: currentUser?.tenant?.name || "",
-        logo_url: null,
       };
       setTenantTheme(fallback);
       return fallback;
