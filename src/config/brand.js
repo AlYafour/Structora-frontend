@@ -8,16 +8,19 @@ const BRAND = Object.freeze({
 
   logoPath: '/logo.png',
 
+  primaryColor: '#C8A84E',
+  secondaryColor: '#A8893A',
+
   themeColors: {
     light: {
-      primary: '#C8A84E',   // gold
-      secondary: '#A8893A', // deep navy
-      accent: '#C8A84E',    // mid navy
+      primary: '#C8A84E',
+      secondary: '#A8893A',
+      accent: '#C8A84E',
     },
     dark: {
-      primary: '#D6B65A',   // brighter gold for dark mode
-      secondary: '#060D1B', // deepest navy
-      accent: '#1A3358',    // lifted navy
+      primary: '#D6B65A',
+      secondary: '#060D1B',
+      accent: '#1A3358',
     },
   },
 });

@@ -98,8 +98,8 @@ export default function CompanySettingsPage() {
         company_activity_type: settings.company_activity_type || 'construction',
         company_logo: null,
         background_image: null,
-        primary_color: BRAND.primaryColor,
-        secondary_color: BRAND.secondaryColor,
+        primary_color: settings.primary_color || BRAND.primaryColor,
+        secondary_color: settings.secondary_color || BRAND.secondaryColor,
         contractor_name: settings.contractor_name || '',
         contractor_name_en: settings.contractor_name_en || '',
         contractor_license_no: settings.contractor_license_no || '',
@@ -158,15 +158,14 @@ export default function CompanySettingsPage() {
       const hasFiles = fileFields.some(f => companyData[f] instanceof File);
 
       let payload;
+      const isValidValue = (v) => v !== undefined && v !== null && v !== '' && v !== 'undefined';
       if (hasFiles) {
-        // Use FormData when files are present
         payload = new FormData();
-        textFields.forEach(f => { if (companyData[f]) payload.append(f, companyData[f]); });
+        textFields.forEach(f => { if (isValidValue(companyData[f])) payload.append(f, companyData[f]); });
         fileFields.forEach(f => { if (companyData[f] instanceof File) payload.append(f, companyData[f]); });
       } else {
-        // Use JSON when no files — avoids Content-Type issues
         payload = {};
-        textFields.forEach(f => { if (companyData[f]) payload[f] = companyData[f]; });
+        textFields.forEach(f => { if (isValidValue(companyData[f])) payload[f] = companyData[f]; });
       }
       await companyApi.updateCurrentSettings(payload);
       await loadTenantTheme(false);
