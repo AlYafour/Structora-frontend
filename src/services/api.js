@@ -18,6 +18,7 @@ const api = axios.create({
 });
 
 let csrfReady = false;
+let csrfFetchPromise = null;
 let isRefreshing = false;
 let refreshSubscribers = [];
 
@@ -42,15 +43,18 @@ function onRefreshFailure(error) {
 
 async function ensureCsrf() {
   if (csrfReady && getCsrfToken()) return;
-  try {
-    // Always use the api instance so requests go through the Vite proxy in dev
-    // and through the correct VITE_API_URL in production — never hit 127.0.0.1 directly
-    await api.get('csrf/', {
-      withCredentials: true,
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
+  if (csrfFetchPromise) return csrfFetchPromise;
+  csrfFetchPromise = api.get('csrf/', {
+    withCredentials: true,
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+  }).then(() => {
     csrfReady = true;
-  } catch { /* CSRF cookie fetch may fail before auth - expected */ }
+  }).catch(() => {
+    // CSRF fetch may fail before auth — expected
+  }).finally(() => {
+    csrfFetchPromise = null;
+  });
+  return csrfFetchPromise;
 }
 
 // Request interceptor: add CSRF token for mutating requests
