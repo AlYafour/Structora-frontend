@@ -29,9 +29,15 @@ export default function StepActions({
     : (t("save_and_continue"));
   const loadingText = t("saving");
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (disableNext || isLoading) return;
-    if (typeof onNext === "function") onNext();
+    if (typeof onNext === "function") {
+      try {
+        await onNext();
+      } catch {
+        // error is already shown by the step's ErrorDialog
+      }
+    }
   };
 
   const handlePrev = () => {

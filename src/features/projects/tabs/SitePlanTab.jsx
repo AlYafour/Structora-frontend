@@ -15,8 +15,6 @@ const SitePlanTab = memo(function SitePlanTab({ projectId, siteplan, projectPerm
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const isAR = i18n.language === "ar";
-  console.log(projectPermissions)
-
   const getTranslated = (value, arValue, enValue) => {
     if (!value) return t("empty_value");
     if (isAR && arValue) return arValue;

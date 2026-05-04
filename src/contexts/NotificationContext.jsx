@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { Snackbar, Alert, Slide } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../services/notifications';
+import { toastEmitter } from '../utils/toastEmitter';
 
 const NotificationContext = createContext(null);
 
@@ -33,8 +34,7 @@ export function NotificationProvider({ children }) {
 
     const fetchNotifications = async () => {
       try {
-        const { isLoggedIn } = await import('../utils/cookies');
-        if (!isLoggedIn()) return;
+        if (!localStorage.getItem('user')) return;
 
         const { data } = await notificationApi.getAll();
         const items = Array.isArray(data) ? data : data?.results || [];
@@ -126,6 +126,12 @@ export function NotificationProvider({ children }) {
     },
     [processQueue]
   );
+
+  useEffect(() => {
+    return toastEmitter.subscribe(({ type, message }) => {
+      showToast({ type, message });
+    });
+  }, [showToast]);
 
   const handleCloseToast = useCallback((event, reason) => {
     if (reason === 'clickaway') return;

@@ -57,25 +57,24 @@ const saveLanguage = (language) => {
   }
 };
 
-// Professional Language Management: Load language from user preference first, then localStorage
 const getInitialLanguage = () => {
-  // 1. Try to load from localStorage (User object)
+  // 1. Most recent explicit user selection wins (set on every language change)
+  const storedLanguage = getStoredLanguage();
+  if (storedLanguage) {
+    return storedLanguage;
+  }
+
+  // 2. Fallback: user profile preference (may come from backend on login)
   try {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      if (user?.preferred_language && (user.preferred_language === 'ar' || user.preferred_language === 'en')) {
+      if (user?.preferred_language === 'ar' || user?.preferred_language === 'en') {
         return user.preferred_language;
       }
     }
-  } catch (e) {
-    // Silent fail
-  }
-
-  // 2. Fallback: localStorage (app_language)
-  const storedLanguage = getStoredLanguage();
-  if (storedLanguage) {
-    return storedLanguage;
+  } catch {
+    // silent
   }
 
   // 3. Default: Arabic
@@ -101,33 +100,28 @@ export function applyDir(lang) {
 // Apply direction on load
 applyDir(i18n.language);
 
-// Professional Language Management: Save language to user preference and localStorage
 i18n.on("languageChanged", async (language) => {
-  // 1. Save to localStorage
+  // 1. Always persist the selection immediately
   saveLanguage(language);
   applyDir(language);
 
-  // 2. Save to user preference (if the user is logged in)
+  // 2. Sync to user object in localStorage + backend if logged in
   try {
-    const { isLoggedIn } = await import('../utils/cookies');
-    if (isLoggedIn()) {
-      // Update User object in localStorage
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        user.preferred_language = language;
-        localStorage.setItem('user', JSON.stringify(user));
-      }
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      user.preferred_language = language;
+      localStorage.setItem('user', JSON.stringify(user));
 
       // Update in backend (async - don't wait)
       try {
         const { api } = await import('../services/api');
         await api.patch('auth/users/update_profile/', { preferred_language: language });
-      } catch (e) {
+      } catch {
         // Silent fail - don't disrupt the user experience
       }
     }
-  } catch (e) {
+  } catch {
     // Silent fail
   }
 });

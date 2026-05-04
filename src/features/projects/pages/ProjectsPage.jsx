@@ -285,8 +285,6 @@ export default function ProjectsPage() {
     overscan: 15,
     enabled: useVirtual,
   });
-  console.log("filtered projects", filteredProjects)
-
   return (
     <PageLayout loading={loading} loadingText={t("loading_projects")}>
       <div className="projects-page-modern">

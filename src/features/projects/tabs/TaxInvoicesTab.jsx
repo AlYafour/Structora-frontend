@@ -39,7 +39,6 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
    api.get(url)
     .then(res => {
      const data = res.data;
-     console.log("tax invoice data",data)
      setInvoices(Array.isArray(data) ? data : []);
     })
     .catch((err) => {

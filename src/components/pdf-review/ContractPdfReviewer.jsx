@@ -137,7 +137,7 @@ export default function ContractPdfReviewer({
           onReviewStateChange?.({ confirmedPages: new Set(), totalPages: doc.numPages });
         }
       } catch (err) {
-        if (!cancelled) { setError(t("contract_review.pdf_load_error")); console.error("PDF load error:", err); }
+        if (!cancelled) { setError(t("contract_review.pdf_load_error")); }
       }
     };
     loadPdf();
@@ -165,7 +165,7 @@ export default function ContractPdfReviewer({
         transformRef.current?.resetTransform();
         await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
       } catch (err) {
-        if (!cancelled) console.error("Page render error:", err);
+        // page render failed silently — user sees blank canvas
       } finally {
         if (!cancelled) setRendering(false);
       }

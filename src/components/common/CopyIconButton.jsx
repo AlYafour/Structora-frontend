@@ -13,8 +13,8 @@ export default function CopyIconButton({ value, title = "Copy" }) {
       setCopied(true);
 
       setTimeout(() => setCopied(false), 1200);
-    } catch (err) {
-      console.error("Failed to copy text:", err);
+    } catch {
+      // clipboard API failed — fail silently
     }
   };
 

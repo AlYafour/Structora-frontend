@@ -99,7 +99,6 @@ export default function AddProgressPage() {
           extractFileNameFromUrl
         );
       } catch (err) {
-        console.error('Failed to initialize progress form:', err);
         if (!cancelled) {
           setError(err?.message || t('something_went_wrong'));
         }

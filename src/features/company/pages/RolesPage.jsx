@@ -477,7 +477,6 @@ export default function RolesPage() {
       try {
         const permsRes = await permissionsApi.byCategory();
         permsData = permsRes.data;
-        console.log('Permissions by category:', permsData);
       } catch {
         // Permissions by category are not critical.
       }

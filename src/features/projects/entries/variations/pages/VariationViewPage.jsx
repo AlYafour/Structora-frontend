@@ -213,7 +213,6 @@ export default function VariationViewPage() {
   const _hasBothNames = !!_pnAr && !!_pnEn && _pnAr !== _pnEn;
   const projectNamePrimary = isAR ? (_pnAr || _pnEn || t('variation_order')) : (_pnEn || _pnAr || t('variation_order'));
   const projectNameSecondary = _hasBothNames ? (isAR ? _pnEn : _pnAr) : null;
-  console.log(projectNameData)
 
   return (
     <PageLayout>

@@ -23,15 +23,11 @@ export const logger = {
   },
 
   /**
-   * Log errors (always logged)
+   * Log errors (dev only — suppressed in production to keep console clean)
    */
   error: (...args) => {
-    console.error('[ERROR]', ...args);
-    
-    // In production, could send to error tracking service
-    if (isProduction) {
-      // Example: Send to Sentry, LogRocket, etc.
-      // errorTrackingService.captureException(...args);
+    if (isDev) {
+      console.error('[ERROR]', ...args);
     }
   },
 

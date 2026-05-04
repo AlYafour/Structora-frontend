@@ -1,6 +1,7 @@
 // frontend/src/services/api.js
 import axios from "axios";
 import { getCsrfToken } from "../utils/cookies";
+import { toastEmitter } from "../utils/toastEmitter";
 
 const isDev = import.meta.env.DEV;
 // In development, use proxy => /api/
@@ -21,6 +22,7 @@ let csrfReady = false;
 let csrfFetchPromise = null;
 let isRefreshing = false;
 let refreshSubscribers = [];
+let lastNetworkToastAt = 0;
 
 /**
  * Queue failed requests while a token refresh is in progress.
@@ -69,8 +71,8 @@ api.interceptors.request.use(async (config) => {
       try {
         await ensureCsrf();
         csrftoken = getCsrfToken();
-      } catch (err) {
-        console.warn('CSRF token fetch failed, mutating request may be rejected:', err?.message);
+      } catch {
+        // CSRF fetch may fail before auth — expected
       }
     }
 
@@ -150,6 +152,24 @@ api.interceptors.response.use(
         // so user doesn't have to re-enter the company code
         window.location.href = tenantSlug ? `/login/${tenantSlug}` : '/';
         return Promise.reject(refreshError);
+      }
+    }
+
+    // Show one toast for server/network errors (debounced to avoid spam)
+    const errStatus = err?.response?.status;
+    const isNetwork = !err?.response && err?.code !== 'ERR_CANCELED';
+    const isServerError = errStatus >= 500;
+    if ((isServerError || isNetwork) && !isAuthEndpoint) {
+      const now = Date.now();
+      if (now - lastNetworkToastAt > 5000) {
+        lastNetworkToastAt = now;
+        const msg =
+          errStatus === 502 ? 'خطأ في الاتصال بالخادم - يرجى المحاولة مرة أخرى' :
+          errStatus === 503 ? 'الخدمة غير متاحة حالياً - يرجى المحاولة لاحقاً' :
+          errStatus === 504 ? 'انتهت مهلة الاتصال بالخادم' :
+          isNetwork ? 'خطأ في الاتصال بالشبكة - يرجى التحقق من الاتصال' :
+          'خطأ في الخادم - يرجى المحاولة لاحقاً';
+        toastEmitter.emit('error', msg);
       }
     }
 
