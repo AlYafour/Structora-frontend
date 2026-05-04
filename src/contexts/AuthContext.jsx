@@ -67,9 +67,6 @@ export function AuthProvider({ children }) {
               _skipAuthRedirect: true,
             });
             const freshData = response.data;
-            console.log("PROFILE VERIFY RESPONSE:", freshData);
-            console.log("PROFILE VERIFY permissions:", freshData.permissions);
-            console.log("PROFILE VERIFY role:", freshData.role);
             setUser(freshData);
             setPermissions(freshData.permissions || []);
             localStorage.setItem('user', JSON.stringify(freshData));
@@ -151,9 +148,6 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     const response = await apiClient.get('auth/users/profile/');
     const freshData = response.data;
-    console.log("REFRESH USER RESPONSE:", freshData);
-    console.log("REFRESH USER permissions:", freshData.permissions);
-    console.log("REFRESH USER role:", freshData.role);
 
     // Preserve tenant from current user if the profile endpoint didn't return it
     // (guards against ProfileSerializer not including tenant in some edge cases)
@@ -196,10 +190,6 @@ export function AuthProvider({ children }) {
 
       // Tokens are now in httpOnly cookies — only user data comes in JSON
       const { user: userData, role, tenant_id, tenant_slug, is_super_admin } = response.data;
-
-      console.log("LOGIN RESPONSE:", response.data);
-      console.log("LOGIN userData.permissions:", userData.permissions);
-      console.log("LOGIN userData.role:", userData.role);
 
       // Save non-sensitive data to localStorage
       localStorage.setItem('user', JSON.stringify(userData));
