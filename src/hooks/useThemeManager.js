@@ -6,7 +6,6 @@
 import { useState, useCallback } from "react";
 import { api } from "../services/api";
 import { logger } from "../utils/logger";
-import { isLoggedIn } from "../utils/cookies";
 import { buildFileUrl } from "../utils/helpers/file";
 import BRAND from "../config/brand";
 
@@ -45,7 +44,10 @@ export default function useThemeManager(userRef) {
 
   const loadTenantTheme = useCallback(async (useStoredAsFallback = false) => {
     try {
-      if (!isLoggedIn()) {
+      // Use userRef or localStorage — cookie-based isLoggedIn() is unreliable
+      // in cross-domain setups (cookie on railway.app, JS on vercel.app)
+      const hasUser = userRef.current || localStorage.getItem('user');
+      if (!hasUser) {
         setTenantTheme(STRUCTORA_THEME);
         return STRUCTORA_THEME;
       }

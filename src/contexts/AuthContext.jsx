@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { logger } from '../utils/logger';
-import { isLoggedIn } from '../utils/cookies';
 import useThemeManager from '../hooks/useThemeManager';
 import useAdminSessionGuard from '../hooks/useAdminSessionGuard';
 
@@ -103,7 +102,7 @@ export function AuthProvider({ children }) {
 
   // Separate theme loading when user state changes
   useEffect(() => {
-    if (!isLoggedIn() || !user) {
+    if (!user) {
       return;
     }
 
