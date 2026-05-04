@@ -378,7 +378,7 @@ export default function AppSidebar({ mode = 'company' }) {
   const logoUrl = isAdmin ? null : tenantTheme?.logo_url;
 
   const tenantName = user?.tenant?.name || '';
-  const companyNameAr = isAdmin ? '' : (tenantTheme?.company_name || tenantName || '');
+  const companyNameAr = isAdmin ? '' : (tenantName || tenantTheme?.company_name || '');
   const companyNameEn = isAdmin ? '' : (tenantTheme?.contractor_name_en || '');
 
   let brandName;

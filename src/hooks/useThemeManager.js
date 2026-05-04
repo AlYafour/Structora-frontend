@@ -26,13 +26,15 @@ const EMPTY_TENANT_THEME = {
   secondary_color: BRAND.secondaryColor,
 };
 
-/** Get initial theme — use cached tenant theme if available, otherwise empty */
+/** Get initial theme — use cached tenant theme if available and not STRUCTORA-branded */
 function getInitialTheme() {
   try {
     const cached = localStorage.getItem("tenant_theme");
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed && typeof parsed === 'object') return parsed;
+      if (parsed && typeof parsed === 'object' && parsed.company_name !== BRAND.name) {
+        return parsed;
+      }
     }
   } catch { /* ignore parse errors */ }
   return EMPTY_TENANT_THEME;
