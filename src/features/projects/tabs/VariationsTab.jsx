@@ -127,7 +127,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
     const filteredVariations = useMemo(() => {
         if (!variations) return [];
 
-        return variations.filter((v) => {
+        const filtered = variations.filter((v) => {
             if (!variationStatusFilter) return true;
 
             const status = getVariationStatus(v);
@@ -145,6 +145,37 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             }
 
             return true;
+        });
+
+        // Sort by variation number ascending
+        return filtered.sort((a, b) => {
+            const getRefNumber = (v) => {
+                let ref = "";
+
+                // Get reference number from description JSON
+                if (v.description) {
+                    try {
+                        const parsed = JSON.parse(v.description);
+                        ref = parsed.reference_no || "";
+                    } catch (e) {
+                        ref = "";
+                    }
+                }
+
+                // Fallbacks
+                ref =
+                    ref ||
+                    v.variation_number ||
+                    v.modification_number ||
+                    "";
+
+                // Extract numeric part from VAR0001
+                const match = String(ref).match(/\d+/);
+
+                return match ? parseInt(match[0], 10) : 0;
+            };
+
+            return getRefNumber(a) - getRefNumber(b);
         });
     }, [variations, variationStatusFilter]);
 
