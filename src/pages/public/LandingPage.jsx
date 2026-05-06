@@ -277,7 +277,7 @@ export default function LandingPage() {
                   </Button>
                   <Button type="button" variant="primary" disabled={!loginRole} onClick={() => setModalStep(2)}>
                     {t('landing_continue')}
-                    <FaArrowRight className="ds-icon-gap" />
+                    <FaArrowRight className="lp-modal__continue-icon" />
                   </Button>
                 </div>
               </>
@@ -309,7 +309,7 @@ export default function LandingPage() {
                     </Button>
                     <Button type="submit" variant="primary" disabled={loading || !companyCode.trim()}>
                       {t('landing_continue')}
-                      <FaArrowRight className="ds-icon-gap" />
+                      <FaArrowRight className="lp-modal__continue-icon" />
                     </Button>
                   </div>
                 </form>

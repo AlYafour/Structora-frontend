@@ -1,5 +1,6 @@
 // frontend/src/services/api.js
 import axios from "axios";
+import i18n from "../config/i18n";
 import { getCsrfToken } from "../utils/cookies";
 import { toastEmitter } from "../utils/toastEmitter";
 
@@ -163,12 +164,14 @@ api.interceptors.response.use(
       const now = Date.now();
       if (now - lastNetworkToastAt > 5000) {
         lastNetworkToastAt = now;
-        const msg =
-          errStatus === 502 ? 'خطأ في الاتصال بالخادم - يرجى المحاولة مرة أخرى' :
-          errStatus === 503 ? 'الخدمة غير متاحة حالياً - يرجى المحاولة لاحقاً' :
-          errStatus === 504 ? 'انتهت مهلة الاتصال بالخادم' :
-          isNetwork ? 'خطأ في الاتصال بالشبكة - يرجى التحقق من الاتصال' :
-          'خطأ في الخادم - يرجى المحاولة لاحقاً';
+        let msg;
+        if (isNetwork) {
+          msg = i18n.t("errors.network");
+        } else {
+          const key = `errors.http_${errStatus}`;
+          const translated = i18n.t(key);
+          msg = translated !== key ? translated : i18n.t("errors.server_support");
+        }
         toastEmitter.emit('error', msg);
       }
     }

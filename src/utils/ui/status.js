@@ -148,7 +148,7 @@ export const APPROVAL_STATUS_CONFIG = {
   approved: {
     label: {
       ar: "معتمدة (تحتاج اعتماد نهائي)",
-      en: "Approved (Needs Final)",
+      en: "Approved",
     },
     color: "#3D5A80", // prussian blue
     bgColor: "#dbeafe",

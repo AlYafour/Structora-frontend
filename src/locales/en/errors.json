@@ -60,6 +60,32 @@
     "allocation_before_application": "Allocation date must be earlier than application date.",
     "owners_share_sum_100": "Owners' shares must sum to 100%.",
     "owner_name_bilingual_required": "Owner #{{idx}}: Please fill Arabic & English names.",
-    "authorized_owner_required": "Please select an authorized owner."
+    "authorized_owner_required": "Please select an authorized owner.",
+    "http_400": "Bad request - please check the entered data",
+    "http_401": "Unauthorized - please log in",
+    "http_403": "Forbidden - you do not have permission to access this",
+    "http_404": "Not found - the requested resource was not found",
+    "http_405": "Method not allowed",
+    "http_408": "Request timeout - please try again",
+    "http_409": "Conflict - the data already exists",
+    "http_413": "File is too large - please choose a smaller file",
+    "http_422": "Invalid data - please check the fields",
+    "http_429": "Too many requests - please wait a moment",
+    "http_500": "Server error - please try again later",
+    "http_502": "Server connection error",
+    "http_503": "Service unavailable - please try again later",
+    "http_504": "Server connection timeout",
+    "http_unknown": "Unknown error ({{status}})",
+
+    "unknown": "An unknown error occurred",
+    "unexpected": "An unexpected error occurred",
+    "network": "Network error - please check your internet connection",
+    "timeout": "Connection timed out - please try again",
+    "not_found_with_resource": "{{resource}} not found - please check the identifier",
+    "server_support": "Server error - please try again later or contact support",
+    "validation": "Invalid data - please check the highlighted fields",
+    "owner_field": "Owner {{idx}} - {{field}}",
+    "debug_details": "Error details",
+    "debug_type": "Error type"
   }
 }

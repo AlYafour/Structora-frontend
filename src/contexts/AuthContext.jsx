@@ -165,9 +165,9 @@ export function AuthProvider({ children }) {
     if (userData.preferred_language && (userData.preferred_language === 'ar' || userData.preferred_language === 'en')) {
       try {
         const { default: i18n } = await import('../config/i18n');
-        if (i18n.language !== userData.preferred_language) {
-          i18n.changeLanguage(userData.preferred_language);
-        }
+        // if (i18n.language !== userData.preferred_language) {
+        //   i18n.changeLanguage(userData.preferred_language);
+        // }
       } catch { /* i18n import may fail during SSR or test */ }
     }
 
@@ -226,9 +226,9 @@ export function AuthProvider({ children }) {
       if (userData.preferred_language && (userData.preferred_language === 'ar' || userData.preferred_language === 'en')) {
         try {
           const { default: i18n } = await import('../config/i18n');
-          if (i18n.language !== userData.preferred_language) {
-            i18n.changeLanguage(userData.preferred_language);
-          }
+          // if (i18n.language !== userData.preferred_language) {
+          //   i18n.changeLanguage(userData.preferred_language);
+          // }
         } catch (e) {
           // Silent fail
         }

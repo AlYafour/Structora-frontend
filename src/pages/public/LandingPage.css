@@ -867,6 +867,28 @@
   color: #8B7333;
 }
 
+.lp-modal__actions .lp-btn,
+.lp-modal__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-modal__continue-icon {
+  margin-inline-start: 0.35rem;
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
+
+[dir="rtl"] .lp-modal__continue-icon {
+  margin-inline-start: 0;
+  margin-inline-end: 0.35rem;
+  transform: rotate(180deg);
+}
+
 .lp-role-card__icon {
   width: 48px;
   height: 48px;

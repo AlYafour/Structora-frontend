@@ -196,7 +196,7 @@ export default function CompanySettingsPage() {
       setLoading(false);
     }
   };
-
+    console.log('subscriptionData', subscriptionData);
   if (!isCompanySuperAdmin) {
     return (
       <div className="prj-alert" style={{ margin: 40 }}>
@@ -266,7 +266,8 @@ export default function CompanySettingsPage() {
             <div className="cs-profile__badge-wrap">
               <span className={`cs-sub-badge ${subscriptionData.subscription_status === 'active' ? 'cs-sub-badge--active' : 'cs-sub-badge--inactive'}`}>
                 <FaCheckCircle style={{ fontSize: '0.7rem' }} />
-                {subscriptionData.subscription_status === 'active' ? t('company_status_active') || 'Active' : t('company_status_inactive') || 'Inactive'}
+                {/* {subscriptionData.subscription_status === 'active' ? t('company_status_active') || 'Active' : t('company_status_inactive') || 'Inactive'} */}
+                {subscriptionData.subscription_status}
               </span>
             </div>
           )}

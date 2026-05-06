@@ -58,6 +58,8 @@ export default function CompanyUsersPage() {
     extra_permission_codes: [],
   });
 
+  const [formErrors, setFormErrors] = useState({});
+
   // Delete confirm
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState(null);
@@ -96,6 +98,9 @@ export default function CompanyUsersPage() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
     if (name === 'role') {
       const selectedRole = roles.find(r => String(r.id) === String(value));
       if (selectedRole?.name !== 'staff_user') {
@@ -180,6 +185,7 @@ export default function CompanyUsersPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingUser(null);
+    setFormErrors({});
     setFormData({
       email: '',
       password: '',
@@ -223,8 +229,23 @@ export default function CompanyUsersPage() {
     return { fd, hasFiles };
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.id_expiry_date) {
+      errors.id_expiry_date = t('fill_required_fields');
+    }
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -244,6 +265,8 @@ export default function CompanyUsersPage() {
             delete updateData.role;
           }
           if (updateData.phone) updateData.phone = `+971${updateData.phone}`;
+          if (!updateData.id_expiry_date) delete updateData.id_expiry_date;
+          if (!updateData.id_number) delete updateData.id_number;
           delete updateData.id_file;
           delete updateData.signature;
           delete updateData._existing_id_file_url;
@@ -281,6 +304,9 @@ export default function CompanyUsersPage() {
           if (!createData.last_name) delete createData.last_name;
           if (createData.phone) createData.phone = `+971${createData.phone}`;
           else delete createData.phone;
+          if (!createData.id_expiry_date) delete createData.id_expiry_date;
+          if (!createData.id_number) delete createData.id_number;
+          if (!createData.job_title) delete createData.job_title;
           delete createData.id_file;
           delete createData.signature;
           if (staffRole) {
@@ -295,7 +321,8 @@ export default function CompanyUsersPage() {
       await loadData();
       await refreshUser();
       handleCloseModal();
-    } catch (err) {
+    }
+    catch (err) {
       logger.error('Error saving user', err);
       let errorMsg = '';
       if (err.response?.data) {
@@ -612,6 +639,7 @@ export default function CompanyUsersPage() {
                     value={formData.role}
                     onChange={handleInputChange}
                     required
+                    disabled={editingUser && editingUser?.role?.name === 'company_super_admin'}
                   >
                     <option value="">{t('company_select_role')}</option>
                     {roles.map(role => (
@@ -728,11 +756,11 @@ export default function CompanyUsersPage() {
                   />
                 </Field>
 
-                <Field label={t('user_id_expiry_date')}>
+                <Field label={t('user_id_expiry_date')} required error={formErrors.id_expiry_date}>
                   <input
                     type="date"
                     name="id_expiry_date"
-                    className="input"
+                    className={`input${formErrors.id_expiry_date ? ' form-input-error' : ''}`}
                     value={formData.id_expiry_date}
                     onChange={handleInputChange}
                   />

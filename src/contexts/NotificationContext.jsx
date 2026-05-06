@@ -239,6 +239,7 @@ export function NotificationProvider({ children }) {
         onClose={handleCloseToast}
         TransitionComponent={SlideTransition}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ zIndex: 99999 }} 
       >
         <Alert
           onClose={handleCloseToast}

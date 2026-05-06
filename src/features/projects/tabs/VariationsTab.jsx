@@ -33,7 +33,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
     const { success, error: showError } = useNotifications();
     const { user, hasPermission, isAdmin } = useAuth();
     const canCreateVariation = isAdmin || hasPermission('variations.create');
-    const canEditVariation   = isAdmin || hasPermission('variations.create'); // same permission gates creation and editing
+    const canEditVariation = isAdmin || hasPermission('variations.create'); // same permission gates creation and editing
     const navigate = useTenantNavigate();
     const isAR = i18n.language === "ar";
 
@@ -102,6 +102,26 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
     const checkRequiresEdit = (variation) => {
         const status = getVariationStatus(variation);
         return status === "requires_edit";
+    };
+
+    const approveVariationByRole = async (variation) => {
+        if (!variation?.id || !projectId) return;
+
+        const status = getVariationStatus(variation);
+
+        if (isProjectManager) {
+            return projectApi.approveVariationProjectManager(projectId, variation.id);
+        }
+
+        if (isGeneralManager) {
+            if (status === "pending_general_manager_initial") {
+                return projectApi.approveVariationGeneralManagerInitial(projectId, variation.id);
+            }
+
+            return projectApi.approveVariation(projectId, variation.id);
+        }
+
+        throw new Error(t("permission_denied", "Permission denied"));
     };
 
     const filteredVariations = useMemo(() => {
@@ -193,7 +213,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
 
         try {
             setApprovingVariationId(actionVariation.id);
-            await projectApi.approveVariation(projectId, actionVariation.id);
+            await approveVariationByRole(actionVariation);
             showToast("success", t("variation_approved"));
         } catch (error) {
             const handledError = handleError(error, "VariationsTab.handleApproveVariation");
@@ -410,31 +430,139 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
     const handleBulkApproveVariations = async () => {
         if (selectedVariationIds.size === 0) return;
 
+        const selectedVariations = filteredVariations.filter((v) =>
+            selectedVariationIds.has(v.id)
+        );
+
         setBulkApprovingVariations(true);
-        const ids = Array.from(selectedVariationIds);
+
         let ok = 0;
         let fail = 0;
+        let gmInitialPendingCount = 0;
 
-        for (const id of ids) {
-            try {
-                await projectApi.approveVariation(projectId, id);
-                ok += 1;
-            } catch (e) {
-                fail += 1;
+        try {
+            for (const variation of selectedVariations) {
+                try {
+                    const status = getVariationStatus(variation);
+
+                    if (checkRequiresEdit(variation)) {
+                        fail += 1;
+                        continue;
+                    }
+
+                    if (isProjectManager) {
+                        if (status === "pending_general_manager_initial") {
+                            gmInitialPendingCount += 1;
+                            fail += 1;
+                            continue;
+                        }
+
+                        if (
+                            (status === "draft" || status === "pending_project_manager") &&
+                            !variation.project_manager_initial_approved_by
+                        ) {
+                            await projectApi.approveVariationProjectManager(
+                                projectId,
+                                variation.id
+                            );
+                            ok += 1;
+                            continue;
+                        }
+
+                        if (status === "pending_owner_consultant") {
+                            let didApprove = false;
+
+                            if (!variation.owner_approval_confirmed) {
+                                await projectApi.confirmOwnerApproval(
+                                    projectId,
+                                    variation.id
+                                );
+                                didApprove = true;
+                            }
+
+                            if (!variation.consultant_approval_confirmed) {
+                                await projectApi.confirmConsultantApproval(
+                                    projectId,
+                                    variation.id
+                                );
+                                didApprove = true;
+                            }
+
+                            if (didApprove) {
+                                ok += 1;
+                            } else {
+                                fail += 1;
+                            }
+
+                            continue;
+                        }
+
+                        fail += 1;
+                        continue;
+                    }
+
+                    if (isGeneralManager) {
+                        if (status === "pending_general_manager_initial") {
+                            await projectApi.approveVariationGeneralManagerInitial(
+                                projectId,
+                                variation.id
+                            );
+                            ok += 1;
+                            continue;
+                        }
+
+                        if (status === "pending_general_manager_final") {
+                            await projectApi.approveVariation(projectId, variation.id);
+                            ok += 1;
+                            continue;
+                        }
+
+                        fail += 1;
+                        continue;
+                    }
+
+                    fail += 1;
+                } catch (e) {
+                    logger.error(`Error approving variation ${variation.id}`, e);
+                    fail += 1;
+                }
             }
-        }
 
-        onReload();
-        clearSelection();
-        setBulkApprovingVariations(false);
-        setBulkApproveVariationsConfirmOpen(false);
+            await onReload();
+            clearSelection();
+            setBulkApproveVariationsConfirmOpen(false);
 
-        if (fail === 0) {
-            showToast("success", t("bulk_approve_success")?.replace("{{count}}", ok));
-        } else if (ok === 0) {
-            showToast("error", t("bulk_approve_error"));
-        } else {
-            showToast("error", t("bulk_approve_partial")?.replace("{{ok}}", ok).replace("{{fail}}", fail));
+            if (gmInitialPendingCount > 0 && ok === 0) {
+                showToast(
+                    "error",
+                    t(
+                        "waiting_for_general_manager_initial_approval_bulk",
+                        "General Manager initial approval is pending. Project Manager cannot approve these variation(s) at this stage."
+                    )
+                );
+            } else if (fail === 0) {
+                showToast(
+                    "success",
+                    t("bulk_approve_success", "Bulk approved {{count}} variation(s)").replace(
+                        "{{count}}",
+                        ok
+                    )
+                );
+            } else if (ok === 0) {
+                showToast("error", t("bulk_approve_error", "Bulk approve failed"));
+            } else {
+                showToast(
+                    "error",
+                    t(
+                        "bulk_approve_partial",
+                        "Bulk approve partially completed. Approved {{ok}}, failed {{fail}}."
+                    )
+                        .replace("{{ok}}", ok)
+                        .replace("{{fail}}", fail)
+                );
+            }
+        } finally {
+            setBulkApprovingVariations(false);
         }
     };
 
@@ -496,11 +624,42 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
 
         const status = getVariationStatus(variation);
 
-        if (status === "rejected_by_project_manager" || status === "rejected_by_general_manager" || status === "rejected") {
+        if (
+            status === "rejected_by_project_manager" ||
+            status === "rejected_by_general_manager" ||
+            status === "rejected" ||
+            status === "approved" ||
+            status === "final_approved"
+        ) {
             return false;
         }
 
-        return status !== "approved" && status !== "final_approved" && !variation?.general_manager_final_approved_by;
+        if (isProjectManager) {
+            if (
+                (status === "draft" || status === "pending_project_manager") &&
+                !variation.project_manager_initial_approved_by
+            ) {
+                return true;
+            }
+
+            if (
+                status === "pending_owner_consultant" &&
+                (!variation.owner_approval_confirmed || !variation.consultant_approval_confirmed)
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
+        if (isGeneralManager) {
+            return (
+                status === "pending_general_manager_initial" ||
+                status === "pending_general_manager_final"
+            );
+        }
+
+        return false;
     };
 
     const canCancelThisVariation = (variation) => {
@@ -541,9 +700,9 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             <div className="prj-tab-header">
                 <div className="prj-tab-actions">
                     {canCreateVariation && (
-                    <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
-                        {t("add_variation")}
-                    </Button>
+                        <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
+                            {t("add_variation")}
+                        </Button>
                     )}
                 </div>
             </div>

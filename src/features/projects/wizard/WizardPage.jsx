@@ -126,7 +126,7 @@ export default function WizardPage() {
         });
         try {
           localStorage.removeItem("wizard_setup_state_v1");
-        } catch (_e) {}
+        } catch (_e) { }
       }
       return;
     }
@@ -399,18 +399,18 @@ export default function WizardPage() {
           await projectApi.saveContract(newProjectId, {
             contract_classification: setup.contractClassification,
           });
-        } catch (_e) {}
+        } catch (_e) { }
       }
 
       if (draftId) {
         try {
           await projectApi.deleteDraft(draftId);
-        } catch (_e) {}
+        } catch (_e) { }
       }
 
       try {
         localStorage.removeItem("wizard_setup_state_v1");
-      } catch (_e) {}
+      } catch (_e) { }
 
       navigate(`/projects/${newProjectId}`);
     } catch (err) {
@@ -443,10 +443,10 @@ export default function WizardPage() {
   const projectTitle = isNewProject
     ? t("new_project")
     : (
-        isAR
-          ? project?.display_name || project?.name
-          : project?.display_name_en || project?.name
-      ) || labels.projectPrefix;
+      isAR
+        ? project?.display_name || project?.name
+        : project?.display_name_en || project?.name
+    ) || labels.projectPrefix;
 
   if (isCreatingProject) {
     return (
@@ -527,6 +527,15 @@ export default function WizardPage() {
               onChange={setSetup}
               onNext={() => {
                 pendingAdvanceRef.current = true;
+
+                setIndex((current) => {
+                  if (current === 0 && allowSitePlanFlow) {
+                    setVisitedSteps((p) => new Set([...p, 1]));
+                    pendingAdvanceRef.current = false;
+                    return 1;
+                  }
+                  return current;
+                });
               }}
               initialData={!isNewProject ? setup._classification : null}
             />
@@ -582,25 +591,25 @@ export default function WizardPage() {
         {(!isNewProject
           ? !!projectId
           : allowSitePlanFlow && (index >= contractStepIndex || visitedSteps.has(contractStepIndex))) && (
-          <div
-            style={{
-              display: index === contractStepIndex && allowSitePlanFlow ? undefined : "none",
-            }}
-          >
-            <ContractStep
-              projectId={isNewProject ? null : projectId}
-              onPrev={sectionOnly ? undefined : goPrev}
-              onNext={sectionOnly ? undefined : undefined}
-              isView={isView}
-              isNewProject={isNewProject}
-              onCreateProject={isNewProject ? createProjectAndSaveAllData : undefined}
-              setup={setup}
-              onSetupChange={setSetup}
-              siteplanSnapshot={isNewProject ? wizardData.siteplan : null}
-              noPermit={noPermit}
-            />
-          </div>
-        )}
+            <div
+              style={{
+                display: index === contractStepIndex && allowSitePlanFlow ? undefined : "none",
+              }}
+            >
+              <ContractStep
+                projectId={isNewProject ? null : projectId}
+                onPrev={sectionOnly ? undefined : goPrev}
+                onNext={sectionOnly ? undefined : undefined}
+                isView={isView}
+                isNewProject={isNewProject}
+                onCreateProject={isNewProject ? createProjectAndSaveAllData : undefined}
+                setup={setup}
+                onSetupChange={setSetup}
+                siteplanSnapshot={isNewProject ? wizardData.siteplan : null}
+                noPermit={noPermit}
+              />
+            </div>
+          )}
       </div>
     </div>
   );
