@@ -413,7 +413,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const variationData = {
         project: project.id,
         // Empty on create so backend atomically assigns the next available number (avoids concurrent-submit conflicts)
-        variation_number: variationId ? (formData.variation_number || '') : '',
+        // variation_number: variationId ? (formData.variation_number || '') : '',
+        variation_number: formData.variation_number || '',
         description: JSON.stringify(noticeData),
         amount: finalVariationAmount.toString(),
         final_amount: finalVariationAmount.toString(),

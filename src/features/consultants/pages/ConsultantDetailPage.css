@@ -10,6 +10,11 @@
   flex-wrap: wrap;
 }
 
+.consultant-detail__back-icon {
+  margin-inline: 0.5rem;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
 .consultant-detail__header-info {
   display: flex;
   flex-direction: column;

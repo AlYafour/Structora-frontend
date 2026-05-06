@@ -863,7 +863,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
                                             </td>
 
                                             <td className="variations-tab__description-cell">
-                                                <span className="ds-table__cell-text" title={variationDescription}>
+                                                <span className="variations-tab__description-text" title={variationDescription}>
                                                     {variationDescription || "-"}
                                                 </span>
                                             </td>
