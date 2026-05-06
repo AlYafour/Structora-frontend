@@ -40,7 +40,6 @@ const OverviewTab = memo(function OverviewTab({
   const { t, i18n } = useTranslation();
   const isAR = /^ar\b/i.test(i18n.language || "");
 
-
   const projectDisplayName = isAR
     ? project?.display_name || project?.name || t("project_type_label")
     : project?.display_name_en ||

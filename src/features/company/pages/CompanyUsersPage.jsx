@@ -55,7 +55,7 @@ export default function CompanyUsersPage() {
     id_expiry_date: '',
     job_title: '',
     signature: null,
-    extra_permission_codes: [],
+    effective_permission_codes: [],
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -104,7 +104,7 @@ export default function CompanyUsersPage() {
     if (name === 'role') {
       const selectedRole = roles.find(r => String(r.id) === String(value));
       if (selectedRole?.name !== 'staff_user') {
-        setFormData(prev => ({ ...prev, role: value, extra_permission_codes: [] }));
+        setFormData(prev => ({ ...prev, role: value, effective_permission_codes: [] }));
         return;
       }
     }
@@ -116,10 +116,10 @@ export default function CompanyUsersPage() {
 
   const handlePermissionToggle = (code) => {
     setFormData(prev => {
-      const current = prev.extra_permission_codes;
+      const current = prev.effective_permission_codes;
       return {
         ...prev,
-        extra_permission_codes: current.includes(code)
+        effective_permission_codes: current.includes(code)
           ? current.filter(c => c !== code)
           : [...current, code],
       };
@@ -129,13 +129,13 @@ export default function CompanyUsersPage() {
   const handleCategoryToggle = (categoryPerms, allChecked) => {
     const codes = categoryPerms.map(p => p.code);
     setFormData(prev => {
-      const current = new Set(prev.extra_permission_codes);
+      const current = new Set(prev.effective_permission_codes);
       if (allChecked) {
         codes.forEach(c => current.delete(c));
       } else {
         codes.forEach(c => current.add(c));
       }
-      return { ...prev, extra_permission_codes: Array.from(current) };
+      return { ...prev, effective_permission_codes: Array.from(current) };
     });
   };
 
@@ -157,8 +157,8 @@ export default function CompanyUsersPage() {
         signature: null,
         _existing_id_file_url: userToEdit.id_file_url || '',
         _existing_signature_url: userToEdit.signature_url || '',
-        extra_permission_codes: Array.isArray(userToEdit.extra_permission_codes)
-          ? userToEdit.extra_permission_codes
+        effective_permission_codes: Array.isArray(userToEdit.permissions)
+          ? userToEdit.permissions
           : [],
       });
     } else {
@@ -176,7 +176,7 @@ export default function CompanyUsersPage() {
         id_expiry_date: '',
         job_title: '',
         signature: null,
-        extra_permission_codes: [],
+        effective_permission_codes: [],
       });
     }
     setShowModal(true);
@@ -199,7 +199,7 @@ export default function CompanyUsersPage() {
       id_expiry_date: '',
       job_title: '',
       signature: null,
-      extra_permission_codes: [],
+      effective_permission_codes: [],
     });
   };
 
@@ -221,8 +221,8 @@ export default function CompanyUsersPage() {
     if (formData.signature instanceof File) fd.append('signature', formData.signature);
 
     if (isStaffUserRole(formData.role)) {
-      formData.extra_permission_codes.forEach(code =>
-        fd.append('extra_permission_codes_write', code)
+      formData.effective_permission_codes.forEach(code =>
+        fd.append('explicit_permission_codes_write', code)
       );
     }
 
@@ -272,9 +272,9 @@ export default function CompanyUsersPage() {
           delete updateData._existing_id_file_url;
           delete updateData._existing_signature_url;
           if (staffRole) {
-            updateData.extra_permission_codes_write = updateData.extra_permission_codes;
+            updateData.explicit_permission_codes_write = updateData.effective_permission_codes;
           }
-          delete updateData.extra_permission_codes;
+          delete updateData.effective_permission_codes;
           await authApi.updateUser(editingUser.id, updateData);
         }
         success(t('company_user_updated'));
@@ -310,9 +310,9 @@ export default function CompanyUsersPage() {
           delete createData.id_file;
           delete createData.signature;
           if (staffRole) {
-            createData.extra_permission_codes_write = createData.extra_permission_codes;
+            createData.explicit_permission_codes_write = createData.effective_permission_codes;
           }
-          delete createData.extra_permission_codes;
+          delete createData.effective_permission_codes;
           await authApi.createUser(createData);
         }
         success(t('company_user_created'));
@@ -686,8 +686,8 @@ export default function CompanyUsersPage() {
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14, marginTop: -4 }}>
                   {isRTL
-                    ? 'هذه الصلاحيات تُضاف فوق صلاحيات الدور الافتراضية لهذا الموظف تحديداً.'
-                    : 'These permissions are added on top of the default role permissions for this specific staff member.'}
+                    ? 'الصلاحيات الفعلية لهذا الموظف. يمكنك تفعيل أو إلغاء أي صلاحية بشكل مستقل عن الدور الافتراضي.'
+                    : 'Effective permissions for this staff member. You can enable or disable any permission independently of the default role.'}
                 </p>
                 {Object.keys(permissionsByCategory).length === 0 ? (
                   <p style={{ fontSize: 12, color: 'var(--muted)' }}>
@@ -697,7 +697,7 @@ export default function CompanyUsersPage() {
                   <div className="cu-permissions-grid">
                     {Object.entries(permissionsByCategory).map(([catKey, cat]) => {
                       const catPerms = cat.permissions || [];
-                      const checkedCount = catPerms.filter(p => formData.extra_permission_codes.includes(p.code)).length;
+                      const checkedCount = catPerms.filter(p => formData.effective_permission_codes.includes(p.code)).length;
                       const allChecked = checkedCount === catPerms.length;
                       return (
                         <div key={catKey} className="cu-perm-category">
@@ -720,7 +720,7 @@ export default function CompanyUsersPage() {
                               <label key={perm.code} className="cu-perm-item">
                                 <input
                                   type="checkbox"
-                                  checked={formData.extra_permission_codes.includes(perm.code)}
+                                  checked={formData.effective_permission_codes.includes(perm.code)}
                                   onChange={() => handlePermissionToggle(perm.code)}
                                 />
                                 <span>{isRTL ? perm.name : (perm.name_en || perm.name)}</span>
