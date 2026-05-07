@@ -146,6 +146,9 @@ export default function ProjectView() {
  {activeTab === "progress" && (
  <TabComponent projectId={projectId} onReload={reload} />
  )}
+ {activeTab === "prolongation_fees" && (
+ <TabComponent projectId={projectId} onReload={reload} />
+ )}
  </Suspense>
  );
  })()}

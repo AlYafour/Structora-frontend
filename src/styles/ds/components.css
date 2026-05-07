@@ -4328,7 +4328,7 @@ html.theme-dark .prj-table__row--credit:hover {
 
 .psc__card-value {
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-text-primary, var(--ink));
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -4336,9 +4336,9 @@ html.theme-dark .prj-table__row--credit:hover {
 }
 
 .psc__card-sub {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--color-text-secondary, var(--muted));
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
   line-height: 1.3;
   margin-top: 1px;
   display: flex;
@@ -5735,6 +5735,7 @@ html.theme-dark .siteplan-share-menu__item:hover {
   margin-bottom: var(--space-6);
   position: relative;
   overflow: hidden;
+  margin-top: 20px;
 }
 
 .financial-dashboard__progress::before {

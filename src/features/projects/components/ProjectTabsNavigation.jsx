@@ -60,6 +60,7 @@ const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
         { id: "invoices", label: t("invoices_title") },
         { id: "receipt_vouchers", label: t("receipt_vouchers_tab") },
         { id: "tax_invoices", label: t("tax_invoices_tab") },
+        { id: "prolongation_fees", label: t("prolongation_fees_tab") },
         { id: "financial", label: t("financial_dashboard"), accent: true },
       ],
     },

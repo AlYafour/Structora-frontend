@@ -128,8 +128,21 @@ export default function SitePlanStep({
   // Field verification toggle — also opens the PDF panel so user can cross-check
   const toggleVerify = (fieldName) => {
     setVerifiedFields((prev) => ({ ...prev, [fieldName]: !prev[fieldName] }));
+
+    const ownerMatch = fieldName.match(/_(\d+)$/);
+
+    if (ownerMatch) {
+      const ownerIdx = Number(ownerMatch[1]);
+
+      setIdPanelOwnerIdx(ownerIdx);
+      setShowIdPanel(true);
+      setShowPdfPanel(false);
+      return;
+    }
+
     if (sitePlanFileUrl || form.site_plan_file instanceof File) {
       setShowPdfPanel(true);
+      setShowIdPanel(false);
     }
   };
 

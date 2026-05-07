@@ -28,7 +28,7 @@ export default function ConsultantFeesSection({
   forceShow = false, // bypass the YesNoChips gate (used in noPermit mode where consultant is already confirmed)
 }) {
   const { t } = useTranslation();
-  
+
   const EXTRA_FEE_MODE = useMemo(
     () => [
       { value: "percent", label: t("contract.fees.mode.percent") },
@@ -149,7 +149,7 @@ export default function ConsultantFeesSection({
                     step="0.01"
                     value={form[`${prefix}_fee_design_percent`] || ""}
                     onChange={handlePercentChange(`${prefix}_fee_design_percent`)}
-                    onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
+                    onKeyDown={(e) => { if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault(); }}
                     placeholder="0"
                     dir={isAR ? "rtl" : "ltr"}
                   />
@@ -166,7 +166,7 @@ export default function ConsultantFeesSection({
                     step="0.01"
                     value={form[`${prefix}_fee_supervision_percent`] || ""}
                     onChange={handlePercentChange(`${prefix}_fee_supervision_percent`)}
-                    onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
+                    onKeyDown={(e) => { if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault(); }}
                     placeholder="0"
                     dir={isAR ? "rtl" : "ltr"}
                   />
@@ -241,14 +241,28 @@ export default function ConsultantFeesSection({
                 <YesNoChips
                   value={form[`${prefix}_fee_extra_includes_vat`]}
                   onChange={(v) => {
-                    setF(`${prefix}_fee_extra_includes_vat`, v);
-                    if (form[`${prefix}_fee_extra_value`]) {
-                      const currentValue = parseFloat(form[`${prefix}_fee_extra_value`] || 0);
-                      if (v !== "yes") {
-                        const amountWithoutVat = currentValue / 1.05;
-                        setF(`${prefix}_fee_extra_value`, amountWithoutVat.toFixed(2));
+                    const currentVatMode = form[`${prefix}_fee_extra_includes_vat`];
+
+                    // do nothing if same value clicked again
+                    if (currentVatMode === v) return;
+
+                    const currentValue = parseFloat(form[`${prefix}_fee_extra_value`] || 0);
+
+                    let newValue = currentValue;
+
+                    // convert only when switching modes
+                    if (!isNaN(currentValue) && currentValue > 0) {
+                      if (currentVatMode === "yes" && v === "no") {
+                        // remove VAT
+                        newValue = currentValue / 1.05;
+                      } else if (currentVatMode === "no" && v === "yes") {
+                        // add VAT
+                        newValue = currentValue * 1.05;
                       }
                     }
+
+                    setF(`${prefix}_fee_extra_includes_vat`, v);
+                    setF(`${prefix}_fee_extra_value`, newValue.toFixed(2));
                   }}
                 />
               </Field>

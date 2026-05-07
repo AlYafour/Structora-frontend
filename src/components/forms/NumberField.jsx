@@ -2,78 +2,88 @@ import React, { useRef } from "react";
 import { numberToArabicWords, numberToEnglishWords } from "../../utils/formatters/number";
 import { useLanguage } from "../../hooks";
 
-export default function NumberField({ value, onChange, placeholder = "0.00", readOnly = false, style = {}, dir, min, ...props }) {
+export default function NumberField({
+  value,
+  onChange,
+  placeholder = "0.00",
+  readOnly = false,
+  style = {},
+  dir,
+  min,
+  ...props
+}) {
+  const inputRef = useRef(null);
+  const { isArabic: isAR } = useLanguage();
 
-    const inputRef = useRef(null);
-    const { isArabic: isAR } = useLanguage();
-    const formatWithCommas = (numStr) => {
-        const clean = numStr.replace(/[^0-9]/g, "");
-        return clean.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    };
+  const formatWithCommas = (numStr) => {
+    const clean = String(numStr || "").replace(/,/g, "");
 
-    const handleChange = (e) => {
-        if (readOnly) return;
+    const [integerPart, decimalPart] = clean.split(".");
 
-        const element = inputRef.current;
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-        // Cursor position before modification
-        const start = element.selectionStart;
-        const end = element.selectionEnd;
+    if (decimalPart !== undefined) {
+      return `${formattedInteger}.${decimalPart.slice(0, 2)}`;
+    }
 
-        // Original user value (unformatted)
-        const raw = e.target.value.replace(/,/g, "");
+    return formattedInteger;
+  };
 
-        if (!/^\d*$/.test(raw)) return;
+  const handleChange = (e) => {
+    if (readOnly) return;
 
-        // Re-format the value (live)
-        const formatted = formatWithCommas(raw);
+    const element = inputRef.current;
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
 
-        // Save the change
-        onChange(formatted);
+    const raw = e.target.value.replace(/,/g, "");
 
-        // Calculate the difference
-        const diff = formatted.length - e.target.value.length;
+    // allow: "", "1", "1.", "1.2", "1.23"
+    if (!/^\d*\.?\d{0,2}$/.test(raw)) return;
 
-        // Restore cursor to its correct position
-        setTimeout(() => {
-            element.setSelectionRange(start + diff, end + diff);
-        }, 0);
-    };
+    const formatted = formatWithCommas(raw);
 
-    // Get the word representation based on language
-    const getWordRepresentation = () => {
-        if (!value) return null;
+    onChange(formatted);
 
-        if (isAR) {
-            return numberToArabicWords(value);
-        } else {
-            return numberToEnglishWords(value);
-        }
-    };
+    const diff = formatted.length - e.target.value.length;
 
-    return (
-        <div className="ds-flex ds-flex-col ds-gap-1-5">
-            <input
-                ref={inputRef}
-                className="input"
-                type="text"
-                value={value}
-                placeholder={placeholder}
-                onChange={handleChange}
-                readOnly={readOnly}
-                style={style}
-                dir={dir}
-                min={min}
-                {...props}
-            />
+    setTimeout(() => {
+      element.setSelectionRange(start + diff, end + diff);
+    }, 0);
+  };
 
-            {/* 🔵 Arabic text preview */}
-            {value && (
-                <div className="number-field__preview">
-                    {getWordRepresentation()}
-                </div>
-            )}
+  const getWordRepresentation = () => {
+    if (!value) return null;
+
+    const cleanValue = String(value).replace(/,/g, "");
+
+    return isAR
+      ? numberToArabicWords(cleanValue)
+      : numberToEnglishWords(cleanValue);
+  };
+
+  return (
+    <div className="ds-flex ds-flex-col ds-gap-1-5">
+      <input
+        ref={inputRef}
+        className="input"
+        type="text"
+        inputMode="decimal"
+        value={value || ""}
+        placeholder={placeholder}
+        onChange={handleChange}
+        readOnly={readOnly}
+        style={style}
+        dir={dir}
+        min={min}
+        {...props}
+      />
+
+      {value && (
+        <div className="number-field__preview">
+          {getWordRepresentation()}
         </div>
-    );
+      )}
+    </div>
+  );
 }
-

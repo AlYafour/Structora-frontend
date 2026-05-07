@@ -23,6 +23,7 @@ export const TAB_REGISTRY = {
   receipt_vouchers: lazy(() => import("./ReceiptVouchersTab")),
   tax_invoices: lazy(() => import("./TaxInvoicesTab")),
   progress: lazy(() => import("./ProgressTab")),
+  prolongation_fees: lazy(() => import("./ProlongationFeesTab")),
 };
 
 // Helper function to get a Tab Component

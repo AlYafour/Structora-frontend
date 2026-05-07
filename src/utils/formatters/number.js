@@ -262,67 +262,84 @@ export const numberToArabicWords = (num) => {
  * @param {string|number} num - Number to convert
  * @returns {string} English word representation
  */
-export const numberToEnglishWords = (num) => {
-  if (num === null || num === undefined || num === "") return "";
+export const numberToEnglishWords = (value) => {
+  if (value === null || value === undefined || value === "") return "";
 
-  num = Number(String(num).replace(/,/g, ""));
-  if (isNaN(num)) return "";
+  const cleanValue = String(value).replace(/,/g, "").trim();
+  if (!/^\d+(\.\d+)?$/.test(cleanValue)) return "";
 
-  if (num === 0) return "zero";
+  const [wholePart, decimalPart = ""] = cleanValue.split(".");
 
   const ones = [
-    "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
-    "seventeen", "eighteen", "nineteen"
+    "zero", "one", "two", "three", "four",
+    "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen",
+    "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
   ];
-  
-  const tens = [
-    "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
-  ];
-  
-  const scales = ["", "thousand", "million", "billion", "trillion"];
 
-  const convertHundred = (n) => {
-    let result = "";
-    const hundred = Math.floor(n / 100);
-    const remainder = n % 100;
-    
-    if (hundred > 0) {
-      result += ones[hundred] + " hundred";
-      if (remainder > 0) result += " ";
+  const tens = [
+    "", "", "twenty", "thirty", "forty",
+    "fifty", "sixty", "seventy", "eighty", "ninety"
+  ];
+
+  const convertHundreds = (num) => {
+    let words = "";
+
+    if (num >= 100) {
+      words += ones[Math.floor(num / 100)] + " hundred";
+      num %= 100;
+      if (num > 0) words += " ";
     }
-    
-    if (remainder > 0) {
-      if (remainder < 20) {
-        result += ones[remainder];
-      } else {
-        const ten = Math.floor(remainder / 10);
-        const one = remainder % 10;
-        result += tens[ten];
-        if (one > 0) result += "-" + ones[one];
-      }
+
+    if (num >= 20) {
+      words += tens[Math.floor(num / 10)];
+      if (num % 10 > 0) words += "-" + ones[num % 10];
+    } else if (num > 0) {
+      words += ones[num];
     }
-    
-    return result;
+
+    return words;
   };
 
-  const parts = [];
-  let scaleIndex = 0;
+  const convertInteger = (num) => {
+    if (num === 0) return "zero";
 
-  while (num > 0) {
-    const chunk = num % 1000;
-    num = Math.floor(num / 1000);
+    const scales = ["", "thousand", "million", "billion", "trillion"];
+    const words = [];
+    let scaleIndex = 0;
 
-    if (chunk > 0) {
-      let text = convertHundred(chunk);
-      if (scaleIndex > 0) {
-        text += " " + scales[scaleIndex];
+    while (num > 0) {
+      const chunk = num % 1000;
+
+      if (chunk > 0) {
+        const chunkWords = convertHundreds(chunk);
+        words.unshift(
+          scales[scaleIndex]
+            ? `${chunkWords} ${scales[scaleIndex]}`
+            : chunkWords
+        );
       }
-      parts.unshift(text);
+
+      num = Math.floor(num / 1000);
+      scaleIndex++;
     }
 
-    scaleIndex++;
+    return words.join(" ");
+  };
+
+  const wholeWords = convertInteger(parseInt(wholePart, 10));
+
+  const decimalDigits = decimalPart.slice(0, 2);
+
+  if (!decimalDigits || Number(decimalDigits) === 0) {
+    return wholeWords;
   }
 
-  return parts.join(" ");
+  const decimalWords = decimalDigits
+    .padEnd(2, "0")
+    .split("")
+    .map((digit) => ones[Number(digit)])
+    .join(" ");
+
+  return `${wholeWords} point ${decimalWords}`;
 };

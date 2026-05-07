@@ -15,5 +15,7 @@ export { default as VariationsTab } from './VariationsTab';
 export { default as PaymentsTab } from './PaymentsTab';
 export { default as InvoicesTab } from './InvoicesTab';
 
+export { default as ProlongationFeesTab } from './ProlongationFeesTab';
+
 // Export Tab Registry
 export { TAB_REGISTRY, getTabComponent, hasTab } from './registry';

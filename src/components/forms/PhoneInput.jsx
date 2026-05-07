@@ -29,12 +29,12 @@ export default function PhoneInput({
   const debounceRef = useRef(null);
 
   const digits = value.replace(/\D/g, "");
-  const valid = digits.length >= 8;
+  const valid = digits.length === 9;
 
   const runUniquenessCheck = useCallback(
     (val) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (!val || val.length < 8) {
+      if (!val || val.length < 9) {
         setDuplicateError(null);
         return;
       }
