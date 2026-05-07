@@ -57,7 +57,6 @@ const ProjectsPage = lazy(() => import("./features/projects/pages/ProjectsPage")
 const ProjectView = lazy(() => import("./features/projects/pages/ProjectView"));
 const WizardPage = lazy(() => import("./features/projects/wizard/WizardPage"));
 const PendingApprovalsPage = lazy(() => import("./features/projects/pages/PendingApprovalsPage"));
-const ViewSetup = lazy(() => import("./features/projects/wizard/view/ViewSetup"));
 const ViewSitePlan = lazy(() => import("./features/projects/wizard/view/ViewSitePlan"));
 const ViewLicense = lazy(() => import("./features/projects/wizard/view/ViewLicense"));
 const ViewContract = lazy(() => import("./features/projects/wizard/view/ViewContract"));
@@ -154,7 +153,6 @@ function TenantRoutes() {
       <Route path="projects/wizard" element={<Navigate to="projects" replace />} />
 
       {/* Project phases (view only) */}
-      <Route path="projects/:projectId/setup/view" element={<ProtectedRoute><ViewSetup /></ProtectedRoute>} />
       <Route path="projects/:projectId/siteplan/view" element={<ProtectedRoute><ViewSitePlan /></ProtectedRoute>} />
       <Route path="projects/:projectId/license/view" element={<ProtectedRoute><ViewLicense /></ProtectedRoute>} />
       <Route path="projects/:projectId/contract/view" element={<ProtectedRoute><ViewContract /></ProtectedRoute>} />

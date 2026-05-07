@@ -12,7 +12,7 @@ import CurrencyField from "../../../../components/forms/CurrencyField";
 import { formatDate } from "../../../../utils/formatters";
 import { formatMoney, formatMoneyArabic } from "../../../../utils/formatters";
 
-import { num, numberToArabicWords, formatNumberWithCommas } from "../../../../utils/formatters/number";
+import { num, numberToArabicWords, numberToEnglishWords, formatNumberWithCommas } from "../../../../utils/formatters/number";
 
 /**
  * ContractBasicInfoSection - Contract basic information section
@@ -135,11 +135,13 @@ export default function ContractBasicInfoSection({
               <FormGrid cols={2} gap="md">
                 <FormField label={t("contract_amount")} className="wizard-col-full">
                   <div>
-                    <div className="font-mono fw-600">
+                    <div className="fw-600">
                       {formatMoney(form.total_project_value, { lang: isAR ? "ar" : "en" })}
                     </div>
-                    <div className="mini mt-8">
-                      {formatMoneyArabic(form.total_project_value)}
+                    <div className="mini mt-8" dir={isAR ? "rtl" : "ltr"}>
+                      {isAR
+                        ? formatMoneyArabic(form.total_project_value)
+                        : (numberToEnglishWords(form.total_project_value) ? numberToEnglishWords(form.total_project_value) + " Dirhams" : "—")}
                     </div>
                   </div>
                 </FormField>
@@ -147,21 +149,25 @@ export default function ContractBasicInfoSection({
                   <>
                     <FormField label={t("contract.fields.total_bank_value")}>
                       <div>
-                        <div className="font-mono fw-600">
+                        <div className="fw-600">
                           {formatMoney(form.total_bank_value, { lang: isAR ? "ar" : "en" })}
                         </div>
-                        <div className="mini mt-8">
-                          {formatMoneyArabic(form.total_bank_value)}
+                        <div className="mini mt-8" dir={isAR ? "rtl" : "ltr"}>
+                          {isAR
+                            ? formatMoneyArabic(form.total_bank_value)
+                            : (numberToEnglishWords(form.total_bank_value) ? numberToEnglishWords(form.total_bank_value) + " Dirhams" : "—")}
                         </div>
                       </div>
                     </FormField>
                     <FormField label={t("contract.fields.total_owner_value_calc")}>
                       <div>
-                        <div className="font-mono fw-600">
+                        <div className="fw-600">
                           {formatMoney(form.total_owner_value, { lang: isAR ? "ar" : "en" })}
                         </div>
-                        <div className="mini mt-8">
-                          {formatMoneyArabic(form.total_owner_value)}
+                        <div className="mini mt-8" dir={isAR ? "rtl" : "ltr"}>
+                          {isAR
+                            ? formatMoneyArabic(form.total_owner_value)
+                            : (numberToEnglishWords(form.total_owner_value) ? numberToEnglishWords(form.total_owner_value) + " Dirhams" : "—")}
                         </div>
                       </div>
                     </FormField>

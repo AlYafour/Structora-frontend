@@ -418,7 +418,7 @@ function WkAccordion({
 }
 
 /* ═══════════ MAIN COMPONENT ═══════════ */
-export default function ProjectTypeSelector({ onSelect, onChange, onNext: onNextProp, initialData }) {
+export default function ProjectTypeSelector({ onSelect, onChange, onNext: onNextProp, initialData, isView = false, projectId = null, isNewProject = true }) {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language?.startsWith("ar");
 
@@ -650,6 +650,8 @@ const getBuildingParts = useCallback((buildingKey) => {
   });
   const [favSaved, setFavSaved] = useState(false);
   const [pendingNext, setPendingNext] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   /* ── Search states ── */
   const [srS1, setSrS1] = useState("");
@@ -848,8 +850,8 @@ const getBuildingParts = useCallback((buildingKey) => {
   const handleAiOption = useCallback(opt => sendAiMessage(opt.value), [sendAiMessage]);
 
   // Handle next
-  const handleNext = useCallback(() => {
-    if (!isReady) return;
+  const handleNext = useCallback(async () => {
+    if (!isReady || isSaving) return;
     const typeMap = { residential:"villa", commercial:"villa", industrial:"industrial", government:"governmental", health:"governmental", religious:"governmental", agricultural:"agricultural", infrastructure:"governmental" };
     let projectType = "", contractType = "", projectCategoryCode = "", maintenanceTypeCode = "";
     if (c === "construction") {
@@ -868,6 +870,31 @@ const getBuildingParts = useCallback((buildingKey) => {
       maintenanceContract: mc, scope: sc, parts: pt, workTypes: wk, extraWorks: ex,
       extraTracks,
     };
+
+    // Save to backend when editing an existing project
+    if (!isNewProject && projectId) {
+      try {
+        setSaveError("");
+        setIsSaving(true);
+        await api.patch(`projects/${projectId}/`, {
+          project_type: projectType,
+          contract_type: contractType,
+          project_category: projectCategoryCode,
+          maintenance_type: maintenanceTypeCode,
+          classification_data: classificationData,
+        });
+      } catch (err) {
+        const msg = err?.response?.data
+          ? Object.values(err.response.data).flat().join(" ")
+          : "Save failed";
+        setSaveError(msg);
+        setIsSaving(false);
+        return;
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
     if (onChange) {
       onChange(prev => ({
         ...prev, projectType, contractType,
@@ -879,7 +906,7 @@ const getBuildingParts = useCallback((buildingKey) => {
     } else if (onSelect) {
       onSelect(projectType, classificationData);
     }
-  }, [isReady, p, c, b, cs, sc, pt, wk, mc, ex, extraTracks, onChange, onNextProp, onSelect]);
+  }, [isReady, isSaving, isNewProject, projectId, p, c, b, cs, sc, pt, wk, mc, ex, extraTracks, onChange, onNextProp, onSelect]);
 
   useEffect(() => {
     if (pendingNext && isReady) {
@@ -937,6 +964,7 @@ const getBuildingParts = useCallback((buildingKey) => {
     setMc(mcVal);
     setEx(exVal);
     setExtraTracks(etVal);
+    if (exVal.length > 0) setHasExtraWorks(true);
     setActiveTrack("construction");
   }, [initialData]);
 
@@ -1052,15 +1080,23 @@ const getBuildingParts = useCallback((buildingKey) => {
   /* ═══════════ RENDER ═══════════ */
   return (
     <WizardShell
-      footer={
-        <StepActions
-          onNext={handleNext}
-          nextDisabled={!isReady}
-          nextLabel={UI.continueBtn}
-        />
-      }
+      footer={isView ? null : (
+        <>
+          {saveError && (
+            <div style={{ color: "var(--error,#E85D56)", fontSize: "0.75rem", textAlign: "center", padding: "0 1rem 0.5rem" }}>
+              {saveError}
+            </div>
+          )}
+          <StepActions
+            onNext={handleNext}
+            nextDisabled={!isReady || isSaving}
+            isLoading={isSaving}
+            nextLabel={UI.continueBtn}
+          />
+        </>
+      )}
     >
-      <div className="pts-container" dir={isAr ? "rtl" : "ltr"}>
+      <div className={`pts-container${isView ? " pts-container--view" : ""}`} dir={isAr ? "rtl" : "ltr"} style={isView ? { pointerEvents: "none", userSelect: "none" } : undefined}>
 
         {/* Header */}
         <div className="pts-header">
@@ -1069,7 +1105,7 @@ const getBuildingParts = useCallback((buildingKey) => {
         </div>
 
         {/* Favorites section */}
-        {favorites.length > 0 && (
+        {!isView && favorites.length > 0 && (
           <div className="pts-favs">
             <div className="pts-favs__header">
               <FiBookmark size={13} />
@@ -1123,7 +1159,7 @@ const getBuildingParts = useCallback((buildingKey) => {
         )}
 
         {/* AI Chat */}
-        <div className="pts-ai-search">
+        {!isView && <div className="pts-ai-search">
           <div className="pts-ai-search__label">
             <FiZap size={14} className="pts-ai-search__zap" />
             {UI.aiLabel}
@@ -1167,7 +1203,7 @@ const getBuildingParts = useCallback((buildingKey) => {
               {aiLoading ? "…" : <FiZap size={14} />}
             </button>
           </div>
-        </div>
+        </div>}
 
         {/* Phase 1: Permit */}
         <div className="pts-choices">
@@ -1252,7 +1288,7 @@ const getBuildingParts = useCallback((buildingKey) => {
           <div className="pts-phase-section">
             <div className="pts-xq">
               <div className="pts-xq__title">{UI.extraWorksTitle}</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: hasExtraWorks === true ? 12 : 0 }}
+              <div className="pts-xq__yn" style={{ display: "flex", gap: 8, marginBottom: hasExtraWorks === true ? 12 : 0 }}
               dir={isAr ? "rtl" : "ltr"} >
                 <button
                   type="button"

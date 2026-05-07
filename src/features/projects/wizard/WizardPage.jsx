@@ -538,6 +538,9 @@ export default function WizardPage() {
                 });
               }}
               initialData={!isNewProject ? setup._classification : null}
+              isView={isView}
+              projectId={isNewProject ? null : projectId}
+              isNewProject={isNewProject}
             />
           )}
         </div>

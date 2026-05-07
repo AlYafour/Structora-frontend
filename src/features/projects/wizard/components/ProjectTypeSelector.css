@@ -1967,3 +1967,85 @@ html.theme-dark .pts-summary {
 html.theme-dark .pts-favs {
   background: rgba(13,26,48,0.5);
 }
+
+/* ═══════════════════════════════════════════════════
+   VIEW MODE — faded-gold disabled look on chosen fields
+   ═══════════════════════════════════════════════════ */
+
+/* Hide search bars and Yes/No question row */
+.pts-container--view .pts-sr,
+.pts-container--view .pts-xq__yn {
+  display: none;
+}
+
+/* ── Disabled look: ChoiceCard (selected) ── */
+.pts-container--view .pts-choice--sel {
+  border-color: rgba(200,168,78,0.28) !important;
+  background: rgba(200,168,78,0.05) !important;
+  box-shadow: none !important;
+  cursor: default;
+  transform: none !important;
+  opacity: 0.65;
+}
+.pts-container--view .pts-choice--sel::before { display: none; }
+.pts-container--view .pts-choice--sel .pts-choice__check {
+  background: rgba(200,168,78,0.45);
+}
+.pts-container--view .pts-choice--sel .pts-choice__label {
+  color: rgba(200,168,78,0.6) !important;
+}
+.pts-container--view .pts-choice--sel .pts-choice__icon {
+  border-color: rgba(200,168,78,0.2);
+  background: rgba(200,168,78,0.06);
+}
+
+/* ── Disabled look: TileCard (selected) ── */
+.pts-container--view .pts-tile--sel {
+  border-color: rgba(200,168,78,0.28) !important;
+  background: rgba(200,168,78,0.05) !important;
+  box-shadow: none !important;
+  cursor: default;
+  transform: none !important;
+  opacity: 0.65;
+}
+.pts-container--view .pts-tile--sel::before { display: none; }
+.pts-container--view .pts-tile--sel .pts-tile__check {
+  background: rgba(200,168,78,0.45);
+}
+.pts-container--view .pts-tile--sel .pts-tile__label {
+  color: rgba(200,168,78,0.6) !important;
+}
+.pts-container--view .pts-tile--sel .pts-tile__icon {
+  border-color: rgba(200,168,78,0.2);
+  background: rgba(200,168,78,0.06);
+}
+
+/* ── Disabled look: GiItem (checked) ── */
+.pts-container--view .pts-gi--on {
+  border-color: rgba(200,168,78,0.28);
+  background: rgba(200,168,78,0.05);
+  opacity: 0.65;
+  cursor: default;
+}
+.pts-container--view .pts-gi--on .pts-gi__box {
+  background: rgba(200,168,78,0.45);
+  border-color: rgba(200,168,78,0.4);
+}
+.pts-container--view .pts-gi--on .pts-gi__label {
+  color: rgba(200,168,78,0.6);
+}
+
+/* ── Disabled look: extra-work option (on) ── */
+.pts-container--view .pts-xo--on {
+  border-color: rgba(200,168,78,0.28);
+  background: rgba(200,168,78,0.05);
+  opacity: 0.65;
+  cursor: default;
+}
+
+/* ── Accordion header: no pointer cursor in view ── */
+.pts-container--view .pts-grp__header { cursor: default; }
+.pts-container--view .pts-grp__checkbox { display: none; }
+.pts-container--view .pts-grp--open .pts-grp__header {
+  background: rgba(200,168,78,0.03);
+}

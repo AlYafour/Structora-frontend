@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -150,6 +150,19 @@ export default function CreateActualInvoicePage() {
     !invoiceId || String(inv.id) !== String(invoiceId)
   );
 
+  // VO IDs that already appear in a previous invoice (excluded from dropdown)
+  const previouslyInvoicedVOIds = useMemo(() => {
+    const ids = new Set();
+    previousInvoices
+      .filter(inv => inv.payer === "owner")
+      .forEach(inv => {
+        (Array.isArray(inv.items) ? inv.items : []).forEach(it => {
+          if (it.variation_id != null) ids.add(String(it.variation_id));
+        });
+      });
+    return ids;
+  }, [previousInvoices]);
+
   const prevOwnerInvoiced = previousInvoices
     .filter(inv => inv.payer === "owner")
     .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
@@ -234,8 +247,9 @@ export default function CreateActualInvoicePage() {
     const prevInv = getPrevVOInvoiced(vo.id);
     const voProg = getVOProgress(vo.id);
     const dueCumul = obligation * voProg / 100;
-    const dueThisCycle = Math.max(0, dueCumul - prevInv);
-    const remaining = Math.max(0, obligation - prevInv);
+    // For negative VOs, don't clamp — the due/remaining amounts are legitimately negative
+    const dueThisCycle = obligation < 0 ? dueCumul - prevInv : Math.max(0, dueCumul - prevInv);
+    const remaining = obligation < 0 ? obligation - prevInv : Math.max(0, obligation - prevInv);
     return { obligation, prevInvoiced: prevInv, dueThisCycle, remaining, progress: voProg };
   }, [getPrevVOInvoiced, getVOProgress]);
 
@@ -333,7 +347,7 @@ export default function CreateActualInvoicePage() {
       showError(t("fill_required_fields"));
       return false;
     }
-    if (totalInclVAT <= 0) {
+    if (totalInclVAT === 0) {
       showError(t("invoice_amount_required"));
       return false;
     }
@@ -901,14 +915,21 @@ export default function CreateActualInvoicePage() {
                                   onChange={(e) => updateItem(idx, { variation_id: e.target.value || null })}
                                 >
                                   <option value="">{t("select_variation_placeholder")}</option>
-                                  {variations.map(vo => {
-                                    const alreadyUsed = usedVOIds.includes(String(vo.id));
-                                    return (
-                                      <option key={vo.id} value={vo.id} disabled={alreadyUsed}>
-                                        {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
-                                      </option>
-                                    );
-                                  })}
+                                  {variations
+                                    .filter(vo =>
+                                      // Hide VOs already invoiced in a previous invoice,
+                                      // but keep the one currently selected in this row
+                                      !previouslyInvoicedVOIds.has(String(vo.id)) ||
+                                      String(vo.id) === String(item.variation_id)
+                                    )
+                                    .map(vo => {
+                                      const alreadyUsed = usedVOIds.includes(String(vo.id));
+                                      return (
+                                        <option key={vo.id} value={vo.id} disabled={alreadyUsed}>
+                                          {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
+                                        </option>
+                                      );
+                                    })}
                                 </select>
 
                                 {/* VO details panel — horizontal chips */}

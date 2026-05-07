@@ -38,17 +38,17 @@ export default function OfficialCommunicationSection({ form, setF, viewMode }) {
 
   // Build unified person options: owners + authorized person (if exists)
   const personOptions = [
-  ...owners.map((o, i) => ({
-    key: `owner_${i}`,
-    name: isAR
-      ? o.owner_name_ar || o.owner_name_en || `${t("entity_types.owner")} ${i + 1}`
-      : o.owner_name_en || o.owner_name_ar || `${t("entity_types.owner")} ${i + 1}`,
-    email: o.email || "",
-    id: o.id || o._id || "",
-    type: "owner",
-  })),
-  ...(authorizedPerson.name || authorizedPerson.name_en
-    ? [
+    ...owners.map((o, i) => ({
+      key: `owner_${i}`,
+      name: isAR
+        ? o.owner_name_ar || o.owner_name_en || `${t("entity_types.owner")} ${i + 1}`
+        : o.owner_name_en || o.owner_name_ar || `${t("entity_types.owner")} ${i + 1}`,
+      email: o.email || "",
+      id: o.id || o._id || "",
+      type: "owner",
+    })),
+    ...(authorizedPerson.name || authorizedPerson.name_en
+      ? [
         {
           key: "authorized",
           name: isAR
@@ -59,8 +59,8 @@ export default function OfficialCommunicationSection({ form, setF, viewMode }) {
           type: "authorized_person",
         },
       ]
-    : []),
-];
+      : []),
+  ];
 
   // Owner emails as array
   const ownerEmails = Array.isArray(ownerComm.emails) ? ownerComm.emails : [""];
@@ -79,9 +79,10 @@ export default function OfficialCommunicationSection({ form, setF, viewMode }) {
     const next = ownerEmails.filter((_, i) => i !== idx);
     updateComm("owner", { emails: next.length ? next : [""] });
   };
-
   // Consultant company name (shared across all contacts)
-  const consultantCompanyName = consultantComm.company_name || "";
+  const consultantCompanyName = isAR
+    ? (consultantComm.company_name || "")
+    : (consultantComm.company_name_en || consultantComm.company_name || "");
 
   // Consultant contacts as array
   // Backwards compat: if old format { name, email }, migrate to contacts array
@@ -123,7 +124,6 @@ export default function OfficialCommunicationSection({ form, setF, viewMode }) {
       contacts: next.length ? next : [{ name: "", email: "", phone: "", position: "", id: "" }],
     });
   };
-
   if (viewMode) {
     return (
       <FormSection title={`5) ${t("contract.sections.official_communication")}`}>
@@ -152,7 +152,7 @@ export default function OfficialCommunicationSection({ form, setF, viewMode }) {
                   <div className="wizard-comm-contact-view__num">{i + 1}</div>
                 )}
                 <FormGrid cols={4}>
-                  <FormViewField label={t("contract.comm_consultant_name")} value={contact.name} />
+                  <FormViewField label={t("contract.comm_consultant_name")} value={isAR ? contact.name : (contact.name_en || contact.name)} />
                   <FormViewField label={t("contract.comm_consultant_position")} value={contact.position} />
                   <FormViewField label={t("email")} value={contact.email} />
                   <FormViewField label={t("phone")} value={contact.phone} />
