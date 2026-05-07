@@ -180,7 +180,7 @@ export default function StartOrderPage() {
                     }))
                   }
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   isView={false}
                   projectId={projectId}
                   endpoint={`projects/${projectId}/start-order/`}

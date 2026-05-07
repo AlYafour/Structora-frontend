@@ -319,7 +319,7 @@ export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, ca
  value={owner.id_attachment instanceof File ? owner.id_attachment : null}
  onChange={handleIdAttachmentChange}
  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
- maxSizeMB={10}
+ maxSizeMB={30}
  showPreview={true}
  existingFileUrl={typeof owner.id_attachment === "string" && owner.id_attachment.trim() !== "" ? owner.id_attachment : idAttachmentUrl}
  existingFileName={typeof owner.id_attachment === "string" && owner.id_attachment.trim() !== "" ? extractFileNameFromUrl(owner.id_attachment) : (idAttachmentFileName || (idAttachmentUrl ? extractFileNameFromUrl(idAttachmentUrl) : ""))}

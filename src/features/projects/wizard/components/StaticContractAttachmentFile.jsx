@@ -14,7 +14,7 @@ export default function StaticContractAttachmentFile({
   onChange, // (file: File | null) => void
   onRemoveExisting, // () => void
   accept = ".pdf,.xlsx,.xls",
-  maxSizeMB = 10,
+  maxSizeMB = 30,
   isView = false,
   projectId,
   endpoint,

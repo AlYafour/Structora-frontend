@@ -575,6 +575,7 @@
   "file_upload_browse": "تصفح",
   "file_upload_allowed_files": "الملفات المسموحة: {{types}} — الحد الأقصى: {{maxSize}} ميجابايت",
   "file_upload_invalid_file_type": "نوع الملف غير مسموح به. الأنواع المسموحة: {{types}}",
+  "file_upload_too_large": "الملف \"{{name}}\" يتجاوز الحد الأقصى المسموح به {{maxSize}} ميجابايت",
   "landing_enter_company_code_error": "يرجى إدخال كود الشركة",
   "landing_company_not_found": "الشركة غير موجودة",
   "landing_light_mode": "الوضع الفاتح",

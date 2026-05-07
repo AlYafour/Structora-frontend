@@ -91,7 +91,7 @@ export function validateFileType(file, allowedTypes = []) {
  * @param {number} [maxSizeMB=10] - Maximum size in MB
  * @returns {boolean} True if size is acceptable
  */
-export function validateFileSize(file, maxSizeMB = 10) {
+export function validateFileSize(file, maxSizeMB = 30) {
   if (!file) return false;
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return file.size <= maxSizeBytes;

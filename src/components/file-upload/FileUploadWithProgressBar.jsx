@@ -14,7 +14,7 @@ export default function FileUploadWithProgressBar({
   uploadProgress = 0, // progress from 0-100
   isUploading = false, // upload state
   accept = "application/pdf",
-  maxSizeMB = 10,
+  maxSizeMB = 30,
   label,
   disabled = false,
   showPreview = true,

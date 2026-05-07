@@ -8,7 +8,7 @@ export default function ProgressAttachmentUpload({ formData, setFormData, setErr
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      const maxSizeMB = 10;
+      const maxSizeMB = 30;
       const maxSizeBytes = maxSizeMB * 1024 * 1024;
       const validFiles = files.filter(file => {
         if (file.size > maxSizeBytes) {

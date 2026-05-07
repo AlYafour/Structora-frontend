@@ -144,7 +144,7 @@ export default function ProjectSchedulePage() {
                   onChange={(file) => setFormData((prev) => ({ ...prev, schedule_file: file }))}
                   onRemoveExisting={() => setFormData((prev) => ({ ...prev, schedule_file: null, schedule_file_url: null, schedule_file_name: null }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   isView={false}
                   projectId={projectId}
                   endpoint={`projects/${projectId}/project-schedule/`}

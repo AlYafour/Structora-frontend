@@ -350,7 +350,7 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
                 value={form.building_license_file}
                 onChange={handleLicenseFileChange}
                 accept=".pdf,.jpg,.jpeg,.png"
-                maxSizeMB={10}
+                maxSizeMB={30}
                 showPreview={true}
                 existingFileUrl={buildingLicenseFileUrl}
                 existingFileName={buildingLicenseFileUrl ? extractFileNameFromUrl(buildingLicenseFileUrl) : ""}

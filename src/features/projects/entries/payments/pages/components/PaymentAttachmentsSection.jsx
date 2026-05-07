@@ -35,7 +35,7 @@ const PaymentAttachmentsSection = memo(({
       value={files.invoiceFile}
       onChange={file => onFileChange('invoiceFile', file)}
       accept=".pdf,.jpg,.jpeg,.png"
-      maxSizeMB={10}
+      maxSizeMB={30}
       showPreview={true}
       existingFileUrl={files.existingInvoiceFile}
       existingFileName={
@@ -56,7 +56,7 @@ const PaymentAttachmentsSection = memo(({
       value={files.receiptVoucher}
       onChange={file => onFileChange('receiptVoucher', file)}
       accept=".pdf,.jpg,.jpeg,.png"
-      maxSizeMB={10}
+      maxSizeMB={30}
       showPreview={true}
       existingFileUrl={files.existingReceiptVoucher}
       existingFileName={
@@ -78,7 +78,7 @@ const PaymentAttachmentsSection = memo(({
        value={files.depositSlip}
        onChange={file => onFileChange('depositSlip', file)}
        accept=".pdf,.jpg,.jpeg,.png"
-       maxSizeMB={10}
+       maxSizeMB={30}
        showPreview={true}
        existingFileUrl={files.existingDepositSlip}
        existingFileName={
@@ -100,7 +100,7 @@ const PaymentAttachmentsSection = memo(({
       value={files.bankPaymentAttachments}
       onChange={file => onFileChange('bankPaymentAttachments', file)}
       accept=".pdf,.jpg,.jpeg,.png"
-      maxSizeMB={10}
+      maxSizeMB={30}
       showPreview={true}
       existingFileUrl={files.existingBankPaymentAttachments}
       existingFileName={

@@ -132,7 +132,7 @@ export default function AttachmentsSection({
               uploadProgress={uploadProgress}
               isUploading={isUploading}
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-              maxSizeMB={10}
+              maxSizeMB={30}
               showPreview={true}
               existingFileUrl={sitePlanFileUrl}
               existingFileName={sitePlanFileUrl ? extractFileNameFromUrl(sitePlanFileUrl) : ""}
@@ -183,7 +183,7 @@ export default function AttachmentsSection({
                   value={owner.id_attachment instanceof File ? owner.id_attachment : null}
                   onChange={(file) => onOwnerIdFileChange(idx, file)}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   showPreview={true}
                   existingFileUrl={fileUrl}
                   existingFileName={fileName}

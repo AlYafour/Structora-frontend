@@ -143,7 +143,7 @@ export default function ContractExtension({
             value={extension.file}
             onChange={(file) => onUpdate(actualIndex, "file", file)}
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            maxSizeMB={10}
+            maxSizeMB={30}
             showPreview={true}
             existingFileUrl={extension.file_url}
             existingFileName={extension.file_name || (extension.file_url ? extractFileNameFromUrl(extension.file_url) : "")}

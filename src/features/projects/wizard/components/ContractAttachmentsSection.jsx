@@ -127,7 +127,7 @@ export default function ContractAttachmentsSection({
               onContractReviewComplete?.(false);
             }}
             accept=".pdf"
-            maxSizeMB={10}
+            maxSizeMB={30}
             isView={viewMode}
             projectId={projectId}
             endpoint={`projects/${projectId}/contract/`}
@@ -146,7 +146,7 @@ export default function ContractAttachmentsSection({
               setF("quantities_table_file", null);
             }}
             accept=".pdf,.xlsx,.xls"
-            maxSizeMB={10}
+            maxSizeMB={30}
             isView={viewMode}
             projectId={projectId}
             endpoint={`projects/${projectId}/contract/`}
@@ -165,7 +165,7 @@ export default function ContractAttachmentsSection({
               setF("approved_materials_table_file", null);
             }}
             accept=".pdf,.xlsx,.xls"
-            maxSizeMB={10}
+            maxSizeMB={30}
             isView={viewMode}
             projectId={projectId}
             endpoint={`projects/${projectId}/contract/`}
@@ -185,7 +185,7 @@ export default function ContractAttachmentsSection({
                 setF("price_offer_file", null);
               }}
               accept=".pdf"
-              maxSizeMB={10}
+              maxSizeMB={30}
               isView={viewMode}
               projectId={projectId}
               endpoint={`projects/${projectId}/contract/`}

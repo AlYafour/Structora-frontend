@@ -319,7 +319,7 @@ export default function ContractSignerSection({ form, setF, viewMode, projectId 
                 value={authorizedPerson.id_file}
                 onChange={(file) => updateAP("id_file", file)}
                 accept=".pdf,.jpg,.jpeg,.png"
-                maxSizeMB={10}
+                maxSizeMB={30}
                 showPreview={false}
                 existingFileUrl={authorizedPerson.id_file_url}
                 existingFileName={authorizedPerson.id_file_name || (authorizedPerson.id_file_url ? extractFileNameFromUrl(authorizedPerson.id_file_url) : "")}
@@ -337,7 +337,7 @@ export default function ContractSignerSection({ form, setF, viewMode, projectId 
                 value={authorizedPerson.authorization_file}
                 onChange={(file) => updateAP("authorization_file", file)}
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                maxSizeMB={10}
+                maxSizeMB={30}
                 showPreview={false}
                 existingFileUrl={authorizedPerson.authorization_file_url}
                 existingFileName={authorizedPerson.authorization_file_name || (authorizedPerson.authorization_file_url ? extractFileNameFromUrl(authorizedPerson.authorization_file_url) : "")}

@@ -195,8 +195,8 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
               icon="layers"
               label={t("variations_total")}
               value={renderAmount(financialStats.totalVariationsValue)}
-              sub={`${financialStats.approvedVariationsCount} ${t("approved")}`}
-              vatBreakdown={{ net: financialStats.totalVariationsValue, withVat: financialStats.totalVariationsValue * 1.05, format: renderAmount }}
+              sub={`${financialStats.approvedVariationsCount} ${t("approved")} · ${t("including_vat") || "شامل الضريبة"}`}
+              // vatBreakdown={{ net: financialStats.totalVariationsValue, withVat: financialStats.totalVariationsValue * 1.05, format: renderAmount }}
             />
             <MetricCard
               variant="emerald"

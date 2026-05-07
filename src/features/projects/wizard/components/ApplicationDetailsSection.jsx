@@ -126,7 +126,7 @@ export default function ApplicationDetailsSection({
                   uploadProgress={uploadProgress}
                   isUploading={isUploading}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   showPreview={true}
                   existingFileUrl={sitePlanFileUrl}
                   existingFileName={sitePlanFileUrl ? extractFileNameFromUrl(sitePlanFileUrl) : ""}

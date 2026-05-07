@@ -32,7 +32,7 @@ export default function ContractDrawingsSection({
             setF("architectural_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -50,7 +50,7 @@ export default function ContractDrawingsSection({
             setF("structural_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -68,7 +68,7 @@ export default function ContractDrawingsSection({
             setF("ac_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -86,7 +86,7 @@ export default function ContractDrawingsSection({
             setF("electrical_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -104,7 +104,7 @@ export default function ContractDrawingsSection({
             setF("water_supply_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -122,7 +122,7 @@ export default function ContractDrawingsSection({
             setF("drainage_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -140,7 +140,7 @@ export default function ContractDrawingsSection({
             setF("telecommunication_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -158,7 +158,7 @@ export default function ContractDrawingsSection({
             setF("fire_fighting_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}
@@ -176,7 +176,7 @@ export default function ContractDrawingsSection({
             setF("cctv_drawings_file", null);
           }}
           accept=".pdf,.dwg,.dxf"
-          maxSizeMB={10}
+          maxSizeMB={30}
           isView={viewMode}
           projectId={projectId}
           endpoint={`projects/${projectId}/contract/`}

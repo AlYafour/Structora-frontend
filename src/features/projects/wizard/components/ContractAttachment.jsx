@@ -189,7 +189,7 @@ export default function ContractAttachment({
             value={attachment.file}
             onChange={(file) => onUpdate(actualIndex, "file", file)}
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            maxSizeMB={10}
+            maxSizeMB={30}
             showPreview={true}
             existingFileUrl={attachment.file_url}
             existingFileName={attachment.file_name || (attachment.file_url ? extractFileNameFromUrl(attachment.file_url) : "")}

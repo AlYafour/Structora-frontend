@@ -183,7 +183,7 @@ export default function AwardingPage() {
                   onChange={(file) => setFormData((prev) => ({ ...prev, awarding_file: file }))}
                   onRemoveExisting={() => setFormData((prev) => ({ ...prev, awarding_file: null, awarding_file_url: null, awarding_file_name: null }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   isView={false}
                   projectId={projectId}
                   endpoint={`projects/${projectId}/awarding/`}

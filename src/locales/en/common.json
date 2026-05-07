@@ -575,6 +575,7 @@
   "file_upload_browse": "Browse",
   "file_upload_allowed_files": "Allowed files: {{types}} — Max size: {{maxSize}} MB",
   "file_upload_invalid_file_type": "Invalid file type. Allowed types: {{types}}",
+  "file_upload_too_large": "File \"{{name}}\" exceeds the maximum allowed size of {{maxSize}} MB",
   "landing_enter_company_code_error": "Please enter the company code",
   "landing_company_not_found": "Company not found",
   "landing_light_mode": "Light Mode",

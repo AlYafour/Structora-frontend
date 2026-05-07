@@ -125,7 +125,7 @@ export default function ExcavationNoticePage() {
                   onChange={(file) => setFormData((prev) => ({ ...prev, notice_file: file }))}
                   onRemoveExisting={() => setFormData((prev) => ({ ...prev, notice_file: null, notice_file_url: null, notice_file_name: null }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  maxSizeMB={10}
+                  maxSizeMB={30}
                   isView={false}
                   projectId={projectId}
                   endpoint={`projects/${projectId}/excavation-notice/`}

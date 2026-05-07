@@ -31,7 +31,7 @@ export default function FileUpload({
   onProgress, // (progress: number) => void (optional)
   // External accept is used to validate allowed file types
   accept = "application/pdf",
-  maxSizeMB = 10,
+  maxSizeMB = 30,
   label,
   disabled = false,
   showPreview = true,
@@ -73,7 +73,12 @@ export default function FileUpload({
     setIsProcessing(true);
 
     try {
-      // File size validation disabled — accept any size
+      // ✅ Validate file size
+      if (!validateFileSize(file, maxSizeMB)) {
+        setError(t('file_upload_too_large', { name: file.name, maxSize: maxSizeMB }));
+        setIsProcessing(false);
+        return;
+      }
 
       // ✅ Validate file type based on the provided accept parameter
       const acceptValue = accept || "application/pdf";
