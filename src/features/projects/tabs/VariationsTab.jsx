@@ -28,7 +28,7 @@ const getStatusBadgeClass = (status) => {
     return "prj-badge--secondary";
 };
 
-const VariationsTab = memo(function VariationsTab({ projectId, variations, onReload }) {
+const VariationsTab = memo(function VariationsTab({ projectId, project, variations, onReload }) {
     const { t, i18n } = useTranslation();
     const { success, error: showError } = useNotifications();
     const { user, hasPermission, isAdmin } = useAuth();
@@ -61,6 +61,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             </span>
         );
     };
+
+    const isProjectFinalApproved = project?.approval_status === "final_approved";
 
     const isProjectManager = user?.role?.name === "Manager";
     const isCompanySuperAdmin = user?.role?.name === "company_super_admin";
@@ -731,9 +733,20 @@ const VariationsTab = memo(function VariationsTab({ projectId, variations, onRel
             <div className="prj-tab-header">
                 <div className="prj-tab-actions">
                     {canCreateVariation && (
-                        <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
-                            {t("add_variation")}
-                        </Button>
+                        isProjectFinalApproved ? (
+                            <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
+                                {t("add_variation")}
+                            </Button>
+                        ) : (
+                            <span
+                                title={t("variation_requires_final_approval")}
+                                style={{ display: "inline-block", cursor: "not-allowed" }}
+                            >
+                                <Button variant="primary" size="md" disabled style={{ pointerEvents: "none" }}>
+                                    {t("add_variation")}
+                                </Button>
+                            </span>
+                        )
                     )}
                 </div>
             </div>

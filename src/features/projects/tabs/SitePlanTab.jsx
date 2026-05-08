@@ -146,6 +146,19 @@ const SitePlanTab = memo(function SitePlanTab({ projectId, siteplan, projectPerm
     <div className="prj-tab-panel">
       {actions}
 
+      {plotImageZoomed && (
+        <div
+          className="siteplan-plot-image-zoom-overlay"
+          onClick={() => setPlotImageZoomed(false)}
+        >
+          <img
+            src={buildFileUrl(siteplan.plot_image)}
+            alt={t("plot_map_image")}
+            className="siteplan-plot-image-zoom-overlay__img"
+          />
+        </div>
+      )}
+
       {(siteplan?.plot_image || siteplan?.site_plan_file || mapsData) && (
         <Card className="ds-p-5 ds-mt-4">
           <div className="siteplan-hero-grid">

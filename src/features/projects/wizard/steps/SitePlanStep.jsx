@@ -58,6 +58,7 @@ export default function SitePlanStep({
   onCreateProject,
   onSitePlanReady,
   noPermit = false,
+  isActive = true,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -124,6 +125,14 @@ export default function SitePlanStep({
     document.body.classList.toggle("pdf-panel-open", open);
     return () => document.body.classList.remove("pdf-panel-open");
   }, [showPdfPanel, showIdPanel]);
+
+  // Close preview panels when the user navigates away from this step
+  useEffect(() => {
+    if (!isActive) {
+      setShowPdfPanel(false);
+      setShowIdPanel(false);
+    }
+  }, [isActive]);
 
   // Field verification toggle — also opens the PDF panel so user can cross-check
   const toggleVerify = (fieldName) => {

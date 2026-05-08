@@ -198,5 +198,6 @@
   "responded_by": "Decision By",
   "variation_label": "Variation",
   "revoke_approval": "Revoke Approval",
-  "reason": "Reason"
+  "reason": "Reason",
+  "variation_requires_final_approval": "Cannot create a price change order until the project receives final approval from the Super Admin."
 }

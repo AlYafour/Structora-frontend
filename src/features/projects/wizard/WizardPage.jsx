@@ -557,6 +557,7 @@ export default function WizardPage() {
                   isView={isView}
                   isNewProject={isNewProject}
                   noPermit={noPermit}
+                  isActive={index === 1}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -577,6 +578,7 @@ export default function WizardPage() {
                   onNext={sectionOnly ? undefined : goNext}
                   isView={isView}
                   isNewProject={isNewProject}
+                  isActive={index === 2}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,

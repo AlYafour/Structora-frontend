@@ -36,7 +36,7 @@ import { logger } from "../../../../utils/logger";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
-export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady }) {
+export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { form, setForm, setF, owners, existingId, setExistingId, isView: isViewState, setIsView } = useLicense(projectId);
@@ -62,6 +62,11 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
     document.body.classList.toggle("pdf-panel-open", showLicensePanel);
     return () => document.body.classList.remove("pdf-panel-open");
   }, [showLicensePanel]);
+
+  // Close preview panel when the user navigates away from this step
+  useEffect(() => {
+    if (!isActive) setShowLicensePanel(false);
+  }, [isActive]);
 
   const handleLicenseFileChange = async (file) => {
     setF("building_license_file", file);

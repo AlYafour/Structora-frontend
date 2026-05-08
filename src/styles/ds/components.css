@@ -5247,6 +5247,7 @@ html.theme-dark .prj-info-label {
 /* Plot Image Display */
 .siteplan-plot-image-container {
   text-align: center;
+  overflow: visible;
 }
 
 .siteplan-plot-image {
@@ -5263,10 +5264,34 @@ html.theme-dark .prj-info-label {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-.siteplan-plot-image--zoomed {
+/* .siteplan-plot-image--zoomed {
   max-height: none;
-  max-width: 100%;
+  max-width: none;
+  width: auto;
+  transform: scale(1.8);
+  transform-origin: center center;
   cursor: zoom-out;
+  position: relative;
+  z-index: 50;
+} */
+
+.siteplan-plot-image-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+}
+
+.siteplan-plot-image-zoom-overlay__img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg, 12px);
 }
 
 .siteplan-plot-image__hint {
@@ -5322,7 +5347,8 @@ html.theme-dark .siteplan-plot-image:hover {
 
 .siteplan-hero-grid__panel .siteplan-plot-image {
   max-height: 400px;
-  width: 100%;
+  max-width: 100%;
+  width: auto;
   object-fit: contain;
 }
 

@@ -126,7 +126,7 @@ export default function ProjectView() {
  />
  )}
  {activeTab === "variations" && (
- <TabComponent projectId={projectId} variations={variations} onReload={reload} />
+ <TabComponent projectId={projectId} project={project} variations={variations} onReload={reload} />
  )}
  {activeTab === "payments" && (
  <TabComponent projectId={projectId} payments={payments} onReload={reload} />

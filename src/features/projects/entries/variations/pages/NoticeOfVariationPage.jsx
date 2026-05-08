@@ -569,6 +569,35 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   }
 
   /**
+   * Block variation creation if the project has not received final approval
+   */
+  const isCreatingNew = !variationId;
+  if (!isEmbeddedMode && !loading && isCreatingNew && project && project.approval_status !== 'final_approved') {
+    return (
+      <PageLayout loading={loading} loadingText={t('loading')}>
+        <div className="nvc-page">
+          <div className="nvc-section">
+            <div className="nvc-section-header">
+              <h3>{t('variation_order')}</h3>
+            </div>
+            <div className="nvc-alert nvc-alert--warning">
+              <p className="ds-mb-2">
+                {t('variation_requires_final_approval')}
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(project ? `/projects/${project.id}?tab=variations` : '/projects')}
+              >
+                {t('back_to_project')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  /**
    * Render blocked content for final approved variations
    */
   if (!isEmbeddedMode && !loading && isFinalApproved && viewModeProp !== true) {
