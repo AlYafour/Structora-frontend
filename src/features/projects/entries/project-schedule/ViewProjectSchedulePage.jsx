@@ -22,15 +22,19 @@ export default function ViewProjectSchedulePage() {
  }, [projectId]);
 
  const loadData = async () => {
- try {
- const result = await projectApi.getProjectSchedule(projectId);
- setData(result);
- } catch (err) {
- logger.debug("ViewProjectSchedulePage: load failed", err);
- } finally {
- setLoading(false);
- }
- };
+  try {
+    const result = await projectApi.getProjectSchedule(projectId);
+
+    const item = Array.isArray(result) ? result[0] : result;
+
+    setData(item || null);
+  } catch (err) {
+    logger.debug("ViewProjectSchedulePage: load failed", err);
+    setData(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
  if (!loading && !data) {
  navigate(`/projects/${projectId}?tab=project_schedule`, { replace: true });

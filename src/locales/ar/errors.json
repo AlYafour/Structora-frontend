@@ -86,6 +86,18 @@
     "validation": "بيانات غير صحيحة - يرجى التحقق من الحقول المميزة",
     "owner_field": "المالك {{idx}} - {{field}}",
     "debug_details": "تفاصيل الخطأ",
-    "debug_type": "نوع الخطأ"
+    "debug_type": "نوع الخطأ",
+    "project_delete_not_allowed": "ليس لديك صلاحية لحذف هذا المشروع.",
+    "project_edit_not_allowed": "ليس لديك صلاحية لتعديل هذا المشروع.",
+    "project_not_found": "المشروع غير موجود.",
+    "project_create_failed": "تعذر إنشاء المشروع. يرجى المحاولة مرة أخرى.",
+    "rejection_notes_required": "ملاحظات الرفض مطلوبة.",
+    "field_required": "هذا الحقل مطلوب.",
+    "field_blank": "لا يمكن ترك هذا الحقل فارغاً.",
+    "field_null": "هذا الحقل مطلوب.",
+    "field_too_long": "هذه القيمة طويلة جداً.",
+    "invalid_number": "يرجى إدخال رقم صحيح.",
+    "invalid_email": "يرجى إدخال بريد إلكتروني صحيح.",
+    "invalid_field_value": "قيمة غير صحيحة."
   }
 }

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { projectApi } from "../../../services/projects";
 import { api, API_BASE_URL } from "../../../services/api";
 import { logger } from "../../../utils/logger";
-import { handleError } from "../../../utils/errorHandler";
+import { getErrorMessage } from "../../../utils/errorHandler";
 import Button from "../../../components/common/Button";
 import BrandedLoader from "../../../components/common/BrandedLoader";
 import Dialog from "../../../components/common/Dialog";
@@ -18,6 +19,8 @@ import SitePlanStep from "./steps/SitePlanStep";
 import LicenseStep from "./steps/LicenseStep";
 import ContractStep from "./steps/ContractStep";
 import WizardStepper from "./components/WizardStepper";
+import useProjectPermissions from "../../../hooks/useProjectPermissions";
+
 
 import "./components/wizard.css";
 import useTenantNavigate from "../../../hooks/useTenantNavigate";
@@ -32,12 +35,21 @@ export default function WizardPage() {
   const { error: showError, success: showSuccess } = useNotifications();
   const navigate = useTenantNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const { projectId } = useParams();
   const [params] = useSearchParams();
 
   const isNewProject = !projectId || location.pathname === "/wizard/new";
   const draftIdFromUrl = params.get("draftId");
+
+  const {
+    permissions: projectPermissions,
+    loading: permissionsLoading,
+  } = useProjectPermissions(isNewProject ? null : projectId);
+
+  const canEditProject = !!projectPermissions?.can_edit;
+
 
   const mode = (params.get("mode") || "").toLowerCase();
   const isViewFromUrl = mode === "view";
@@ -412,13 +424,11 @@ export default function WizardPage() {
         localStorage.removeItem("wizard_setup_state_v1");
       } catch (_e) { }
 
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       navigate(`/projects/${newProjectId}`);
     } catch (err) {
       logger.error("Error creating project", err);
-      const msg = err?.response?.data
-        ? JSON.stringify(err.response.data, null, 2)
-        : err.message || t("unknown_error");
-      showError(`${t("homepage_error_creating_project")}: ${msg}`);
+      showError(`${t("homepage_error_creating_project")}: ${getErrorMessage(err)}`);
       throw err;
     } finally {
       setIsCreatingProject(false);
@@ -439,6 +449,13 @@ export default function WizardPage() {
       navigate(backTarget);
     }
   };
+
+  useEffect(() => {
+    if (!isNewProject && !permissionsLoading && !canEditProject) {
+      setViewMode(true);
+    }
+  }, [isNewProject, permissionsLoading, canEditProject]);
+
 
   const projectTitle = isNewProject
     ? t("new_project")
@@ -496,8 +513,13 @@ export default function WizardPage() {
             : "wizard-page-header wizard-page-header--no-stepper"
         }
         actions={
-          viewMode && !isNewProject ? (
-            <Button variant="primary" size="sm" onClick={() => setViewMode(false)}>
+          viewMode && !isNewProject && canEditProject ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setViewMode(false)}
+              disabled={permissionsLoading}
+            >
               {t("edit")}
             </Button>
           ) : !viewMode && !isNewProject ? (
@@ -506,6 +528,7 @@ export default function WizardPage() {
             </Button>
           ) : null
         }
+
       />
 
       {!sectionOnly && STEPS.length > 1 && (

@@ -33,7 +33,7 @@ export default function PendingApprovalsPage() {
             const { data } = await api.get(
                 "projects/?approval_status=pending&include=siteplan,license,contract,awarding"
             );
-
+            console.log(data)
             const items = Array.isArray(data)
                 ? data
                 : data?.results || data?.items || data?.data || [];

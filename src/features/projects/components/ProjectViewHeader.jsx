@@ -247,6 +247,15 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                   {t("final_approve")}
                 </Button>
               )}
+
+              {/* Final Approved Status Badge */}
+              {project?.approval_status === "final_approved" && (
+                <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
+                  <span className="prj-approval-status-badge__icon">✓</span>
+                  <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
+                </div>
+              )}
+              
             </div>
           </div>
 

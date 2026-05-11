@@ -33,6 +33,7 @@ const ProjectTableRow = React.memo(({
   showApprove,
   showReject,
   showFinalApprove,
+  showDelete,
   compact = false,
   formatDate,
   isRTL,
@@ -300,6 +301,7 @@ const ProjectTableRow = React.memo(({
           showApprove={showApprove}
           showReject={showReject}
           showFinalApprove={showFinalApprove}
+          showDelete={showDelete}
         />
       </td>
     </tr>

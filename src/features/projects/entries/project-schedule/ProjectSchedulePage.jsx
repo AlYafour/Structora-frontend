@@ -42,22 +42,31 @@ export default function ProjectSchedulePage() {
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [projectId, itemId]);
 
   const loadData = async () => {
     projectApi.getById(projectId).then(setProject).catch((err) => {
       logger.debug("Failed to load project", err);
     });
+
     try {
-      const data = await projectApi.getProjectSchedule(projectId);
-      if (data) {
-        setExistingId(data.id);
+      const result = await projectApi.getProjectSchedule(projectId);
+
+      const item = itemId
+        ? result.find((x) => String(x.id) === String(itemId))
+        : Array.isArray(result)
+          ? result[0]
+          : result;
+
+      if (item) {
+        setExistingId(item.id);
+
         setFormData({
-          project_start_date: data.project_start_date || "",
-          project_end_date: data.project_end_date || "",
+          project_start_date: item.project_start_date || "",
+          project_end_date: item.project_end_date || "",
           schedule_file: null,
-          schedule_file_url: data.schedule_file || null,
-          schedule_file_name: data.schedule_file_name || null,
+          schedule_file_url: item.schedule_file || null,
+          schedule_file_name: item.schedule_file_name || null,
         });
       }
     } catch (err) {
@@ -119,7 +128,7 @@ export default function ProjectSchedulePage() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, project_start_date: value }))}
                 />
               </div>
-              
+
               <div className="form-field">
                 <label className="form-label">{t("project_end_date")}</label>
                 {formData.project_end_date && !formData.project_end_date?.includes("Invalid") ? (
@@ -134,7 +143,7 @@ export default function ProjectSchedulePage() {
                   />
                 )}
               </div>
-              
+
               <div className="form-field form-field-full">
                 <StaticContractAttachmentFile
                   label={t("schedule_file")}

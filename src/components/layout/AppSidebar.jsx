@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '@mui/material';
@@ -217,7 +218,49 @@ function SidebarLogo({ isAdmin, logoUrl, companyName }) {
   );
 }
 
-function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }) {
+function FlyoutMenu({ flyout, onMouseEnter, onMouseLeave, onNavigate, activeKey, isRTL }) {
+  if (!flyout) return null;
+
+  return createPortal(
+    <div
+      className={`sidebar-flyout${isRTL ? ' sidebar-flyout--rtl' : ''}`}
+      style={{ top: `${flyout.top}px` }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <div className="sidebar-flyout__header">{flyout.label}</div>
+      {flyout.children.map(child => {
+        if (child.type === 'divider') {
+          return <div key={child.key} className="app-sidebar__divider sidebar-flyout__divider" />;
+        }
+        const isActive = activeKey === child.key;
+        return (
+          <div
+            key={child.key}
+            className={`sidebar-flyout__item${isActive ? ' sidebar-flyout__item--active' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onNavigate(child.key)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onNavigate(child.key);
+              }
+            }}
+          >
+            <span className="sidebar-flyout__item-icon">{child.icon}</span>
+            <span className="sidebar-flyout__item-label">{child.label}</span>
+          </div>
+        );
+      })}
+    </div>,
+    document.body
+  );
+}
+
+function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate, onHoverItem, onLeaveItem }) {
+  const itemRef = useRef(null);
+
   if (item.type === 'divider') {
     return <div className="app-sidebar__divider" />;
   }
@@ -246,18 +289,16 @@ function MenuItem({ item, activeKey, collapsed, openKeys, onToggle, onNavigate }
     if (collapsed) {
       return (
         <div
+          ref={itemRef}
           className={`app-sidebar__item ${isActive ? 'app-sidebar__item--active' : ''}`}
           title={item.label}
-          role="button"
-          tabIndex={0}
-          aria-expanded={isOpen}
-          onClick={() => onToggle(item.key)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onToggle(item.key);
+          onMouseEnter={() => {
+            if (itemRef.current) {
+              const rect = itemRef.current.getBoundingClientRect();
+              onHoverItem?.(item.key, rect.top, item.children, item.label);
             }
           }}
+          onMouseLeave={onLeaveItem}
         >
           <span className="app-sidebar__item-icon">{item.icon}</span>
         </div>
@@ -347,6 +388,21 @@ export default function AppSidebar({ mode = 'company' }) {
   const activeKey = isAdmin ? pathname : getCompanyActiveKey(logicalPath);
 
   const [openKeys, setOpenKeys] = useState(['projects', 'financial']);
+  const [hoveredFlyout, setHoveredFlyout] = useState(null);
+  const closeTimerRef = useRef(null);
+
+  const openFlyout = useCallback((key, top, children, label) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setHoveredFlyout({ key, top, children, label });
+  }, []);
+
+  const scheduleFlyoutClose = useCallback(() => {
+    closeTimerRef.current = setTimeout(() => setHoveredFlyout(null), 150);
+  }, []);
+
+  const cancelFlyoutClose = useCallback(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -367,7 +423,12 @@ export default function AppSidebar({ mode = 'company' }) {
     );
   };
 
+  useEffect(() => {
+    if (!collapsed) setHoveredFlyout(null);
+  }, [collapsed]);
+
   const handleNav = (key) => {
+    setHoveredFlyout(null);
     if (isAdmin) {
       navigate(key);
     } else {
@@ -483,9 +544,20 @@ export default function AppSidebar({ mode = 'company' }) {
             openKeys={openKeys}
             onToggle={toggleOpenKey}
             onNavigate={handleNav}
+            onHoverItem={openFlyout}
+            onLeaveItem={scheduleFlyoutClose}
           />
         ))}
       </nav>
+
+      <FlyoutMenu
+        flyout={hoveredFlyout}
+        onMouseEnter={cancelFlyoutClose}
+        onMouseLeave={scheduleFlyoutClose}
+        onNavigate={handleNav}
+        activeKey={activeKey}
+        isRTL={isRTL}
+      />
 
       <div className="app-sidebar__footer">
         <Link
@@ -510,7 +582,7 @@ export default function AppSidebar({ mode = 'company' }) {
           {!collapsed && (
             <div className="app-sidebar__user-info">
               <div className="app-sidebar__user-name">{currentUser}</div>
-              <div className="app-sidebar__user-role">{userRole}</div>
+              {/* <div className="app-sidebar__user-role">{userRole}</div> */}
             </div>
           )}
         </Link>

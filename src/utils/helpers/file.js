@@ -228,7 +228,7 @@ export function formatFileSize(bytes) {
  * @param {string} fileUrl - File URL
  * @returns {Promise<Blob>} Blob object for file
  */
-async function fetchFileWithAuth(fileUrl) {
+export async function fetchFileWithAuth(fileUrl) {
   const apiUrl = buildFileUrl(fileUrl);
   if (!apiUrl) {
     throw new Error("Could not build file URL");

@@ -196,7 +196,6 @@ export default function CompanySettingsPage() {
       setLoading(false);
     }
   };
-    console.log('subscriptionData', subscriptionData);
   if (!isCompanySuperAdmin) {
     return (
       <div className="prj-alert" style={{ margin: 40 }}>

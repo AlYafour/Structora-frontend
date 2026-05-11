@@ -26,6 +26,7 @@ export default function ViewProgressEntryPage() {
   const [error, setError] = useState(null);
   const [entry, setEntry] = useState(null);
   const [project, setProject] = useState(null);
+  const [contract, setContract] = useState(null);
   const [variations, setVariations] = useState([]);
 
   useEffect(() => {
@@ -37,9 +38,10 @@ export default function ViewProgressEntryPage() {
       setLoading(true);
       setError(null);
 
-      const [progressHistory, projectData, variationsData] = await Promise.all([
+      const [progressHistory, projectData, contractData, variationsData] = await Promise.all([
         projectApi.getProjectProgress(projectId),
         projectApi.getById(projectId),
+        projectApi.getContract(projectId).catch(() => null),
         projectApi.getVariations(projectId).catch(() => []),
       ]);
 
@@ -53,6 +55,7 @@ export default function ViewProgressEntryPage() {
 
       setEntry(foundEntry);
       setProject(projectData);
+      setContract(Array.isArray(contractData) ? contractData[0] : contractData);
 
       const variationsList = Array.isArray(variationsData)
         ? variationsData
@@ -163,27 +166,29 @@ export default function ViewProgressEntryPage() {
                     </div>
                   </div>
 
-                  {/* Bank */}
-                  <div className="progress-view__bucket progress-view__bucket--success">
-                    <div className="progress-view__bucket-header">
-                      <span className="progress-view__bucket-icon">🏦</span>
-                      <span className="progress-view__bucket-title">{t('progress_buckets_bank')}</span>
+                  {/* Bank — only for housing loan program projects */}
+                  {contract?.contract_classification === 'housing_loan_program' && (
+                    <div className="progress-view__bucket progress-view__bucket--success">
+                      <div className="progress-view__bucket-header">
+                        <span className="progress-view__bucket-icon">🏦</span>
+                        <span className="progress-view__bucket-title">{t('progress_buckets_bank')}</span>
+                      </div>
+                      <div className="progress-view__bucket-rows">
+                        <div className="progress-view__bucket-row">
+                          <span className="progress-view__bucket-label">{t('progress_current_percent')}</span>
+                          <span className="progress-view__bucket-value">{fmtPct(entry.bank_actual_current)}</span>
+                        </div>
+                        <div className="progress-view__bucket-row">
+                          <span className="progress-view__bucket-label">{t('progress_approved_percent')}</span>
+                          <span className="progress-view__bucket-value">{fmtPct(entry.bank_technical_current)}</span>
+                        </div>
+                        <div className="progress-view__bucket-row">
+                          <span className="progress-view__bucket-label">{t('progress_financial_claims_percent')}</span>
+                          <span className="progress-view__bucket-value">{fmtPct(entry.bank_technical_approved)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="progress-view__bucket-rows">
-                      <div className="progress-view__bucket-row">
-                        <span className="progress-view__bucket-label">{t('progress_current_percent')}</span>
-                        <span className="progress-view__bucket-value">{fmtPct(entry.bank_actual_current)}</span>
-                      </div>
-                      <div className="progress-view__bucket-row">
-                        <span className="progress-view__bucket-label">{t('progress_approved_percent')}</span>
-                        <span className="progress-view__bucket-value">{fmtPct(entry.bank_technical_current)}</span>
-                      </div>
-                      <div className="progress-view__bucket-row">
-                        <span className="progress-view__bucket-label">{t('progress_financial_claims_percent')}</span>
-                        <span className="progress-view__bucket-value">{fmtPct(entry.bank_technical_approved)}</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Variations */}
                   <div className="progress-view__bucket progress-view__bucket--warning">

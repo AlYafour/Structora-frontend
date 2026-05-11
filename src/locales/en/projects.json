@@ -1249,5 +1249,6 @@
   "btype_religious": "Religious",
   "btype_agricultural": "Agricultural",
   "btype_infrastructure": "Infrastructure",
-  "add_option": "Add"
+  "add_option": "Add",
+  "final_approved": "Final Approved"
 }

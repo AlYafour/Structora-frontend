@@ -105,7 +105,7 @@ export function useVariationData(variationId) {
       }
 
       try {
-        const projectData = await projectApi.getById(projectId);
+        const projectData = await projectApi.getWithIncludes(projectId, ['siteplan', 'contract']);
         setProject(projectData);
       } catch (e) {
         logger.error("Error loading project", e);

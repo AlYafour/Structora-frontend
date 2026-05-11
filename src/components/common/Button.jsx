@@ -47,13 +47,23 @@ const Button = forwardRef(({
   const renderEndIcon = endIcon || (icon && iconPosition === "right" ? icon : null);
 
   const buttonProps = Component === "button" ? { type, disabled: disabled || loading } : {};
+  const isDisabled = disabled || loading;
+
+  const handleClick = (event) => {
+    if (isDisabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClick?.(event);
+  };
 
   return (
     <Component
       ref={ref}
       className={classes}
-      onClick={!disabled && !loading ? onClick : undefined}
-      aria-disabled={disabled || loading}
+      onClick={handleClick}
+      aria-disabled={isDisabled}
       aria-busy={loading}
       {...buttonProps}
       {...props}

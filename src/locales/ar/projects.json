@@ -1250,5 +1250,6 @@
   "btype_religious": "مشروع ديني",
   "btype_agricultural": "مشروع زراعي",
   "btype_infrastructure": "مشروع بنى تحتية",
-  "add_option": "إضافة"
+  "add_option": "إضافة",
+  "final_approved": "معتمد نهائياً"
 }

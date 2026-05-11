@@ -33,14 +33,14 @@ export default defineConfig(({ mode }) => {
       }),
       // ✅ Bundle analyzer for development insights
       isAnalyze &&
-        import("rollup-plugin-visualizer").then(({ visualizer }) =>
-          visualizer({
-            filename: "dist/bundle-stats.html",
-            open: true,
-            gzipSize: true,
-            brotliSize: true,
-          })
-        ),
+      import("rollup-plugin-visualizer").then(({ visualizer }) =>
+        visualizer({
+          filename: "dist/bundle-stats.html",
+          open: true,
+          gzipSize: true,
+          brotliSize: true,
+        })
+      ),
     ].filter(Boolean),
 
     // ✅ Dependency optimization
@@ -73,6 +73,11 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path) => path,
         },
+        "/media": {
+          target: "http://127.0.0.1:8000",
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
 
@@ -92,19 +97,19 @@ export default defineConfig(({ mode }) => {
       minify: isProduction ? "terser" : "esbuild",
       terserOptions: isProduction
         ? {
-            compress: {
-              drop_console: false, // Keep console.error/warn
-              drop_debugger: true,
-              pure_funcs: ["console.log", "console.debug", "console.info"],
-              passes: 2,
-            },
-            mangle: {
-              safari10: true,
-            },
-            format: {
-              comments: false,
-            },
-          }
+          compress: {
+            drop_console: false, // Keep console.error/warn
+            drop_debugger: true,
+            pure_funcs: ["console.log", "console.debug", "console.info"],
+            passes: 2,
+          },
+          mangle: {
+            safari10: true,
+          },
+          format: {
+            comments: false,
+          },
+        }
         : undefined,
 
       // ✅ Disable source maps in production

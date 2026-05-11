@@ -16,6 +16,13 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
  const { t, i18n } = useTranslation();
  const navigate = useTenantNavigate();
 
+ const translatePurpose = (purpose) => {
+  if (!purpose) return '-';
+  const match = purpose.match(/^دفعة رقم (\d+)$/);
+  if (match) return t('rv_purpose_payment_no', { number: match[1] });
+  return purpose;
+ };
+
  const renderAmount = (value) => {
   const str = formatMoney(value, { lang: i18n.language });
   if (i18n.language === 'en') {
@@ -107,7 +114,6 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
   );
  }
  
-
  return (
   <div className="prj-tab-panel">
    <div className="prj-tab-header">
@@ -177,7 +183,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
            </td>
            <td>
             <span style={{ fontSize: '13px', maxWidth: '200px', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-             {v.purpose || '-'}
+             {translatePurpose(v.purpose)}
             </span>
            </td>
            <td>{v.invoice_number || '-'}</td>

@@ -20,7 +20,7 @@ export default function useProjectPermissions(projectId) {
     current_status: null,
     is_final_approved: false,
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!projectId);
   const [error, setError] = useState(null);
 
   useEffect(() => {

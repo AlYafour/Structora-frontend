@@ -86,6 +86,18 @@
     "validation": "Invalid data - please check the highlighted fields",
     "owner_field": "Owner {{idx}} - {{field}}",
     "debug_details": "Error details",
-    "debug_type": "Error type"
+    "debug_type": "Error type",
+    "project_delete_not_allowed": "You do not have permission to delete this project.",
+    "project_edit_not_allowed": "You do not have permission to edit this project.",
+    "project_not_found": "Project not found.",
+    "project_create_failed": "Failed to create project. Please try again.",
+    "rejection_notes_required": "Rejection notes are required.",
+    "field_required": "This field is required.",
+    "field_blank": "This field cannot be blank.",
+    "field_null": "This field is required.",
+    "field_too_long": "This value is too long.",
+    "invalid_number": "Enter a valid number.",
+    "invalid_email": "Enter a valid email address.",
+    "invalid_field_value": "Invalid value."
   }
 }

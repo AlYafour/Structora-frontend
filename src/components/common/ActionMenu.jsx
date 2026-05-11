@@ -17,7 +17,7 @@ import Button from "./Button";
  * Legacy usage (ProjectsPage):
  *   <ActionMenu project={project} onDelete={fn} ... />
  */
-export default function ActionMenu({ items, project, onApprove, onReject, onFinalApprove, onDelete, showApprove, showReject, showFinalApprove, processingAction }) {
+export default function ActionMenu({ items, project, onApprove, onReject, onFinalApprove, onDelete, showApprove, showReject, showFinalApprove, showDelete = true, processingAction }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
@@ -85,7 +85,9 @@ export default function ActionMenu({ items, project, onApprove, onReject, onFina
     if (showFinalApprove) {
       menuItems.push({ label: t("final_approve"), onClick: () => { setOpen(false); onFinalApprove?.(); }, type: "button", variant: "success" });
     }
-    menuItems.push({ label: t("delete"), onClick: () => { setOpen(false); onDelete?.(); }, type: "button", variant: "danger" });
+    if (showDelete) {
+      menuItems.push({ label: t("delete"), onClick: () => { setOpen(false); onDelete?.(); }, type: "button", variant: "danger" });
+    }
   }
 
   if (menuItems.length === 0) return null;

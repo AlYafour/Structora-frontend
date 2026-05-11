@@ -3,6 +3,7 @@ import axios from "axios";
 import i18n from "../config/i18n";
 import { getCsrfToken } from "../utils/cookies";
 import { toastEmitter } from "../utils/toastEmitter";
+import { formatError } from "../utils/errorHandler";
 
 const isDev = import.meta.env.DEV;
 // In development, use proxy => /api/
@@ -64,6 +65,9 @@ async function ensureCsrf() {
 // JWT tokens are sent automatically via httpOnly cookies (withCredentials: true)
 api.interceptors.request.use(async (config) => {
   const method = (config.method || "get").toLowerCase();
+
+  // Tell Django which language to use for translated error messages
+  config.headers["Accept-Language"] = i18n.language || "en";
 
   if (["post", "put", "patch", "delete"].includes(method)) {
     let csrftoken = getCsrfToken();
@@ -164,15 +168,7 @@ api.interceptors.response.use(
       const now = Date.now();
       if (now - lastNetworkToastAt > 5000) {
         lastNetworkToastAt = now;
-        let msg;
-        if (isNetwork) {
-          msg = i18n.t("errors.network");
-        } else {
-          const key = `errors.http_${errStatus}`;
-          const translated = i18n.t(key);
-          msg = translated !== key ? translated : i18n.t("errors.server_support");
-        }
-        toastEmitter.emit('error', msg);
+        toastEmitter.emit('error', formatError(err));
       }
     }
 

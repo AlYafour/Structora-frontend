@@ -5,73 +5,172 @@ import { logger } from "./logger";
 /**
  * Convert HTTP status code to a translated error message
  */
-function getHttpErrorMessage(status, context = "") {
-  const contextPrefix = context ? `[${context}] ` : "";
+function getHttpErrorMessage(status) {
   const key = `errors.http_${status}`;
   const translated = i18n.t(key);
   const message = translated !== key
     ? translated
     : i18n.t("errors.http_unknown", { status });
-  return `${contextPrefix}${message}`;
+  return message;
 }
 
 /**
  * Convert error type to a translated message
  */
-function getErrorTypeMessage(error, context = "") {
-  const contextPrefix = context ? `[${context}] ` : "";
-
-  if (!error) return `${contextPrefix}${i18n.t("errors.unknown")}`;
+function getErrorTypeMessage(error) {
+  if (!error) return i18n.t("errors.unknown");
 
   // Network errors
   if (error.message?.includes("Network Error") || error.code === "NETWORK_ERROR") {
-    return `${contextPrefix}${i18n.t("errors.network")}`;
+    return i18n.t("errors.network");
   }
 
   // Timeout errors
   if (error.message?.includes("timeout") || error.code === "ECONNABORTED") {
-    return `${contextPrefix}${i18n.t("errors.timeout")}`;
+    return i18n.t("errors.timeout");
   }
 
   // Not found errors
   if (error.response?.status === 404) {
-    if (context) {
-      return `${contextPrefix}${i18n.t("errors.not_found_with_resource", { resource: context })}`;
-    }
-    return `${contextPrefix}${i18n.t("errors.http_404")}`;
+    return i18n.t("errors.http_404");
   }
 
   // Server errors
   if (error.response?.status >= 500) {
-    return `${contextPrefix}${i18n.t("errors.server_support")}`;
+    return i18n.t("errors.server_support");
   }
 
   // Validation errors
   if (error.response?.status === 422 || error.response?.status === 400) {
-    return `${contextPrefix}${i18n.t("errors.validation")}`;
+    return i18n.t("errors.validation");
   }
 
   // Default
-  return error.message || `${contextPrefix}${i18n.t("errors.unexpected")}`;
+  return i18n.t("errors.unexpected");
 }
 
-/**
- * Try to translate a string as an i18n key; returns original string if no translation exists.
- */
-function tryTranslate(key) {
-  if (!key || typeof key !== "string") return key;
+const BACKEND_MESSAGE_KEYS = {
+  "project_delete_not_allowed": "errors.project_delete_not_allowed",
+  "project_edit_not_allowed": "errors.project_edit_not_allowed",
+  "project_not_found": "errors.project_not_found",
+  "project_create_failed": "errors.project_create_failed",
+  "you do not have permission to delete projects.": "errors.project_delete_not_allowed",
+  "you do not have permission to edit this project.": "errors.project_edit_not_allowed",
+  "project not found or error loading data.": "errors.project_not_found",
+  "failed to create project": "errors.project_create_failed",
+  "rejection notes are required": "errors.rejection_notes_required",
+  "this field is required.": "errors.field_required",
+  "this field may not be blank.": "errors.field_blank",
+  "this field may not be null.": "errors.field_null",
+  "ensure this field has no more than 255 characters.": "errors.field_too_long",
+  "a valid number is required.": "errors.invalid_number",
+  "enter a valid email address.": "errors.invalid_email",
+  "not found.": "errors.http_404",
+  "permission denied.": "errors.http_403",
+  "authentication credentials were not provided.": "errors.http_401",
+};
+
+function normalizeMessage(message) {
+  return String(message || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function translateLiteralKey(key, options) {
+  if (!key || typeof key !== "string") return null;
+
   try {
-    const translated = i18n.t(key);
-    return translated !== key ? translated : key;
+    const translated = i18n.t(key, options);
+    if (translated !== key) return translated;
+
+    const bundle = i18n.getResourceBundle(i18n.language, "translation") || {};
+    const parts = key.split(".");
+    let value = bundle;
+    for (const part of parts) {
+      value = value?.[part];
+    }
+
+    if (typeof value === "string") {
+      return i18n.t(key, options);
+    }
+
+    if (typeof bundle[key] === "string") {
+      return bundle[key];
+    }
   } catch {
-    return key;
+    // Ignore translation lookup errors and fall back.
   }
+
+  return null;
+}
+
+function isTechnicalMessage(message) {
+  const text = String(message || "");
+  return (
+    /axioserror|traceback|stack trace|operationalerror|databaseerror|integrityerror|typeerror|referenceerror|syntaxerror/i.test(text) ||
+    /<html|<!doctype|<\/?[a-z][\s\S]*>/i.test(text) ||
+    /^(?:\{|\[)/.test(text.trim())
+  );
+}
+
+function translateBackendMessage(message) {
+  if (!message) return null;
+
+  const text = String(message).trim();
+  const directTranslation = translateLiteralKey(text);
+  if (directTranslation) return directTranslation;
+
+  const mappedKey = BACKEND_MESSAGE_KEYS[normalizeMessage(text)];
+  if (mappedKey) {
+    return translateLiteralKey(mappedKey) || i18n.t(mappedKey);
+  }
+
+  return null;
+}
+
+function formatValidationMessage(message) {
+  const translated = translateBackendMessage(message);
+  if (translated) return translated;
+  return i18n.t("errors.invalid_field_value");
+}
+
+function extractServerMessage(data) {
+  if (!data || typeof data !== "object") return null;
+
+  const source = data.debug?.data && typeof data.debug.data === "object"
+    ? data.debug.data
+    : data;
+
+  const candidates = [
+    source.code,
+    source.error_code,
+    source.detail,
+    source.message,
+    source.error,
+    Array.isArray(source.non_field_errors) ? source.non_field_errors[0] : source.non_field_errors,
+  ];
+
+  for (const candidate of candidates) {
+    const value = Array.isArray(candidate) ? candidate[0] : candidate;
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getGenericStatusMessage(status) {
+  if (status >= 500) return i18n.t("errors.server_support");
+  if (status === 400 || status === 422) return i18n.t("errors.validation");
+  return getHttpErrorMessage(status);
 }
 
 /**
  * Format server errors with context information
  */
-export function formatError(error, context = "") {
+export function formatError(error) {
   if (!error) return i18n.t("errors.unknown");
 
   // If the error is from the server (response exists)
@@ -79,73 +178,42 @@ export function formatError(error, context = "") {
     const status = error.response.status;
     const data = error.response.data;
 
-    // Base HTTP message
-    const httpMessage = getHttpErrorMessage(status, context);
+    if (status >= 500) {
+      return i18n.t("errors.server_support");
+    }
 
     // If there is error data from the server
     if (data) {
       // Try formatting field errors first
-      const fieldErrors = formatFieldErrors(data, context);
+      const fieldErrors = formatFieldErrors(data);
       if (fieldErrors) {
-        return `${httpMessage}\n\n${fieldErrors}`;
+        return fieldErrors;
       }
 
-      // Extract detail from debug object if it exists
-      let detailMessage = null;
-      if (data.debug && data.debug.data) {
-        const debugData = data.debug.data;
-        if (debugData.detail) {
-          detailMessage = Array.isArray(debugData.detail) ? debugData.detail[0] : debugData.detail;
-        } else if (debugData.message) {
-          detailMessage = Array.isArray(debugData.message) ? debugData.message[0] : debugData.message;
+      const serverMessage = extractServerMessage(data);
+      if (serverMessage && !isTechnicalMessage(serverMessage)) {
+        const translated = translateBackendMessage(serverMessage);
+        if (translated) {
+          return translated;
         }
-      }
 
-      // General message from the server
-      if (data.detail) {
-        const detail = Array.isArray(data.detail) ? data.detail[0] : data.detail;
-        const translated = tryTranslate(String(detail));
-        // If a real translation was found, show only that (no generic HTTP prefix)
-        if (translated !== String(detail)) return translated;
-        return `${httpMessage}\n\n${detail}`;
-      }
-
-      if (detailMessage) {
-        return `${httpMessage}\n\n${detailMessage}`;
-      }
-
-      if (data.message) {
-        const message = Array.isArray(data.message) ? data.message[0] : data.message;
-        return `${httpMessage}\n\n${message}`;
-      }
-
-      // In development mode, show additional info from debug
-      if (data.debug && import.meta.env.DEV) {
-        const debugInfo = data.debug;
-        let debugText = "";
-        if (debugInfo.message) {
-          debugText += `\n\n${i18n.t("errors.debug_details")}: ${debugInfo.message}`;
-        }
-        if (debugInfo.exception_type) {
-          debugText += `\n${i18n.t("errors.debug_type")}: ${debugInfo.exception_type}`;
-        }
-        if (debugText) {
-          return `${httpMessage}${debugText}`;
+        if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422) {
+          return getGenericStatusMessage(status);
         }
       }
     }
 
-    return httpMessage;
+    return getGenericStatusMessage(status);
   }
 
   // Network errors or other errors
-  return getErrorTypeMessage(error, context);
+  return getErrorTypeMessage(error);
 }
 
 /**
  * Format field errors clearly
  */
-function formatFieldErrors(data, context = "") {
+function formatFieldErrors(data) {
   if (!data || typeof data !== "object") return null;
 
   const messages = [];
@@ -180,7 +248,7 @@ function formatFieldErrors(data, context = "") {
     }
 
     if (errorMsg && String(errorMsg).trim()) {
-      messages.push(`• ${label}: ${errorMsg}`);
+      messages.push(`- ${label}: ${formatValidationMessage(errorMsg)}`);
     }
   }
 
@@ -192,7 +260,7 @@ function formatFieldErrors(data, context = "") {
           const label = fieldLabels[key] || key;
           const errorMsg = Array.isArray(value) ? value[0] : value;
           if (errorMsg) {
-            messages.push(`• ${i18n.t("errors.owner_field", { idx: idx + 1, field: label })}: ${errorMsg}`);
+            messages.push(`- ${i18n.t("errors.owner_field", { idx: idx + 1, field: label })}: ${formatValidationMessage(errorMsg)}`);
           }
         }
       }
@@ -205,8 +273,7 @@ function formatFieldErrors(data, context = "") {
       ? errorData.non_field_errors
       : [errorData.non_field_errors];
     generalErrors.forEach(err => {
-      const translated = tryTranslate(String(err));
-      messages.push(`• ${translated}`);
+      messages.push(`- ${formatValidationMessage(err)}`);
     });
   }
 
@@ -219,7 +286,7 @@ function formatFieldErrors(data, context = "") {
       const errorMsg = Array.isArray(value) ? value[0] : value;
 
       if (errorMsg && String(errorMsg).trim()) {
-        messages.push(`• ${label}: ${errorMsg}`);
+        messages.push(`- ${label}: ${formatValidationMessage(errorMsg)}`);
       }
     }
   }
@@ -244,7 +311,7 @@ function getFieldLabels() {
 export function handleError(error, context = "") {
   logger.error(`[Error Handler] ${context}:`, error);
 
-  const message = formatError(error, context);
+  const message = formatError(error);
 
   return {
     message,

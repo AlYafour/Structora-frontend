@@ -92,7 +92,6 @@ export default function ConsultantDetailPage() {
             </PageLayout>
         );
     }
-    console.log(projects);
     return (
         <PageLayout>
             <div className="container">
@@ -254,22 +253,6 @@ export default function ConsultantDetailPage() {
                                                             )
                                                         }
                                                     </div>
-
-                                                    {/* {isAR ? (
-                                                        p.project_name_en &&
-                                                        p.project_name_en !== p.project_name && (
-                                                            <div className="consultants-page__name-en">
-                                                                {p.project_name_en}
-                                                            </div>
-                                                        )
-                                                    ) : (
-                                                        p.project_name &&
-                                                        p.project_name !== p.project_name_en && (
-                                                            <div className="consultants-page__name-en">
-                                                                {p.project_name}
-                                                            </div>
-                                                        )
-                                                    )} */}
                                                 </td>
                                                 <td>
                                                     <code>{p.internal_code || `PRJ-${p.project_id || p.id}`}</code>

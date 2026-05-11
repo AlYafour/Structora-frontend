@@ -31,7 +31,7 @@ import formatCNLicense from "../utils/formatCNLicense";
 import { toIsoDate, formatProjectNumber, formatDate } from "../../../../utils/formatters";
 import { formatLicenseServerErrors } from "../../../../utils/errors/licenseErrorFormatter";
 import { getErrorMessage } from "../../../../utils/errorHandler";
-import { extractFileNameFromUrl } from "../../../../utils/helpers/file";
+import { extractFileNameFromUrl, fetchFileWithAuth } from "../../../../utils/helpers/file";
 import { logger } from "../../../../utils/logger";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
@@ -53,9 +53,59 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
   const [isExtracting, setIsExtracting] = useState(false);
   const [showLicensePanel, setShowLicensePanel] = useState(false);
   const [licenseZoom, setLicenseZoom] = useState(100);
+  const [licensePreviewSrc, setLicensePreviewSrc] = useState("");
+  const [previewError, setPreviewError] = useState("");
   const [verifiedFields, setVerifiedFields] = useState({});
   const [aiFilledFields, setAiFilledFields] = useState([]);
-  const toggleVerify = (fieldName) => setVerifiedFields(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
+  const toggleVerify = (fieldName) => {
+    setVerifiedFields(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
+
+    if (buildingLicenseFileUrl || form.building_license_file instanceof File) {
+      setShowLicensePanel(true);
+      setLicenseZoom(175);
+    }
+  };
+
+  useEffect(() => {
+    if (!showLicensePanel) {
+      setLicensePreviewSrc("");
+      return;
+    }
+
+    let cancelled = false;
+    let objectUrl = "";
+
+    async function loadPreview() {
+      setPreviewError("");
+
+      try {
+        if (form.building_license_file instanceof File) {
+          objectUrl = URL.createObjectURL(form.building_license_file);
+          if (!cancelled) setLicensePreviewSrc(objectUrl);
+          return;
+        }
+
+        if (buildingLicenseFileUrl) {
+          const blob = await fetchFileWithAuth(buildingLicenseFileUrl);
+          objectUrl = URL.createObjectURL(blob);
+          if (!cancelled) setLicensePreviewSrc(objectUrl);
+        }
+      } catch (error) {
+        logger.error("Error loading license preview", error);
+        if (!cancelled) {
+          setLicensePreviewSrc("");
+          setPreviewError(t("file_preview_failed") || "Could not preview file");
+        }
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [showLicensePanel, form.building_license_file, buildingLicenseFileUrl, t]);
 
   // Sync body class so wizard-content shrinks when panel is open
   useEffect(() => {
@@ -317,12 +367,18 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
             </button>
           </div>
           <div className="siteplan-pdf-panel__body">
+            {previewError ? (
+              <div className="siteplan-pdf-panel__error">{previewError}</div>
+            ) : licensePreviewSrc ? (
               <iframe
-                src={form.building_license_file instanceof File ? URL.createObjectURL(form.building_license_file) : buildingLicenseFileUrl}
+                src={licensePreviewSrc}
                 title={t("building_license_file")}
                 className="siteplan-pdf-panel__iframe"
                 style={{ zoom: `${licenseZoom}%` }}
               />
+            ) : (
+              <div className="siteplan-pdf-panel__loading">{t("loading")}</div>
+            )}
           </div>
         </div>
       )}

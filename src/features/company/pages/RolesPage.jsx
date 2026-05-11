@@ -544,17 +544,17 @@ export default function RolesPage() {
         onBack={() => navigate(-1)}
         title={t('roles_title', 'الأدوار والصلاحيات')}
         subtitle={t('roles_subtitle', 'أنشئ أدواراً مخصصة وحدد صلاحياتها بدقة')}
-        actions={
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingRole(null);
-              setView('create');
-            }}
-          >
-            + {t('roles_add', 'دور جديد')}
-          </Button>
-        }
+        // actions={
+        //   <Button
+        //     variant="primary"
+        //     onClick={() => {
+        //       setEditingRole(null);
+        //       setView('create');
+        //     }}
+        //   >
+        //     + {t('roles_add', 'دور جديد')}
+        //   </Button>
+        // }
       />
 
       {(view === 'create' || view === 'edit') && (

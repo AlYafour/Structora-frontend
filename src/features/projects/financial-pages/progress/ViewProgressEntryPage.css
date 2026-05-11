@@ -5,14 +5,8 @@
 /* ── Buckets grid ── */
 .progress-view__buckets {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
-}
-
-@media (max-width: 900px) {
-  .progress-view__buckets {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── Single bucket card ── */

@@ -171,6 +171,8 @@ export default function ProjectsPage() {
     type === "success" ? success(msg) : showError(msg);
   }, [success, showError]);
 
+  const canDeleteProject = useCallback((project) => project?.can_delete === true, []);
+
   const formatDate = (dateString) => {
     if (!dateString) return t("empty_value");
     try {
@@ -185,7 +187,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const getProjectDisplayName = (p) => {
+  const getProjectDisplayName = useCallback((p) => {
     if (!p) return "";
 
     if (isAR) {
@@ -198,16 +200,21 @@ export default function ProjectsPage() {
       p.display_name ||
       p.name
     );
-  };
+  }, [isAR]);
 
   const askDelete = useCallback((p) => {
+    if (!canDeleteProject(p)) {
+      showToast("error", t("delete_error"));
+      return;
+    }
+
     const title =
       getProjectDisplayName(p) ||
       `${t("wizard_project_prefix")} #${p?.id}`;
 
     setTargetProject({ id: p.id, name: title });
     setConfirmOpen(true);
-  }, [t, isAR]);
+  }, [canDeleteProject, getProjectDisplayName, showToast, t]);
 
   const handleDelete = () => {
     if (!targetProject?.id) return;
@@ -230,12 +237,23 @@ export default function ProjectsPage() {
 
   const askBulkDelete = () => {
     if (selectedIds.size === 0) return;
+    if (selectedProjects.some((p) => !canDeleteProject(p))) {
+      showToast("error", t("delete_error"));
+      return;
+    }
     setBulkConfirmOpen(true);
   };
 
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
-    const ids = Array.from(selectedIds);
+    const ids = projects
+      .filter((p) => selectedIds.has(p.id) && canDeleteProject(p))
+      .map((p) => p.id);
+
+    if (ids.length === 0) {
+      showToast("error", t("delete_error"));
+      return;
+    }
 
     bulkDelete(ids, {
       onSuccess: (result) => {
@@ -258,6 +276,11 @@ export default function ProjectsPage() {
   };
 
   const selectedCount = selectedIds.size;
+  const selectedProjects = useMemo(
+    () => projects.filter((p) => selectedIds.has(p.id)),
+    [projects, selectedIds]
+  );
+  const selectedHasBlockedDelete = selectedProjects.some((p) => !canDeleteProject(p));
 
   const clearFilters = () =>
     setFilters({
@@ -435,7 +458,8 @@ export default function ProjectsPage() {
                   {
                     label: t("delete_selected"),
                     onClick: askBulkDelete,
-                    variant: "danger"
+                    variant: "danger",
+                    disabled: selectedHasBlockedDelete,
                   }
                 ]}
               />
@@ -589,6 +613,7 @@ export default function ProjectsPage() {
                                     showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                                     showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                                     showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
+                                    showDelete={canDeleteProject(p)}
                                     compact={isCompactTable}
                                     formatDate={formatDate}
                                     isRTL={isRTL}
@@ -617,6 +642,7 @@ export default function ProjectsPage() {
                                 showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                                 showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                                 showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
+                                showDelete={canDeleteProject(p)}
                                 compact={isCompactTable}
                                 formatDate={formatDate}
                                 isRTL={isRTL}
@@ -653,6 +679,7 @@ export default function ProjectsPage() {
                       showApprove={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                       showReject={approvalStatusFilter === "pending_approvals" && isManager && p?.approval_status === "pending"}
                       showFinalApprove={approvalStatusFilter === "approved" && isSuperAdmin && p?.approval_status === "approved"}
+                      showDelete={canDeleteProject(p)}
                     />
                   ))}
                 </div>

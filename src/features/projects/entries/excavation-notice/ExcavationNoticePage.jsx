@@ -24,11 +24,11 @@ export default function ExcavationNoticePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState(itemId || null);
-  const [formData, setFormData] = useState({ 
-    notice_date: "", 
-    notice_file: null, 
-    notice_file_url: null, 
-    notice_file_name: null 
+  const [formData, setFormData] = useState({
+    notice_date: "",
+    notice_file: null,
+    notice_file_url: null,
+    notice_file_name: null
   });
   const { success, error: showError } = useNotifications();
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
@@ -48,13 +48,18 @@ export default function ExcavationNoticePage() {
     });
     try {
       const data = await projectApi.getExcavationNotice(projectId);
-      if (data) {
-        setExistingId(data.id);
+
+      const item = itemId
+        ? data.find((x) => String(x.id) === String(itemId))
+        : data[0];
+
+      if (item) {
+        setExistingId(item.id);
         setFormData({
-          notice_date: data.notice_date || "",
+          notice_date: item.notice_date || "",
           notice_file: null,
-          notice_file_url: data.notice_file || null,
-          notice_file_name: data.notice_file_name || null,
+          notice_file_url: item.notice_file || null,
+          notice_file_name: item.notice_file_name || null,
         });
       }
     } catch (err) {
@@ -110,12 +115,12 @@ export default function ExcavationNoticePage() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, notice_date: value }))}
                 />
               </div>
-              
+
               {/* Placeholder for symmetry - you can add another field here if needed */}
               <div className="form-field">
                 {/* Empty field to maintain two-column layout */}
               </div>
-              
+
               <div className="form-field form-field-full">
                 <StaticContractAttachmentFile
                   label={t("notice_file")}

@@ -379,7 +379,12 @@ export default function CompanyUsersPage() {
       await loadData();
     } catch (err) {
       logger.error('Error toggling user status', err);
-      showError(err.response?.data?.error || t('company_error_updating_status'));
+      showError(
+        err.response?.data?.error ||
+        err.data?.error ||
+        err.message ||
+        t('company_error_updating_status')
+      );
     } finally {
       setLoading(false);
     }

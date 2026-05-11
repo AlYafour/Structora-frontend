@@ -25,7 +25,11 @@ import { normalizeNationality } from "../../../../utils/constants";
 import { formatSitePlanServerErrors } from "../../../../utils/errors/sitePlanErrorFormatter";
 import { getErrorMessage } from "../../../../utils/errorHandler";
 import { toApiDateUnified, toInputDateUnified } from "../../../../utils/formatters/date";
-import { extractFileNameFromUrl, validateFileState } from "../../../../utils/helpers/file";
+import {
+  extractFileNameFromUrl,
+  validateFileState,
+  fetchFileWithAuth,
+} from "../../../../utils/helpers/file";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import { logger } from "../../../../utils/logger";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
@@ -104,6 +108,97 @@ export default function SitePlanStep({
   const [idZoom, setIdZoom] = useState(100);
   const progressTimerRef = useRef(null);
   const navTimerRef = useRef(null);
+  const [sitePlanPreviewSrc, setSitePlanPreviewSrc] = useState("");
+  const [idPreviewSrc, setIdPreviewSrc] = useState("");
+  const [previewError, setPreviewError] = useState("");
+
+  useEffect(() => {
+    if (!showPdfPanel) {
+      setSitePlanPreviewSrc("");
+      return;
+    }
+
+    let cancelled = false;
+    let objectUrl = "";
+
+    async function loadPreview() {
+      setPreviewError("");
+
+      try {
+        if (form.site_plan_file instanceof File) {
+          objectUrl = URL.createObjectURL(form.site_plan_file);
+          if (!cancelled) setSitePlanPreviewSrc(objectUrl);
+          return;
+        }
+
+        if (sitePlanFileUrl) {
+          const blob = await fetchFileWithAuth(sitePlanFileUrl);
+          objectUrl = URL.createObjectURL(blob);
+          if (!cancelled) setSitePlanPreviewSrc(objectUrl);
+        }
+      } catch (error) {
+        logger.error("Error loading site plan preview", error);
+        if (!cancelled) {
+          setSitePlanPreviewSrc("");
+          setPreviewError(t("file_preview_failed") || "Could not preview file");
+        }
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [showPdfPanel, form.site_plan_file, sitePlanFileUrl, t]);
+
+  useEffect(() => {
+    if (!showIdPanel) {
+      setIdPreviewSrc("");
+      return;
+    }
+
+    let cancelled = false;
+    let objectUrl = "";
+
+    async function loadPreview() {
+      setPreviewError("");
+
+      try {
+        const owner = owners[idPanelOwnerIdx];
+        const fileObj = owner?.id_attachment instanceof File ? owner.id_attachment : null;
+        const fileUrl =
+          ownerFileUrls[idPanelOwnerIdx] ||
+          (typeof owner?.id_attachment === "string" ? owner.id_attachment.trim() : "");
+
+        if (fileObj) {
+          objectUrl = URL.createObjectURL(fileObj);
+          if (!cancelled) setIdPreviewSrc(objectUrl);
+          return;
+        }
+
+        if (fileUrl) {
+          const blob = await fetchFileWithAuth(fileUrl);
+          objectUrl = URL.createObjectURL(blob);
+          if (!cancelled) setIdPreviewSrc(objectUrl);
+        }
+      } catch (error) {
+        logger.error("Error loading owner ID preview", error);
+        if (!cancelled) {
+          setIdPreviewSrc("");
+          setPreviewError(t("file_preview_failed") || "Could not preview file");
+        }
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [showIdPanel, idPanelOwnerIdx, owners, ownerFileUrls, t]);
 
   // Section visibility: show sections only after relevant file is uploaded
   const [sitePlanUploaded, setSitePlanUploaded] = useState(false);
@@ -146,12 +241,14 @@ export default function SitePlanStep({
       setIdPanelOwnerIdx(ownerIdx);
       setShowIdPanel(true);
       setShowPdfPanel(false);
+      setIdZoom(175);
       return;
     }
 
     if (sitePlanFileUrl || form.site_plan_file instanceof File) {
       setShowPdfPanel(true);
       setShowIdPanel(false);
+      setPdfZoom(175);
     }
   };
 
@@ -312,6 +409,8 @@ export default function SitePlanStep({
 
     if (file instanceof File) {
       setSitePlanUploaded(true);
+      setShowPdfPanel(true);
+      setShowIdPanel(false);
     }
 
     if (!file || !(file instanceof File) || !file.name.toLowerCase().endsWith(".pdf")) {
@@ -879,12 +978,19 @@ export default function SitePlanStep({
             </button>
           </div>
           <div className="siteplan-pdf-panel__body">
-            <iframe
-              src={form.site_plan_file instanceof File ? URL.createObjectURL(form.site_plan_file) : sitePlanFileUrl}
-              title={t("attach_land_site_plan")}
-              className="siteplan-pdf-panel__iframe"
-              style={{ zoom: `${pdfZoom}%` }}
-            />
+            {previewError ? (
+              <div className="siteplan-pdf-panel__error">{previewError}</div>
+            ) : sitePlanPreviewSrc ? (
+              <iframe
+                src={sitePlanPreviewSrc}
+                title={t("attach_land_site_plan")}
+                className="siteplan-pdf-panel__iframe"
+                style={{ zoom: `${pdfZoom}%` }}
+              />
+            ) : (
+              <div className="siteplan-pdf-panel__loading">{t("loading")}</div>
+            )}
+
           </div>
         </div>
       )}
@@ -914,12 +1020,19 @@ export default function SitePlanStep({
               </button>
             </div>
             <div className="siteplan-pdf-panel__body">
-              <iframe
-                src={idSrc}
-                title={t("id_attachment")}
-                className="siteplan-pdf-panel__iframe"
-                style={{ zoom: `${idZoom}%` }}
-              />
+              {previewError ? (
+                <div className="siteplan-pdf-panel__error">{previewError}</div>
+              ) : idPreviewSrc ? (
+                <iframe
+                  src={idPreviewSrc}
+                  title={t("id_attachment")}
+                  className="siteplan-pdf-panel__iframe"
+                  style={{ zoom: `${idZoom}%` }}
+                />
+              ) : (
+                <div className="siteplan-pdf-panel__loading">{t("loading")}</div>
+              )}
+
             </div>
           </div>
         );

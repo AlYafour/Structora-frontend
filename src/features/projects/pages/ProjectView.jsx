@@ -12,6 +12,8 @@ import { useProjectTabs } from "../hooks/useProjectTabs.js";
 import useProjectWorkflow from "../hooks/useProjectWorkflow";
 import ProjectViewHeader from "../components/ProjectViewHeader";
 import ProjectTabsNavigation from "../components/ProjectTabsNavigation";
+import { getProjectName } from "../utils/projectHelpers.js";
+import { useLanguage } from "../../../hooks";
 
 export default function ProjectView() {
  const { projectId } = useParams();
@@ -19,13 +21,18 @@ export default function ProjectView() {
  const { user } = useAuth();
  const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, loading, reload } = useProjectData(projectId);
  const { permissions: projectPermissions, loading: permissionsLoading } = useProjectPermissions(projectId);
-
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
  const isSuperAdmin = user?.is_superuser || user?.role?.name === 'company_super_admin';
 
  // Use custom hook for tabs
  const { activeTab, setActiveTab } = useProjectTabs("overview");
+
+ const { isArabic: isAR } = useLanguage();
+
+const projectDisplayName = isAR
+  ? (project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`)
+  : (project?.display_name_en || project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`);
 
  // Use workflow hook for all dialog states and action handlers
  const {
@@ -159,23 +166,22 @@ export default function ProjectView() {
  {/* Dialogs */}
 
  <Dialog
- open={confirmOpen}
- title={t("confirm_delete")}
- desc={
- <>
- {t("confirm_delete_desc")}{" "}
- <b>{project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`}</b>?<br />
- {t("delete_cannot_undo")}
- </>
- }
- confirmLabel={deleting ? t("deleting") : t("delete_permanent")}
- cancelLabel={t("cancel")}
- onClose={() => !deleting && setConfirmOpen(false)}
- onConfirm={onDelete}
- danger
- busy={deleting}
- />
-
+  open={confirmOpen}
+  title={t("confirm_delete")}
+  desc={
+    <>
+      {t("confirm_delete_desc")}{" "}
+      <b>{projectDisplayName}</b>?<br />
+      {t("delete_cannot_undo")}
+    </>
+  }
+  confirmLabel={deleting ? t("deleting") : t("delete_permanent")}
+  cancelLabel={t("cancel")}
+  onClose={() => !deleting && setConfirmOpen(false)}
+  onConfirm={onDelete}
+  danger
+  busy={deleting}
+/>
  {/* Error dialog */}
  <Dialog
  open={!!errorMsg}

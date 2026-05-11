@@ -27,6 +27,7 @@ const ProjectCard = React.memo(({
   showApprove,
   showReject,
   showFinalApprove,
+  showDelete,
 }) => {
   const { t, i18n } = useTranslation();
 
@@ -119,6 +120,7 @@ const ProjectCard = React.memo(({
             showApprove={showApprove}
             showReject={showReject}
             showFinalApprove={showFinalApprove}
+            showDelete={showDelete}
           />
         </div>
       </div>

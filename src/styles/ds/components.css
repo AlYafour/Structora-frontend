@@ -3227,6 +3227,36 @@ html.theme-dark .navbar-notifications:hover {
   font-size: var(--fs-14);
 }
 
+/* Approval Status Badge */
+.prj-approval-status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-medium);
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+  border: 1px solid var(--success-700);
+  border-radius: 18px;
+}
+
+.prj-approval-status-badge__icon {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: #059669;
+}
+
+.prj-approval-status-badge__text {
+  font-size: var(--font-size-sm);
+}
+
+.prj-approval-status-badge--final-approved {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+  border-color: var(--success-700);
+}
+
 /* List Page */
 .list-page {
   display: flex;
@@ -5806,7 +5836,7 @@ html.theme-dark .siteplan-share-menu__item:hover {
 
 .financial-progress__fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-400, #3D5A80), var(--primary-700, #14213D));
+  background: linear-gradient(90deg, var(--primary-700, #3D5A80), var(--primary-600, #14213D));
   border-radius: var(--radius-full);
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -5990,6 +6020,10 @@ html.theme-dark .financial-dashboard__progress::before {
 
 html.theme-dark .financial-progress__bar {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+html.theme-dark .financial-progress__fill {
+  background: var(--success-600);
 }
 
 html.theme-dark .financial-dashboard__section:hover {
@@ -7071,7 +7105,7 @@ html.theme-dark .filter-drawer__footer {
 .progress-entry-page {
   width: 100%;
   min-height: 100vh;
-  background: var(--color-page-bg, #f8fafc);
+  /* background: var(--color-page-bg, #f8fafc); */
 }
 
 .progress-entry-page__inner {
@@ -7321,6 +7355,15 @@ html.theme-dark .progress-field__label {
 .progress-field__input-wrap {
   position: relative;
   width: 100%;
+}
+
+.progress-field__input-wrap .prj-input {
+  padding-right: 1.75rem;
+}
+
+[dir='rtl'] .progress-field__input-wrap .prj-input {
+  padding-right: 0.625rem;
+  padding-left: 1.75rem;
 }
 
 .progress-field__suffix {

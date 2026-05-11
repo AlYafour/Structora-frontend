@@ -3,6 +3,7 @@
  * Manages: submit, approve, reject, final approve, delete, and error dialogs.
  */
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { projectApi } from "../../../services/projects";
 import { logger } from "../../../utils/logger";
@@ -12,6 +13,7 @@ import useTenantNavigate from '../../../hooks/useTenantNavigate';
 export default function useProjectWorkflow(projectId, reload) {
   const { t } = useTranslation();
   const nav = useTenantNavigate();
+  const queryClient = useQueryClient();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -28,6 +30,8 @@ export default function useProjectWorkflow(projectId, reload) {
     try {
       setDeleting(true);
       await projectApi.delete(projectId);
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.removeQueries({ queryKey: ["project", projectId] });
       setConfirmOpen(false);
       nav("/projects");
     } catch (error) {

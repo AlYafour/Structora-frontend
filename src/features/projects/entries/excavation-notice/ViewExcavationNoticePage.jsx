@@ -22,15 +22,19 @@ export default function ViewExcavationNoticePage() {
  }, [projectId]);
 
  const loadData = async () => {
- try {
- const result = await projectApi.getExcavationNotice(projectId);
- setData(result);
- } catch (err) {
- logger.debug("ViewExcavationNoticePage: load failed", err);
- } finally {
- setLoading(false);
- }
- };
+  try {
+    const result = await projectApi.getExcavationNotice(projectId);
+
+    const item = Array.isArray(result) ? result[0] : result;
+
+    setData(item || null);
+  } catch (err) {
+    logger.debug("ViewExcavationNoticePage: load failed", err);
+    setData(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
  if (!loading && !data) {
  navigate(`/projects/${projectId}?tab=excavation_notice`, { replace: true });
