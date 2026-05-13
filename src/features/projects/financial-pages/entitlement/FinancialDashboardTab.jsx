@@ -124,9 +124,11 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
     const totalPaymentsNet = totalPayments / VAT_MULTIPLIER;
     const totalPaymentsVAT = totalPayments - totalPaymentsNet;
 
-    const netRemaining = totalContractWithVariationsWithVAT - totalPayments;
-    const isOverpaid = netRemaining < -0.01;
-    const remainingAmount = Math.abs(netRemaining);
+    const remainingWithVAT = totalContractWithVariationsWithVAT - totalPayments;
+    const remainingWithoutVAT = totalContractWithVariations - totalPaymentsNet;
+    const isOverpaid = remainingWithVAT < -0.01;
+    const remainingAmount = Math.abs(remainingWithVAT);
+    const remainingAmountExcludingVAT = Math.abs(remainingWithoutVAT);
 
     const finalPayableAmount = hasFinancialData
       ? (financialCalculations.data.entitlement?.finalPayableAmount || totalContractWithVariations)
@@ -157,6 +159,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       paymentsCount: payments.length,
       completionPercentage,
       remainingAmount,
+      remainingAmountExcludingVAT,
       isOverpaid,
       totalContractWithVariations,
       totalContractWithVariationsWithVAT,
@@ -330,7 +333,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                   <InfoTip text={t("remaining_amount_tooltip")} />
                 </span>
               }
-              value={renderAmount(vg(financialStats.remainingAmount))}
+              value={renderAmount(showVat ? financialStats.remainingAmount : financialStats.remainingAmountExcludingVAT)}
               sub={financialStats.isOverpaid ? t("overpaid_note") : vatLabel}
             />
             {advanceSummary && (
@@ -433,10 +436,18 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                 <div className="financial-breakdown__row">
                   <span className="financial-breakdown__label">
                     {t("prolongation_fees")}
-                    <span className="financial-breakdown__vat-tag">{vatLabel}</span>
+                    <span className="financial-breakdown__vat-tag">
+                      {financialStats.hasOnlyNoVatProlongationFees ? t("pf_no_vat", "No VAT") : vatLabel}
+                    </span>
                   </span>
                   <span className="financial-breakdown__value financial-breakdown__value--highlight">
-                    + {renderAmount(showVat ? financialStats.totalProlongationFeesValueWithVAT : financialStats.totalProlongationFeesValue)}
+                    + {renderAmount(
+                      financialStats.hasOnlyNoVatProlongationFees
+                        ? financialStats.totalProlongationFeesValue
+                        : showVat
+                          ? financialStats.totalProlongationFeesValueWithVAT
+                          : financialStats.totalProlongationFeesValue
+                    )}
                   </span>
                 </div>
                 <div className="financial-breakdown__divider" />
@@ -513,7 +524,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{vatLabel}</span>
                   </span>
                   <span className={`financial-breakdown__value ${financialStats.isOverpaid ? 'financial-breakdown__value--success' : 'financial-breakdown__value--warning'}`}>
-                    {financialStats.isOverpaid ? '+ ' : ''}{renderAmount(vg(financialStats.remainingAmount))}
+                    {financialStats.isOverpaid ? '+ ' : ''}{renderAmount(showVat ? financialStats.remainingAmount : financialStats.remainingAmountExcludingVAT)}
                   </span>
                 </div>
               </div>

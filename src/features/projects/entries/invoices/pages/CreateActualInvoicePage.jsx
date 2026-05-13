@@ -82,25 +82,41 @@ export default function CreateActualInvoicePage() {
     handleProjectChange: baseHandleProjectChange,
   } = useInvoiceForm(invoiceId, projectFromQuery, isEditMode, { error: showError, success }, t);
 
+  const getProlongationFeeById = useCallback(
+    (feeId) => prolongationFees.find(f => String(f.id) === String(feeId)) || null,
+    [prolongationFees]
+  );
+
+  const isNoVatProlongationFee = useCallback((feeId) => {
+    const fee = getProlongationFeeById(feeId);
+    return !!fee && parseFloat(fee.vat_rate || 0) === 0;
+  }, [getProlongationFeeById]);
+
+  const getProlongationFeeGrossAmount = useCallback((fee) => (
+    parseFloat(fee?.gross_amount ?? fee?.amount ?? 0) || 0
+  ), []);
+
   // When edit mode loads, sync items from formData.items
   useEffect(() => {
     if (!loading && isEditMode && formData.items && formData.items.length > 0) {
       setItems(formData.items.map(it => {
         const net = parseFloat(it.total) || 0;
-        const inclVat = Math.round(net * (1 + VAT_RATE) * 100) / 100;
+        const source = it.source || (it.prolongation_fee_id ? "prolongation_fee" : it.variation_id ? "variation" : "base_contract");
+        const noVatFee = source === "prolongation_fee" && isNoVatProlongationFee(it.prolongation_fee_id);
+        const inclVat = noVatFee ? net : Math.round(net * (1 + VAT_RATE) * 100) / 100;
         const vat = Math.round((inclVat - net) * 100) / 100;
         return {
           description: it.description || "",
           amount_incl_vat: inclVat ? String(inclVat.toFixed(2)) : "",
           total: net,
           vat: vat,
-          source: it.source || (it.prolongation_fee_id ? "prolongation_fee" : it.variation_id ? "variation" : "base_contract"),
+          source,
           variation_id: it.variation_id || null,
           prolongation_fee_id: it.prolongation_fee_id || null,
         };
       }));
     }
-  }, [loading, isEditMode, formData.items]);
+  }, [loading, isEditMode, formData.items, isNoVatProlongationFee]);
 
   const handleProjectChange = (projectId) => {
     baseHandleProjectChange(projectId);
@@ -230,8 +246,8 @@ export default function CreateActualInvoicePage() {
         if (String(it.prolongation_fee_id) === String(feeId)) return s + (parseFloat(it.total) || 0);
         return s;
       }, 0);
-      return sum + feeTotal * (1 + VAT_RATE);
-    }, 0), [previousInvoices]);
+      return sum + (isNoVatProlongationFee(feeId) ? feeTotal : feeTotal * (1 + VAT_RATE));
+    }, 0), [previousInvoices, isNoVatProlongationFee]);
 
   // ── Owner base contract obligation & due ──────────────────────────
   // ownerTotalOriginal = owner.net + owner.fee (excl consultant fees paid to consultant)
@@ -319,6 +335,9 @@ export default function CreateActualInvoicePage() {
     const amount = parseFloat(removeCommas(item.amount_incl_vat || "0")) || 0;
     // bank_vat source OR bank payer: no VAT — amount is the net amount directly
     if (item.source === "bank_vat" || payer === "bank") {
+      return { ...item, total: amount, vat: 0 };
+    }
+    if (item.source === "prolongation_fee" && isNoVatProlongationFee(item.prolongation_fee_id)) {
       return { ...item, total: amount, vat: 0 };
     }
     const net = Math.round(amount / 1.05 * 100) / 100;
@@ -498,6 +517,8 @@ export default function CreateActualInvoicePage() {
         payment: null,
         payer: payer,
         amount: r2(totalInclVAT),
+        net_amount: r2(totalExclVAT),
+        vat: r2(vatAmount),
         invoice_date: formData.invoice_date,
         invoice_number: formData.invoice_number?.trim() || null,
         description: formData.description || "",
@@ -648,6 +669,9 @@ export default function CreateActualInvoicePage() {
                           : it;
                         const amount = parseFloat(removeCommas(updated.amount_incl_vat || "0")) || 0;
                         if (newPayer === "bank" || updated.source === "bank_vat") {
+                          return { ...updated, total: amount, vat: 0 };
+                        }
+                        if (updated.source === "prolongation_fee" && isNoVatProlongationFee(updated.prolongation_fee_id)) {
                           return { ...updated, total: amount, vat: 0 };
                         }
                         const net = Math.round(amount / 1.05 * 100) / 100;
@@ -1043,7 +1067,7 @@ export default function CreateActualInvoicePage() {
                                       const label = fee.description || `${t("prolongation_fees") || "Prolongation Fees"} #${fee.id}`;
                                       return (
                                         <option key={fee.id} value={fee.id} disabled={alreadyUsed}>
-                                          {alreadyUsed ? "✓ " : ""}{label} — {formatAmountString(parseFloat(fee.net_amount || fee.amount || 0) * (1 + VAT_RATE))}
+                                          {alreadyUsed ? "✓ " : ""}{label} — {formatAmountString(getProlongationFeeGrossAmount(fee))}
                                         </option>
                                       );
                                     })}
