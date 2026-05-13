@@ -19,7 +19,7 @@ export default function ProjectView() {
  const { projectId } = useParams();
  const { t } = useTranslation();
  const { user } = useAuth();
- const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, loading, reload } = useProjectData(projectId);
+ const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, loading, reload } = useProjectData(projectId);
  const { permissions: projectPermissions, loading: permissionsLoading } = useProjectPermissions(projectId);
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
@@ -130,6 +130,7 @@ const projectDisplayName = isAR
  contract={contract}
  variations={variations}
  payments={payments}
+ prolongationFees={prolongationFees}
  />
  )}
  {activeTab === "variations" && (

@@ -33,6 +33,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
   const [projects, setProjects] = useState([]);
   const [payments, setPayments] = useState([]);
   const [variations, setVariations] = useState([]);
+  const [prolongationFees, setProlongationFees] = useState([]);
   const [contractData, setContractData] = useState(null);
   const [latestProgress, setLatestProgress] = useState(null);
   const [existingInvoices, setExistingInvoices] = useState([]);
@@ -86,6 +87,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
 
       // Variations (already filtered to approved on backend)
       setVariations(Array.isArray(data.variations) ? data.variations : []);
+      setProlongationFees(Array.isArray(data.prolongation_fees) ? data.prolongation_fees : []);
 
       // Latest progress
       setLatestProgress(data.latest_progress || null);
@@ -111,6 +113,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
       logger.error("Error loading project form data", error);
       setContractData(null);
       setVariations([]);
+      setProlongationFees([]);
       setLatestProgress(null);
       setExistingInvoices([]);
       setAdvanceSummary(null);
@@ -166,7 +169,9 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
               quantity: item.quantity || 1,
               unit_price: item.unit_price || 0,
               total: item.total || 0,
+              source: item.source || (item.variation_id ? "variation" : item.prolongation_fee_id ? "prolongation_fee" : "base_contract"),
               variation_id: item.variation_id || null,
+              prolongation_fee_id: item.prolongation_fee_id || null,
             }))
           : [{ description: "", quantity: 1, unit_price: 0, total: 0, variation_id: null }],
       });
@@ -240,6 +245,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
     } else {
       setPayments([]);
       setVariations([]);
+      setProlongationFees([]);
       setContractData(null);
       setLatestProgress(null);
       setExistingInvoices([]);
@@ -253,6 +259,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
     projects,
     payments,
     variations,
+    prolongationFees,
     contractData,
     latestProgress,
     existingInvoices,

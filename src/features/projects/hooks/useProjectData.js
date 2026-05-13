@@ -74,13 +74,14 @@ export default function useProjectData(projectId) {
 
       // Fetch all project-related data in parallel
       // Using include parameter to reduce API calls from 6 to 2 (project + payments)
-      const [pRes, paymentsRes, variationsRes, invoicesRes, scheduleRes, excavationRes] = await Promise.allSettled([
+      const [pRes, paymentsRes, variationsRes, invoicesRes, scheduleRes, excavationRes, prolongationFeesRes] = await Promise.allSettled([
         api.get(`projects/${projectId}/?include=siteplan,license,contract,awarding,start_order`, { signal }),
         api.get(`projects/${projectId}/payments/`, { signal }),
         api.get(`projects/${projectId}/variations/`, { signal }),
         api.get(`projects/${projectId}/actual-invoices/`, { signal }),
         api.get(`projects/${projectId}/project-schedule/`, { signal }),
         api.get(`projects/${projectId}/excavation-notice/`, { signal }),
+        api.get(`projects/${projectId}/prolongation-fees/`, { signal }),
       ]);
 
       const project = extractData(pRes);
@@ -100,6 +101,7 @@ export default function useProjectData(projectId) {
       const payments = extractArrayData(paymentsRes);
       const variations = extractArrayData(variationsRes);
       const invoices = extractArrayData(invoicesRes);
+      const prolongationFees = extractArrayData(prolongationFeesRes);
 
       return {
         project,
@@ -113,6 +115,7 @@ export default function useProjectData(projectId) {
         payments,
         variations,
         invoices,
+        prolongationFees,
       };
     },
     enabled: !!projectId,
@@ -137,6 +140,7 @@ export default function useProjectData(projectId) {
     payments: query.data?.payments || [],
     variations: query.data?.variations || [],
     invoices: query.data?.invoices || [],
+    prolongationFees: query.data?.prolongationFees || [],
     loading: query.isLoading,
     error: query.error,
     reload,

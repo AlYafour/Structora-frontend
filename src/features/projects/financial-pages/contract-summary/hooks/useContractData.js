@@ -12,12 +12,13 @@ import { api } from "../../../../../services/api";
 /**
  * @param {string} projectId
  * @param {Function} t - Translation function
- * @returns {{ contract: Object|null, variations: Array, loading: boolean, error: string|null }}
+ * @returns {{ contract: Object|null, variations: Array, prolongationFees: Array, loading: boolean, error: string|null }}
  */
 export function useContractData(projectId, t) {
   const location = useLocation();
   const [contract, setContract] = useState(null);
   const [variations, setVariations] = useState([]);
+  const [prolongationFees, setProlongationFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,9 +31,10 @@ export function useContractData(projectId, t) {
     setError(null);
     Promise.all([
       api.get(`projects/${projectId}/contract/`).catch(() => ({ data: null })),
-      api.get(`projects/${projectId}/variations/`).catch(() => ({ data: [] }))
+      api.get(`projects/${projectId}/variations/`).catch(() => ({ data: [] })),
+      api.get(`projects/${projectId}/prolongation-fees/`).catch(() => ({ data: [] }))
     ])
-      .then(([contractRes, variationsRes]) => {
+      .then(([contractRes, variationsRes, prolongationFeesRes]) => {
         const contractData = contractRes.data;
         if (Array.isArray(contractData) && contractData.length) setContract(contractData[0]);
         else if (contractData && typeof contractData === "object") setContract(contractData);
@@ -45,6 +47,15 @@ export function useContractData(projectId, t) {
           setVariations(variationsData.results);
         } else {
           setVariations([]);
+        }
+
+        const prolongationFeesData = prolongationFeesRes.data;
+        if (Array.isArray(prolongationFeesData)) {
+          setProlongationFees(prolongationFeesData);
+        } else if (prolongationFeesData && Array.isArray(prolongationFeesData.results)) {
+          setProlongationFees(prolongationFeesData.results);
+        } else {
+          setProlongationFees([]);
         }
       })
       .catch((e) => {
@@ -74,6 +85,7 @@ export function useContractData(projectId, t) {
 
         setError(errorMessage);
         setContract(null);
+        setProlongationFees([]);
       })
       .finally(() => setLoading(false));
   }, [projectId, t]);
@@ -99,5 +111,5 @@ export function useContractData(projectId, t) {
     };
   }, [projectId, loadData]);
 
-  return { contract, variations, loading, error };
+  return { contract, variations, prolongationFees, loading, error };
 }

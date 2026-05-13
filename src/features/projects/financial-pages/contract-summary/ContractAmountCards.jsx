@@ -5,7 +5,7 @@
  * Extracted from ContractFinancialSummary.jsx (lines 428-536).
  */
 
-export default function ContractAmountCards({ grossTotal, actualContractorAmount, payableAmount, isPrivateFunding, A, vat, inc, t, RowAmount }) {
+export default function ContractAmountCards({ grossTotal, actualContractorAmount, payableAmount, prolongationFeesAmount = 0, isPrivateFunding, A, vat, inc, t, RowAmount }) {
   return (
     <div className={`cfs-tables-grid ${isPrivateFunding ? "cfs-tables-grid--2col" : "cfs-tables-grid--3col"}`}>
       {/* 1. Total contract amount (incl. VAT / excl. VAT / VAT) */}
@@ -62,6 +62,7 @@ export default function ContractAmountCards({ grossTotal, actualContractorAmount
           </thead>
           <tbody>
             {RowAmount(t("contract_amount_excl_vat"), payableAmount, "payable_contractor_vat", null, false)}
+            {prolongationFeesAmount > 0 && RowAmount(t("prolongation_fees") || "Prolongation Fees", prolongationFeesAmount, "payable_contractor_vat")}
             {RowAmount(t("contract_vat_5"), vat(payableAmount), "payable_contractor_vat")}
             {RowAmount(t("contract_total_incl_vat"), inc(payableAmount), "payable_contractor_vat", null, true)}
           </tbody>

@@ -48,7 +48,7 @@ const RowVAT = (A, vatFn, incFn) => (label, amt, isTotal = false) => (
 /* =================== Main =================== */
 export default function ContractFinancialSummary({ projectId }) {
   const { t, i18n } = useTranslation();
-  const { contract, variations, loading, error } = useContractData(projectId, t);
+  const { contract, variations, prolongationFees, loading, error } = useContractData(projectId, t);
 
   // All calculations are performed here safely - PRESERVED VERBATIM
   const computed = useMemo(() => {
@@ -66,6 +66,9 @@ export default function ContractFinancialSummary({ projectId }) {
         const variationTotal = finalAmount + consultantFeesForVariation + vat;
         return sum + variationTotal;
       }, 0);
+      const totalProlongationFeesAmount = prolongationFees
+        .filter((f) => (f.status || "active") === "active")
+        .reduce((sum, f) => sum + n(f.net_amount || f.amount || 0), 0);
 
       const grossTotal = n(c.total_project_value);
       const grossBank =
@@ -182,16 +185,19 @@ export default function ContractFinancialSummary({ projectId }) {
 
       const totalExtraFee = ownerExtraFee + bankExtraFee;
       const totalExtraFeeWithVat = ownerExtraFeeWithVat + bankExtraFeeWithVat;
-      const totalConsultantFee = bank.fee + owner.fee;
+
+      // Contract Value Without Consultant Fee
+      // Formula: grossTotal - fee_inclusive(grossBank, bankPct).fee
+      // i.e. deduct only the bank's consultant fee from total contract amount
+      const actualContractorAmount = round(grossTotal - bank.fee - totalExtraFeeWithVat);
+
       const totalFinal = {
-        fee: totalConsultantFee,
-        net: total.net - totalExtraFeeWithVat,
+        fee: bank.fee,
+        net: actualContractorAmount,
         extraFee: totalExtraFee,
         extraFeeWithVat: totalExtraFeeWithVat
       };
-
-      const actualContractorAmount = totalFinal.net;
-      const payableAmount = grossOwner - ownerFeesExcludedFromPayable + bankFinal.net;
+      const payableAmount = grossOwner - ownerFeesExcludedFromPayable + bankFinal.net + totalProlongationFeesAmount;
 
       // Display functions
       const formatAmountString = (v) => formatMoney(round(n(v)), { lang: i18n.language });
@@ -216,14 +222,14 @@ export default function ContractFinancialSummary({ projectId }) {
           c, grossTotal, grossBank, grossOwner,
           ownerPct, bankPct, totalPct,
           total: totalFinal, bank: bankFinal, owner: ownerFinal,
-          payableAmount, totalVariationsAmount, actualContractorAmount,
+          payableAmount, totalVariationsAmount, totalProlongationFeesAmount, actualContractorAmount,
           A, vat: vatFn, inc: incFn,
         },
       };
     } catch (e) {
       return { error: e, data: null };
     }
-  }, [contract, variations, i18n.language]);
+  }, [contract, variations, prolongationFees, i18n.language]);
 
   // Loading / Error / Empty states
   if (loading) {
@@ -261,7 +267,7 @@ export default function ContractFinancialSummary({ projectId }) {
     return <div className="card ds-text-center cfs-no-data">{t("contract_insufficient_data")}</div>;
   }
 
-  const { grossTotal, grossBank, grossOwner, ownerPct, bankPct, totalPct, total, bank, owner, payableAmount, actualContractorAmount, A, vat, inc } = computed.data;
+  const { grossTotal, grossBank, grossOwner, ownerPct, bankPct, totalPct, total, bank, owner, payableAmount, totalProlongationFeesAmount, actualContractorAmount, A, vat, inc } = computed.data;
   const isPrivateFunding = contract?.contract_classification === "private_funding";
 
   const notes = {
@@ -291,6 +297,7 @@ export default function ContractFinancialSummary({ projectId }) {
         grossTotal={grossTotal}
         actualContractorAmount={actualContractorAmount}
         payableAmount={payableAmount}
+        prolongationFeesAmount={totalProlongationFeesAmount}
         isPrivateFunding={isPrivateFunding}
         A={A} vat={vat} inc={inc}
         t={t}
@@ -302,6 +309,7 @@ export default function ContractFinancialSummary({ projectId }) {
         ownerPct={ownerPct} bankPct={bankPct} totalPct={totalPct}
         total={total} bank={bank} owner={owner}
         actualContractorAmount={actualContractorAmount}
+        prolongationFeesAmount={totalProlongationFeesAmount}
         isPrivateFunding={isPrivateFunding}
         t={t}
         RowAmount={rowAmount}

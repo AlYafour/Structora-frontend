@@ -10,6 +10,7 @@ export default function ContractBreakdownTables({
   ownerPct, bankPct, totalPct,
   total, bank, owner,
   actualContractorAmount,
+  prolongationFeesAmount = 0,
   isPrivateFunding,
   t, RowAmount
 }) {
@@ -33,6 +34,9 @@ export default function ContractBreakdownTables({
             {RowAmount(t("contract_total_consultant_fees"), total.fee, "fee_total")}
             {total.extraFeeWithVat > 0 && (
               <>{RowAmount(t("contract_extra_fees"), total.extraFeeWithVat, "total_extra_fee")}</>
+            )}
+            {prolongationFeesAmount > 0 && (
+              <>{RowAmount(t("prolongation_fees") || "Prolongation Fees", prolongationFeesAmount, "net_total")}</>
             )}
             {RowAmount(t("contract_total_actual_contractor"), actualContractorAmount, "net_total", null, true)}
           </tbody>

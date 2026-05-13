@@ -10,6 +10,7 @@ import { computeContractSummary } from "../../../../../utils/calculations/financ
 export default function useFinancialEntitlement({
   contract,
   variations = [],
+  prolongationFees = [],
   payments = [],
   totalApprovedVOValue = 0,
   consultantFeePercentage = 0,
@@ -132,6 +133,10 @@ export default function useFinancialEntitlement({
       ====================================================== */
       const actualVOValueExcludingFees = totalVOWithFees - consultantFeeOnVO;
 
+      const totalProlongationFees = prolongationFees
+        .filter((f) => (f.status || "active") === "active")
+        .reduce((sum, f) => sum + n(f.net_amount || f.amount || 0), 0);
+
       /* ======================================================
          6. Owner Share – Actual & Total
       ====================================================== */
@@ -201,6 +206,7 @@ export default function useFinancialEntitlement({
       // Calculate final amount Including VAT by adding VAT to each item before summing
       const finalPayableAmount = round(
         (totalVOWithFees * (1 + vatRate)) +
+        (totalProlongationFees * (1 + vatRate)) +
         (ownerTotalOriginal * (1 + vatRate)) +
         (bankActualFixed * (1 + vatRate))
       );
@@ -233,8 +239,9 @@ export default function useFinancialEntitlement({
       ====================================================== */
       const ownerVAT = round(ownerActualAfterVO * vatRate);
       const bankVAT = round(bankActualFixed * vatRate);
+      const prolongationFeesWithVAT = round(totalProlongationFees * (1 + vatRate));
 
-      const ownerObligation = ownerActualAfterVO + ownerVAT;
+      const ownerObligation = ownerActualAfterVO + ownerVAT + prolongationFeesWithVAT;
       const bankObligation = bankActualFixed + bankVAT;
 
       const ownerCompletionPercentage =
@@ -264,9 +271,14 @@ export default function useFinancialEntitlement({
       const consultantFeeFromBankShare = bankPct > 0 && grossBank > 0
         ? round(grossBank * (bankPct / (100 + bankPct)))
         : 0;
-      
+
       // Add VAT to consultant fees from bank's share
       const consultantFeeFromBankShareWithVAT = round(consultantFeeFromBankShare * (1 + vatRate));
+
+      // Contract Value Without Consultant Fee
+      // Formula: grossTotal - fee_inclusive(grossBank, bankPct).fee
+      // i.e. deduct only the bank's consultant fee from total contract amount
+      const contractValueWithoutConsultantFee = round(grossTotal - consultantFeeFromBankShare);
 
       /* ======================================================
          13. Outstanding Balances
@@ -283,6 +295,7 @@ export default function useFinancialEntitlement({
       //   - Owner Payments Made up to report date
       const ownerOutstandingBalance =
         ownerTotalAfterVOWithVAT +
+        prolongationFeesWithVAT +
         bankVAT -
         calculatedOwnerPayments;
 
@@ -354,6 +367,11 @@ export default function useFinancialEntitlement({
             totalVOWithFees,
           },
 
+          prolongationFeesSummary: {
+            totalNet: totalProlongationFees,
+            totalWithVat: round(totalProlongationFees * (1 + vatRate)),
+          },
+
           rebuiltContract: {
             ownerActualOriginal,
             ownerActualAfterVO,
@@ -383,9 +401,9 @@ export default function useFinancialEntitlement({
             // This is what the owner is truly liable to pay:
             //   - Their full share (incl consultant fees) × 1.05
             //   - Plus VAT on bank's net share (owner pays this VAT to the contractor)
-            ownerInvoiceObligation: round(ownerTotalAfterVO * (1 + vatRate) + bankVAT),
+            ownerInvoiceObligation: round(ownerTotalAfterVO * (1 + vatRate) + prolongationFeesWithVAT + bankVAT),
             // projectTotalInclVAT = total project value including VAT (the invoice denominator)
-            projectTotalInclVAT: round(totalGrossAfterVO * (1 + vatRate)),
+            projectTotalInclVAT: round((totalGrossAfterVO + totalProlongationFees) * (1 + vatRate)),
           },
 
           balance: {
@@ -394,6 +412,7 @@ export default function useFinancialEntitlement({
             bankOutstandingBalance,
             consultantFeeFromBankShare,
             consultantFeeFromBankShareWithVAT,
+            contractValueWithoutConsultantFee,
           },
 
           deferred: {
@@ -422,6 +441,7 @@ export default function useFinancialEntitlement({
   }, [
     contract,
     variations,
+    prolongationFees,
     payments,
     totalApprovedVOValue,
     consultantFeePercentage,

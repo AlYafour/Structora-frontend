@@ -17,7 +17,7 @@ export default function ProjectFinancialEntitlementPage() {
   const { t, i18n } = useTranslation();
   const isAR = /^ar\b/i.test(i18n.language || "");
   const dir = isAR ? "rtl" : "ltr";
-  const { contract, variations, payments, loading: dataLoading } = useProjectData(projectId);
+  const { contract, variations, prolongationFees, payments, loading: dataLoading } = useProjectData(projectId);
 
   const approvedVariations = variations?.filter(v => v.status === 'approved' || v.status === 'final_approved') || [];
   const totalVOFromVariations = approvedVariations.reduce((sum, v) => {
@@ -31,6 +31,7 @@ export default function ProjectFinancialEntitlementPage() {
   const calculations = useFinancialEntitlement({
     contract,
     variations: variations || [],
+    prolongationFees: prolongationFees || [],
     payments: payments || [],
     totalApprovedVOValue: totalVOFromVariations,
     consultantFeePercentage: 0,
@@ -85,7 +86,7 @@ export default function ProjectFinancialEntitlementPage() {
   }
 
   const { data } = calculations;
-  const { contractBaseline, voSummary, rebuiltContract, entitlement, completionPercentages, balance, deferred, accountStatus, reference } = data;
+  const { contractBaseline, voSummary, prolongationFeesSummary, rebuiltContract, entitlement, completionPercentages, balance, deferred, accountStatus, reference } = data;
 
   const vatRate = VAT_RATE;
 
@@ -192,6 +193,12 @@ export default function ProjectFinancialEntitlementPage() {
                   showVAT
                   isHighlight
                   note={t("fe_total_vo_with_fees_note")}
+                />
+                <Row
+                  label={t("prolongation_fees") || "Prolongation Fees"}
+                  amount={prolongationFeesSummary?.totalNet || 0}
+                  showVAT
+                  isHighlight
                 />
                 <Row
                   label={t("fe_owner_actual_original")}

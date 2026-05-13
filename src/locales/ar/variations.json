@@ -202,5 +202,6 @@
   "variation_label": "أمر التغيير",
   "revoke_approval": "إلغاء الاعتماد",
   "reason": "السبب",
-  "variation_requires_final_approval": "لا يمكن إنشاء أمر تغيير سعري حتى يحصل المشروع على الاعتماد النهائي من المدير العام."
+  "variation_requires_final_approval": "لا يمكن إنشاء أمر تغيير سعري حتى يحصل المشروع على الاعتماد النهائي من المدير العام.",
+  "select_prolongation_fee_required": "يرجى اختيار رسوم التمديد"
 }

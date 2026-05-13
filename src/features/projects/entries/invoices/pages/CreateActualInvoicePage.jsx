@@ -32,6 +32,7 @@ const EMPTY_ITEM = () => ({
   vat: 0,                     // VAT portion — auto-calculated
   source: "base_contract",    // 'base_contract' | 'variation' | 'bank_vat'
   variation_id: null,
+  prolongation_fee_id: null,
 });
 
 export default function CreateActualInvoicePage() {
@@ -70,6 +71,7 @@ export default function CreateActualInvoicePage() {
     loading,
     projects,
     variations,
+    prolongationFees,
     contractData,
     latestProgress,
     existingInvoices,
@@ -92,8 +94,9 @@ export default function CreateActualInvoicePage() {
           amount_incl_vat: inclVat ? String(inclVat.toFixed(2)) : "",
           total: net,
           vat: vat,
-          source: it.source === "bank_vat" ? "bank_vat" : it.variation_id ? "variation" : "base_contract",
+          source: it.source || (it.prolongation_fee_id ? "prolongation_fee" : it.variation_id ? "variation" : "base_contract"),
           variation_id: it.variation_id || null,
+          prolongation_fee_id: it.prolongation_fee_id || null,
         };
       }));
     }
@@ -120,6 +123,7 @@ export default function CreateActualInvoicePage() {
   const { data: fin } = useFinancialEntitlement({
     contract: contractData,
     variations,
+    prolongationFees,
     payments: [],
   });
 
@@ -163,6 +167,18 @@ export default function CreateActualInvoicePage() {
     return ids;
   }, [previousInvoices]);
 
+  const previouslyInvoicedProlongationFeeIds = useMemo(() => {
+    const ids = new Set();
+    previousInvoices
+      .filter(inv => inv.payer === "owner")
+      .forEach(inv => {
+        (Array.isArray(inv.items) ? inv.items : []).forEach(it => {
+          if (it.prolongation_fee_id != null) ids.add(String(it.prolongation_fee_id));
+        });
+      });
+    return ids;
+  }, [previousInvoices]);
+
   const prevOwnerInvoiced = previousInvoices
     .filter(inv => inv.payer === "owner")
     .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
@@ -178,7 +194,7 @@ export default function CreateActualInvoicePage() {
       const invItems = Array.isArray(inv.items) ? inv.items : [];
       const baseTotal = invItems.reduce((s, it) => {
         // Skip bank_vat items and variation items
-        if (it.source === "bank_vat" || it.variation_id) return s;
+        if (it.source === "bank_vat" || it.source === "prolongation_fee" || it.variation_id || it.prolongation_fee_id) return s;
         return s + (parseFloat(it.total) || 0);
       }, 0);
       return sum + baseTotal * (1 + VAT_RATE);
@@ -204,6 +220,17 @@ export default function CreateActualInvoicePage() {
         return s;
       }, 0);
       return sum + voTotal * (1 + VAT_RATE);
+    }, 0), [previousInvoices]);
+
+  const getPrevProlongationFeeInvoiced = useCallback((feeId) => previousInvoices
+    .filter(inv => inv.payer === "owner")
+    .reduce((sum, inv) => {
+      const invItems = Array.isArray(inv.items) ? inv.items : [];
+      const feeTotal = invItems.reduce((s, it) => {
+        if (String(it.prolongation_fee_id) === String(feeId)) return s + (parseFloat(it.total) || 0);
+        return s;
+      }, 0);
+      return sum + feeTotal * (1 + VAT_RATE);
     }, 0), [previousInvoices]);
 
   // ── Owner base contract obligation & due ──────────────────────────
@@ -253,13 +280,23 @@ export default function CreateActualInvoicePage() {
     return { obligation, prevInvoiced: prevInv, dueThisCycle, remaining, progress: voProg };
   }, [getPrevVOInvoiced, getVOProgress]);
 
+  const getProlongationFeeInfo = useCallback((fee) => {
+    if (!fee) return { obligation: 0, prevInvoiced: 0, dueThisCycle: 0, remaining: 0 };
+    const obligation = parseFloat(fee.net_amount || fee.amount || 0) * (1 + VAT_RATE);
+    const prevInv = getPrevProlongationFeeInvoiced(fee.id);
+    const remaining = Math.max(0, obligation - prevInv);
+    return { obligation, prevInvoiced: prevInv, dueThisCycle: remaining, remaining };
+  }, [getPrevProlongationFeeInvoiced]);
+
   // ── Totals for owner ──────────────────────────────────────────────
   // Owner total obligation to contractor = base contract + all VOs (all incl VAT)
   const totalVOsObligation = variations.reduce((sum, vo) => sum + getVOInfo(vo).obligation, 0);
-  const ownerInvoiceObligation = ownerBaseObligInclVAT + totalVOsObligation;
+  const totalProlongationFeesObligation = prolongationFees.reduce((sum, fee) => sum + getProlongationFeeInfo(fee).obligation, 0);
+  const ownerInvoiceObligation = ownerBaseObligInclVAT + totalVOsObligation + totalProlongationFeesObligation;
   const ownerRemaining = Math.max(0, ownerInvoiceObligation - prevOwnerInvoiced);
   const totalVOsDueThisCycle = variations.reduce((sum, vo) => sum + getVOInfo(vo).dueThisCycle, 0);
-  const ownerDueThisCycle = ownerBaseDueThisCycle + totalVOsDueThisCycle;
+  const totalProlongationFeesDueThisCycle = prolongationFees.reduce((sum, fee) => sum + getProlongationFeeInfo(fee).dueThisCycle, 0);
+  const ownerDueThisCycle = ownerBaseDueThisCycle + totalVOsDueThisCycle + totalProlongationFeesDueThisCycle;
   const totalVOsRemaining = variations.reduce((sum, vo) => sum + getVOInfo(vo).remaining, 0);
 
   // ── VOs selected in the items table (unique) ─────────────────────
@@ -297,8 +334,14 @@ export default function CreateActualInvoicePage() {
       if (patch.source && patch.source !== "variation") {
         next[idx] = { ...next[idx], variation_id: null };
       }
+      if (patch.source && patch.source !== "prolongation_fee") {
+        next[idx] = { ...next[idx], prolongation_fee_id: null };
+      }
       if (patch.source === "variation") {
-        next[idx] = { ...next[idx], variation_id: null };
+        next[idx] = { ...next[idx], variation_id: null, prolongation_fee_id: null };
+      }
+      if (patch.source === "prolongation_fee") {
+        next[idx] = { ...next[idx], variation_id: null, prolongation_fee_id: null };
       }
       return next;
     });
@@ -311,6 +354,7 @@ export default function CreateActualInvoicePage() {
     // Auto-select first available source
     if (hasBase) {
       if (variations.length > 0) newItem.source = "variation";
+      else if (prolongationFees.length > 0) newItem.source = "prolongation_fee";
       else if (bankVATpaidByOwner > 0 && !hasBankVat) newItem.source = "bank_vat";
     }
     return [...prev, newItem];
@@ -351,9 +395,9 @@ export default function CreateActualInvoicePage() {
       showError(t("invoice_amount_required"));
       return false;
     }
-    // Bank items cannot have variation or bank_vat source
+    // Bank items cannot have variation, prolongation fee, or bank_vat source
     if (payer === "bank") {
-      const hasVO = items.some(it => it.source === "variation" || it.source === "bank_vat");
+      const hasVO = items.some(it => it.source === "variation" || it.source === "prolongation_fee" || it.source === "bank_vat");
       if (hasVO) {
         showError(t("invoice_item_variation_not_allowed"));
         return false;
@@ -368,6 +412,10 @@ export default function CreateActualInvoicePage() {
     for (let i = 0; i < items.length; i++) {
       if (items[i].source === "variation" && !items[i].variation_id) {
         showError(t("select_variation_required"));
+        return false;
+      }
+      if (items[i].source === "prolongation_fee" && !items[i].prolongation_fee_id) {
+        showError(t("select_prolongation_fee_required") || "Select a prolongation fee.");
         return false;
       }
     }
@@ -387,6 +435,11 @@ export default function CreateActualInvoicePage() {
     const voIds = items.filter(it => it.source === "variation" && it.variation_id).map(it => String(it.variation_id));
     if (new Set(voIds).size !== voIds.length) {
       showError(t("variation_already_used"));
+      return false;
+    }
+    const feeIds = items.filter(it => it.source === "prolongation_fee" && it.prolongation_fee_id).map(it => String(it.prolongation_fee_id));
+    if (new Set(feeIds).size !== feeIds.length) {
+      showError(t("prolongation_fee_already_used") || "Prolongation fee already used.");
       return false;
     }
 
@@ -418,6 +471,18 @@ export default function CreateActualInvoicePage() {
             }
           }
         }
+        if (item.source === "prolongation_fee" && item.prolongation_fee_id) {
+          const fee = prolongationFees.find(f => String(f.id) === String(item.prolongation_fee_id));
+          if (fee) {
+            const feeInfo = getProlongationFeeInfo(fee);
+            const feeAmountInclVAT = (parseFloat(removeCommas(item.amount_incl_vat || "0")) || 0);
+            if (feeAmountInclVAT > feeInfo.remaining + 0.01) {
+              warnings.push(
+                `${t("prolongation_fees") || "Prolongation Fees"} (${formatAmountString(feeAmountInclVAT)}) ${t("exceeds_due_amount") || "exceeds due amount"} (${formatAmountString(feeInfo.remaining)})`
+              );
+            }
+          }
+        }
       }
     }
     return warnings;
@@ -440,6 +505,7 @@ export default function CreateActualInvoicePage() {
         items: items.map(it => ({
           description: it.description || (
             it.source === "variation" ? `${t("invoice_item_variation_prefix")} #${it.variation_id}` :
+              it.source === "prolongation_fee" ? `${t("prolongation_fees") || "Prolongation Fees"} #${it.prolongation_fee_id}` :
               it.source === "bank_vat" ? t("bank_vat_paid_by_owner") :
                 t("invoice_item_base_contract")
           ),
@@ -448,6 +514,7 @@ export default function CreateActualInvoicePage() {
           total: r2(it.total),
           source: it.source || "base_contract",
           variation_id: it.source === "variation" ? (parseInt(it.variation_id) || null) : null,
+          prolongation_fee_id: it.source === "prolongation_fee" ? (parseInt(it.prolongation_fee_id) || null) : null,
         })),
       };
 
@@ -577,7 +644,7 @@ export default function CreateActualInvoicePage() {
                       // Recalc all items for new payer (bank = no VAT)
                       setItems(prev => prev.map(it => {
                         const updated = newPayer === "bank"
-                          ? { ...it, source: "base_contract", variation_id: null }
+                          ? { ...it, source: "base_contract", variation_id: null, prolongation_fee_id: null }
                           : it;
                         const amount = parseFloat(removeCommas(updated.amount_incl_vat || "0")) || 0;
                         if (newPayer === "bank" || updated.source === "bank_vat") {
@@ -806,9 +873,12 @@ export default function CreateActualInvoicePage() {
                     {items.map((item, idx) => {
                       const selectedVO = variations.find(v => String(v.id) === String(item.variation_id)) || null;
                       const voInfo = selectedVO ? getVOInfo(selectedVO) : null;
+                      const selectedProlongationFee = prolongationFees.find(f => String(f.id) === String(item.prolongation_fee_id)) || null;
+                      const prolongationFeeInfo = selectedProlongationFee ? getProlongationFeeInfo(selectedProlongationFee) : null;
 
                       // IDs already used in OTHER rows (for duplicate prevention)
                       const usedVOIds = items.filter((_, i) => i !== idx && items[i].variation_id).map(it => String(it.variation_id));
+                      const usedProlongationFeeIds = items.filter((_, i) => i !== idx && items[i].prolongation_fee_id).map(it => String(it.prolongation_fee_id));
                       const baseUsedInOther = items.some((it, i) => i !== idx && it.source === "base_contract");
                       const bankVatUsedInOther = items.some((it, i) => i !== idx && it.source === "bank_vat");
                       const baseConflict = item.source === "base_contract" && baseUsedInOther;
@@ -830,6 +900,9 @@ export default function CreateActualInvoicePage() {
                               </option>
                               {payer === "owner" && variations.length > 0 && (
                                 <option value="variation">{t("invoice_item_variation")}</option>
+                              )}
+                              {payer === "owner" && prolongationFees.length > 0 && (
+                                <option value="prolongation_fee">{t("prolongation_fees") || "Prolongation Fees"}</option>
                               )}
                               {payer === "owner" && bankVATpaidByOwner > 0 && (
                                 <option value="bank_vat" disabled={bankVatUsedInOther}>
@@ -946,6 +1019,47 @@ export default function CreateActualInvoicePage() {
                                       {t("vo_due_by_progress")}: <b>{formatAmountString(voInfo.dueThisCycle)}</b>
                                     </span>
                                     <span className="inv-item-chip">{t("remaining_vo_obligation")}: <b>{renderAmount(voInfo.remaining)}</b></span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {item.source === "prolongation_fee" && payer === "owner" && (
+                              <div className="invoice-form__source-info">
+                                <select
+                                  className="prj-select w-full"
+                                  style={{ marginTop: "6px" }}
+                                  value={item.prolongation_fee_id || ""}
+                                  onChange={(e) => updateItem(idx, { prolongation_fee_id: e.target.value || null })}
+                                >
+                                  <option value="">{t("select_prolongation_fee_required") || "Select prolongation fee"}</option>
+                                  {prolongationFees
+                                    .filter(fee =>
+                                      !previouslyInvoicedProlongationFeeIds.has(String(fee.id)) ||
+                                      String(fee.id) === String(item.prolongation_fee_id)
+                                    )
+                                    .map(fee => {
+                                      const alreadyUsed = usedProlongationFeeIds.includes(String(fee.id));
+                                      const label = fee.description || `${t("prolongation_fees") || "Prolongation Fees"} #${fee.id}`;
+                                      return (
+                                        <option key={fee.id} value={fee.id} disabled={alreadyUsed}>
+                                          {alreadyUsed ? "✓ " : ""}{label} — {formatAmountString(parseFloat(fee.net_amount || fee.amount || 0) * (1 + VAT_RATE))}
+                                        </option>
+                                      );
+                                    })}
+                                </select>
+
+                                {prolongationFeeInfo && selectedProlongationFee && (
+                                  <div className="inv-item-chips">
+                                    <span className="inv-item-chip">{t("total_amount")}: <b>{renderAmount(prolongationFeeInfo.obligation)}</b></span>
+                                    <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced") || "Previously invoiced"}: <b>−{renderAmount(prolongationFeeInfo.prevInvoiced)}</b></span>
+                                    <span
+                                      className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
+                                      title={t("click_to_fill_amount")}
+                                      onClick={() => updateItem(idx, { amount_incl_vat: prolongationFeeInfo.dueThisCycle.toFixed(2) })}
+                                    >
+                                      {t("remaining")}: <b>{formatAmountString(prolongationFeeInfo.remaining)}</b>
+                                    </span>
                                   </div>
                                 )}
                               </div>

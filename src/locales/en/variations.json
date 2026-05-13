@@ -202,5 +202,6 @@
   "variation_label": "Variation",
   "revoke_approval": "Revoke Approval",
   "reason": "Reason",
-  "variation_requires_final_approval": "Cannot create a price change order until the project receives final approval from the Super Admin."
+  "variation_requires_final_approval": "Cannot create a price change order until the project receives final approval from the Super Admin.",
+  "select_prolongation_fee_required": "Please select an extra fee"
 }

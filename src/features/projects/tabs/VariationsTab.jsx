@@ -787,7 +787,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             {variations && variations.length > 0 ? (
                 <>
                     <MetricGrid columns={4}>
-                        <MetricCard variant="blue" icon="dollar" label={t("total")} value={renderMoney(variationStats.totalAmount)} />
+                        <MetricCard variant="blue" icon="dollar" label={t("total")} sub={`${t('excluding_vat')} • ${t('excluding_consultant_fees')}`} value={renderMoney(variationStats.totalAmount)} />
                         <MetricCard variant="emerald" icon="check" label={t("approved")} value={variationStats.approved} />
                         <MetricCard variant="amber" icon="clock" label={t("pending")} value={variationStats.pending} />
                         <MetricCard variant="danger" icon="x" label={t("cancelled")} value={variationStats.rejected} />
@@ -888,7 +888,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             </td>
 
                                             <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-                                                {renderMoney(variation.total_amount || variation.final_amount || 0)}
+                                                {renderMoney(variation.total_amount || variation.final_amount || 0)}  
+                                                <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
+                                                    {t('excluding_vat')} • {t('excluding_consultant_fees')}
+                                                </span>
                                             </td>
 
                                             <td className="col-actions" onClick={(e) => e.stopPropagation()}>
