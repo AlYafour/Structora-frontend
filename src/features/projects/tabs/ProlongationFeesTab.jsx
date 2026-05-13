@@ -12,9 +12,12 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 
 const VAT_RATE = 5;
 
-function computeAmounts(amount, vatIncluded) {
+function computeAmounts(amount, vatMode) {
   const a = parseFloat(amount) || 0;
-  if (vatIncluded) {
+  if (vatMode === "no_vat") {
+    return { net_amount: a, vat_amount: 0, gross_amount: a };
+  }
+  if (vatMode === "included") {
     const net = +(a / 1.05).toFixed(2);
     const vat = +(a - net).toFixed(2);
     return { net_amount: net, vat_amount: vat, gross_amount: a };
@@ -24,7 +27,7 @@ function computeAmounts(amount, vatIncluded) {
   return { net_amount: a, vat_amount: vat, gross_amount: gross };
 }
 
-const DEFAULT_FORM = { description: "", amount: "", vat_included: false };
+const DEFAULT_FORM = { description: "", amount: "", vat_mode: "excluded" };
 
 const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onReload }) {
   const { t, i18n } = useTranslation();
@@ -71,7 +74,7 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
     return str;
   };
 
-  const preview = useMemo(() => computeAmounts(form.amount, form.vat_included), [form.amount, form.vat_included]);
+  const preview = useMemo(() => computeAmounts(form.amount, form.vat_mode), [form.amount, form.vat_mode]);
 
   const stats = useMemo(() => {
     const totalGross = fees.reduce((s, f) => s + parseFloat(f.gross_amount || 0), 0);
@@ -88,7 +91,15 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
 
   const openEdit = (fee) => {
     setEditingFee(fee);
-    setForm({ description: fee.description || "", amount: fee.amount, vat_included: fee.vat_included });
+    setForm({
+      description: fee.description || "",
+      amount: fee.amount,
+      vat_mode: parseFloat(fee.vat_rate || 0) === 0
+        ? "no_vat"
+        : fee.vat_included
+          ? "included"
+          : "excluded",
+    });
     setFormOpen(true);
   };
 
@@ -102,8 +113,8 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
       const payload = {
         description: form.description,
         amount: parseFloat(form.amount),
-        vat_included: form.vat_included,
-        vat_rate: VAT_RATE,
+        vat_included: form.vat_mode === "included",
+        vat_rate: form.vat_mode === "no_vat" ? 0 : VAT_RATE,
       };
       if (editingFee) {
         await api.patch(`projects/${projectId}/prolongation-fees/${editingFee.id}/`, payload);
@@ -192,9 +203,11 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
                   </td>
                   <td className="ds-text-center">
                     <span className={`prj-badge ${fee.vat_included ? "prj-badge--info" : "prj-badge--secondary"}`}>
-                      {fee.vat_included
-                        ? t("pf_with_vat", "Incl. VAT")
-                        : t("pf_without_vat", "Excl. VAT")}
+                      {parseFloat(fee.vat_rate || 0) === 0
+                        ? t("pf_no_vat", "No VAT")
+                        : fee.vat_included
+                          ? t("pf_with_vat", "Incl. VAT")
+                          : t("pf_without_vat", "Excl. VAT")}
                     </span>
                   </td>
                   <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
@@ -250,8 +263,8 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
                 <input
                   type="radio"
                   name="pf_vat_type"
-                  checked={!form.vat_included}
-                  onChange={() => setForm((f) => ({ ...f, vat_included: false }))}
+                  checked={form.vat_mode === "excluded"}
+                  onChange={() => setForm((f) => ({ ...f, vat_mode: "excluded" }))}
                 />
                 <span>{t("pf_enter_without_vat", "Amount excluding VAT")}</span>
               </label>
@@ -259,19 +272,30 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
                 <input
                   type="radio"
                   name="pf_vat_type"
-                  checked={form.vat_included}
-                  onChange={() => setForm((f) => ({ ...f, vat_included: true }))}
+                  checked={form.vat_mode === "included"}
+                  onChange={() => setForm((f) => ({ ...f, vat_mode: "included" }))}
                 />
                 <span>{t("pf_enter_with_vat", "Amount including VAT")}</span>
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", flex: 1 }}>
+                <input
+                  type="radio"
+                  name="pf_vat_type"
+                  checked={form.vat_mode === "no_vat"}
+                  onChange={() => setForm((f) => ({ ...f, vat_mode: "no_vat" }))}
+                />
+                <span>{t("pf_enter_no_vat", "No VAT")}</span>
               </label>
             </div>
 
             {/* Amount */}
             <div>
               <label className="prj-label">
-                {form.vat_included
+                {form.vat_mode === "included"
                   ? t("pf_amount_with_vat_label", "Amount (includes 5% VAT)")
-                  : t("pf_amount_without_vat_label", "Amount (before VAT)")}
+                  : form.vat_mode === "no_vat"
+                    ? t("pf_amount_no_vat_label", "Amount (no VAT)")
+                    : t("pf_amount_without_vat_label", "Amount (before VAT)")}
               </label>
               <input
                 type="number"

@@ -90,6 +90,15 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       const feeValue = parseFloat(f.net_amount || f.amount || 0);
       return sum + (isNaN(feeValue) ? 0 : feeValue);
     }, 0);
+    const totalProlongationFeesValueWithVAT = activeProlongationFees.reduce((sum, f) => {
+      const fallbackNet = parseFloat(f.net_amount || f.amount || 0);
+      const feeValue = f.gross_amount != null
+        ? parseFloat(f.gross_amount)
+        : fallbackNet * VAT_MULTIPLIER;
+      return sum + (isNaN(feeValue) ? 0 : feeValue);
+    }, 0);
+    const hasOnlyNoVatProlongationFees = activeProlongationFees.length > 0
+      && activeProlongationFees.every((f) => parseFloat(f.vat_rate || 0) === 0);
 
     const ownerPayments = sumPaymentsByPayer(payments, 'owner');
     const bankPayments = sumPaymentsByPayer(payments, 'bank');
@@ -108,7 +117,9 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
     const totalContractWithVariations =
       contractValueExcludingConsultantFees + totalVariationsValue + totalProlongationFeesValue;
 
-    const totalContractWithVariationsWithVAT = totalContractWithVariations * VAT_MULTIPLIER;
+    const totalContractWithVariationsWithVAT =
+      ((contractValueExcludingConsultantFees + totalVariationsValue) * VAT_MULTIPLIER) +
+      totalProlongationFeesValueWithVAT;
 
     const totalPaymentsNet = totalPayments / VAT_MULTIPLIER;
     const totalPaymentsVAT = totalPayments - totalPaymentsNet;
@@ -133,6 +144,8 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       bankNetValue,
       totalVariationsValue,
       totalProlongationFeesValue,
+      totalProlongationFeesValueWithVAT,
+      hasOnlyNoVatProlongationFees,
       activeProlongationFeesCount: activeProlongationFees.length,
       approvedVariationsCount: approvedVariations.length,
       pendingVariationsCount: pendingVariations.length,
@@ -284,8 +297,14 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
               variant="slate"
               icon="wallet"
               label={t("prolongation_fees")}
-              value={renderAmount(v(financialStats.totalProlongationFeesValue))}
-              sub={`${financialStats.activeProlongationFeesCount} ${t("active")} · ${vatLabel}`}
+              value={renderAmount(
+                financialStats.hasOnlyNoVatProlongationFees
+                  ? financialStats.totalProlongationFeesValue
+                  : showVat
+                    ? financialStats.totalProlongationFeesValueWithVAT
+                    : financialStats.totalProlongationFeesValue
+              )}
+              sub={`${financialStats.activeProlongationFeesCount} ${t("active")} · ${financialStats.hasOnlyNoVatProlongationFees ? t("pf_no_vat", "No VAT") : vatLabel}`}
             />
             <MetricCard
               variant="emerald"
@@ -417,7 +436,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{vatLabel}</span>
                   </span>
                   <span className="financial-breakdown__value financial-breakdown__value--highlight">
-                    + {renderAmount(v(financialStats.totalProlongationFeesValue))}
+                    + {renderAmount(showVat ? financialStats.totalProlongationFeesValueWithVAT : financialStats.totalProlongationFeesValue)}
                   </span>
                 </div>
                 <div className="financial-breakdown__divider" />

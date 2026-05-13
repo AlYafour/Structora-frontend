@@ -4747,6 +4747,7 @@ html.theme-dark .infotip__popup {
   gap: var(--space-3);
   align-items: center;
   flex-wrap: wrap;
+  margin-top: 10px  ;
 }
 
 .prj-tab-filter .prj-input {

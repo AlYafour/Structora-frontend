@@ -136,6 +136,12 @@ export default function useFinancialEntitlement({
       const totalProlongationFees = prolongationFees
         .filter((f) => (f.status || "active") === "active")
         .reduce((sum, f) => sum + n(f.net_amount || f.amount || 0), 0);
+      const totalProlongationFeesWithVAT = prolongationFees
+        .filter((f) => (f.status || "active") === "active")
+        .reduce((sum, f) => {
+          const gross = f.gross_amount ?? null;
+          return sum + n(gross != null ? gross : (n(f.net_amount || f.amount || 0) * (1 + 0.05)));
+        }, 0);
 
       /* ======================================================
          6. Owner Share – Actual & Total
@@ -206,7 +212,7 @@ export default function useFinancialEntitlement({
       // Calculate final amount Including VAT by adding VAT to each item before summing
       const finalPayableAmount = round(
         (totalVOWithFees * (1 + vatRate)) +
-        (totalProlongationFees * (1 + vatRate)) +
+        totalProlongationFeesWithVAT +
         (ownerTotalOriginal * (1 + vatRate)) +
         (bankActualFixed * (1 + vatRate))
       );
@@ -239,7 +245,7 @@ export default function useFinancialEntitlement({
       ====================================================== */
       const ownerVAT = round(ownerActualAfterVO * vatRate);
       const bankVAT = round(bankActualFixed * vatRate);
-      const prolongationFeesWithVAT = round(totalProlongationFees * (1 + vatRate));
+      const prolongationFeesWithVAT = round(totalProlongationFeesWithVAT);
 
       const ownerObligation = ownerActualAfterVO + ownerVAT + prolongationFeesWithVAT;
       const bankObligation = bankActualFixed + bankVAT;
@@ -369,7 +375,7 @@ export default function useFinancialEntitlement({
 
           prolongationFeesSummary: {
             totalNet: totalProlongationFees,
-            totalWithVat: round(totalProlongationFees * (1 + vatRate)),
+            totalWithVat: prolongationFeesWithVAT,
           },
 
           rebuiltContract: {
@@ -403,7 +409,7 @@ export default function useFinancialEntitlement({
             //   - Plus VAT on bank's net share (owner pays this VAT to the contractor)
             ownerInvoiceObligation: round(ownerTotalAfterVO * (1 + vatRate) + prolongationFeesWithVAT + bankVAT),
             // projectTotalInclVAT = total project value including VAT (the invoice denominator)
-            projectTotalInclVAT: round((totalGrossAfterVO + totalProlongationFees) * (1 + vatRate)),
+            projectTotalInclVAT: round((totalGrossAfterVO * (1 + vatRate)) + prolongationFeesWithVAT),
           },
 
           balance: {

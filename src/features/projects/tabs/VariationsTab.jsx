@@ -36,6 +36,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const canEditVariation = isAdmin || hasPermission('variations.create'); // same permission gates creation and editing
     const navigate = useTenantNavigate();
     const isAR = i18n.language === "ar";
+    const [showVat, setShowVat] = useState(false);
+    const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
+    const v = (val) => showVat ? val * 1.05 : val;
+
 
     const getAmountValue = (amount) => {
         const value = parseFloat(amount || 0);
@@ -732,6 +736,29 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         <div className="prj-tab-panel">
             <div className="prj-tab-header">
                 <div className="prj-tab-actions">
+                    <button
+                        onClick={() => setShowVat(s => !s)}
+                        style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: showVat ? '2px solid #3b82f6' : '1.5px solid #d1d5db',
+                            background: showVat ? '#eff6ff' : 'transparent',
+                            color: showVat ? '#1d4ed8' : '#6b7280',
+                            fontWeight: 600,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                        {showVat ? t("including_vat") : t("excluding_vat")}
+                    </button>
+
                     {canCreateVariation && (
                         isProjectFinalApproved ? (
                             <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
@@ -787,7 +814,14 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             {variations && variations.length > 0 ? (
                 <>
                     <MetricGrid columns={4}>
-                        <MetricCard variant="blue" icon="dollar" label={t("total")} sub={`${t('excluding_vat')} • ${t('excluding_consultant_fees')}`} value={renderMoney(variationStats.totalAmount)} />
+                        <MetricCard
+                            variant="blue"
+                            icon="dollar"
+                            label={t("total")}
+                            sub={`${vatLabel} • ${t('excluding_consultant_fees')}`}
+                            value={renderMoney(v(variationStats.totalAmount))}
+                        />
+
                         <MetricCard variant="emerald" icon="check" label={t("approved")} value={variationStats.approved} />
                         <MetricCard variant="amber" icon="clock" label={t("pending")} value={variationStats.pending} />
                         <MetricCard variant="danger" icon="x" label={t("cancelled")} value={variationStats.rejected} />
@@ -888,7 +922,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             </td>
 
                                             <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-                                                {renderMoney(variation.total_amount || variation.final_amount || 0)}  
+                                                {renderMoney(variation.total_amount || variation.final_amount || 0)}
                                                 <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
                                                     {t('excluding_vat')} • {t('excluding_consultant_fees')}
                                                 </span>

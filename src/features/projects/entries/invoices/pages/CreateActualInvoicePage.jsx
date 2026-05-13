@@ -282,7 +282,7 @@ export default function CreateActualInvoicePage() {
 
   const getProlongationFeeInfo = useCallback((fee) => {
     if (!fee) return { obligation: 0, prevInvoiced: 0, dueThisCycle: 0, remaining: 0 };
-    const obligation = parseFloat(fee.net_amount || fee.amount || 0) * (1 + VAT_RATE);
+    const obligation = parseFloat(fee.gross_amount ?? fee.amount ?? 0);
     const prevInv = getPrevProlongationFeeInvoiced(fee.id);
     const remaining = Math.max(0, obligation - prevInv);
     return { obligation, prevInvoiced: prevInv, dueThisCycle: remaining, remaining };

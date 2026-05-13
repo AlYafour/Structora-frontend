@@ -69,6 +69,9 @@ export default function ContractFinancialSummary({ projectId }) {
       const totalProlongationFeesAmount = prolongationFees
         .filter((f) => (f.status || "active") === "active")
         .reduce((sum, f) => sum + n(f.net_amount || f.amount || 0), 0);
+      const totalProlongationFeesVatAmount = prolongationFees
+        .filter((f) => (f.status || "active") === "active")
+        .reduce((sum, f) => sum + n(f.vat_amount || 0), 0);
 
       const grossTotal = n(c.total_project_value);
       const grossBank =
@@ -222,7 +225,7 @@ export default function ContractFinancialSummary({ projectId }) {
           c, grossTotal, grossBank, grossOwner,
           ownerPct, bankPct, totalPct,
           total: totalFinal, bank: bankFinal, owner: ownerFinal,
-          payableAmount, totalVariationsAmount, totalProlongationFeesAmount, actualContractorAmount,
+          payableAmount, totalVariationsAmount, totalProlongationFeesAmount, totalProlongationFeesVatAmount, actualContractorAmount,
           A, vat: vatFn, inc: incFn,
         },
       };
@@ -267,7 +270,7 @@ export default function ContractFinancialSummary({ projectId }) {
     return <div className="card ds-text-center cfs-no-data">{t("contract_insufficient_data")}</div>;
   }
 
-  const { grossTotal, grossBank, grossOwner, ownerPct, bankPct, totalPct, total, bank, owner, payableAmount, totalProlongationFeesAmount, actualContractorAmount, A, vat, inc } = computed.data;
+  const { grossTotal, grossBank, grossOwner, ownerPct, bankPct, totalPct, total, bank, owner, payableAmount, totalProlongationFeesAmount, totalProlongationFeesVatAmount, actualContractorAmount, A, vat, inc } = computed.data;
   const isPrivateFunding = contract?.contract_classification === "private_funding";
 
   const notes = {
@@ -298,6 +301,7 @@ export default function ContractFinancialSummary({ projectId }) {
         actualContractorAmount={actualContractorAmount}
         payableAmount={payableAmount}
         prolongationFeesAmount={totalProlongationFeesAmount}
+        prolongationFeesVatAmount={totalProlongationFeesVatAmount}
         isPrivateFunding={isPrivateFunding}
         A={A} vat={vat} inc={inc}
         t={t}
