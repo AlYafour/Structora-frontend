@@ -412,6 +412,11 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
 
     if (!form.contract_date) throw new Error(t("contract.errors.select_date"));
 
+    const contractClassification = (form.contract_classification || "").trim();
+    if (!noPermit && !contractClassification) {
+      throw new Error(t("contract.errors.select_classification"));
+    }
+
     const totalValue = form.total_project_value;
     if (!totalValue || totalValue === "" || totalValue === null || totalValue === undefined) {
       throw new Error(t("contract.errors.total_project_value_positive"));
@@ -707,10 +712,17 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   };
 
   const save = async () => {
+    let payload;
+    try {
+      payload = buildPayload();
+    } catch (err) {
+      setErrorMsg(err?.message || t("save_failed"));
+      return;
+    }
+
     // New project flow: build payload and call onCreateProject (creates everything at once)
     if (isNewProject && onCreateProject) {
       await runSave(async () => {
-        const payload = buildPayload();
         await onCreateProject(payload);
       }, (err) => {
         const formatted = formatServerErrors(err?.response?.data);
@@ -740,8 +752,6 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
           method: "PATCH", credentials: "include", headers, body: imgForm,
         });
       }
-
-      const payload = buildPayload();
 
       if (existingId) {
         await api.patch(`projects/${projectId}/contract/${existingId}/`, payload);
@@ -915,7 +925,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
 
               {/* Classification — full width below (hidden when noPermit) */}
               {!noPermit && (
-                <FormField label={t("contract.sections.classification")} style={{ marginTop: 8 }}>
+                <FormField label={t("contract.sections.classification")} required style={{ marginTop: 8 }}>
                   {viewMode ? (
                     <FormViewField
                       value={contractClassificationOptions.find(m => m.value === form.contract_classification)?.label || null}

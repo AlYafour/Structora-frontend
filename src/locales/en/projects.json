@@ -620,7 +620,7 @@
   "no_contract_data": "No Contract Data",
   "add_contract_first": "Please add contract data first",
   "add_contract": "Add Contract",
-  "total_contract_value": "Total Contract Value",
+  "total_contract_value": "Total Contract Value Including All",
   "total_contract_value_excluding_consultant_fees": "Contract Value Without Bank Consultant Fees",
   "total_contract_value_excluding_consultant_fees_tooltip": "Original contract value excluding consultant fees paid by the bank.",
   "total_payments": "Total Payments",
