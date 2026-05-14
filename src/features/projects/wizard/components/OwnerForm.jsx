@@ -44,7 +44,7 @@ export const EMPTY_OWNER = {
  is_authorized: false, // Authorized owner
 };
 
-export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, canRemove, isAR, idAttachmentUrl, projectId, idAttachmentFileName, hideContactInfo = false, hideIdUpload = false, isAuthorized = false, onAuthorizedChange, verifiedFields = {}, onToggleVerify }) {
+export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, canRemove, isAR, idAttachmentUrl, projectId, idAttachmentFileName, hideContactInfo = false, hideIdUpload = false, isAuthorized = false, onAuthorizedChange, verifiedFields = {}, onToggleVerify, onIdFileChange }) {
  const { t, i18n } = useTranslation();
  const nationalityOptions = NATIONALITIES.map(n => ({
  value: n.value,
@@ -317,7 +317,7 @@ export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, ca
  <Field label={t("id_attachment")}>
  <FileUpload
  value={owner.id_attachment instanceof File ? owner.id_attachment : null}
- onChange={handleIdAttachmentChange}
+ onChange={onIdFileChange ? onIdFileChange : handleIdAttachmentChange}
  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
  maxSizeMB={30}
  showPreview={true}
@@ -326,7 +326,7 @@ export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, ca
  onRemoveExisting={() => onUpdate(index, "id_attachment", null)}
  compressionOptions={{ maxSizeMB: 1, maxWidthOrHeight: 1920 }}
  />
- {isExtractingId && (
+ {isExtractingId && !onIdFileChange && (
    <div className="wizard-extract-indicator" style={{ marginTop: '0.5rem' }}>
      <svg className="wizard-extract-indicator__spinner" viewBox="0 0 24 24" width="16" height="16">
        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" />

@@ -1170,7 +1170,7 @@ export default function SitePlanStep({
         </>
       )}
 
-      {(!noPermit || hasSitePlan === true || viewMode) && (ownerIdUploaded || viewMode) && (
+      {(!noPermit || hasSitePlan === true || viewMode) && (sitePlanUploaded || viewMode) && (
         <OwnerDetailsSection
           owners={owners}
           viewMode={viewMode}
@@ -1182,12 +1182,13 @@ export default function SitePlanStep({
           projectId={projectId}
           isAR={isAR}
           contractOwners={contractOwners}
-          hideIdUpload={true}
+          hideIdUpload={false}
           onAuthorizedChange={(idx) => {
             setOwners((prev) => prev.map((o, i) => ({ ...o, is_authorized: i === idx })));
           }}
           verifiedFields={verifiedFields}
           onToggleVerify={toggleVerify}
+          onOwnerIdFileChange={handleOwnerIdFileChange}
         />
       )}
 

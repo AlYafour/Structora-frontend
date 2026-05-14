@@ -818,7 +818,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                             variant="blue"
                             icon="dollar"
                             label={t("total")}
-                            sub={`${vatLabel} • ${t('excluding_consultant_fees')}`}
+                            sub={`${vatLabel} • ${t('including_consultant_fees')}`}
                             value={renderMoney(v(variationStats.totalAmount))}
                         />
 
@@ -924,7 +924,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
                                                 {renderMoney(variation.total_amount || variation.final_amount || 0)}
                                                 <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
-                                                    {t('excluding_vat')} • {t('excluding_consultant_fees')}
+                                                    {t('excluding_vat')} • {t('including_consultant_fees')}
                                                 </span>
                                             </td>
 

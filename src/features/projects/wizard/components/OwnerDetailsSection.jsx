@@ -43,6 +43,7 @@ export default function OwnerDetailsSection({
   onAuthorizedChange,
   verifiedFields = {},
   onToggleVerify,
+  onOwnerIdFileChange,
 }) {
   const { t } = useTranslation();
 
@@ -108,7 +109,7 @@ export default function OwnerDetailsSection({
                   idAttachmentUrl={fileUrl}
                   projectId={projectId}
                   idAttachmentFileName={fileName}
-                  hideIdUpload={hideIdUpload}
+                  hideIdUpload={i === 0}
                 />
               );
             })
@@ -145,11 +146,12 @@ export default function OwnerDetailsSection({
                   projectId={projectId}
                   idAttachmentFileName={fileName}
                   hideContactInfo={true}
-                  hideIdUpload={hideIdUpload}
+                  hideIdUpload={i === 0}
                   isAuthorized={!!o.is_authorized}
                   onAuthorizedChange={onAuthorizedChange}
                   verifiedFields={verifiedFields}
                   onToggleVerify={onToggleVerify}
+                  onIdFileChange={onOwnerIdFileChange && i > 0 ? (file) => onOwnerIdFileChange(i, file) : undefined}
                 />
               );
             })

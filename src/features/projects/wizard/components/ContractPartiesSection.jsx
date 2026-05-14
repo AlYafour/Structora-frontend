@@ -66,6 +66,11 @@ export default function ContractPartiesSection({
             <div>
               {noPermitOwners.map((o, i) => (
                 <div key={i} style={{ marginBottom: i < noPermitOwners.length - 1 ? "24px" : "0" }}>
+                  {noPermitOwners.length > 1 && (
+                    <div className="owner-block__label" style={{ marginBottom: "10px", fontWeight: 600, fontSize: "0.85rem", opacity: 0.7 }}>
+                      {t("owner")} {i + 1}
+                    </div>
+                  )}
                   <div className="form-grid cols-2 wizard-gap-4">
                     <Field label={t("owner_name_ar")}>
                       {viewMode ? (
@@ -168,6 +173,11 @@ export default function ContractPartiesSection({
 
                     return (
                       <div key={o.id || o.id_number || i} style={{ marginBottom: i < authorizedOwners.length - 1 ? "24px" : "0" }}>
+                        {authorizedOwners.length > 1 && (
+                          <div className="owner-block__label" style={{ marginBottom: "10px", fontWeight: 600, fontSize: "0.85rem", opacity: 0.7 }}>
+                            {t("owner")} {i + 1}
+                          </div>
+                        )}
                         <div className="form-grid cols-2 wizard-gap-4">
                           <Field label={t("owner_name_ar")}>
                             {viewMode ? (

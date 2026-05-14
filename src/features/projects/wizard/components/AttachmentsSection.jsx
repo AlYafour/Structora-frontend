@@ -21,7 +21,7 @@ export default function AttachmentsSection({
   isUploading,
   isExtracting,
   onSitePlanView,
-  // Owners
+  // First owner ID (owner 0 only — subsequent owners have inline uploads)
   owners,
   updateOwner,
   ownerFileUrls,
@@ -62,24 +62,21 @@ export default function AttachmentsSection({
             />
           </div>
 
-          {/* Owner ID Cards */}
-          {owners.map((owner, idx) => {
+          {/* Owner 1 ID card (view) */}
+          {(() => {
+            const owner = owners?.[0];
+            if (!owner) return null;
             const fileUrl =
-              ownerFileUrls[idx] ||
+              ownerFileUrls?.[0] ||
               (typeof owner.id_attachment === "string" && owner.id_attachment.trim() !== ""
                 ? owner.id_attachment
                 : "");
             const fileName =
-              ownerFileNames[idx] ||
-              (owner.id_attachment instanceof File ? owner.id_attachment.name : "") ||
+              ownerFileNames?.[0] ||
               (fileUrl ? extractFileNameFromUrl(fileUrl) : "");
-
             if (!fileUrl && !fileName) return null;
-
-            const ownerLabel = `${t("owner")} ${idx + 1}`;
-
             return (
-              <div key={owner._uid || owner.id || idx} className="wizard-attachments__card">
+              <div className="wizard-attachments__card">
                 <div className="wizard-attachments__card-header">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -87,7 +84,7 @@ export default function AttachmentsSection({
                     <path d="M16 10h2" />
                     <path d="M16 14h2" />
                   </svg>
-                  <span>{t("id_attachment")} — {ownerLabel}</span>
+                  <span>{t("id_attachment")} — {t("owner")} 1</span>
                 </div>
                 <FileAttachmentView
                   fileUrl={fileUrl}
@@ -97,7 +94,7 @@ export default function AttachmentsSection({
                 />
               </div>
             );
-          })}
+          })()}
         </div>
       </CollapsibleSection>
     );
@@ -154,22 +151,21 @@ export default function AttachmentsSection({
             )}
           </div>
 
-          {/* Owner ID Card Uploads */}
-          {owners.map((owner, idx) => {
+          {/* Owner 1 ID upload (edit) — subsequent owners have inline uploads inside their own form */}
+          {(() => {
+            const owner = owners?.[0];
+            if (!owner) return null;
             const fileUrl =
-              ownerFileUrls[idx] ||
+              ownerFileUrls?.[0] ||
               (typeof owner.id_attachment === "string" && owner.id_attachment.trim() !== ""
                 ? owner.id_attachment
                 : "");
             const fileName =
-              ownerFileNames[idx] ||
+              ownerFileNames?.[0] ||
               (owner.id_attachment instanceof File ? owner.id_attachment.name : "") ||
               (fileUrl ? extractFileNameFromUrl(fileUrl) : "");
-
-            const ownerLabel = `${t("owner")} ${idx + 1}`;
-
             return (
-              <div key={owner._uid || owner.id || idx} className="wizard-attachments__upload-card">
+              <div className="wizard-attachments__upload-card">
                 <div className="wizard-attachments__card-header">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -177,23 +173,23 @@ export default function AttachmentsSection({
                     <path d="M16 10h2" />
                     <path d="M16 14h2" />
                   </svg>
-                  <span>{t("id_attachment")} — {ownerLabel}</span>
+                  <span>{t("id_attachment")} — {t("owner")} 1</span>
                 </div>
                 <FileUpload
                   value={owner.id_attachment instanceof File ? owner.id_attachment : null}
-                  onChange={(file) => onOwnerIdFileChange(idx, file)}
+                  onChange={(file) => onOwnerIdFileChange(0, file)}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   maxSizeMB={30}
                   showPreview={true}
                   existingFileUrl={fileUrl}
                   existingFileName={fileName}
-                  onRemoveExisting={() => updateOwner(idx, "id_attachment", null)}
+                  onRemoveExisting={() => updateOwner(0, "id_attachment", null)}
                   compressionOptions={{ maxSizeMB: 1, maxWidthOrHeight: 1920 }}
-                  onPreview={onOwnerIdView ? () => onOwnerIdView(idx) : undefined}
+                  onPreview={onOwnerIdView ? () => onOwnerIdView(0) : undefined}
                 />
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
     </CollapsibleSection>
