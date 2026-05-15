@@ -95,8 +95,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [actionVariation, setActionVariation] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [bulkApproveVariationsConfirmOpen, setBulkApproveVariationsConfirmOpen] = useState(false);
+    const [bulkFinalApproveVariationsConfirmOpen, setBulkFinalApproveVariationsConfirmOpen] = useState(false);
     const [bulkRejectVariationsConfirmOpen, setBulkRejectVariationsConfirmOpen] = useState(false);
     const [bulkApprovingVariations, setBulkApprovingVariations] = useState(false);
+    const [bulkFinalApprovingVariations, setBulkFinalApprovingVariations] = useState(false);
     const [bulkRejectingVariations, setBulkRejectingVariations] = useState(false);
     const [deleteVariationsConfirmOpen, setDeleteVariationsConfirmOpen] = useState(false);
     const [deletingVariations, setDeletingVariations] = useState(false);
@@ -464,6 +466,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         setBulkApproveVariationsConfirmOpen(true);
     };
 
+    const askBulkFinalApproveVariations = () => {
+        if (selectedVariationIds.size === 0) return;
+        setBulkFinalApproveVariationsConfirmOpen(true);
+    };
+
     const handleBulkApproveVariations = async () => {
         if (selectedVariationIds.size === 0) return;
 
@@ -600,6 +607,65 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             }
         } finally {
             setBulkApprovingVariations(false);
+        }
+    };
+
+    const handleBulkFinalApproveVariations = async () => {
+        if (selectedVariationIds.size === 0 || !isGeneralManager) return;
+
+        const selectedVariations = filteredVariations.filter((v) =>
+            selectedVariationIds.has(v.id)
+        );
+
+        setBulkFinalApprovingVariations(true);
+
+        let ok = 0;
+        let fail = 0;
+
+        try {
+            for (const variation of selectedVariations) {
+                const status = getVariationStatus(variation);
+
+                if (status === "approved" || status === "final_approved") {
+                    continue;
+                }
+
+                try {
+                    await projectApi.approveVariation(projectId, variation.id);
+                    ok += 1;
+                } catch (e) {
+                    logger.error(`Error final approving variation ${variation.id}`, e);
+                    fail += 1;
+                }
+            }
+
+            await onReload();
+            clearSelection();
+            setBulkFinalApproveVariationsConfirmOpen(false);
+
+            if (fail === 0) {
+                showToast(
+                    "success",
+                    t("bulk_final_approve_success", "Final approved {{count}} variation(s)").replace(
+                        "{{count}}",
+                        ok
+                    )
+                );
+            } else if (ok === 0) {
+                showToast("error", t("bulk_final_approve_error", "Bulk final approve failed"));
+            } else {
+                showToast(
+                    "error",
+                    t(
+                        "bulk_final_approve_partial",
+                        "Bulk final approve partially completed. Approved {{ok}}, failed {{fail}}."
+                    )
+                        .replace("{{ok}}", ok)
+                        .replace("{{fail}}", fail)
+                );
+            }
+        } finally {
+            setBulkFinalApprovingVariations(false);
         }
     };
 
@@ -788,13 +854,23 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                 label: bulkApprovingVariations ? t("approving") : t("approve_selected"),
                                 onClick: askBulkApproveVariations,
                                 variant: "primary",
-                                disabled: bulkApprovingVariations || bulkRejectingVariations || deletingVariations,
+                                disabled: bulkApprovingVariations || bulkFinalApprovingVariations || bulkRejectingVariations || deletingVariations,
                             },
+                            ...(isGeneralManager
+                                ? [
+                                    {
+                                        label: bulkFinalApprovingVariations ? t("approving") : t("final_approve_selected", "Final approve selected"),
+                                        onClick: askBulkFinalApproveVariations,
+                                        variant: "success",
+                                        disabled: bulkApprovingVariations || bulkFinalApprovingVariations || bulkRejectingVariations || deletingVariations,
+                                    },
+                                ]
+                                : []),
                             {
                                 label: bulkRejectingVariations ? t("rejecting") : t("reject_selected"),
                                 onClick: askBulkRejectVariations,
                                 variant: "danger",
-                                disabled: bulkApprovingVariations || bulkRejectingVariations || deletingVariations,
+                                disabled: bulkApprovingVariations || bulkFinalApprovingVariations || bulkRejectingVariations || deletingVariations,
                             },
                         ]
                         : []),
@@ -804,7 +880,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                 label: t("delete"),
                                 onClick: () => setDeleteVariationsConfirmOpen(true),
                                 variant: "danger",
-                                disabled: deletingVariations || bulkApprovingVariations || bulkRejectingVariations || !staffCanDeleteSelected,
+                                disabled: deletingVariations || bulkApprovingVariations || bulkFinalApprovingVariations || bulkRejectingVariations || !staffCanDeleteSelected,
                             },
                         ]
                         : []),
@@ -1116,6 +1192,21 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 onClose={() => !bulkApprovingVariations && setBulkApproveVariationsConfirmOpen(false)}
                 onConfirm={handleBulkApproveVariations}
                 busy={bulkApprovingVariations}
+            />
+
+            <Dialog
+                open={bulkFinalApproveVariationsConfirmOpen}
+                title={t("bulk_final_approve", "Bulk Final Approve")}
+                desc={
+                    <>
+                        {t("bulk_final_approve_confirmation", "Are you sure you want to final approve the selected variations regardless of their current status?")} <strong>{selectedVariationIds.size}</strong> {t("variations_count")}
+                    </>
+                }
+                confirmLabel={bulkFinalApprovingVariations ? t("approving") : t("final_approve_selected", "Final approve selected")}
+                cancelLabel={t("cancel")}
+                onClose={() => !bulkFinalApprovingVariations && setBulkFinalApproveVariationsConfirmOpen(false)}
+                onConfirm={handleBulkFinalApproveVariations}
+                busy={bulkFinalApprovingVariations}
             />
 
             <Dialog

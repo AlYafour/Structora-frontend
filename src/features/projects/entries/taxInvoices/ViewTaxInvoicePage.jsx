@@ -8,7 +8,7 @@ import { handleError } from "../../../../utils/errorHandler";
 import PageLayout from "../../../../components/layout/PageLayout";
 import PageHeader from "../../../../components/layout/PageHeader";
 import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
-import TaxInvoicePrintTemplate from "../../../../components/taxInvoices/TaxInvoicePrintTemplate";
+import UnifiedFinancialPrintTemplate from "../../../../components/print/UnifiedFinancialPrintTemplate";
 import Button from "../../../../components/common/Button";
 import { FaPrint } from "react-icons/fa";
 import { buildFileUrl } from "../../../../utils/helpers/file";
@@ -106,11 +106,13 @@ export default function ViewTaxInvoicePage() {
         </PageHeader>
       </div>
 
-      {/* A4 Tax Invoice Document */}
-      <TaxInvoicePrintTemplate
-        taxInvoice={taxInvoice}
+      {/* Unified financial print document */}
+      <UnifiedFinancialPrintTemplate
+        documentType="taxInvoice"
+        data={taxInvoice}
         project={project}
         company={company}
+        hideControls={true}
       />
     </PageLayout>
   );

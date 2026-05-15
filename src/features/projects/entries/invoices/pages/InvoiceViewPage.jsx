@@ -8,7 +8,7 @@ import { handleError } from "../../../../../utils/errorHandler";
 import PageLayout from "../../../../../components/layout/PageLayout";
 import PageHeader from "../../../../../components/layout/PageHeader";
 import ProjectEntryInfo from "../../../../../components/common/ProjectEntryInfo";
-import InvoicePrintTemplate from "../../../../../components/invoices/InvoicePrintTemplate";
+import UnifiedFinancialPrintTemplate from "../../../../../components/print/UnifiedFinancialPrintTemplate";
 import Button from "../../../../../components/common/Button";
 import { FaPrint } from "react-icons/fa";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
@@ -41,16 +41,32 @@ export default function InvoiceViewPage() {
     try {
       // ✅ Use include parameter to reduce API calls from 4 to just 1
       const projectData = await projectApi.getWithIncludes(projectId, ['siteplan', 'license', 'contract']);
-      
+
       // ✅ Extract related data from the project object
       const siteplanData = projectData?.siteplan_data || null;
       const licenseData = projectData?.license_data || null;
       const contractData = projectData?.contract_data || null;
+      const consultantNameAr =
+        licenseData?.design_consultant_name ||
+        licenseData?.supervision_consultant_name ||
+        licenseData?.design_consultant?.name ||
+        licenseData?.supervision_consultant?.name ||
+        "";
+      const consultantNameEn =
+        licenseData?.design_consultant_name_en ||
+        licenseData?.supervision_consultant_name_en ||
+        licenseData?.design_consultant?.name_en ||
+        licenseData?.supervision_consultant?.name_en ||
+        "";
 
       setProject({
         ...projectData,
         owners: siteplanData?.owners || [],
-        consultant: licenseData?.design_consultant_name || licenseData?.supervision_consultant_name || null,
+        consultant: consultantNameAr || consultantNameEn || null,
+        consultant_name: consultantNameAr,
+        consultant_name_en: consultantNameEn,
+        __consultant_name_ar: consultantNameAr,
+        __consultant_name_en: consultantNameEn,
         plot_number: siteplanData?.plot_number || projectData?.plot_number || null,
         contract: contractData,
       });
@@ -180,7 +196,7 @@ export default function InvoiceViewPage() {
   return (
     <PageLayout>
       {/* Top bar — hidden when printing */}
-      <div className="no-print">
+      <div className="no-print" style={{ maxWidth: 1320, flexDirection: "row", justifyContent: "center", alignItems: "center", margin: "0 auto" }}>
         <PageHeader
           onBack={handleBack}
           actions={
@@ -193,9 +209,10 @@ export default function InvoiceViewPage() {
         </PageHeader>
       </div>
 
-      {/* A4 Invoice Document */}
-      <InvoicePrintTemplate
-        invoice={invoice}
+      {/* Unified financial print document */}
+      <UnifiedFinancialPrintTemplate
+        documentType="invoice"
+        data={invoice}
         project={project}
         company={company}
         onClose={handleBack}

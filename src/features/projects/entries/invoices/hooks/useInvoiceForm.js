@@ -232,10 +232,10 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
 
   // Load next invoice number when date changes (standalone call)
   useEffect(() => {
-    if (!isEditMode && formData.invoice_date) {
+    if (!isEditMode && formData.invoice_date && !formData.project) {
       loadNextInvoiceNumber(formData.invoice_date);
     }
-  }, [formData.invoice_date, isEditMode]);
+  }, [formData.invoice_date, formData.project, isEditMode]);
 
   // Handle project change — single API call for all project data
   const handleProjectChange = (projectId) => {

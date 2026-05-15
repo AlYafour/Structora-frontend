@@ -7,7 +7,7 @@ import { handleError } from "../../../../../utils/errorHandler";
 import PageLayout from "../../../../../components/layout/PageLayout";
 import PageHeader from "../../../../../components/layout/PageHeader";
 import ProjectEntryInfo from "../../../../../components/common/ProjectEntryInfo";
-import PaymentPrintTemplate from "../../../../../components/payments/PaymentPrintTemplate";
+import UnifiedFinancialPrintTemplate from "../../../../../components/print/UnifiedFinancialPrintTemplate";
 import Button from "../../../../../components/common/Button";
 import { FaPrint } from "react-icons/fa";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
@@ -17,7 +17,7 @@ export default function ViewPaymentPage() {
   const { paymentId } = useParams();
   const [searchParams] = useSearchParams();
   const projectIdFromQuery = searchParams.get('project');
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const [loading, setLoading] = useState(true);
   const [payment, setPayment] = useState(null);
@@ -102,9 +102,10 @@ export default function ViewPaymentPage() {
         </PageHeader>
       </div>
 
-      {/* A4 Payment Document */}
-      <PaymentPrintTemplate
-        payment={payment}
+      {/* Unified financial print document */}
+      <UnifiedFinancialPrintTemplate
+        documentType="payment"
+        data={payment}
         project={project}
         company={company}
         onClose={handleBack}

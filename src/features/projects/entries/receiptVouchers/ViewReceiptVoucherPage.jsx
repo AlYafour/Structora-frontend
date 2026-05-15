@@ -8,7 +8,7 @@ import { handleError } from "../../../../utils/errorHandler";
 import PageLayout from "../../../../components/layout/PageLayout";
 import PageHeader from "../../../../components/layout/PageHeader";
 import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
-import ReceiptVoucherPrintTemplate from "../../../../components/receiptVouchers/ReceiptVoucherPrintTemplate";
+import UnifiedFinancialPrintTemplate from "../../../../components/print/UnifiedFinancialPrintTemplate";
 import Button from "../../../../components/common/Button";
 import { FaPrint } from "react-icons/fa";
 import { buildFileUrl } from "../../../../utils/helpers/file";
@@ -106,9 +106,10 @@ export default function ViewReceiptVoucherPage() {
         </PageHeader>
       </div>
 
-      {/* A4 Receipt Voucher Document */}
-      <ReceiptVoucherPrintTemplate
-        voucher={voucher}
+      {/* Unified financial print document */}
+      <UnifiedFinancialPrintTemplate
+        documentType="receiptVoucher"
+        data={voucher}
         project={project}
         company={company}
         hideControls={true}
