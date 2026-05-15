@@ -1,20 +1,18 @@
 import React from 'react';
 import { formatDate, formatPercent } from '../../../../../utils/formatters';
 import ActionMenu from '../../../../../components/common/ActionMenu';
-import { calculateWeightedAverage, parseVariationProgress } from '../utils/progressCalculations';
 
 export default function ProgressHistoryTable({
   history,
   projectData,
-  variations,
   i18n,
-  canEditDelete,
+  canEditEntry,
+  canDeleteEntry,
   handleOpenDialog,
   handleDeleteClick,
   navigate,
   projectId,
   t,
-  isRTL
 }) {
   if (history.length === 0) {
     return (
@@ -23,12 +21,6 @@ export default function ProgressHistoryTable({
       </div>
     );
   }
-
-  const getVariationWeightedAverage = (entry) => {
-    const variationProgress = parseVariationProgress(entry.variation_progress);
-    const avg = calculateWeightedAverage(variationProgress, variations);
-    return avg > 0 ? `${avg.toFixed(2)}%` : '-';
-  };
 
   const fmtPct = (val) => formatPercent(val, { fallback: '-' });
 
@@ -100,10 +92,12 @@ export default function ProgressHistoryTable({
                 </td>
                 <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                   <ActionMenu items={[
-                    ...(canEditDelete(entry) ? [
-                      { label: t('edit'), type: 'button', onClick: () => handleOpenDialog(entry) },
-                      { label: t('delete'), type: 'button', variant: 'danger', onClick: () => handleDeleteClick(entry.id) },
-                    ] : []),
+                    ...(canEditEntry(entry)
+                      ? [{ label: t('edit'), type: 'button', onClick: () => handleOpenDialog(entry) }]
+                      : []),
+                    ...(canDeleteEntry(entry)
+                      ? [{ label: t('delete'), type: 'button', variant: 'danger', onClick: () => handleDeleteClick(entry.id) }]
+                      : []),
                   ]} />
                 </td>
               </tr>

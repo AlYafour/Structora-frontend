@@ -146,8 +146,8 @@ function TenantRoutes() {
       <Route path="projects/select/:type" element={<ProtectedRoute><SelectProjectForType /></ProtectedRoute>} />
       <Route path="projects/:projectId" element={<ProtectedRoute><ProjectView /></ProtectedRoute>} />
       <Route path="projects/:projectId/wizard" element={<ProtectedRoute permission="projects.create"><WizardPage /></ProtectedRoute>} />
-      <Route path="projects/:projectId/progress/add" element={<ProtectedRoute><AddProgressPage /></ProtectedRoute>} />
-      <Route path="projects/:projectId/progress/:entryId/view" element={<ProtectedRoute><ViewProgressEntryPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/progress/add" element={<ProtectedRoute permission="progress.create"><AddProgressPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/progress/:entryId/view" element={<ProtectedRoute permission="progress.view"><ViewProgressEntryPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/summary" element={<ProtectedRoute permission="financial.view"><ViewSummary /></ProtectedRoute>} />
       <Route path="projects/:projectId/financial-entitlement" element={<ProtectedRoute permission="financial.view"><ProjectFinancialEntitlementPage /></ProtectedRoute>} />
       <Route path="projects/wizard" element={<Navigate to="projects" replace />} />

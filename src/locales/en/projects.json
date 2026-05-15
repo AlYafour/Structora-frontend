@@ -335,6 +335,8 @@
   "progress_calculated_readonly": "Calculated - Read-only",
   "progress_calculated_automatically": "Calculated automatically",
   "progress_variations_individual": "Variation Progress (Individual)",
+  "progress_set_all_variations_100": "Set all variations to 100%",
+  "progress_view_permission_required": "You can add progress entries, but you do not have permission to view progress history.",
   "progress_variations_total": "Total Variation Progress",
   "progress_additional_info": "Additional Information",
   "progress_multiple_files_allowed": "Multiple files allowed",

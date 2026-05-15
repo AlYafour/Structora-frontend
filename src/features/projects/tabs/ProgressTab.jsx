@@ -16,7 +16,7 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
   const navigate = useTenantNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
-  const { user } = useAuth();
+  const { user, hasPermission, isAdmin } = useAuth();
   const { success: showSuccess, error: showError } = useNotifications();
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -24,16 +24,23 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
   const { isArabic: isAR } = useLanguage();
 
 
+  const canViewProgress = isAdmin || hasPermission('progress.view');
+  const canAddProgress = isAdmin || hasPermission('progress.create');
+  const canDeleteProgress = isAdmin || hasPermission('progress.delete');
+
   const {
     loading,
     projectData,
     history,
-    variations,
     error,
     setError,
     loadHistory,
     loadProjectData,
-  } = useProgressData(projectId, t);
+  } = useProgressData(projectId, t, {
+    includeHistory: canViewProgress,
+    includeVariations: canViewProgress,
+    includeProject: canViewProgress || canAddProgress,
+  });
 
   const handleDeleteClick = (id) => {
     setDeleteTargetId(id);
@@ -57,8 +64,12 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
     }
   };
 
-  const canEditDelete = (entry) => {
-    return user?.id === entry.created_by || user?.is_staff;
+  const canEditEntry = (entry) => {
+    return canAddProgress && (user?.id === entry.created_by || user?.is_staff || isAdmin);
+  };
+
+  const canDeleteEntry = () => {
+    return canDeleteProgress;
   };
 
   const handleAdd = () => {
@@ -81,13 +92,21 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
     <div className="prj-tab-panel">
       <div className="prj-tab-header">
         <div className="prj-tab-actions">
-          <Button onClick={handleAdd} variant="primary" size="md">
-            {t('add_progress_entry')}
-          </Button>
+          {canAddProgress && (
+            <Button onClick={handleAdd} variant="primary" size="md">
+              {t('add_progress_entry')}
+            </Button>
+          )}
         </div>
       </div>
 
-      {error && (
+      {!canViewProgress && (
+        <div className="prj-empty-state">
+          {canAddProgress ? t('progress_view_permission_required') : t('company_no_permission')}
+        </div>
+      )}
+
+      {canViewProgress && error && (
         <div className="progress-alert progress-alert--error">
           <span>{error}</span>
           <Button variant="ghost" size="sm" className="progress-alert__close" onClick={() => setError(null)} aria-label={t('close')}>
@@ -96,26 +115,29 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
         </div>
       )}
 
-      <ProgressSummaryCard
-        projectData={projectData}
-        isRTL={isRTL}
-        t={t}
-        isAR={isAR}
-      />
+      {canViewProgress && (
+        <>
+          <ProgressSummaryCard
+            projectData={projectData}
+            isRTL={isRTL}
+            t={t}
+            isAR={isAR}
+          />
 
-      <ProgressHistoryTable
-        history={history}
-        projectData={projectData}
-        variations={variations}
-        i18n={i18n}
-        canEditDelete={canEditDelete}
-        handleOpenDialog={handleEdit}
-        handleDeleteClick={handleDeleteClick}
-        navigate={navigate}
-        projectId={projectId}
-        t={t}
-        isRTL={isRTL}
-      />
+          <ProgressHistoryTable
+            history={history}
+            projectData={projectData}
+            i18n={i18n}
+            canEditEntry={canEditEntry}
+            canDeleteEntry={canDeleteEntry}
+            handleOpenDialog={handleEdit}
+            handleDeleteClick={handleDeleteClick}
+            navigate={navigate}
+            projectId={projectId}
+            t={t}
+          />
+        </>
+      )}
 
       <Dialog
         open={deleteConfirmOpen}

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import { FaCheckDouble } from 'react-icons/fa';
 import { invalidateProjectQueries } from '../../hooks/useProjectData';
 import { useNotifications } from '../../../../contexts/NotificationContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { extractFileNameFromUrl } from '../../../../utils/helpers/file';
 import PageLayout from '../../../../components/layout/PageLayout';
 import Button from '../../../../components/common/Button';
@@ -30,6 +32,7 @@ export default function AddProgressPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
   const { success: showSuccess } = useNotifications();
+  const { user } = useAuth();
 
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
@@ -46,7 +49,9 @@ export default function AddProgressPage() {
     setError,
     loadVariations,
     getLatestProgress,
-  } = useProgressData(projectId, t);
+  } = useProgressData(projectId, t, {
+    includeHistory: isEditMode,
+  });
 
   const {
     submitting,
@@ -145,7 +150,32 @@ export default function AddProgressPage() {
     navigate(`/projects/${projectId}?tab=progress`);
   };
   const showBankBaseContract = Number(projectData?.progress_amounts?.gross_bank || 0) > 0;
-  const approvedVariations = variations.filter((v) => v.status === 'approved');
+  const approvedVariations = variations.filter((v) => {
+    const status = v.workflow_status || v.status;
+    return status === 'approved' || status === 'final_approved';
+  });
+  const isSuperAdmin = !!user?.is_superuser || user?.role?.name === 'company_super_admin';
+
+  const handleSetAllVariationsTo100 = () => {
+    setError(null);
+    setFormData((prev) => {
+      const variationProgress = { ...prev.variation_progress };
+
+      approvedVariations.forEach((variation) => {
+        const variationId = String(variation.id);
+        variationProgress[variationId] = {
+          ...variationProgress[variationId],
+          actual_current: '100',
+          technical_current: '100',
+        };
+      });
+
+      return {
+        ...prev,
+        variation_progress: variationProgress,
+      };
+    });
+  };
 
   return (
     <PageLayout loading={loading && initializing} loadingText={t('loading')}>
@@ -215,7 +245,20 @@ export default function AddProgressPage() {
               {approvedVariations.length > 0 && (
                 <section className="progress-panel">
                   <div className="progress-panel__header">
-                    {t('progress_variations_individual')}
+                    <span className="progress-panel__header-title">
+                      {t('progress_variations_individual')}
+                    </span>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="progress-panel__header-action"
+                        startIcon={<FaCheckDouble />}
+                        onClick={handleSetAllVariationsTo100}
+                      >
+                        {t('progress_set_all_variations_100')}
+                      </Button>
+                    )}
                   </div>
                   <div className="progress-panel__body progress-panel__body--spaced">
                     <VariationsIndividualSection

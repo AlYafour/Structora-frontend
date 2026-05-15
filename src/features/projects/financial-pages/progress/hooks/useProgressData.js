@@ -3,9 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectApi } from '../../../../../services/projects';
 import { logger } from '../../../../../utils/logger';
 
-export function useProgressData(projectId, t) {
+export function useProgressData(projectId, t, options = {}) {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState(null);
+  const {
+    includeProject = true,
+    includeHistory = true,
+    includeVariations = true,
+  } = options;
 
   const unwrap = useCallback((res) => res?.data ?? res ?? null, []);
 
@@ -26,7 +31,7 @@ export function useProgressData(projectId, t) {
       const res = await projectApi.getById(projectId);
       return unwrap(res);
     },
-    enabled: !!projectId,
+    enabled: !!projectId && includeProject,
     staleTime: 30 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 1,
@@ -40,7 +45,7 @@ export function useProgressData(projectId, t) {
       const res = await projectApi.getProjectProgress(projectId);
       return unwrap(res);
     },
-    enabled: !!projectId,
+    enabled: !!projectId && includeHistory,
     staleTime: 30 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 1,
@@ -54,7 +59,7 @@ export function useProgressData(projectId, t) {
       const res = await projectApi.getVariations(projectId);
       return unwrap(res);
     },
-    enabled: !!projectId,
+    enabled: !!projectId && includeVariations,
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 1,
@@ -85,14 +90,13 @@ export function useProgressData(projectId, t) {
 
   const getLatestProgress = useCallback(async () => {
     try {
-      const res = await projectApi.getProjectProgress(projectId);
-      const data = asList(res);
-      return data.length > 0 ? data[0] : null;
+      const res = await projectApi.getLatestProjectProgress(projectId);
+      return unwrap(res);
     } catch (err) {
       logger.warn('Could not load latest progress', err);
       return null;
     }
-  }, [projectId, asList]);
+  }, [projectId, unwrap]);
 
   const projectData = projectQuery.data ?? null;
   const history = asList(historyQuery.data);
@@ -104,15 +108,15 @@ export function useProgressData(projectId, t) {
     (Array.isArray(variations) && variations.length > 0);
 
   const loading =
-    (!projectData && projectQuery.isPending) ||
-    (history.length === 0 && historyQuery.isPending);
+    (includeProject && !projectData && projectQuery.isPending) ||
+    (includeHistory && history.length === 0 && historyQuery.isPending);
 
   const queryError =
-    projectQuery.error
+    includeProject && projectQuery.error
       ? (t ? t('progress_project_not_found') : 'Error loading project')
-      : historyQuery.error
+      : includeHistory && historyQuery.error
         ? (t ? t('progress_load_error') : 'Error loading progress')
-        : variationsQuery.error
+        : includeVariations && variationsQuery.error
           ? (t ? t('progress_load_error') : 'Error loading progress')
           : null;
 

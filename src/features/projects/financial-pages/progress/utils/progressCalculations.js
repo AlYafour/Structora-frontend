@@ -19,7 +19,10 @@ export function calculateWeightedAverage(variationProgress, variations, fieldKey
     return 0;
   }
 
-  const approvedVariations = variations.filter(v => v.status === 'approved');
+  const approvedVariations = variations.filter(v => {
+    const status = v.workflow_status || v.status;
+    return status === 'approved' || status === 'final_approved';
+  });
   let totalValue = 0;
   let weightedSum = 0;
 
