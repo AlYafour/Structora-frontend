@@ -79,7 +79,7 @@ export const useInvoiceForm = (invoiceId, projectFromQuery, isEditMode, toast, t
       if (!projectId) return;
 
       const year = options.year || new Date().getFullYear();
-      const data = await projectApi.getInvoiceFormData(projectId, year);
+      const data = await projectApi.getInvoiceFormData(projectId, year, { mode: "create" });
 
       // Contract
       const contract = data.contract;

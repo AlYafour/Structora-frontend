@@ -166,88 +166,85 @@ export default function CreateActualInvoicePage() {
   }, [variationProgressMap]);
 
   // ── Previous invoices ─────────────────────────────────────────────
-  const previousInvoices = existingInvoices.filter(inv =>
+  const previousInvoices = useMemo(() => existingInvoices.filter(inv =>
     !invoiceId || String(inv.id) !== String(invoiceId)
-  );
+  ), [existingInvoices, invoiceId]);
+
+  const previousInvoiceStats = useMemo(() => {
+    const stats = {
+      ownerTotal: 0,
+      bankTotal: 0,
+      ownerBaseInclVat: 0,
+      bankVatTotal: 0,
+      variationInclVatById: new Map(),
+      prolongationFeeById: new Map(),
+      invoicedVOIds: new Set(),
+      invoicedProlongationFeeIds: new Set(),
+    };
+
+    previousInvoices.forEach(inv => {
+      const amount = parseFloat(inv.amount) || 0;
+      if (inv.payer === "owner") stats.ownerTotal += amount;
+      if (inv.payer === "bank") stats.bankTotal += amount;
+      if (inv.payer !== "owner") return;
+
+      const invItems = Array.isArray(inv.items) ? inv.items : [];
+      invItems.forEach(it => {
+        if (it.variation_id != null) {
+          const id = String(it.variation_id);
+          const gross = (parseFloat(it.total) || 0) * (1 + VAT_RATE);
+          stats.invoicedVOIds.add(id);
+          stats.variationInclVatById.set(id, (stats.variationInclVatById.get(id) || 0) + gross);
+          return;
+        }
+
+        if (it.prolongation_fee_id != null) {
+          const id = String(it.prolongation_fee_id);
+          const feeTotal = parseFloat(it.total) || 0;
+          const gross = isNoVatProlongationFee(id) ? feeTotal : feeTotal * (1 + VAT_RATE);
+          stats.invoicedProlongationFeeIds.add(id);
+          stats.prolongationFeeById.set(id, (stats.prolongationFeeById.get(id) || 0) + gross);
+          return;
+        }
+
+        if (it.source === "bank_vat") {
+          stats.bankVatTotal += parseFloat(it.total) || 0;
+          return;
+        }
+
+        if (it.source === "prolongation_fee") return;
+
+        stats.ownerBaseInclVat += (parseFloat(it.total) || 0) * (1 + VAT_RATE);
+      });
+    });
+
+    return stats;
+  }, [previousInvoices, isNoVatProlongationFee]);
 
   // VO IDs that already appear in a previous invoice (excluded from dropdown)
-  const previouslyInvoicedVOIds = useMemo(() => {
-    const ids = new Set();
-    previousInvoices
-      .filter(inv => inv.payer === "owner")
-      .forEach(inv => {
-        (Array.isArray(inv.items) ? inv.items : []).forEach(it => {
-          if (it.variation_id != null) ids.add(String(it.variation_id));
-        });
-      });
-    return ids;
-  }, [previousInvoices]);
+  const previouslyInvoicedVOIds = previousInvoiceStats.invoicedVOIds;
 
-  const previouslyInvoicedProlongationFeeIds = useMemo(() => {
-    const ids = new Set();
-    previousInvoices
-      .filter(inv => inv.payer === "owner")
-      .forEach(inv => {
-        (Array.isArray(inv.items) ? inv.items : []).forEach(it => {
-          if (it.prolongation_fee_id != null) ids.add(String(it.prolongation_fee_id));
-        });
-      });
-    return ids;
-  }, [previousInvoices]);
+  const previouslyInvoicedProlongationFeeIds = previousInvoiceStats.invoicedProlongationFeeIds;
 
-  const prevOwnerInvoiced = previousInvoices
-    .filter(inv => inv.payer === "owner")
-    .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+  const prevOwnerInvoiced = previousInvoiceStats.ownerTotal;
 
-  const prevBankInvoiced = previousInvoices
-    .filter(inv => inv.payer === "bank")
-    .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+  const prevBankInvoiced = previousInvoiceStats.bankTotal;
 
   // Previous invoiced for base contract items only (owner) — excludes bank_vat items
-  const prevOwnerBaseInvoiced = previousInvoices
-    .filter(inv => inv.payer === "owner")
-    .reduce((sum, inv) => {
-      const invItems = Array.isArray(inv.items) ? inv.items : [];
-      const baseTotal = invItems.reduce((s, it) => {
-        // Skip bank_vat items and variation items
-        if (it.source === "bank_vat" || it.source === "prolongation_fee" || it.variation_id || it.prolongation_fee_id) return s;
-        return s + (parseFloat(it.total) || 0);
-      }, 0);
-      return sum + baseTotal * (1 + VAT_RATE);
-    }, 0);
+  const prevOwnerBaseInvoiced = previousInvoiceStats.ownerBaseInclVat;
 
   // Previous invoiced bank VAT items (owner)
-  const prevBankVATInvoiced = previousInvoices
-    .filter(inv => inv.payer === "owner")
-    .reduce((sum, inv) => {
-      const invItems = Array.isArray(inv.items) ? inv.items : [];
-      return sum + invItems.reduce((s, it) => {
-        if (it.source === "bank_vat") return s + (parseFloat(it.total) || 0);
-        return s;
-      }, 0);
-    }, 0);
+  const prevBankVATInvoiced = previousInvoiceStats.bankVatTotal;
 
-  const getPrevVOInvoiced = useCallback((voId) => previousInvoices
-    .filter(inv => inv.payer === "owner")
-    .reduce((sum, inv) => {
-      const invItems = Array.isArray(inv.items) ? inv.items : [];
-      const voTotal = invItems.reduce((s, it) => {
-        if (String(it.variation_id) === String(voId)) return s + (parseFloat(it.total) || 0);
-        return s;
-      }, 0);
-      return sum + voTotal * (1 + VAT_RATE);
-    }, 0), [previousInvoices]);
+  const getPrevVOInvoiced = useCallback(
+    (voId) => previousInvoiceStats.variationInclVatById.get(String(voId)) || 0,
+    [previousInvoiceStats]
+  );
 
-  const getPrevProlongationFeeInvoiced = useCallback((feeId) => previousInvoices
-    .filter(inv => inv.payer === "owner")
-    .reduce((sum, inv) => {
-      const invItems = Array.isArray(inv.items) ? inv.items : [];
-      const feeTotal = invItems.reduce((s, it) => {
-        if (String(it.prolongation_fee_id) === String(feeId)) return s + (parseFloat(it.total) || 0);
-        return s;
-      }, 0);
-      return sum + (isNoVatProlongationFee(feeId) ? feeTotal : feeTotal * (1 + VAT_RATE));
-    }, 0), [previousInvoices, isNoVatProlongationFee]);
+  const getPrevProlongationFeeInvoiced = useCallback(
+    (feeId) => previousInvoiceStats.prolongationFeeById.get(String(feeId)) || 0,
+    [previousInvoiceStats]
+  );
 
   // ── Owner base contract obligation & due ──────────────────────────
   // ownerTotalOriginal = owner.net + owner.fee (excl consultant fees paid to consultant)

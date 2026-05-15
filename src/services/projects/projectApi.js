@@ -874,9 +874,10 @@ class ProjectService extends BaseService {
    * @param {number} [year] - Optional year for invoice number
    * @returns {Promise} Combined invoice form data
    */
-  async getInvoiceFormData(projectId, year) {
+  async getInvoiceFormData(projectId, year, options = {}) {
     try {
-      const config = year ? { params: { year } } : {};
+      const params = { ...(year ? { year } : {}), ...(options?.mode ? { mode: options.mode } : {}) };
+      const config = Object.keys(params).length ? { params } : {};
       const { data } = await api.get(`${this.basePath}${projectId}/invoice-form-data/`, config);
       return data;
     } catch (error) {
