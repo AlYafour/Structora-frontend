@@ -625,7 +625,7 @@
   "add_contract": "إضافة العقد",
   "total_contract_value": "إجمالي قيمة العقد شاملاً الكل",
   "total_contract_value_excluding_consultant_fees": "قيمة العقد بدون أتعاب الاستشاري",
-  "total_contract_value_excluding_consultant_fees_tooltip": "قيمة العقد الأصلية بدون أتعاب الاستشاري وبدون ضريبة القيمة المضافة.",
+  "total_contract_value_excluding_consultant_fees_tooltip": "قيمة العقد الأصلية بدون أتعاب استشاري البنك، وبدون أتعاب استشاري المالك في حال كانت تُدفع مباشرةً من المالك إلى الاستشاري.",
   "total_payments": "إجمالي المدفوعات",
   "remaining_amount": "المبلغ المتبقي",
   "financial_completion": "نسبة الإنجاز المالي",

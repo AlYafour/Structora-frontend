@@ -190,9 +190,8 @@ export default function ContractFinancialSummary({ projectId }) {
       const totalExtraFeeWithVat = ownerExtraFeeWithVat + bankExtraFeeWithVat;
 
       // Contract Value Without Consultant Fee
-      // Formula: grossTotal - fee_inclusive(grossBank, bankPct).fee
-      // i.e. deduct only the bank's consultant fee from total contract amount
-      const actualContractorAmount = round(grossTotal - bank.fee - totalExtraFeeWithVat);
+      // Deduct bank consultant fee always; also deduct owner consultant fees paid directly to consultant
+      const actualContractorAmount = round(grossTotal - bank.fee - totalExtraFeeWithVat - ownerFeesExcludedFromPayable);
 
       const totalFinal = {
         fee: bank.fee,

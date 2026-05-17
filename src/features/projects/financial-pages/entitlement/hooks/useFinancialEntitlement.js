@@ -282,9 +282,8 @@ export default function useFinancialEntitlement({
       const consultantFeeFromBankShareWithVAT = round(consultantFeeFromBankShare * (1 + vatRate));
 
       // Contract Value Without Consultant Fee
-      // Formula: grossTotal - fee_inclusive(grossBank, bankPct).fee
-      // i.e. deduct only the bank's consultant fee from total contract amount
-      const contractValueWithoutConsultantFee = round(grossTotal - consultantFeeFromBankShare);
+      // Deduct bank consultant fee always; also deduct owner consultant fees paid directly to consultant
+      const contractValueWithoutConsultantFee = round(grossTotal - consultantFeeFromBankShare - ownerFeesExcludedFromPayable);
 
       /* ======================================================
          13. Outstanding Balances
