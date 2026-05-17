@@ -36,8 +36,9 @@ export default function ViewPaymentPage() {
 
       if (data.project) {
         try {
-          const projectData = await projectApi.getById(data.project);
-          setProject(Array.isArray(projectData) ? projectData[0] : projectData);
+          const projectData = await projectApi.getWithIncludes(data.project, ['siteplan', 'license']);
+          const siteplanData = projectData?.siteplan_data || null;
+          setProject({ ...projectData, owners: siteplanData?.owners || [] });
         } catch (error) {
           const handledError = handleError(error, 'ViewPaymentPage.loadProject');
           logger.warn("Could not load project", handledError);

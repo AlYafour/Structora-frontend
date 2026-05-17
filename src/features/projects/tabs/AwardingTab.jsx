@@ -6,10 +6,13 @@ import Card from "../../../components/common/Card";
 import { formatDate } from "../../../utils/formatters";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const AwardingTab = memo(function AwardingTab({ projectId, awarding }) {
   const { t } = useTranslation();
+  const { hasPermission, isAdmin } = useAuth();
   const hasData = !!awarding;
+  const canAddAwarding = isAdmin || hasPermission("projects.add_awarding");
 
   return (
     <div className="prj-tab-panel">
@@ -24,11 +27,11 @@ const AwardingTab = memo(function AwardingTab({ projectId, awarding }) {
                 {t("edit")}
               </Button>
             </>
-          ) : (
+          ) : canAddAwarding ? (
             <Button as={Link} to={`/projects/${projectId}/awarding/create`} variant="primary" size="md">
               {t("add")}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
       {hasData ? (

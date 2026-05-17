@@ -3935,6 +3935,28 @@ html.theme-dark .project-entry-info__code {
   gap: var(--space-6);
   padding: var(--space-5) var(--space-6);
   background: var(--color-surface, var(--surface));
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.prj-view-header__body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.527);
+  z-index: 0;
+}
+
+.dark .prj-view-header__body::before {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.prj-view-header__body > * {
+  position: relative;
+  z-index: 1;
 }
 
 .prj-view-header__content {
@@ -4148,6 +4170,7 @@ html.theme-dark .prj-status-banner__title {
   padding-bottom: 0;
   border-bottom: none;
 }
+
 
 .prj-view-actions-group__label {
   font-size: var(--font-size-xs);

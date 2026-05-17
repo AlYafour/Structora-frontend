@@ -204,5 +204,8 @@
   "remaining_label": "المتبقي",
   "invoice_save_error": "خطأ في حفظ الفاتورة",
   "invoice_net_amount": "المبلغ الأساسي",
-  "invoice_contract_value": "قيمة العقد (غير شامل الضريبة)"
+  "invoice_contract_value": "قيمة العقد (غير شامل الضريبة)",
+  "select_variations": "اختر أوامر التغيير",
+  "no_variations_available": "لا توجد أوامر تغيير متاحة",
+  "apply": "تطبيق"
 }

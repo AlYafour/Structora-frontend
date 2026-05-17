@@ -6,10 +6,13 @@ import Card from "../../../components/common/Card";
 import { formatDate } from "../../../utils/formatters";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ExcavationNoticeTab = memo(function ExcavationNoticeTab({ projectId, excavationNotice }) {
   const { t } = useTranslation();
+  const { hasPermission, isAdmin } = useAuth();
   const hasData = !!excavationNotice;
+  const canAddExcavationNotice = isAdmin || hasPermission("projects.add_excavation_notice");
 
   return (
     <div className="prj-tab-panel">
@@ -24,11 +27,11 @@ const ExcavationNoticeTab = memo(function ExcavationNoticeTab({ projectId, excav
                 {t("edit")}
               </Button>
             </>
-          ) : (
+          ) : canAddExcavationNotice ? (
             <Button as={Link} to={`/projects/${projectId}/excavation-notice/create`} variant="primary" size="md">
               {t("add")}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
       {hasData ? (

@@ -42,8 +42,9 @@ export default function ViewTaxInvoicePage() {
       setTaxInvoice(data);
 
       try {
-        const projectData = await projectApi.getById(projectId);
-        setProject(Array.isArray(projectData) ? projectData[0] : projectData);
+        const projectData = await projectApi.getWithIncludes(projectId, ['siteplan', 'license']);
+        const siteplanData = projectData?.siteplan_data || null;
+        setProject({ ...projectData, owners: siteplanData?.owners || [] });
       } catch (error) {
         const handledError = handleError(error, 'ViewTaxInvoicePage.loadProject');
         logger.warn("Could not load project", handledError);

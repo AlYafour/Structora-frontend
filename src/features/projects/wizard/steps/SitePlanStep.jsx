@@ -930,17 +930,16 @@ export default function SitePlanStep({
       });
 
       const serverData = err?.response?.data;
-      const formatted = formatSitePlanServerErrors(serverData);
+      const status = err?.response?.status;
 
-      if (formatted) {
-        setErrorMsg(formatted);
+      if (status >= 500) {
+        setErrorMsg(t("errors.server_support"));
       } else {
-        const errorMessage = getErrorMessage(err);
-        if (err?.response?.status === 500) {
-          const detail = serverData?.detail || serverData?.error || t("error_default");
-          setErrorMsg(`${errorMessage}: ${detail}`);
+        const formatted = formatSitePlanServerErrors(serverData);
+        if (formatted) {
+          setErrorMsg(formatted);
         } else {
-          setErrorMsg(errorMessage || t("save_failed"));
+          setErrorMsg(getErrorMessage(err) || t("save_failed"));
         }
       }
     }

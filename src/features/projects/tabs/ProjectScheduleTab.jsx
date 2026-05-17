@@ -6,10 +6,13 @@ import Card from "../../../components/common/Card";
 import { formatDate } from "../../../utils/formatters";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, projectSchedule }) {
   const { t } = useTranslation();
+  const { hasPermission, isAdmin } = useAuth();
   const hasData = !!projectSchedule;
+  const canAddProjectSchedule = isAdmin || hasPermission("projects.add_project_schedule");
 
   return (
     <div className="prj-tab-panel">
@@ -24,11 +27,11 @@ const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, project
                 {t("edit")}
               </Button>
             </>
-          ) : (
+          ) : canAddProjectSchedule ? (
             <Button as={Link} to={`/projects/${projectId}/project-schedule/create`} variant="primary" size="md">
               {t("add")}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
       {hasData ? (

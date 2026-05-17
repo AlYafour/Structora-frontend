@@ -158,17 +158,17 @@ function TenantRoutes() {
       <Route path="projects/:projectId/contract/view" element={<ProtectedRoute><ViewContract /></ProtectedRoute>} />
 
       {/* Start Order */}
-      <Route path="projects/:projectId/start-order/create" element={<ProtectedRoute><StartOrderPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/start-order/create" element={<ProtectedRoute permission="projects.add_start_order"><StartOrderPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/start-order/:itemId/edit" element={<ProtectedRoute><StartOrderPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/start-order/view" element={<ProtectedRoute><ViewStartOrderPage /></ProtectedRoute>} />
 
       {/* Project Schedule */}
-      <Route path="projects/:projectId/project-schedule/create" element={<ProtectedRoute><ProjectSchedulePage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/project-schedule/create" element={<ProtectedRoute permission="projects.add_project_schedule"><ProjectSchedulePage /></ProtectedRoute>} />
       <Route path="projects/:projectId/project-schedule/:itemId/edit" element={<ProtectedRoute><ProjectSchedulePage /></ProtectedRoute>} />
       <Route path="projects/:projectId/project-schedule/view" element={<ProtectedRoute><ViewProjectSchedulePage /></ProtectedRoute>} />
 
       {/* Excavation Notice */}
-      <Route path="projects/:projectId/excavation-notice/create" element={<ProtectedRoute><ExcavationNoticePage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/excavation-notice/create" element={<ProtectedRoute permission="projects.add_excavation_notice"><ExcavationNoticePage /></ProtectedRoute>} />
       <Route path="projects/:projectId/excavation-notice/:itemId/edit" element={<ProtectedRoute><ExcavationNoticePage /></ProtectedRoute>} />
       <Route path="projects/:projectId/excavation-notice/view" element={<ProtectedRoute><ViewExcavationNoticePage /></ProtectedRoute>} />
 
@@ -177,7 +177,7 @@ function TenantRoutes() {
       <Route path="projects/:projectId/extensions/view" element={<ProtectedRoute><ViewExtensionsPage /></ProtectedRoute>} />
 
       {/* Awarding */}
-      <Route path="projects/:projectId/awarding/create" element={<ProtectedRoute><AwardingPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/awarding/create" element={<ProtectedRoute permission="projects.add_awarding"><AwardingPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/awarding/:itemId/edit" element={<ProtectedRoute><AwardingPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/awarding/view" element={<ProtectedRoute><ViewAwardingPage /></ProtectedRoute>} />
 
@@ -221,7 +221,7 @@ function TenantRoutes() {
       <Route path="boq/:projectId" element={<ProtectedRoute><BOQPage /></ProtectedRoute>} />
 
       {/* Payment Claims */}
-      <Route path="payment-claims/create" element={<ProtectedRoute permission="financial.create"><CreatePaymentClaimPage /></ProtectedRoute>} />
+      <Route path="payment-claims/create" element={<ProtectedRoute permission="projects.add_payment_claim"><CreatePaymentClaimPage /></ProtectedRoute>} />
       <Route path="payment-claims/:claimId/edit" element={<ProtectedRoute permission="financial.create"><CreatePaymentClaimPage /></ProtectedRoute>} />
       <Route path="payment-claims/:claimId/view" element={<ProtectedRoute><ViewPaymentClaimPage /></ProtectedRoute>} />
 

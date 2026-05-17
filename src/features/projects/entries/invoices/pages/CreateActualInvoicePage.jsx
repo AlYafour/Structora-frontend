@@ -62,6 +62,8 @@ export default function CreateActualInvoicePage() {
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState([EMPTY_ITEM()]);
   const [warningDialog, setWarningDialog] = useState({ open: false, warnings: [] });
+  const [variationPickerOpen, setVariationPickerOpen] = useState(false);
+  const [pickerChecked, setPickerChecked] = useState(new Set());
 
   // Advance payment state
   const [deductionPreview, setDeductionPreview] = useState(null);
@@ -99,12 +101,14 @@ export default function CreateActualInvoicePage() {
   // When edit mode loads, sync items from formData.items
   useEffect(() => {
     if (!loading && isEditMode && formData.items && formData.items.length > 0) {
+      const isBank = (formData.payer || "owner") === "bank";
       setItems(formData.items.map(it => {
         const net = parseFloat(it.total) || 0;
         const source = it.source || (it.prolongation_fee_id ? "prolongation_fee" : it.variation_id ? "variation" : "base_contract");
         const noVatFee = source === "prolongation_fee" && isNoVatProlongationFee(it.prolongation_fee_id);
-        const inclVat = noVatFee ? net : Math.round(net * (1 + VAT_RATE) * 100) / 100;
-        const vat = Math.round((inclVat - net) * 100) / 100;
+        // Bank: amount_incl_vat = net (user enters net); owner: amount_incl_vat = net * 1.05
+        const inclVat = noVatFee ? net : (isBank ? net : Math.round(net * (1 + VAT_RATE) * 100) / 100);
+        const vat = noVatFee ? 0 : (isBank ? Math.round(net * VAT_RATE * 100) / 100 : Math.round((inclVat - net) * 100) / 100);
         return {
           description: it.description || "",
           amount_incl_vat: inclVat ? String(inclVat.toFixed(2)) : "",
@@ -330,13 +334,18 @@ export default function CreateActualInvoicePage() {
   // ── Items helpers ─────────────────────────────────────────────────
   const recalcItem = (item) => {
     const amount = parseFloat(removeCommas(item.amount_incl_vat || "0")) || 0;
-    // bank_vat source OR bank payer: no VAT — amount is the net amount directly
-    if (item.source === "bank_vat" || payer === "bank") {
+    if (item.source === "bank_vat") {
       return { ...item, total: amount, vat: 0 };
     }
     if (item.source === "prolongation_fee" && isNoVatProlongationFee(item.prolongation_fee_id)) {
       return { ...item, total: amount, vat: 0 };
     }
+    if (payer === "bank") {
+      // Bank: user enters net amount; VAT 5% is added on top
+      const vat = Math.round(amount * VAT_RATE * 100) / 100;
+      return { ...item, total: amount, vat };
+    }
+    // Owner: user enters incl-VAT; back-calculate net
     const net = Math.round(amount / 1.05 * 100) / 100;
     const vat = Math.round((amount - net) * 100) / 100;
     return { ...item, total: net, vat };
@@ -381,10 +390,43 @@ export default function CreateActualInvoicePage() {
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const openVariationPicker = () => {
+    const current = new Set(
+      items
+        .filter(it => it.source === "variation" && it.variation_id)
+        .map(it => String(it.variation_id))
+    );
+    setPickerChecked(new Set(current));
+    setVariationPickerOpen(true);
+  };
+
+  const applyVariationPicker = () => {
+    setItems(prev => {
+      const others = prev.filter(it => it.source !== "variation");
+      const existing = prev.filter(
+        it => it.source === "variation" && it.variation_id && pickerChecked.has(String(it.variation_id))
+      );
+      const existingIds = new Set(existing.map(it => String(it.variation_id)));
+      const added = Array.from(pickerChecked)
+        .filter(id => !existingIds.has(id))
+        .map(id => ({ ...EMPTY_ITEM(), source: "variation", variation_id: id }));
+      const allVariation = [...existing, ...added];
+      return allVariation.length > 0 ? [...others, ...allVariation] : [...others, EMPTY_ITEM()];
+    });
+    setVariationPickerOpen(false);
+  };
+
   // ── Totals ────────────────────────────────────────────────────────
   const totalInclVAT = items.reduce((s, it) => s + (parseFloat(removeCommas(it.amount_incl_vat || "0")) || 0), 0);
   const totalExclVAT = items.reduce((s, it) => s + (parseFloat(it.total) || 0), 0);
-  const vatAmount = Math.round((totalInclVAT - totalExclVAT) * 100) / 100;
+  // For bank: user enters net; VAT = 5% on net. For owner: VAT = incl-VAT − net.
+  const vatAmount = payer === "bank"
+    ? Math.round(totalExclVAT * VAT_RATE * 100) / 100
+    : Math.round((totalInclVAT - totalExclVAT) * 100) / 100;
+  // Grand total: for bank = net + VAT; for owner = totalInclVAT (already incl VAT).
+  const grandTotal = payer === "bank"
+    ? Math.round((totalExclVAT + vatAmount) * 100) / 100
+    : totalInclVAT;
 
   // Calculate deduction preview when owner invoice amount changes
   useEffect(() => {
@@ -407,7 +449,7 @@ export default function CreateActualInvoicePage() {
       showError(t("fill_required_fields"));
       return false;
     }
-    if (totalInclVAT === 0) {
+    if (grandTotal === 0) {
       showError(t("invoice_amount_required"));
       return false;
     }
@@ -513,7 +555,7 @@ export default function CreateActualInvoicePage() {
         project: parseInt(formData.project),
         payment: null,
         payer: payer,
-        amount: r2(totalInclVAT),
+        amount: r2(grandTotal),
         net_amount: r2(totalExclVAT),
         vat: r2(vatAmount),
         invoice_date: formData.invoice_date,
@@ -665,11 +707,15 @@ export default function CreateActualInvoicePage() {
                           ? { ...it, source: "base_contract", variation_id: null, prolongation_fee_id: null }
                           : it;
                         const amount = parseFloat(removeCommas(updated.amount_incl_vat || "0")) || 0;
-                        if (newPayer === "bank" || updated.source === "bank_vat") {
+                        if (updated.source === "bank_vat") {
                           return { ...updated, total: amount, vat: 0 };
                         }
                         if (updated.source === "prolongation_fee" && isNoVatProlongationFee(updated.prolongation_fee_id)) {
                           return { ...updated, total: amount, vat: 0 };
+                        }
+                        if (newPayer === "bank") {
+                          const vat = Math.round(amount * VAT_RATE * 100) / 100;
+                          return { ...updated, total: amount, vat };
                         }
                         const net = Math.round(amount / 1.05 * 100) / 100;
                         return { ...updated, total: net, vat: Math.round((amount - net) * 100) / 100 };
@@ -875,18 +921,16 @@ export default function CreateActualInvoicePage() {
                         {t("item_description")}
                       </th>
                       <th className="invoice-items-table__th invoice-items-table__th--price">
-                        {payer === "bank" ? t("total_amount") : t("amount_incl_vat_col")}
+                        {payer === "bank" ? t("invoice_net_amount") : t("amount_incl_vat_col")}
                       </th>
                       {payer !== "bank" && (
                         <th className="invoice-items-table__th invoice-items-table__th--total">
                           {t("invoice_net_amount")}
                         </th>
                       )}
-                      {payer !== "bank" && (
-                        <th className="invoice-items-table__th invoice-items-table__th--total">
-                          {t("vat_amount_col")}
-                        </th>
-                      )}
+                      <th className="invoice-items-table__th invoice-items-table__th--total">
+                        {t("vat_amount_col")}
+                      </th>
                       <th className="invoice-items-table__th invoice-items-table__th--action" />
                     </tr>
                   </thead>
@@ -1109,19 +1153,17 @@ export default function CreateActualInvoicePage() {
                             />
                           </td>
 
-                          {/* Net Amount (excl VAT) — only for owner */}
+                          {/* Net Amount (excl VAT) — only for owner (bank col 3 is already net) */}
                           {payer !== "bank" && (
                             <td className="invoice-items-table__td invoice-items-table__td--total">
                               {renderAmount(item.total)}
                             </td>
                           )}
 
-                          {/* VAT — only for owner */}
-                          {payer !== "bank" && (
-                            <td className="invoice-items-table__td invoice-items-table__td--total">
-                              {renderAmount(item.vat)}
-                            </td>
-                          )}
+                          {/* VAT — shown for both owner and bank */}
+                          <td className="invoice-items-table__td invoice-items-table__td--total">
+                            {renderAmount(item.vat)}
+                          </td>
 
                           {/* Remove */}
                           <td className="invoice-items-table__td invoice-items-table__td--action">
@@ -1142,7 +1184,7 @@ export default function CreateActualInvoicePage() {
                   </tbody>
                   <tfoot>
                     <tr className="invoice-items-table__footer">
-                      <td colSpan={2}>
+                      <td colSpan={2} style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                         <Button
                           type="button"
                           variant="primary"
@@ -1151,39 +1193,64 @@ export default function CreateActualInvoicePage() {
                         >
                           + {t("add_item")}
                         </Button>
+                        {payer === "owner" && variations.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={openVariationPicker}
+                          >
+                            + {t("select_variations") || "Select Variations"}
+                          </Button>
+                        )}
                       </td>
                       <td className="invoice-items-table__footer-label">
-                        {payer === "bank" ? t("total_amount") : t("invoice_amount_incl_vat")}
+                        {payer === "bank" ? t("invoice_net_amount") : t("invoice_amount_incl_vat")}
                       </td>
                       <td className="invoice-items-table__footer-total">
                         {renderAmount(totalInclVAT)}
                       </td>
-                      {payer !== "bank" && <td colSpan={2} />}
+                      {payer !== "bank" ? <td colSpan={2} /> : <td />}
                     </tr>
 
+                    {/* VAT row — shown for both bank and owner */}
+                    <tr className="invoice-items-table__footer">
+                      <td colSpan={2} />
+                      <td className="invoice-items-table__footer-label">
+                        {t("vat_5")}
+                      </td>
+                      <td className="invoice-items-table__footer-total">
+                        {renderAmount(vatAmount)}
+                      </td>
+                      {payer !== "bank" ? <td colSpan={2} /> : <td />}
+                    </tr>
+
+                    {/* Grand total row for bank (net + VAT) */}
+                    {payer === "bank" && (
+                      <tr className="invoice-items-table__footer invoice-items-table__footer--net">
+                        <td colSpan={2} />
+                        <td className="invoice-items-table__footer-label invoice-items-table__footer-label--net">
+                          {t("grand_total") || "Grand Total"}
+                        </td>
+                        <td className="invoice-items-table__footer-total invoice-items-table__footer-total--net">
+                          {renderAmount(grandTotal)}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
+
+                    {/* Net amount row — owner only */}
                     {payer !== "bank" && (
-                      <>
-                        <tr className="invoice-items-table__footer">
-                          <td colSpan={2} />
-                          <td className="invoice-items-table__footer-label">
-                            {t("invoice_net_amount")}
-                          </td>
-                          <td className="invoice-items-table__footer-total">
-                            {renderAmount(totalExclVAT)}
-                          </td>
-                          <td colSpan={2} />
-                        </tr>
-                        <tr className="invoice-items-table__footer">
-                          <td colSpan={2} />
-                          <td className="invoice-items-table__footer-label">
-                            {t("vat_5")}
-                          </td>
-                          <td className="invoice-items-table__footer-total">
-                            {renderAmount(vatAmount)}
-                          </td>
-                          <td colSpan={2} />
-                        </tr>
-                      </>
+                      <tr className="invoice-items-table__footer">
+                        <td colSpan={2} />
+                        <td className="invoice-items-table__footer-label">
+                          {t("invoice_net_amount")}
+                        </td>
+                        <td className="invoice-items-table__footer-total">
+                          {renderAmount(totalExclVAT)}
+                        </td>
+                        <td colSpan={2} />
+                      </tr>
                     )}
 
                     {/* Advance payment deduction preview */}
@@ -1218,6 +1285,72 @@ export default function CreateActualInvoicePage() {
           </div>
         </form>
       </div>
+
+      <Dialog
+        open={variationPickerOpen}
+        title={t("select_variations") || "Select Variations"}
+        onClose={() => setVariationPickerOpen(false)}
+        onConfirm={applyVariationPicker}
+        confirmLabel={t("apply") || "Apply"}
+        size="medium"
+      >
+        <div style={{ maxHeight: "420px", overflowY: "auto" }}>
+          {variations.filter(vo => !previouslyInvoicedVOIds.has(String(vo.id))).length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--text-secondary, #6b7280)", padding: "20px 0" }}>
+              {t("no_variations_available") || "No variations available"}
+            </p>
+          ) : (
+            variations
+              .filter(vo => !previouslyInvoicedVOIds.has(String(vo.id)))
+              .map(vo => {
+                const voInfo = getVOInfo(vo);
+                const checked = pickerChecked.has(String(vo.id));
+                return (
+                  <label
+                    key={vo.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      padding: "10px 0",
+                      borderBottom: "1px solid var(--border-light, #e5e7eb)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setPickerChecked(prev => {
+                          const next = new Set(prev);
+                          if (next.has(String(vo.id))) next.delete(String(vo.id));
+                          else next.add(String(vo.id));
+                          return next;
+                        })
+                      }
+                      style={{ marginTop: "3px", flexShrink: 0, width: "16px", height: "16px" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                        {vo.variation_number || `#${vo.id}`}
+                        <span style={{ fontWeight: 400, color: "var(--text-secondary, #6b7280)", marginInlineStart: "8px" }}>
+                          — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: "16px", marginTop: "4px", fontSize: "12px", color: "var(--text-secondary, #6b7280)", flexWrap: "wrap" }}>
+                        <span>{t("current_progress")}: <b>{Number(voInfo.progress).toFixed(1)}%</b></span>
+                        <span>{t("vo_due_by_progress")}: <b>{renderAmount(voInfo.dueThisCycle)}</b></span>
+                        {voInfo.prevInvoiced > 0 && (
+                          <span>{t("previously_invoiced_vo")}: <b>−{renderAmount(voInfo.prevInvoiced)}</b></span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })
+          )}
+        </div>
+      </Dialog>
 
       <Dialog
         open={warningDialog.open}

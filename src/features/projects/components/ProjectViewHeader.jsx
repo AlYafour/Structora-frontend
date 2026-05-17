@@ -176,7 +176,10 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
       </div>
 
       {/* Content Area */}
-      <div className="prj-view-header__body">
+      <div
+        className="prj-view-header__body"
+        style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : {}}
+      >
         <div className="prj-view-header__content">
           {/* Status Banner */}
           {project?.approval_status && project.approval_status !== 'final_approved' && (

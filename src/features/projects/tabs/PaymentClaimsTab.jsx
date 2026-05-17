@@ -16,7 +16,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 const PaymentClaimsTab = memo(function PaymentClaimsTab({ projectId, onReload }) {
  const { t, i18n } = useTranslation();
  const { hasPermission, isAdmin } = useAuth();
- const canCreateClaim = isAdmin || hasPermission('financial.create');
+ const canCreateClaim = isAdmin || hasPermission('projects.add_payment_claim');
  const { success, error: showError } = useNotifications();
  const navigate = useTenantNavigate();
  const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);

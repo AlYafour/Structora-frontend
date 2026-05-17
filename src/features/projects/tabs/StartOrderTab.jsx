@@ -6,10 +6,13 @@ import Card from "../../../components/common/Card";
 import { formatDate } from "../../../utils/formatters";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
   const { t } = useTranslation();
+  const { hasPermission, isAdmin } = useAuth();
   const hasData = !!startOrder;
+  const canAddStartOrder = isAdmin || hasPermission("projects.add_start_order");
 
   return (
     <div className="prj-tab-panel">
@@ -24,11 +27,11 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
                 {t("edit")}
               </Button>
             </>
-          ) : (
+          ) : canAddStartOrder ? (
             <Button as={Link} to={`/projects/${projectId}/start-order/create`} variant="primary" size="md">
               {t("add")}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
       {hasData ? (

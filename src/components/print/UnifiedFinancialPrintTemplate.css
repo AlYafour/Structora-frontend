@@ -34,6 +34,12 @@
   font-family: "Inter", "Segoe UI", Arial, Tahoma, sans-serif;
   font-size: 9.5pt;
   box-shadow: 0 10px 40px rgba(20, 33, 61, 0.14);
+  display: flex;
+  flex-direction: column;
+}
+
+.ufp-doc__footer {
+  margin-top: auto;
 }
 
 .ufp-bilingual {
@@ -109,20 +115,20 @@
 }
 
 .ufp-title-panel {
-  background: #17202f;
-  color: #fff;
+  background: #fff;
+  color: #17202f;
   padding: 18px 22px;
   min-width: 0;
 }
 
 .ufp-title {
   font-weight: 800;
-  color: #fff;
+  color: #17202f;
   font-size: 19pt;
 }
 
 .ufp-title .ufp-bilingual__en {
-  color: rgba(255, 255, 255, 0.72);
+  color: #7f7364;
   font-size: 11pt;
   font-weight: 650;
   text-transform: uppercase;
@@ -140,7 +146,7 @@
 }
 
 .ufp-meta__label {
-  color: rgba(255, 255, 255, 0.62);
+  color: #7f7364;
   font-size: 7.2pt;
   font-weight: 800;
   text-transform: uppercase;
@@ -149,7 +155,7 @@
 .ufp-meta strong {
   display: block;
   margin-top: 5px;
-  color: #fff;
+  color: #17202f;
   font-size: 10pt;
 }
 
@@ -191,6 +197,18 @@
   color: #17202f;
   font-size: 10pt;
   font-weight: 750;
+}
+
+.ufp-info-card__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 5px;
+}
+
+.ufp-info-card__line {
+  color: #7f7364;
+  font-size: 8pt;
 }
 
 .ufp-section {
@@ -265,19 +283,34 @@
 }
 
 .ufp-bottom {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(68mm, 0.8fr);
-  gap: 10px;
   margin-bottom: 12px;
+}
+
+.ufp-bank-qr-row {
+  display: flex;
   align-items: stretch;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ufp-bank-qr-row .ufp-bank-details {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .ufp-verify {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 10px;
   align-items: center;
-  padding: 18px;
-  text-align: left;
+  justify-content: center;
+  padding: 14px 16px;
+  text-align: center;
+  flex-shrink: 0;
+  border: 1px solid #d8c9b3;
+  border-radius: 8px;
+  background: #fff;
+  min-width: 100px;
 }
 
 .ufp-verify h4 {
@@ -320,16 +353,16 @@
 }
 
 .ufp-totals__grand {
-  background: #17202f;
+  background: #fff;
 }
 
 .ufp-totals__grand td,
 .ufp-totals__grand td:last-child {
-  color: #d49b4b;
+  color: #17202f;
 }
 
 .ufp-totals__grand td:first-child {
-  color: rgba(255, 255, 255, 0.76);
+  color: #7f7364;
 }
 
 .ufp-totals__grand td:last-child {
@@ -457,12 +490,79 @@
   font-weight: 850;
 }
 
+.ufp-bank-details {
+  background: #fff;
+  border: 1px solid #d8c9b3;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.ufp-bank-details__title {
+  font-size: 7.5pt;
+  font-weight: 900;
+  color: #17202f;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #d8c9b3;
+}
+
+.ufp-bank-details__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 7px;
+}
+
+.ufp-bank-details__row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.ufp-bank-details__label {
+  color: #7f7364;
+  font-size: 7.2pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.ufp-bank-details__value {
+  color: #17202f;
+  font-size: 8.5pt;
+  font-weight: 700;
+  direction: ltr;
+}
+
+.ufp-bank-details__cheque {
+  font-size: 7.5pt;
+  color: #17202f;
+  padding-top: 6px;
+  border-top: 1px solid #d8c9b3;
+}
+
+.ufp-bank-details__cheque strong {
+  font-weight: 850;
+}
+
 .ufp-final-notice {
   margin: 16px 0 0;
   text-align: center;
   color: #7f7364;
   font-size: 8pt;
   font-style: italic;
+}
+
+.ufp-creds-banner {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 @media print {
@@ -482,7 +582,7 @@
 
   @page {
     size: A4;
-    margin: 3mm;
+    margin: 8mm 4mm 4mm;
   }
 
   * {
@@ -505,25 +605,163 @@
 
   .ufp-doc {
     width: 100%;
-    min-height: auto;
+    min-height: 285mm;
     margin: 0;
     padding: 0;
     box-shadow: none;
+    font-size: 8.5pt;
   }
 
+  /* ── Header ── */
+  .ufp-top {
+    margin-bottom: 5px;
+  }
+
+  .ufp-company,
+  .ufp-title-panel {
+    padding: 10px 14px;
+  }
+
+  .ufp-company__logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ufp-company__name {
+    font-size: 13pt;
+  }
+
+  .ufp-title {
+    font-size: 15pt;
+  }
+
+  .ufp-meta {
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  /* ── Cards ── */
+  .ufp-cards {
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .ufp-info-card {
+    padding: 7px 10px;
+    min-height: auto;
+  }
+
+  /* ── Table section ── */
+  .ufp-section {
+    margin-bottom: 5px;
+  }
+
+  .ufp-section--details {
+    min-height: auto;
+  }
+
+  .ufp-section__header {
+    padding: 6px 14px 5px;
+  }
+
+  .ufp-table {
+    margin: 0 8px 7px;
+  }
+
+  .ufp-table th {
+    padding: 5px 6px;
+    font-size: 6.5pt;
+  }
+
+  .ufp-table td {
+    padding: 6px 6px;
+    font-size: 8pt;
+  }
+
+  /* ── Totals / QR ── */
+  .ufp-bottom {
+    margin-bottom: 5px;
+  }
+
+  .ufp-bank-qr-row {
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .ufp-verify {
+    padding: 10px 12px;
+    gap: 8px;
+    min-width: 88px;
+  }
+
+  .ufp-totals td {
+    padding: 6px 12px;
+    font-size: 8.5pt;
+  }
+
+  .ufp-totals__grand td:last-child {
+    font-size: 14pt;
+  }
+
+  /* ── Bank details ── */
+  .ufp-bank-details {
+    padding: 7px 12px;
+    margin-bottom: 0;
+  }
+
+  .ufp-bank-details__title {
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+
+  .ufp-bank-details__rows {
+    gap: 2px;
+    margin-bottom: 5px;
+  }
+
+  /* ── Notes / extra fields ── */
+  .ufp-notes {
+    padding: 7px 12px;
+    margin-bottom: 5px;
+  }
+
+  .ufp-extra-grid {
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .ufp-field {
+    padding: 6px 10px;
+  }
+
+  /* ── Signatures ── */
+  .ufp-signatures {
+    gap: 5px;
+    margin-top: 4px;
+  }
+
+  .ufp-sign-card {
+    min-height: 48px;
+    padding: 8px 14px;
+  }
+
+  /* ── Final notice ── */
+  .ufp-final-notice {
+    margin: 6px 0 0;
+  }
+
+  /* ── Page-break rules ── */
   .ufp-top,
   .ufp-info-card,
   .ufp-section,
   .ufp-verify,
   .ufp-totals-box,
   .ufp-sign-card,
-  .ufp-field {
+  .ufp-field,
+  .ufp-bank-details,
+  .ufp-bank-qr-row {
     break-inside: avoid;
     page-break-inside: avoid;
-  }
-
-  .ufp-section--details {
-    min-height: 108mm;
   }
 
   .ufp-table thead {

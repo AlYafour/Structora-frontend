@@ -8,18 +8,21 @@ const selectProjectConfigs = {
     titleKey: "select_project_for_start_order",
     subtitleKey: "select_project_for_start_order_desc",
     buttonLabelKey: "add_start_order",
+    permission: "projects.add_start_order",
   },
   "project-schedule": {
     navigationTarget: "/projects/:id?tab=project_schedule",
     titleKey: "select_project_for_schedule",
     subtitleKey: "select_project_for_schedule_desc",
     buttonLabelKey: "add_project_schedule",
+    permission: "projects.add_project_schedule",
   },
   "excavation-notice": {
     navigationTarget: "/projects/:id?tab=excavation_notice",
     titleKey: "select_project_for_excavation_notice",
     subtitleKey: "select_project_for_excavation_notice_desc",
     buttonLabelKey: "add_excavation_notice",
+    permission: "projects.add_excavation_notice",
   },
   variation: {
     navigationTarget: "/projects/:id?tab=variations",
@@ -32,6 +35,7 @@ const selectProjectConfigs = {
     titleKey: "select_project_for_awarding",
     subtitleKey: "select_project_for_awarding_desc",
     buttonLabelKey: "add_awarding",
+    permission: "projects.add_awarding",
     emptyStateKey: "no_housing_loan_projects",
     // apiFilters: {},
     // customFilter: (p) => {
@@ -65,6 +69,7 @@ const selectProjectConfigs = {
     titleKey: "payment_claim",
     subtitleKey: "select_project_for_payment_claim",
     buttonLabelKey: "create_payment_claim",
+    permission: "projects.add_payment_claim",
   },
   progress: {
     navigationTarget: "/projects/:id?tab=progress",

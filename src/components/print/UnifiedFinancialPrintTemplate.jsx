@@ -189,13 +189,35 @@ export default function UnifiedFinancialPrintTemplate({
       qrData: "{}",
     };
 
+    const _authOwner = (project?.owners || []).find(o => o.is_authorized) || (project?.owners || [])[0];
+    const billToOwner = _authOwner
+      ? buildBilingualValue(_authOwner.owner_name_ar || _authOwner.name, _authOwner.owner_name_en || _authOwner.name)
+      : null;
+    const _sp = project?.siteplan_data || {};
+    const billToLines = [
+      [_sp.land_no && `Plot: ${_sp.land_no}`, _sp.sector && `Sector: ${_sp.sector}`, _sp.municipality, _sp.zone && `Zone: ${_sp.zone}`].filter(Boolean).join(' | ') || null,
+      project?.license_data?.license_no ? `Licence No: ${project.license_data.license_no}` : null,
+    ].filter(Boolean);
+
     if (documentType === "invoice") {
+      const isBank = data.payer === "bank";
       const netAmount = numberOrZero(data.net_amount);
       const vatAmount = numberOrZero(data.vat);
-      const grandTotal = numberOrZero(data.amount);
-      const subtotal = netAmount > 0 ? netAmount : grandTotal / 1.05;
-      const vat = vatAmount > 0 ? vatAmount : subtotal * 0.05;
-      const total = grandTotal > 0 ? grandTotal : subtotal + vat;
+      const storedTotal = numberOrZero(data.amount);
+
+      let subtotal, vat, total;
+      if (isBank) {
+        // Bank: user is invoiced on net; VAT 5% is always added on top.
+        // net_amount holds the net (works for both old and new invoices).
+        subtotal = netAmount > 0 ? netAmount : storedTotal;
+        vat = Math.round(subtotal * 0.05 * 100) / 100;
+        total = Math.round((subtotal + vat) * 100) / 100;
+      } else {
+        subtotal = netAmount > 0 ? netAmount : storedTotal / 1.05;
+        vat = vatAmount > 0 ? vatAmount : subtotal * 0.05;
+        total = storedTotal > 0 ? storedTotal : subtotal + vat;
+      }
+
       const advanceDeduction = numberOrZero(data.advance_deduction_amount);
       const netPayable = total - advanceDeduction;
       const ownerNames = (project?.owners || [])
@@ -249,14 +271,12 @@ export default function UnifiedFinancialPrintTemplate({
         date: renderDate(data.invoice_date),
         cards: [
           {
-            label: label("invoice_print_payer"),
-            value:
-              data.payer === "bank"
-                ? label("invoice_print_bank")
-                : label("invoice_print_owner"),
+            label: { ar: "وجهة الفاتورة", en: "Bill To" },
+            value: billToOwner,
+            lines: billToLines,
+            span: 2,
           },
-          { label: label("invoice_print_project_name"), value: projectName },
-          ...(project?.consultant ? [{ label: label("invoice_print_consultant"), value: consultantName }] : []),
+          { label: label("invoice_print_project_name"), value: billToOwner || projectName },
         ],
         sectionTitle: label("invoice_print_details"),
         lineCount: String(rows.length).padStart(2, "0"),
@@ -347,10 +367,11 @@ export default function UnifiedFinancialPrintTemplate({
         date: renderDate(data.date),
         cards: [
           {
-            label: label("payment_print_payer"),
-            value: data.payer === "bank" ? label("payment_print_bank") : label("payment_print_owner"),
+            label: { ar: "الدفع من", en: "Payment From" },
+            value: billToOwner,
+            lines: billToLines,
+            span: 2,
           },
-          ...(project ? [{ label: label("payment_print_project_name"), value: projectName }] : []),
           { label: label("payment_print_payment_method"), value: methodLabel },
         ],
         sectionTitle: label("payment_print_details"),
@@ -412,9 +433,10 @@ export default function UnifiedFinancialPrintTemplate({
         cards: [
           {
             label: label("rv_print_received_from"),
-            value: buildBilingualValue(data.received_from, data.received_from_en || data.received_from),
+            value: billToOwner || buildBilingualValue(data.received_from, data.received_from_en || data.received_from),
+            lines: billToLines,
+            span: 2,
           },
-          ...(project ? [{ label: label("rv_print_project_name"), value: projectName }] : []),
           ...(data.invoice_number ? [{ label: label("rv_print_invoice_number"), value: data.invoice_number }] : []),
         ],
         sectionTitle: label("rv_print_received_from_title"),
@@ -477,9 +499,13 @@ export default function UnifiedFinancialPrintTemplate({
         dateLabel: label("ti_print_date"),
         date: renderDate(data.date),
         cards: [
-          ...(project ? [{ label: label("ti_print_project_name"), value: projectName }] : []),
+          {
+            label: label("ti_print_project_name"),
+            value: billToOwner || projectName,
+            lines: billToLines,
+            span: 2,
+          },
           ...(data.invoice_number ? [{ label: label("ti_print_linked_invoice_number"), value: data.invoice_number }] : []),
-          ...(data.description ? [{ label: label("ti_print_description"), value: data.description }] : []),
         ],
         sectionTitle: label("ti_print_amount_breakdown"),
         lineCount: "02",
@@ -514,7 +540,6 @@ export default function UnifiedFinancialPrintTemplate({
     return base;
   }, [
     company,
-    consultantName,
     data,
     documentType,
     invoiceAttachments,
@@ -583,9 +608,20 @@ export default function UnifiedFinancialPrintTemplate({
         {document.cards.length > 0 && (
           <section className="ufp-cards">
             {document.cards.map((card, index) => (
-              <div className="ufp-info-card" key={`${card.label.en}-${index}`}>
+              <div
+                className="ufp-info-card"
+                key={`${card.label?.en || index}-${index}`}
+                style={card.span > 1 ? { gridColumn: `span ${card.span}` } : {}}
+              >
                 <BilingualText value={card.label} className="ufp-info-card__label" />
-                <BilingualText value={card.value} className="ufp-info-card__value" />
+                {card.value && <BilingualText value={card.value} className="ufp-info-card__value" />}
+                {card.lines?.length > 0 && (
+                  <div className="ufp-info-card__lines">
+                    {card.lines.map((line, i) => (
+                      <span key={i} className="ufp-info-card__line">{line}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </section>
@@ -619,29 +655,6 @@ export default function UnifiedFinancialPrintTemplate({
               ))}
             </tbody>
           </table>
-        </section>
-
-        <section className="ufp-bottom">
-          <div className="ufp-verify">
-            <QRCodeSVG value={document.qrData} size={96} level="M" includeMargin={false} />
-            <div>
-              <h4>SCAN TO VERIFY</h4>
-              <BilingualText value={label("invoice_print_electronic_notice")} />
-            </div>
-          </div>
-
-          <div className="ufp-totals-box">
-            <table className="ufp-totals">
-              <tbody>
-                {document.totals.map((row, index) => (
-                  <tr className={row.grand ? "ufp-totals__grand" : ""} key={index}>
-                    <td><BilingualText value={row.label} /></td>
-                    <td>{row.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </section>
 
         {document.notes.length > 0 && (
@@ -697,23 +710,75 @@ export default function UnifiedFinancialPrintTemplate({
           </section>
         )}
 
-        <section className="ufp-signatures">
-          <div className="ufp-sign-card">
-            <span />
-            <strong><BilingualText value={label("invoice_print_received_by")} /></strong>
-          </div>
-          <div className="ufp-sign-card ufp-sign-card--stamp">
-            <div><BilingualText value={label("invoice_print_company_stamp")} /></div>
-          </div>
-          <div className="ufp-sign-card">
-            <span />
-            <strong><BilingualText value={label("invoice_print_authorized_signature")} /></strong>
-          </div>
-        </section>
+        <div className="ufp-doc__footer">
+          <section className="ufp-bottom">
+            <div className="ufp-totals-box">
+              <table className="ufp-totals">
+                <tbody>
+                  {document.totals.map((row, index) => (
+                    <tr className={row.grand ? "ufp-totals__grand" : ""} key={index}>
+                      <td><BilingualText value={row.label} /></td>
+                      <td>{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-        <p className="ufp-final-notice">
-          <BilingualText value={label("invoice_print_electronic_notice")} />
-        </p>
+          <div className="ufp-bank-qr-row">
+            {(documentType === "invoice" || documentType === "taxInvoice") && (
+              <div className="ufp-bank-details">
+                <div className="ufp-bank-details__title">OUR BANK ACCOUNT DETAILS</div>
+                <div className="ufp-bank-details__rows">
+                  <div className="ufp-bank-details__row">
+                    <span className="ufp-bank-details__label">NAME OF BANK</span>
+                    <span className="ufp-bank-details__value">ADCB</span>
+                  </div>
+                  <div className="ufp-bank-details__row">
+                    <span className="ufp-bank-details__label">ACCOUNT NUMBER</span>
+                    <span className="ufp-bank-details__value">100551920001</span>
+                  </div>
+                  <div className="ufp-bank-details__row">
+                    <span className="ufp-bank-details__label">IBAN NUMBER</span>
+                    <span className="ufp-bank-details__value">AE690030000100551920001</span>
+                  </div>
+                </div>
+                <div className="ufp-bank-details__cheque">
+                  Make all cheques payable to <strong>Al Yafour General Contracting &amp; Trans Sole Proprietorship LLC</strong>
+                </div>
+              </div>
+            )}
+
+            <div className="ufp-verify">
+              <QRCodeSVG value={document.qrData} size={64} level="M" includeMargin={false} />
+              <div>
+                <h4>SCAN TO VERIFY</h4>
+                <BilingualText value={label("invoice_print_electronic_notice")} />
+              </div>
+            </div>
+          </div>
+
+          <section className="ufp-signatures">
+            <div className="ufp-sign-card">
+              <span />
+              <strong><BilingualText value={label("invoice_print_received_by")} /></strong>
+            </div>
+            <div className="ufp-sign-card ufp-sign-card--stamp">
+              <div><BilingualText value={label("invoice_print_company_stamp")} /></div>
+            </div>
+            <div className="ufp-sign-card">
+              <span />
+              <strong><BilingualText value={label("invoice_print_authorized_signature")} /></strong>
+            </div>
+          </section>
+
+          <p className="ufp-final-notice">
+            <BilingualText value={label("invoice_print_electronic_notice")} />
+          </p>
+
+          <img src="/credsnewfix.png" alt="Credentials" className="ufp-creds-banner" />
+        </div>
       </article>
     </div>
   );

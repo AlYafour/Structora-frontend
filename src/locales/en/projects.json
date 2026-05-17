@@ -467,6 +467,8 @@
   "legacy_project_code_placeholder": "Enter the old code if the project had one previously",
   "project_codes_and_classification": "Project Info & Classification",
   "project_image": "Project Image",
+  "project_3d_image": "3D Project Image",
+  "upload_3d_image_hint": "Upload a 3D render or visualization (shown as background in approval view)",
   "adding": "Adding...",
   "pick_villa_type": "Pick villa type.",
   "contract_type_info": "For site plan/license path, choose New Contract.",

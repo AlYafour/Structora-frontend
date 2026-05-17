@@ -33,6 +33,11 @@ function useCompanyMenuItems() {
   const canCreateProjects  = isAdmin || hasPermission('projects.create');
   const canEditProjects    = isAdmin || hasPermission('projects.edit') || hasPermission('projects.create');
   const canApproveProjects = isAdmin || hasPermission('projects.approve');
+  const canAddAwarding = isAdmin || hasPermission('projects.add_awarding');
+  const canAddStartOrder = isAdmin || hasPermission('projects.add_start_order');
+  const canAddProjectSchedule = isAdmin || hasPermission('projects.add_project_schedule');
+  const canAddExcavationNotice = isAdmin || hasPermission('projects.add_excavation_notice');
+  const canAddPaymentClaim = isAdmin || hasPermission('projects.add_payment_claim');
 
   const canCreateVariations = isAdmin || hasPermission('variations.create');
   const canViewVariations   = isAdmin || hasPermission('variations.view') || canCreateVariations;
@@ -52,6 +57,7 @@ function useCompanyMenuItems() {
   // Financial is now independent from Projects
   const canAccessFinancial =
     isAdmin ||
+    canAddPaymentClaim ||
     hasAnyPermission([
       'financial.view',
       'financial.create',
@@ -99,12 +105,12 @@ function useCompanyMenuItems() {
     ...(canViewProjects ? [{ key: 'projects-list', icon: <FaList />, label: t('projects_list') }] : []),
     ...(canCreateProjects ? [{ key: 'add-project', icon: <FaPlus />, label: t('add_project') }] : []),
     ...((canCreateProjects || canEditProjects) ? [{ key: 'divider-1', type: 'divider' }] : []),
-    ...(canEditProjects ? [{ key: 'add-start-order', icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
+    ...(canAddStartOrder ? [{ key: 'add-start-order', icon: <FaFileInvoice />, label: t('add_start_order') }] : []),
     ...(canCreateVariations ? [{ key: 'add-variation', icon: <FaEdit />, label: t('add_variation') }] : []),
-    ...(canEditProjects ? [{ key: 'add-awarding', icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
+    ...(canAddAwarding ? [{ key: 'add-awarding', icon: <FaCheckCircle />, label: t('add_awarding') }] : []),
     ...(canEditProjects ? [{ key: 'add-extensions', icon: <FaClock />, label: t('add_extensions') }] : []),
-    ...(canEditProjects ? [{ key: 'add-project-schedule', icon: <FaClock />, label: t('add_project_schedule') }] : []),
-    ...(canEditProjects ? [{ key: 'add-excavation-notice', icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
+    ...(canAddProjectSchedule ? [{ key: 'add-project-schedule', icon: <FaClock />, label: t('add_project_schedule') }] : []),
+    ...(canAddExcavationNotice ? [{ key: 'add-excavation-notice', icon: <FaFileInvoice />, label: t('add_excavation_notice') }] : []),
     ...(canEditProjects ? [{ key: 'add-progress', icon: <FaEdit />, label: t('sidebar_add_progress') }] : []),
     ...(canAccessBoq ? [{ key: 'divider-3', type: 'divider' }] : []),
     ...(canAccessBoq ? [{ key: 'import-data', icon: <FaFileImport />, label: t('import_data') }] : []),
@@ -113,7 +119,7 @@ function useCompanyMenuItems() {
   const financialChildren = [
     ...(canAccessPayments ? [{ key: 'add-payment', icon: <FaMoneyBillWave />, label: t('add_payment') }] : []),
     ...(canAccessInvoices ? [{ key: 'add-invoice', icon: <FaReceipt />, label: t('add_invoice') }] : []),
-    ...(canAccessPayments ? [{ key: 'add-payment-claim', icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
+    ...(canAddPaymentClaim ? [{ key: 'add-payment-claim', icon: <FaFileInvoice />, label: t('add_payment_claim') }] : []),
   ];
 
   return [

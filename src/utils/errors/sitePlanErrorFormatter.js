@@ -18,6 +18,7 @@ export function formatSitePlanServerErrors(errors) {
     owner_phone: "رقم الهاتف",
     owner_email: "البريد الإلكتروني",
     owner_birth_date: "تاريخ الميلاد",
+    signature: "التوقيع",
   };
 
   for (const [key, label] of Object.entries(fieldMap)) {

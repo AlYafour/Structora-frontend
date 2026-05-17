@@ -204,5 +204,8 @@
   "remaining_label": "Remaining",
   "invoice_save_error": "Error saving invoice",
   "invoice_net_amount": "Net Amount",
-  "invoice_contract_value": "Contract Value (Excl. VAT)"
+  "invoice_contract_value": "Contract Value (Excl. VAT)",
+  "select_variations": "Select Variations",
+  "no_variations_available": "No variations available",
+  "apply": "Apply"
 }
