@@ -1,4 +1,5 @@
-﻿import { memo, useMemo, useState, useEffect } from "react";
+﻿import { memo, useMemo, useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import DirhamsIcon from "../../../../components/common/DirhamsIcon";
@@ -10,6 +11,8 @@ import { sumPaymentsByPayer } from "../../../../utils/helpers/payments";
 import { advancePaymentApi } from "../../../../services/advancePayments";
 import { VatAmount } from "../../../../components/common/VatBreakdownPopover";
 import InfoTip from "../../../../components/common/InfoTip";
+import { api } from "../../../../services/api";
+import "./FinancialDashboardPrint.css";
 
 /**
  * Financial Dashboard Tab
@@ -39,6 +42,44 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
   // Advance payment summary
   const [advanceSummary, setAdvanceSummary] = useState(null);
   const [showVat, setShowVat] = useState(false);
+  const [printCompany, setPrintCompany] = useState(null);
+
+  useEffect(() => {
+    api.get("auth/tenant-settings/current/", { _skipAuthRedirect: true })
+      .then((res) => {
+        const d = res.data;
+        const rawLogo = d.logo_url || d.company_logo || "";
+        const cleanPath = rawLogo.split("?")[0];
+        const logoUrl = cleanPath
+          ? cleanPath.startsWith("http") ? cleanPath : `/media/${cleanPath}`
+          : null;
+        setPrintCompany({
+          name: d.company_name || d.contractor_name || "",
+          name_en: d.contractor_name_en || "",
+          address: d.company_address || d.contractor_address || "",
+          phone: d.company_phone || d.contractor_phone || "",
+          logo: logoUrl,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Financial Summary",
+    pageStyle: `
+      @page { size: A4 landscape; margin: 8mm; }
+      html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+    `,
+  });
+
+  const printDate = new Date().toLocaleDateString("en-AE", { year: "numeric", month: "long", day: "numeric" });
+
+  const printAmount = (value) => {
+    const num = parseFloat(value) || 0;
+    return `AED ${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
   useEffect(() => {
     if (projectId) {
       advancePaymentApi.getSummary(projectId)
@@ -219,6 +260,14 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
             </svg>
             {showVat ? t("including_vat") : t("excluding_vat")}
           </button>
+          {hasContract && (
+            <button onClick={handlePrint} className="fin-print__download-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 17V3M6 11l6 6 6-6" /><path d="M4 21h16" />
+              </svg>
+              {t("download_pdf", "Download PDF")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -546,6 +595,249 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
           )}
         </>
       )}
+      {/* ── Hidden Print Section ── visible only when printing ── */}
+      <div ref={printRef} className="fin-print-root">
+
+        {/* Header */}
+        <div className="fin-print__accent-bar" />
+        <div className="fin-print__header">
+          <div className="fin-print__company">
+            {printCompany?.logo && (
+              <img src={printCompany.logo} alt={printCompany.name} className="fin-print__company-logo"
+                onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            )}
+            <div className="fin-print__company-body">
+              <div className="fin-print__company-name">{printCompany?.name}</div>
+              {printCompany?.name_en && <div className="fin-print__company-name-en">{printCompany.name_en}</div>}
+              <div className="fin-print__company-details">
+                {printCompany?.address && <span>{printCompany.address}</span>}
+                {printCompany?.phone && <span dir="ltr">{printCompany.phone}</span>}
+              </div>
+            </div>
+          </div>
+          <div className="fin-print__title-panel">
+            <div className="fin-print__title">{t("financial_summary", "Financial Summary")}</div>
+            <div className="fin-print__print-date">{printDate}</div>
+          </div>
+        </div>
+
+        {/* Summary Cards — mirrors the UI MetricGrid exactly */}
+        <div className="fin-print__cards">
+
+          {/* 1. Total Contract Value — always */}
+          <div className="fin-print__card fin-print__card--blue">
+            <div className="fin-print__card-label">{t("total_contract_value")}</div>
+            <div className="fin-print__card-value">{printAmount(financialStats.contractValue)}</div>
+            <div className="fin-print__card-sub">{t("excluding_vat")}</div>
+          </div>
+
+          {/* 2. Contract Value Excl. Consultant Fees — housing loan only */}
+          {isHousingLoan && (
+            <div className="fin-print__card fin-print__card--cyan">
+              <div className="fin-print__card-label">{t("total_contract_value_excluding_consultant_fees")}</div>
+              <div className="fin-print__card-value">{printAmount(financialStats.contractValueExcludingConsultantFees)}</div>
+              <div className="fin-print__card-sub">{t("excluding_vat")}</div>
+            </div>
+          )}
+
+          {/* 3. Bank Contract Net — housing loan only */}
+          {isHousingLoan && (
+            <div className="fin-print__card fin-print__card--slate">
+              <div className="fin-print__card-label">{t("bank_contract_net")}</div>
+              <div className="fin-print__card-value">{printAmount(financialStats.bankNetValue)}</div>
+              <div className="fin-print__card-sub">{t("excluding_vat")}</div>
+            </div>
+          )}
+
+          {/* 4. Total Variations — always */}
+          <div className="fin-print__card fin-print__card--violet">
+            <div className="fin-print__card-label">{t("total_variations")}</div>
+            <div className="fin-print__card-value">{printAmount(financialStats.totalVariationsValue)}</div>
+            <div className="fin-print__card-sub">{financialStats.approvedVariationsCount} {t("approved")} · {t("excluding_vat")}</div>
+          </div>
+
+          {/* 5. Prolongation Fees — always */}
+          <div className="fin-print__card fin-print__card--slate">
+            <div className="fin-print__card-label">{t("prolongation_fees")}</div>
+            <div className="fin-print__card-value">
+              {printAmount(financialStats.hasOnlyNoVatProlongationFees
+                ? financialStats.totalProlongationFeesValue
+                : financialStats.totalProlongationFeesValue)}
+            </div>
+            <div className="fin-print__card-sub">
+              {financialStats.activeProlongationFeesCount} {t("active")} · {financialStats.hasOnlyNoVatProlongationFees ? t("pf_no_vat", "No VAT") : t("excluding_vat")}
+            </div>
+          </div>
+
+          {/* 6. Total Payments — always */}
+          <div className="fin-print__card fin-print__card--emerald">
+            <div className="fin-print__card-label">{t("total_payments")}</div>
+            <div className="fin-print__card-value">{printAmount(financialStats.totalPaymentsNet)}</div>
+            <div className="fin-print__card-sub">{financialStats.paymentsCount} {t("payments")} · {t("excluding_vat")}</div>
+          </div>
+
+          {/* 7. Remaining / Surplus — always */}
+          <div className={`fin-print__card ${financialStats.isOverpaid ? "fin-print__card--emerald" : "fin-print__card--amber"}`}>
+            <div className="fin-print__card-label">
+              {financialStats.isOverpaid ? t("surplus_amount") : t("remaining_amount")}
+            </div>
+            <div className="fin-print__card-value">{printAmount(financialStats.remainingAmountExcludingVAT)}</div>
+            <div className="fin-print__card-sub">
+              {financialStats.isOverpaid ? t("overpaid_note") : t("excluding_vat")}
+            </div>
+          </div>
+
+          {/* 8. Advance Payment — only if advanceSummary exists */}
+          {advanceSummary && (
+            <div className="fin-print__card fin-print__card--slate">
+              <div className="fin-print__card-label">{t("advance_payment")}</div>
+              <div className="fin-print__card-value">{printAmount(parseFloat(advanceSummary.totals.total_amount) || 0)}</div>
+              <div className="fin-print__card-sub">
+                {t("recovered")}: {printAmount(parseFloat(advanceSummary.totals.total_recovered) || 0)}
+                {" · "}
+                {t("remaining")}: {printAmount(parseFloat(advanceSummary.totals.total_remaining) || 0)}
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Progress Bar */}
+        <div className="fin-print__progress-wrap">
+          <div className="fin-print__progress-header">
+            <span className="fin-print__progress-label">{t("financial_completion")}</span>
+            <span className="fin-print__progress-pct">{financialStats.completionPercentage}%</span>
+          </div>
+          <div className="fin-print__progress-track">
+            <div className="fin-print__progress-fill" style={{ width: `${financialStats.completionPercentage}%` }} />
+          </div>
+          <div className="fin-print__progress-footer">
+            <span>{t("paid")}: {printAmount(financialStats.totalPaymentsNet)}</span>
+            <span>{t("total")}: {printAmount(financialStats.totalContractWithVariations)}</span>
+          </div>
+        </div>
+
+        {/* Breakdown Tables */}
+        <div className="fin-print__tables">
+
+          {/* Contract Breakdown */}
+          <div className="fin-print__table-block">
+            <div className="fin-print__table-title">
+              {t("contract_breakdown")}
+            </div>
+            <table className="fin-print__table">
+              <thead>
+                <tr>
+                  <th>{t("item", "Item")}</th>
+                  <th>{t("amount")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isHousingLoan && (
+                  <>
+                    <tr>
+                      <td>{t("bank_share")}</td>
+                      <td>{printAmount(financialStats.bankValue)}</td>
+                    </tr>
+                    <tr>
+                      <td>{t("owner_share")}</td>
+                      <td>{printAmount(financialStats.ownerValue)}</td>
+                    </tr>
+                    <tr className="fin-print__tr-sep"><td colSpan="2" /></tr>
+                  </>
+                )}
+                <tr>
+                  <td>{t("contract_value")} <span className="fin-print__tag">{t("excluding_vat")}</span></td>
+                  <td>{printAmount(financialStats.contractValueExcludingConsultantFees)}</td>
+                </tr>
+                <tr>
+                  <td>+ {t("approved_variations")} <span className="fin-print__tag">{financialStats.approvedVariationsCount} {t("items", "items")}</span></td>
+                  <td className="fin-print__td-add">{printAmount(financialStats.totalVariationsValue)}</td>
+                </tr>
+                <tr>
+                  <td>+ {t("prolongation_fees")} <span className="fin-print__tag">{financialStats.activeProlongationFeesCount} {t("active")}</span></td>
+                  <td className="fin-print__td-add">{printAmount(financialStats.totalProlongationFeesValue)}</td>
+                </tr>
+                <tr className="fin-print__tr-sep"><td colSpan="2" /></tr>
+                <tr className="fin-print__tr-subtotal">
+                  <td>{t("total_with_variations")} <span className="fin-print__tag">{t("excluding_vat")}</span></td>
+                  <td>{printAmount(financialStats.totalContractWithVariations)}</td>
+                </tr>
+                <tr className="fin-print__tr-grand">
+                  <td>{t("total_with_variations")} <span className="fin-print__tag">{t("including_vat")}</span></td>
+                  <td>{printAmount(financialStats.totalContractWithVariationsWithVAT)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Payments Breakdown */}
+          <div className="fin-print__table-block">
+            <div className="fin-print__table-title">
+              {t("payments_breakdown")}
+            </div>
+            <table className="fin-print__table">
+              <thead>
+                <tr>
+                  <th>{t("item", "Item")}</th>
+                  <th>{t("amount")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isHousingLoan && (
+                  <>
+                    <tr>
+                      <td>{t("bank_payments")}</td>
+                      <td>{printAmount(financialStats.bankPayments / 1.05)}</td>
+                    </tr>
+                    <tr>
+                      <td>{t("owner_payments")}</td>
+                      <td>{printAmount(financialStats.ownerPayments / 1.05)}</td>
+                    </tr>
+                    <tr className="fin-print__tr-sep"><td colSpan="2" /></tr>
+                  </>
+                )}
+                <tr className="fin-print__tr-subtotal">
+                  <td>{t("total_paid")} <span className="fin-print__tag">{t("excluding_vat")}</span></td>
+                  <td className="fin-print__td-success">{printAmount(financialStats.totalPaymentsNet)}</td>
+                </tr>
+                <tr>
+                  <td>{t("vat_amount", "VAT Amount")} <span className="fin-print__tag">5%</span></td>
+                  <td>{printAmount(financialStats.totalPaymentsVAT)}</td>
+                </tr>
+                <tr className="fin-print__tr-grand">
+                  <td>{t("total_paid")} <span className="fin-print__tag">{t("including_vat")}</span></td>
+                  <td className="fin-print__td-success">{printAmount(financialStats.totalPayments)}</td>
+                </tr>
+                <tr className="fin-print__tr-sep"><td colSpan="2" /></tr>
+                <tr className={financialStats.isOverpaid ? "fin-print__tr-overpaid" : "fin-print__tr-remaining"}>
+                  <td>
+                    {financialStats.isOverpaid ? t("surplus_amount") : t("remaining")}
+                    <span className="fin-print__tag">{t("excluding_vat")}</span>
+                  </td>
+                  <td>{printAmount(financialStats.remainingAmountExcludingVAT)}</td>
+                </tr>
+                <tr className={financialStats.isOverpaid ? "fin-print__tr-overpaid" : "fin-print__tr-remaining"}>
+                  <td>
+                    {financialStats.isOverpaid ? t("surplus_amount") : t("remaining")}
+                    <span className="fin-print__tag">{t("including_vat")}</span>
+                  </td>
+                  <td>{printAmount(financialStats.remainingAmount)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="fin-print__footer">
+          <span className="fin-print__footer-company">{printCompany?.name}</span>
+          <span className="fin-print__footer-center">CONFIDENTIAL — FOR INTERNAL USE ONLY</span>
+          <span className="fin-print__footer-date">Generated {printDate}</span>
+        </div>
+
+      </div>
     </div>
   );
 });

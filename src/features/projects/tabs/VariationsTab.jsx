@@ -1,4 +1,5 @@
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -16,6 +17,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import useTableSelection from "../hooks/useTableSelection";
 import BulkActionsBar from "../../../components/common/BulkActionsBar";
 import "./VariationsTab.css";
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import useTenantNavigate from "../../../hooks/useTenantNavigate";
 
 // Map status → prj-badge CSS class
@@ -712,6 +714,16 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
     };
 
+    const printRef = useRef(null);
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `${project?.name || "Project"} - Variations`,
+        pageStyle: `
+            @page { size: A4 landscape; margin: 8mm; }
+            html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+        `,
+    });
+
     const canStaffDeleteVariation = (variation) => {
         const s = getVariationStatus(variation);
         return s === "draft" || s === "pending_project_manager";
@@ -825,6 +837,32 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         {showVat ? t("including_vat") : t("excluding_vat")}
                     </button>
 
+                    {variations && variations.length > 0 && (
+                        <button
+                            onClick={handlePrint}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: '6px',
+                                border: '1.5px solid #d1d5db',
+                                background: 'transparent',
+                                color: '#6b7280',
+                                fontWeight: 600,
+                                fontSize: '0.82rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M12 17V3M6 11l6 6 6-6" />
+                                <path d="M4 21h16" />
+                            </svg>
+                            {t("download_pdf", "Download PDF")}
+                        </button>
+                    )}
+
                     {canCreateVariation && (
                         isProjectFinalApproved ? (
                             <Button as={Link} to={`/projects/${projectId}/variations/notice`} variant="primary" size="md">
@@ -903,7 +941,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         <MetricCard variant="danger" icon="x" label={t("cancelled")} value={variationStats.rejected} />
                     </MetricGrid>
 
-                    <div className="prj-tab-filter ds-mb-4">
+                    <div className="prj-tab-filter ds-mb-4 variations-tab__no-print">
                         <select className="prj-input" value={variationStatusFilter} onChange={(e) => setVariationStatusFilter(e.target.value)}>
                             <option value="">{t("all_statuses")}</option>
                             <option value="approved">{t("approved")}</option>
@@ -918,6 +956,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         )}
                     </div>
 
+                    <TabPrintWrapper ref={printRef} title={t("variations", "Variations")} subtitle={project?.name}>
                     <div className="prj-table__wrapper">
                         <table className="prj-table">
                             <thead>
@@ -1089,6 +1128,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                             </tbody>
                         </table>
                     </div>
+                    </TabPrintWrapper>
                 </>
             ) : (
                 <div className="prj-empty-state">{t("no_variations")}</div>

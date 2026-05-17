@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { api } from "../../../services/api";
@@ -15,6 +16,8 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import AdvancePaymentMonitor from "../entries/payments/pages/components/AdvancePaymentMonitor";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import "./PaymentsTab.css";
 
 const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload }) {
   const { t, i18n } = useTranslation();
@@ -171,6 +174,26 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
     };
   }, [activePayments]);
 
+  const [payerFilter, setPayerFilter] = useState("");
+
+  const filteredRows = useMemo(() => {
+    if (!payerFilter) return allRows;
+    return allRows.filter(row => {
+      if (row._type === 'credit') return true;
+      return (row.payer || "owner") === payerFilter;
+    });
+  }, [allRows, payerFilter]);
+
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Payments",
+    pageStyle: `
+      @page { size: A4 landscape; margin: 8mm; }
+      html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+    `,
+  });
+
   const handleAddPayment = () => {
     navigate(`/payments/create?project=${projectId}`);
   };
@@ -250,6 +273,18 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             </svg>
             {showVat ? t("including_vat") : t("excluding_vat")}
           </button>
+          {allRows.length > 0 && (
+            <button
+              onClick={handlePrint}
+              className="payments-tab__btn-outline"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 17V3M6 11l6 6 6-6" />
+                <path d="M4 21h16" />
+              </svg>
+              {t("download_pdf", "Download PDF")}
+            </button>
+          )}
         </div>
       </div>
       {/* Advance Payment Monitor */}
@@ -302,6 +337,35 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             </div>
           )}
 
+          <div className="payments-tab__filter-bar">
+            <span className="payments-tab__filter-label">{t("filter_by", "Filter by")}:</span>
+            <div className="payments-tab__filter-chips">
+              {[
+                { value: "", label: t("all", "All") },
+                { value: "owner", label: t("payer_owner", "Owner") },
+                { value: "bank", label: t("payer_bank", "Bank") },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPayerFilter(opt.value)}
+                  className={`payments-tab__chip${payerFilter === opt.value ? " payments-tab__chip--active" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {payerFilter && (
+              <span className="payments-tab__filter-count">
+                {filteredRows.length} {t("results", "results")}
+              </span>
+            )}
+          </div>
+
+          <TabPrintWrapper
+            ref={printRef}
+            title={t("payments", "Payments")}
+            filterLabel={payerFilter ? `${t("filter_by", "Filter")}: ${payerFilter === "bank" ? t("payer_bank", "Bank") : t("payer_owner", "Owner")}` : undefined}
+          >
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
@@ -321,7 +385,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                 </tr>
               </thead>
               <tbody>
-                {allRows.map((row, i) => {
+                {filteredRows.map((row, i) => {
                   if (row._type === 'credit') {
                     const invoicesList = (row.invoices_covered || [])
                       .map(inv => inv.invoice_number)
@@ -476,6 +540,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
               </tbody>
             </table>
           </div>
+          </TabPrintWrapper>
         </>
       ) : (
         <div className="prj-empty-state">
