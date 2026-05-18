@@ -16,6 +16,19 @@
   white-space: nowrap;
 }
 
+@media print {
+  .variations-tab__description-cell {
+    max-width: 220px;
+    word-break: break-word;
+  }
+  .variations-tab__description-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+  }
+}
+
 .prj-money-with-icon {
   display: inline-flex;
   align-items: center;

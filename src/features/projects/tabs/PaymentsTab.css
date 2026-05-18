@@ -67,3 +67,37 @@
   color: #374151;
 }
 
+@media print {
+  /* Higher specificity (3 classes) beats TabPrintWrapper's 2-class selectors */
+  .tpw-root .payments-tab__table .prj-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    font-size: 7.5pt !important;
+  }
+  .tpw-root .payments-tab__table .prj-table thead th {
+    font-size: 6.5pt !important;
+    padding: 8px 5px !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+  }
+  .tpw-root .payments-tab__table .prj-table tbody td {
+    font-size: 7.5pt !important;
+    padding: 8px 5px !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
+    max-width: 0; /* forces fixed layout cells to clip */
+  }
+  /* Column widths — 11 visible columns (col 12 action hidden by TabPrintWrapper) */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(1)  { width: 4%  !important; } /* # */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(2)  { width: 9%  !important; } /* Date */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(3)  { width: 8%  !important; } /* Type */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(4)  { width: 12% !important; } /* Recipient */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(5)  { width: 10% !important; } /* Amount */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(6)  { width: 10% !important; } /* Base Contract */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(7)  { width: 9%  !important; } /* Variations */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(8)  { width: 9%  !important; } /* Bank VAT */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(9)  { width: 9%  !important; } /* Receipt Voucher */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(10) { width: 11% !important; } /* Allocated Invoices */
+  .tpw-root .payments-tab__table .prj-table th:nth-child(11) { width: 9%  !important; } /* Status */
+}
+

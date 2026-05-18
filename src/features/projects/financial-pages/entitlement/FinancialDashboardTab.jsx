@@ -621,85 +621,62 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
           </div>
         </div>
 
-        {/* Summary Cards — mirrors the UI MetricGrid exactly */}
-        <div className="fin-print__cards">
-
-          {/* 1. Total Contract Value — always */}
-          <div className="fin-print__card fin-print__card--blue">
-            <div className="fin-print__card-label">{t("total_contract_value")}</div>
-            <div className="fin-print__card-value">{printAmount(financialStats.contractValue)}</div>
-            <div className="fin-print__card-sub">{t("excluding_vat")}</div>
-          </div>
-
-          {/* 2. Contract Value Excl. Consultant Fees — housing loan only */}
-          {isHousingLoan && (
-            <div className="fin-print__card fin-print__card--cyan">
-              <div className="fin-print__card-label">{t("total_contract_value_excluding_consultant_fees")}</div>
-              <div className="fin-print__card-value">{printAmount(financialStats.contractValueExcludingConsultantFees)}</div>
-              <div className="fin-print__card-sub">{t("excluding_vat")}</div>
+        {/* Summary split card */}
+        <div style={{ display: 'flex', border: '1.5px solid #d8c9b3', borderRadius: '12px', overflow: 'hidden', minHeight: '130px', marginBottom: '10px' }}>
+          {/* Left — dark panel */}
+          <div style={{ flex: '0 0 42%', background: '#17202f', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '7pt', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {t("total_with_variations")}
             </div>
-          )}
-
-          {/* 3. Bank Contract Net — housing loan only */}
-          {isHousingLoan && (
-            <div className="fin-print__card fin-print__card--slate">
-              <div className="fin-print__card-label">{t("bank_contract_net")}</div>
-              <div className="fin-print__card-value">{printAmount(financialStats.bankNetValue)}</div>
-              <div className="fin-print__card-sub">{t("excluding_vat")}</div>
-            </div>
-          )}
-
-          {/* 4. Total Variations — always */}
-          <div className="fin-print__card fin-print__card--violet">
-            <div className="fin-print__card-label">{t("total_variations")}</div>
-            <div className="fin-print__card-value">{printAmount(financialStats.totalVariationsValue)}</div>
-            <div className="fin-print__card-sub">{financialStats.approvedVariationsCount} {t("approved")} · {t("excluding_vat")}</div>
-          </div>
-
-          {/* 5. Prolongation Fees — always */}
-          <div className="fin-print__card fin-print__card--slate">
-            <div className="fin-print__card-label">{t("prolongation_fees")}</div>
-            <div className="fin-print__card-value">
-              {printAmount(financialStats.hasOnlyNoVatProlongationFees
-                ? financialStats.totalProlongationFeesValue
-                : financialStats.totalProlongationFeesValue)}
-            </div>
-            <div className="fin-print__card-sub">
-              {financialStats.activeProlongationFeesCount} {t("active")} · {financialStats.hasOnlyNoVatProlongationFees ? t("pf_no_vat", "No VAT") : t("excluding_vat")}
-            </div>
-          </div>
-
-          {/* 6. Total Payments — always */}
-          <div className="fin-print__card fin-print__card--emerald">
-            <div className="fin-print__card-label">{t("total_payments")}</div>
-            <div className="fin-print__card-value">{printAmount(financialStats.totalPaymentsNet)}</div>
-            <div className="fin-print__card-sub">{financialStats.paymentsCount} {t("payments")} · {t("excluding_vat")}</div>
-          </div>
-
-          {/* 7. Remaining / Surplus — always */}
-          <div className={`fin-print__card ${financialStats.isOverpaid ? "fin-print__card--emerald" : "fin-print__card--amber"}`}>
-            <div className="fin-print__card-label">
-              {financialStats.isOverpaid ? t("surplus_amount") : t("remaining_amount")}
-            </div>
-            <div className="fin-print__card-value">{printAmount(financialStats.remainingAmountExcludingVAT)}</div>
-            <div className="fin-print__card-sub">
-              {financialStats.isOverpaid ? t("overpaid_note") : t("excluding_vat")}
-            </div>
-          </div>
-
-          {/* 8. Advance Payment — only if advanceSummary exists */}
-          {advanceSummary && (
-            <div className="fin-print__card fin-print__card--slate">
-              <div className="fin-print__card-label">{t("advance_payment")}</div>
-              <div className="fin-print__card-value">{printAmount(parseFloat(advanceSummary.totals.total_amount) || 0)}</div>
-              <div className="fin-print__card-sub">
-                {t("recovered")}: {printAmount(parseFloat(advanceSummary.totals.total_recovered) || 0)}
-                {" · "}
-                {t("remaining")}: {printAmount(parseFloat(advanceSummary.totals.total_remaining) || 0)}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginTop: '8px' }}>
+                <span style={{ fontSize: '26pt', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                  {printAmount(financialStats.totalContractWithVariations).replace('AED ', '')}
+                </span>
+                <span style={{ fontSize: '12pt', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>AED</span>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '20px', padding: '2px 9px', fontSize: '6.5pt', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {t("excluding_vat")}
+                </span>
+                <span style={{ fontSize: '7.5pt', color: 'rgba(255,255,255,0.4)' }}>
+                  {financialStats.approvedVariationsCount} {t("approved").toLowerCase()} · {financialStats.activeProlongationFeesCount} {t("prolongation_fees").toLowerCase()}
+                </span>
               </div>
             </div>
-          )}
-
+          </div>
+          {/* Right — light panel */}
+          <div style={{ flex: 1, background: '#fff', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '8pt', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                {t("financial_completion")}
+              </span>
+              <span style={{ fontSize: '24pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>
+                {financialStats.completionPercentage}%
+              </span>
+            </div>
+            <div style={{ height: '10px', background: '#e5e7eb', borderRadius: '99px', overflow: 'hidden', margin: '12px 0 14px' }}>
+              <div style={{ display: 'flex', height: '100%' }}>
+                <div style={{ width: `${financialStats.completionPercentage}%`, background: '#10b981' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '28px' }}>
+              {[
+                { dot: '#10b981', label: t("total_payments"), value: printAmount(financialStats.totalPaymentsNet), sub: `${financialStats.paymentsCount} ${t("payments").toLowerCase()} · ${t("excluding_vat")}` },
+                { dot: financialStats.isOverpaid ? '#10b981' : '#f59e0b', label: financialStats.isOverpaid ? t("surplus_amount") : t("remaining_amount"), value: printAmount(financialStats.remainingAmountExcludingVAT), sub: t("excluding_vat") },
+                { dot: '#8b5cf6', label: t("total_variations"), value: `${financialStats.approvedVariationsCount}`, sub: printAmount(financialStats.totalVariationsValue) },
+              ].map(({ dot, label, value, sub }) => (
+                <div key={label}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
+                    {label}
+                  </div>
+                  <div style={{ fontSize: '11pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '3px' }}>{sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Progress Bar */}

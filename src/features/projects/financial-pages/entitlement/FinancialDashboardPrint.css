@@ -30,12 +30,12 @@
 }
 
 /* ── Print mode ── */
-@media print {
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
 
-  @page {
-    size: A4 landscape;
-    margin: 8mm;
-  }
+@media print {
 
   * {
     -webkit-print-color-adjust: exact !important;
@@ -151,50 +151,68 @@
     margin-top: 6px;
   }
 
-  /* ── Summary cards (up to 8, 4 per row) ── */
-  .fin-print__cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+  /* ── Summary table (replaces card grid) ── */
+  .fin-print__summary-table-wrap {
     margin-bottom: 10px;
-  }
-
-  .fin-print__card {
-    background: #fff;
     border: 1.5px solid #d8c9b3;
-    border-top-width: 4px;
-    border-radius: 7px;
-    padding: 11px 14px;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
-  .fin-print__card--blue    { border-top-color: #3b82f6; }
-  .fin-print__card--violet  { border-top-color: #8b5cf6; }
-  .fin-print__card--emerald { border-top-color: #10b981; }
-  .fin-print__card--amber   { border-top-color: #f59e0b; }
-  .fin-print__card--cyan    { border-top-color: #06b6d4; }
-  .fin-print__card--slate   { border-top-color: #64748b; }
-
-  .fin-print__card-label {
-    font-size: 7pt;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #7f7364;
-    margin-bottom: 6px;
+  .fin-print__summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
   }
 
-  .fin-print__card-value {
-    font-size: 11.5pt;
-    font-weight: 900;
-    color: #17202f;
-    line-height: 1.2;
+  .fin-print__summary-table__title {
+    background: #17202f !important;
+    color: #fff !important;
+    padding: 9px 14px !important;
+    font-weight: 800 !important;
+    font-size: 9pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    text-align: left !important;
   }
 
-  .fin-print__card-sub {
-    font-size: 7pt;
-    color: #9ca3af;
-    margin-top: 4px;
+  .fin-print__summary-table__col-label,
+  .fin-print__summary-table__col-value {
+    background: #f0eadf !important;
+    color: #7f7364 !important;
+    padding: 7px 12px !important;
+    font-weight: 700 !important;
+    font-size: 7.5pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    border-bottom: 1px solid #d8c9b3 !important;
   }
+
+  .fin-print__summary-table__col-label { text-align: left !important; }
+  .fin-print__summary-table__col-value { text-align: right !important; }
+
+  .fin-print__summary-table__td {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #ede8e0 !important;
+    color: #17202f !important;
+    font-size: 9pt !important;
+    vertical-align: middle !important;
+  }
+
+  .fin-print__summary-table tbody tr:last-child .fin-print__summary-table__td {
+    border-bottom: none !important;
+  }
+
+  .fin-print__summary-table__tr-alt .fin-print__summary-table__td {
+    background: #faf8f4 !important;
+  }
+
+  .fin-print__summary-table__td--right  { text-align: right !important; font-weight: 600 !important; }
+  .fin-print__summary-table__td--bold   { font-weight: 800 !important; }
+  .fin-print__summary-table__td--success { color: #059669 !important; }
+
+  .fin-print__summary-table__tr-remaining .fin-print__summary-table__td { color: #d97706 !important; font-weight: 700 !important; }
+  .fin-print__summary-table__tr-overpaid  .fin-print__summary-table__td { color: #059669 !important; font-weight: 700 !important; }
 
   /* ── Progress bar ── */
   .fin-print__progress-wrap {
@@ -383,7 +401,7 @@
   .fin-print__footer-date { font-size: 7.5pt; }
 
   /* ── Page-break rules ── */
-  .fin-print__header        { break-inside: avoid; page-break-inside: avoid; }
-  .fin-print__cards         { break-inside: avoid; page-break-inside: avoid; }
-  .fin-print__progress-wrap { break-inside: avoid; page-break-inside: avoid; }
+  .fin-print__header             { break-inside: avoid; page-break-inside: avoid; }
+  .fin-print__summary-table-wrap { break-inside: avoid; page-break-inside: avoid; }
+  .fin-print__progress-wrap      { break-inside: avoid; page-break-inside: avoid; }
 }

@@ -7,13 +7,8 @@
   display: none;
 }
 
-@media print {
 
-  /* ---- Page setup ---- */
-  @page {
-    size: A4 landscape;
-    margin: 8mm;
-  }
+@media print {
 
   * {
     -webkit-print-color-adjust: exact !important;
@@ -65,7 +60,7 @@
     border-top: none;
     border-radius: 0 0 10px 10px;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   /* Company side */
@@ -294,17 +289,6 @@
 
   .tpw-footer__date {
     font-size: 7.5pt;
-  }
-
-  /* ---- tfoot totals row ---- */
-  .tpw-root .prj-table tfoot td {
-    background: #17202f !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-    font-size: 9.5pt !important;
-    padding: 11px 12px !important;
-    border-top: 2px solid #2d4a6b !important;
-    border-bottom: none !important;
   }
 
   /* ---- Page-break rules ---- */

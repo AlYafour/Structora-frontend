@@ -719,7 +719,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         contentRef: printRef,
         documentTitle: `${project?.name || "Project"} - Variations`,
         pageStyle: `
-            @page { size: A4 landscape; margin: 8mm; }
+            @page { size: A4 portrait; margin: 8mm; }
             html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
         `,
     });
@@ -1126,47 +1126,64 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                     );
                                 })}
                             </tbody>
-                            <tfoot>
-                                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
-                                    <td></td>
-                                    <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                                        {t("total")} ({filteredVariations.length})
-                                    </td>
-                                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
-                                        {renderMoney(v(filteredVariations.reduce((sum, vr) => sum + (parseFloat(vr.total_amount || vr.final_amount || 0) || 0), 0)))}
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
 
                     {/* Print-only summary — hidden in browser, visible when printing */}
-                    <div className="tpw-print-only" style={{ marginTop: '16px' }}>
-                        <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
-                            <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                {t("summary", "Summary")}
+                    <div className="tpw-print-only" style={{ marginTop: '12px' }}>
+                        <div style={{ display: 'flex', border: '1.5px solid #d8c9b3', borderRadius: '12px', overflow: 'hidden', minHeight: '130px' }}>
+                            {/* Left — dark panel */}
+                            <div style={{ flex: '0 0 42%', background: '#17202f', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                <div style={{ fontSize: '7pt', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                    {t("approved_amount", "Approved Amount")}
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginTop: '8px' }}>
+                                        <span style={{ fontSize: '26pt', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                                            {parseFloat(v(variationStats.totalAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span style={{ fontSize: '12pt', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>AED</span>
+                                    </div>
+                                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        <span style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '20px', padding: '2px 9px', fontSize: '6.5pt', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            {vatLabel}
+                                        </span>
+                                        <span style={{ fontSize: '7.5pt', color: 'rgba(255,255,255,0.4)' }}>
+                                            {variationStats.approved} {t("variations", "variations")} · {t("approved").toLowerCase()}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                                    <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("total")}</div>
-                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.total}</div>
-                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("variations", "Variations")}</div>
+                            {/* Right — light panel */}
+                            <div style={{ flex: 1, background: '#fff', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <span style={{ fontSize: '8pt', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                        {t("total")} {t("variations", "Variations")}
+                                    </span>
+                                    <span style={{ fontSize: '24pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>
+                                        {variationStats.total}
+                                    </span>
                                 </div>
-                                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                                    <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("approved_amount", "Approved Amount")}</div>
-                                    <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderMoney(v(variationStats.totalAmount))}</div>
-                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel} • {t('excluding_vat')} base</div>
+                                <div style={{ height: '10px', background: '#e5e7eb', borderRadius: '99px', overflow: 'hidden', margin: '12px 0 14px' }}>
+                                    <div style={{ display: 'flex', height: '100%' }}>
+                                        <div style={{ width: `${variationStats.total > 0 ? (variationStats.approved / variationStats.total) * 100 : 0}%`, background: '#10b981' }} />
+                                        <div style={{ width: `${variationStats.total > 0 ? (variationStats.pending / variationStats.total) * 100 : 0}%`, background: '#f59e0b' }} />
+                                    </div>
                                 </div>
-                                <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                                    <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("approved")}</div>
-                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.approved}</div>
-                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("pending")}: {variationStats.pending}</div>
-                                </div>
-                                <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
-                                    <div style={{ fontSize: '7.5pt', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("cancelled")}</div>
-                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.rejected}</div>
-                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("variations", "Variations")}</div>
+                                <div style={{ display: 'flex', gap: '28px' }}>
+                                    {[
+                                        { dot: '#10b981', label: t("approved"), value: variationStats.approved },
+                                        { dot: '#f59e0b', label: t("pending"), value: variationStats.pending },
+                                        { dot: '#9ca3af', label: t("cancelled"), value: variationStats.rejected },
+                                    ].map(({ dot, label, value }) => (
+                                        <div key={label}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
+                                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
+                                                {label}
+                                            </div>
+                                            <div style={{ fontSize: '18pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>{value}</div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

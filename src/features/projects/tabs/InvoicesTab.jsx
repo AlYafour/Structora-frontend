@@ -56,7 +56,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
     contentRef: printRef,
     documentTitle: "Invoices",
     pageStyle: `
-      @page { size: A4 landscape; margin: 8mm; }
+      @page { size: A4 portrait; margin: 8mm; }
       html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
     `,
   });
@@ -509,32 +509,55 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
           </div>
 
           {/* Print-only summary */}
-          <div className="tpw-print-only" style={{ marginTop: '16px' }}>
-            <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
-              <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {t("summary", "Summary")}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                  <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("invoices_count")}</div>
-                  <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+          <div className="tpw-print-only" style={{ marginTop: '12px' }}>
+            <div style={{ display: 'flex', border: '1.5px solid #d8c9b3', borderRadius: '12px', overflow: 'hidden', minHeight: '130px' }}>
+              {/* Left — dark panel */}
+              <div style={{ flex: '0 0 42%', background: '#17202f', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '7pt', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {t("total_amount")}
                 </div>
-                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("total_amount")}</div>
-                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.total)}</div>
-                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("including_vat")}</div>
-                </div>
-                <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                  <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("paid_amount")}</div>
-                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.paid)}</div>
-                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>
-                    {t("fully_paid")}: {stats.fullyPaid} · {t("partially_paid")}: {stats.partiallyPaid}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginTop: '8px' }}>
+                    <span style={{ fontSize: '26pt', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                      {parseFloat(stats.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span style={{ fontSize: '12pt', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>AED</span>
+                  </div>
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '20px', padding: '2px 9px', fontSize: '6.5pt', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {t("including_vat")}
+                    </span>
+                    <span style={{ fontSize: '7.5pt', color: 'rgba(255,255,255,0.4)' }}>
+                      {stats.count} {t("invoices_count", "invoices").toLowerCase()}
+                    </span>
                   </div>
                 </div>
-                <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
-                  <div style={{ fontSize: '7.5pt', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("remaining_amount")}</div>
-                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.remaining)}</div>
-                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("unpaid")}: {stats.unpaid}</div>
+              </div>
+              {/* Right — light panel */}
+              <div style={{ flex: 1, background: '#fff', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '8pt', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    {t("invoices_count", "Total Invoices")}
+                  </span>
+                  <span style={{ fontSize: '24pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>
+                    {stats.count}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+                  {[
+                    ...(stats.advanceDeduction > 0 ? [{ dot: '#f97316', label: t("advance_deduction_total"), value: renderAmount(stats.advanceDeduction), sub: null }] : []),
+                    { dot: '#10b981', label: t("paid_amount"), value: renderAmount(stats.paid), sub: `${t("fully_paid")}: ${stats.fullyPaid} · ${t("partially_paid")}: ${stats.partiallyPaid}` },
+                    { dot: '#f59e0b', label: t("remaining_amount"), value: renderAmount(stats.remaining), sub: `${t("unpaid")}: ${stats.unpaid}` },
+                  ].map(({ dot, label, value, sub }) => (
+                    <div key={label}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
+                        {label}
+                      </div>
+                      <div style={{ fontSize: '11pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>{value}</div>
+                      {sub && <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '3px' }}>{sub}</div>}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
