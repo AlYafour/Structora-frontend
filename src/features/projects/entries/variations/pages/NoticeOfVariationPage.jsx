@@ -259,7 +259,6 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     if (isEmbeddedMode) {
       setProject(projectProp);
       if (variationProp) {
-        console.log(variationProp);
         setVariation(variationProp);
         loadVariationData(variationProp);
         if (variationProp.variation_invoice_file) {

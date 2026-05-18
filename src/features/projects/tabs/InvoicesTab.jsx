@@ -359,18 +359,13 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                           {formatDate(invoice.invoice_date, i18n.language)}
                         </td>
                         <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
-                          <VatAmount
-                            net={parseFloat(invoice.net_amount) || totalAmount / 1.05}
-                            withVat={totalAmount}
-                            format={(v) => formatMoney(v, { lang: i18n.language })}
-                            showBtn={false}
-                          />
+                          {renderAmount((invoice.payer || 'owner') === 'bank' ? totalAmount * 1.05 : totalAmount)}
                         </td>
                         <td className="prj-nowrap ds-text-right prj-td--paid" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           {renderAmount(paidAmount)}
                         </td>
                         <td className={`prj-nowrap ds-text-right ${!isVoided && remainingAmount > 0.01 ? 'prj-td--remaining-warning' : 'prj-td--remaining-ok'}`} onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
-                          {renderAmount(remainingAmount)}
+                          {renderAmount((invoice.payer || 'owner') === 'bank' ? remainingAmount * 1.05 : remainingAmount)}
                         </td>
                         <td className="ds-text-center" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           <div className="prj-td--status-col">
