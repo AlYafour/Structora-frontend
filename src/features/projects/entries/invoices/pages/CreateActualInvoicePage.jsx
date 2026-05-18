@@ -1055,16 +1055,18 @@ export default function CreateActualInvoicePage() {
                                   <option value="">{t("select_variation_placeholder")}</option>
                                   {variations
                                     .filter(vo =>
-                                      // Hide VOs already invoiced in a previous invoice,
-                                      // but keep the one currently selected in this row
-                                      !previouslyInvoicedVOIds.has(String(vo.id)) ||
+                                      // Show VO if remaining amount > 0, or if it's currently selected in this row
+                                      Math.abs(getVOInfo(vo).remaining) > 0.01 ||
                                       String(vo.id) === String(item.variation_id)
                                     )
                                     .map(vo => {
                                       const alreadyUsed = usedVOIds.includes(String(vo.id));
+                                      const voRemaining = getVOInfo(vo).remaining;
+                                      const voTotal = parseFloat(vo.total_amount || 0) * (1 + VAT_RATE);
+                                      const isPartial = voRemaining < voTotal - 0.01;
                                       return (
                                         <option key={vo.id} value={vo.id} disabled={alreadyUsed}>
-                                          {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
+                                          {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {isPartial ? `${formatAmountString(voRemaining)} (remaining)` : formatAmountString(voTotal)}
                                         </option>
                                       );
                                     })}
@@ -1295,13 +1297,13 @@ export default function CreateActualInvoicePage() {
         size="medium"
       >
         <div style={{ maxHeight: "420px", overflowY: "auto" }}>
-          {variations.filter(vo => !previouslyInvoicedVOIds.has(String(vo.id))).length === 0 ? (
+          {variations.filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01).length === 0 ? (
             <p style={{ textAlign: "center", color: "var(--text-secondary, #6b7280)", padding: "20px 0" }}>
               {t("no_variations_available") || "No variations available"}
             </p>
           ) : (
             variations
-              .filter(vo => !previouslyInvoicedVOIds.has(String(vo.id)))
+              .filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01)
               .map(vo => {
                 const voInfo = getVOInfo(vo);
                 const checked = pickerChecked.has(String(vo.id));
