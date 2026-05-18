@@ -165,8 +165,9 @@ export default function useFinancialEntitlement({
 
       // Excel:
       // Total Contract Amount – Owner’s Share (After Variations)
+      // Deduct fees paid directly to consultant (same as ownerTotalOriginal logic)
       const ownerTotalAfterVO =
-        ownerActualAfterVO + owner.fee + consultantFeeOnVO;
+        ownerActualAfterVO + owner.fee + consultantFeeOnVO - ownerFeesExcludedFromPayable;
 
       /* ======================================================
          7. Bank Share (Fixed – Not affected by VO)
