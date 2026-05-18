@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,7 +62,7 @@ export default function CreateActualInvoicePage() {
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState([EMPTY_ITEM()]);
   const [warningDialog, setWarningDialog] = useState({ open: false, warnings: [] });
-  const [variationPickerOpen, setVariationPickerOpen] = useState(false);
+  const [inlineVariationPickerOpenIdx, setInlineVariationPickerOpenIdx] = useState(null);
   const [pickerChecked, setPickerChecked] = useState(new Set());
 
   // Advance payment state
@@ -390,17 +390,22 @@ export default function CreateActualInvoicePage() {
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const openVariationPicker = () => {
+
+  const openInlineVariationPicker = useCallback((idx) => {
+    if (inlineVariationPickerOpenIdx === idx) {
+      setInlineVariationPickerOpenIdx(null);
+      return;
+    }
     const current = new Set(
       items
         .filter(it => it.source === "variation" && it.variation_id)
         .map(it => String(it.variation_id))
     );
     setPickerChecked(new Set(current));
-    setVariationPickerOpen(true);
-  };
+    setInlineVariationPickerOpenIdx(idx);
+  }, [inlineVariationPickerOpenIdx, items]);
 
-  const applyVariationPicker = () => {
+  const applyInlineVariationPicker = useCallback(() => {
     setItems(prev => {
       const others = prev.filter(it => it.source !== "variation");
       const existing = prev.filter(
@@ -413,8 +418,19 @@ export default function CreateActualInvoicePage() {
       const allVariation = [...existing, ...added];
       return allVariation.length > 0 ? [...others, ...allVariation] : [...others, EMPTY_ITEM()];
     });
-    setVariationPickerOpen(false);
-  };
+    setInlineVariationPickerOpenIdx(null);
+  }, [pickerChecked]);
+
+  useEffect(() => {
+    if (inlineVariationPickerOpenIdx === null) return;
+    const handler = (e) => {
+      if (!e.target.closest('.variation-inline-picker')) {
+        setInlineVariationPickerOpenIdx(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [inlineVariationPickerOpenIdx]);
 
   // ── Totals ────────────────────────────────────────────────────────
   const totalInclVAT = items.reduce((s, it) => s + (parseFloat(removeCommas(it.amount_incl_vat || "0")) || 0), 0);
@@ -1046,31 +1062,154 @@ export default function CreateActualInvoicePage() {
                             {/* VO selector when source = variation */}
                             {item.source === "variation" && payer === "owner" && (
                               <div className="invoice-form__source-info">
-                                <select
-                                  className="prj-select w-full"
-                                  style={{ marginTop: "6px" }}
-                                  value={item.variation_id || ""}
-                                  onChange={(e) => updateItem(idx, { variation_id: e.target.value || null })}
+                                <div
+                                  className="variation-inline-picker"
+                                  style={{ position: "relative", marginTop: "6px" }}
                                 >
-                                  <option value="">{t("select_variation_placeholder")}</option>
-                                  {variations
-                                    .filter(vo =>
-                                      // Show VO if remaining amount > 0, or if it's currently selected in this row
-                                      Math.abs(getVOInfo(vo).remaining) > 0.01 ||
-                                      String(vo.id) === String(item.variation_id)
-                                    )
-                                    .map(vo => {
-                                      const alreadyUsed = usedVOIds.includes(String(vo.id));
-                                      const voRemaining = getVOInfo(vo).remaining;
-                                      const voTotal = parseFloat(vo.total_amount || 0) * (1 + VAT_RATE);
-                                      const isPartial = voRemaining < voTotal - 0.01;
-                                      return (
-                                        <option key={vo.id} value={vo.id} disabled={alreadyUsed}>
-                                          {alreadyUsed ? "✓ " : ""}{vo.variation_number || `#${vo.id}`} — {isPartial ? `${formatAmountString(voRemaining)} (remaining)` : formatAmountString(voTotal)}
-                                        </option>
-                                      );
-                                    })}
-                                </select>
+                                  {/* Trigger — looks like a select */}
+                                  <button
+                                    type="button"
+                                    className="prj-select w-full"
+                                    style={{
+                                      textAlign: "start",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      cursor: "pointer",
+                                      background: "white",
+                                      width: "100%",
+                                    }}
+                                    onClick={() => openInlineVariationPicker(idx)}
+                                  >
+                                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                      {selectedVO
+                                        ? (() => {
+                                            const rem = getVOInfo(selectedVO).remaining;
+                                            const tot = parseFloat(selectedVO.total_amount || 0) * (1 + VAT_RATE);
+                                            return `${selectedVO.variation_number || `#${selectedVO.id}`} — ${rem < tot - 0.01 ? `${formatAmountString(rem)} (remaining)` : formatAmountString(tot)}`;
+                                          })()
+                                        : t("select_variation_placeholder")
+                                      }
+                                    </span>
+                                    <span style={{ marginInlineStart: "8px", flexShrink: 0, opacity: 0.5 }}>▾</span>
+                                  </button>
+
+                                  {/* Inline picker panel */}
+                                  {inlineVariationPickerOpenIdx === idx && (
+                                    <div
+                                      className="variation-inline-picker"
+                                      style={{
+                                        position: "absolute",
+                                        top: "calc(100% + 4px)",
+                                        left: 0,
+                                        minWidth: "100%",
+                                        width: "340px",
+                                        zIndex: 1000,
+                                        background: "white",
+                                        border: "1px solid var(--border-light, #e5e7eb)",
+                                        borderRadius: "8px",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        maxHeight: "320px",
+                                      }}
+                                    >
+                                      {/* Scrollable variation list */}
+                                      <div style={{ overflowY: "auto", flex: 1 }}>
+                                        {variations.filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01).length === 0 ? (
+                                          <p style={{ textAlign: "center", color: "#6b7280", padding: "16px 12px", fontSize: "13px" }}>
+                                            {t("no_variations_available") || "No variations available"}
+                                          </p>
+                                        ) : (
+                                          variations
+                                            .filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01)
+                                            .map(vo => {
+                                              const vInfo = getVOInfo(vo);
+                                              const vTotal = parseFloat(vo.total_amount || 0) * (1 + VAT_RATE);
+                                              const vPartial = vInfo.remaining < vTotal - 0.01;
+                                              const checked = pickerChecked.has(String(vo.id));
+                                              return (
+                                                <label
+                                                  key={vo.id}
+                                                  className="variation-inline-picker"
+                                                  style={{
+                                                    display: "flex",
+                                                    alignItems: "flex-start",
+                                                    gap: "10px",
+                                                    padding: "8px 12px",
+                                                    cursor: "pointer",
+                                                    borderBottom: "1px solid #f3f4f6",
+                                                  }}
+                                                  onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                                                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() =>
+                                                      setPickerChecked(prev => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(String(vo.id))) next.delete(String(vo.id));
+                                                        else next.add(String(vo.id));
+                                                        return next;
+                                                      })
+                                                    }
+                                                    style={{ marginTop: "3px", flexShrink: 0, width: "15px", height: "15px" }}
+                                                  />
+                                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: "13px" }}>
+                                                      {vo.variation_number || `#${vo.id}`}
+                                                      <span style={{ fontWeight: 400, color: "#6b7280", marginInlineStart: "6px" }}>
+                                                        — {vPartial ? `${formatAmountString(vInfo.remaining)} (remaining)` : formatAmountString(vTotal)}
+                                                      </span>
+                                                    </div>
+                                                    <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                                                      <span>{t("current_progress")}: <b>{Number(vInfo.progress).toFixed(1)}%</b></span>
+                                                      <span>{t("vo_due_by_progress")}: <b>{formatAmountString(vInfo.dueThisCycle)}</b></span>
+                                                      {vInfo.prevInvoiced > 0 && (
+                                                        <span>{t("previously_invoiced_vo")}: <b>−{formatAmountString(vInfo.prevInvoiced)}</b></span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </label>
+                                              );
+                                            })
+                                        )}
+                                      </div>
+
+                                      {/* Footer buttons */}
+                                      <div
+                                        className="variation-inline-picker"
+                                        style={{
+                                          padding: "8px 12px",
+                                          borderTop: "1px solid var(--border-light, #e5e7eb)",
+                                          background: "#f9fafb",
+                                          borderRadius: "0 0 8px 8px",
+                                          display: "flex",
+                                          gap: "8px",
+                                          justifyContent: "flex-end",
+                                        }}
+                                      >
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={() => setInlineVariationPickerOpenIdx(null)}
+                                        >
+                                          {t("cancel") || "Cancel"}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="primary"
+                                          size="sm"
+                                          onClick={applyInlineVariationPicker}
+                                        >
+                                          {t("apply") || "Add Selected"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
 
                                 {/* VO details panel — horizontal chips */}
                                 {voInfo && selectedVO && (
@@ -1195,16 +1334,6 @@ export default function CreateActualInvoicePage() {
                         >
                           + {t("add_item")}
                         </Button>
-                        {payer === "owner" && variations.length > 0 && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={openVariationPicker}
-                          >
-                            + {t("select_variations") || "Select Variations"}
-                          </Button>
-                        )}
                       </td>
                       <td className="invoice-items-table__footer-label">
                         {payer === "bank" ? t("invoice_net_amount") : t("invoice_amount_incl_vat")}
@@ -1287,72 +1416,6 @@ export default function CreateActualInvoicePage() {
           </div>
         </form>
       </div>
-
-      <Dialog
-        open={variationPickerOpen}
-        title={t("select_variations") || "Select Variations"}
-        onClose={() => setVariationPickerOpen(false)}
-        onConfirm={applyVariationPicker}
-        confirmLabel={t("apply") || "Apply"}
-        size="medium"
-      >
-        <div style={{ maxHeight: "420px", overflowY: "auto" }}>
-          {variations.filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01).length === 0 ? (
-            <p style={{ textAlign: "center", color: "var(--text-secondary, #6b7280)", padding: "20px 0" }}>
-              {t("no_variations_available") || "No variations available"}
-            </p>
-          ) : (
-            variations
-              .filter(vo => Math.abs(getVOInfo(vo).remaining) > 0.01)
-              .map(vo => {
-                const voInfo = getVOInfo(vo);
-                const checked = pickerChecked.has(String(vo.id));
-                return (
-                  <label
-                    key={vo.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "12px",
-                      padding: "10px 0",
-                      borderBottom: "1px solid var(--border-light, #e5e7eb)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() =>
-                        setPickerChecked(prev => {
-                          const next = new Set(prev);
-                          if (next.has(String(vo.id))) next.delete(String(vo.id));
-                          else next.add(String(vo.id));
-                          return next;
-                        })
-                      }
-                      style={{ marginTop: "3px", flexShrink: 0, width: "16px", height: "16px" }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: "14px" }}>
-                        {vo.variation_number || `#${vo.id}`}
-                        <span style={{ fontWeight: 400, color: "var(--text-secondary, #6b7280)", marginInlineStart: "8px" }}>
-                          — {formatAmountString(parseFloat(vo.total_amount || 0) * (1 + VAT_RATE))}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "16px", marginTop: "4px", fontSize: "12px", color: "var(--text-secondary, #6b7280)", flexWrap: "wrap" }}>
-                        <span>{t("current_progress")}: <b>{Number(voInfo.progress).toFixed(1)}%</b></span>
-                        <span>{t("vo_due_by_progress")}: <b>{renderAmount(voInfo.dueThisCycle)}</b></span>
-                        {voInfo.prevInvoiced > 0 && (
-                          <span>{t("previously_invoiced_vo")}: <b>−{renderAmount(voInfo.prevInvoiced)}</b></span>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                );
-              })
-          )}
-        </div>
-      </Dialog>
 
       <Dialog
         open={warningDialog.open}
