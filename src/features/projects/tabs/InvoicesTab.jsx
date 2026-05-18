@@ -1,4 +1,5 @@
-import { useState, useEffect, memo, useMemo, Fragment } from "react";
+import { useState, useEffect, memo, useMemo, useRef, Fragment } from "react";
+import { useReactToPrint } from "react-to-print";
 import { Link } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../../../contexts/NotificationContext";
@@ -14,6 +15,7 @@ import { VatAmount } from "../../../components/common/VatBreakdownPopover";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 
 const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload }) {
   const { t, i18n } = useTranslation();
@@ -49,6 +51,16 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
   const [showVoided, setShowVoided] = useState(false);
   const [allInvoices, setAllInvoices] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
+
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Invoices",
+    pageStyle: `
+      @page { size: A4 landscape; margin: 8mm; }
+      html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+    `,
+  });
 
   const toggleExpand = (invoiceId) => {
     setExpandedRows(prev => ({ ...prev, [invoiceId]: !prev[invoiceId] }));
@@ -216,6 +228,31 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
             </svg>
             {showVat ? t("including_vat") : t("excluding_vat")}
           </button>
+          {displayedInvoices.length > 0 && (
+            <button
+              onClick={handlePrint}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: '1.5px solid #d1d5db',
+                background: 'transparent',
+                color: '#6b7280',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 17V3M6 11l6 6 6-6" />
+                <path d="M4 21h16" />
+              </svg>
+              {t("download_pdf", "Download PDF")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -293,6 +330,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
           </div>
 
           {/* Invoice table */}
+          <TabPrintWrapper ref={printRef} title={t("invoices", "Invoices")}>
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
@@ -359,13 +397,18 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                           {formatDate(invoice.invoice_date, i18n.language)}
                         </td>
                         <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
-                          {renderAmount((invoice.payer || 'owner') === 'bank' ? totalAmount * 1.05 : totalAmount)}
+                          <VatAmount
+                            net={parseFloat(invoice.net_amount) || totalAmount / 1.05}
+                            withVat={totalAmount}
+                            format={(v) => formatMoney(v, { lang: i18n.language })}
+                            showBtn={false}
+                          />
                         </td>
                         <td className="prj-nowrap ds-text-right prj-td--paid" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           {renderAmount(paidAmount)}
                         </td>
                         <td className={`prj-nowrap ds-text-right ${!isVoided && remainingAmount > 0.01 ? 'prj-td--remaining-warning' : 'prj-td--remaining-ok'}`} onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
-                          {renderAmount((invoice.payer || 'owner') === 'bank' ? remainingAmount * 1.05 : remainingAmount)}
+                          {renderAmount(remainingAmount)}
                         </td>
                         <td className="ds-text-center" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           <div className="prj-td--status-col">
@@ -470,6 +513,39 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
               </tbody>
             </table>
           </div>
+
+          {/* Print-only summary */}
+          <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+            <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+              <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {t("summary", "Summary")}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("invoices_count")}</div>
+                  <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("total_amount")}</div>
+                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.total)}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("including_vat")}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("paid_amount")}</div>
+                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.paid)}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>
+                    {t("fully_paid")}: {stats.fullyPaid} · {t("partially_paid")}: {stats.partiallyPaid}
+                  </div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("remaining_amount")}</div>
+                  <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.remaining)}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("unpaid")}: {stats.unpaid}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </TabPrintWrapper>
         </>
       ) : (
         <div className="prj-empty-state">

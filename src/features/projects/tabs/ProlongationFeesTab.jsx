@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { api } from "../../../services/api";
@@ -9,6 +9,9 @@ import Dialog from "../../../components/common/Dialog";
 import { formatMoney } from "../../../utils/formatters";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
+import { useReactToPrint } from "react-to-print";
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import "./PaymentsTab.css";
 
 const VAT_RATE = 5;
 
@@ -82,6 +85,13 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
     const totalVat = fees.reduce((s, f) => s + parseFloat(f.vat_amount || 0), 0);
     return { count: fees.length, totalGross, totalNet, totalVat };
   }, [fees]);
+
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: t("prolongation_fees", "Prolongation Fees"),
+    pageStyle: `@page { size: A4 landscape; margin: 8mm; } html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }`,
+  });
 
   const openAdd = () => {
     setEditingFee(null);
@@ -164,6 +174,15 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
           <Button variant="primary" size="md" onClick={openAdd}>
             {t("pf_add_fee", "Add Prolongation Fee")}
           </Button>
+          {fees.length > 0 && (
+            <button onClick={handlePrint} className="payments-tab__btn-outline">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 17V3M6 11l6 6 6-6" />
+                <path d="M4 21h16" />
+              </svg>
+              {t("download_pdf", "Download PDF")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -181,6 +200,7 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
       ) : fees.length === 0 ? (
         <div className="prj-empty-state">{t("pf_no_fees", "No prolongation fees added yet")}</div>
       ) : (
+        <TabPrintWrapper ref={printRef} title={t("prolongation_fees", "Prolongation Fees")}>
         <div className="prj-table__wrapper">
           <table className="prj-table">
             <thead>
@@ -230,8 +250,52 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  {t("total")}
+                </td>
+                <td className="prj-nowrap prj-info-value--money ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                  {renderMoney(stats.totalNet)}
+                </td>
+                <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                  {renderMoney(stats.totalVat)}
+                </td>
+                <td className="prj-nowrap prj-info-value--money ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                  {renderMoney(stats.totalGross)}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
+        {/* Print-only summary */}
+        <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+          <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+            <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {t("summary", "Summary")}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+              <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("pf_total_count", "Total Fees")}</div>
+                <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+              </div>
+              <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("pf_total_net", "Total (excl. VAT)")}</div>
+                <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderMoney(stats.totalNet)}</div>
+              </div>
+              <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("pf_total_vat", "Total VAT")}</div>
+                <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderMoney(stats.totalVat)}</div>
+              </div>
+              <div style={{ padding: '10px 14px', background: '#faf5ff', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
+                <div style={{ fontSize: '7.5pt', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("pf_total_gross", "Total (incl. VAT)")}</div>
+                <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderMoney(stats.totalGross)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </TabPrintWrapper>
       )}
 
       {/* Add / Edit Dialog */}

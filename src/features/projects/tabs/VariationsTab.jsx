@@ -1126,7 +1126,50 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                     );
                                 })}
                             </tbody>
+                            <tfoot>
+                                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                                    <td></td>
+                                    <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                        {t("total")} ({filteredVariations.length})
+                                    </td>
+                                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                                        {renderMoney(v(filteredVariations.reduce((sum, vr) => sum + (parseFloat(vr.total_amount || vr.final_amount || 0) || 0), 0)))}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                         </table>
+                    </div>
+
+                    {/* Print-only summary — hidden in browser, visible when printing */}
+                    <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+                        <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+                            <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                {t("summary", "Summary")}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                                    <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("total")}</div>
+                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.total}</div>
+                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("variations", "Variations")}</div>
+                                </div>
+                                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                                    <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("approved_amount", "Approved Amount")}</div>
+                                    <div style={{ fontSize: '11pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderMoney(v(variationStats.totalAmount))}</div>
+                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel} • {t('excluding_vat')} base</div>
+                                </div>
+                                <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                                    <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("approved")}</div>
+                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.approved}</div>
+                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("pending")}: {variationStats.pending}</div>
+                                </div>
+                                <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                                    <div style={{ fontSize: '7.5pt', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("cancelled")}</div>
+                                    <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{variationStats.rejected}</div>
+                                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{t("variations", "Variations")}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     </TabPrintWrapper>
                 </>

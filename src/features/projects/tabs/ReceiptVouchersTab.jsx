@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../services/api";
 import { receiptVoucherApi } from "../../../services/receiptVouchers/receiptVoucherApi";
@@ -11,6 +12,8 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useNotifications } from "../../../contexts/NotificationContext";
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import "./PaymentsTab.css";
 
 const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
   const { t, i18n } = useTranslation();
@@ -44,6 +47,13 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
   // Delete state
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, voucher_number }
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: t("receipt_vouchers", "Receipt Vouchers"),
+    pageStyle: `@page { size: A4 landscape; margin: 8mm; } html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }`,
+  });
 
   const loadVouchers = (includeVoided = false) => {
     if (projectId) {
@@ -150,6 +160,15 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
             </svg>
             {showVat ? t("including_vat") : t("excluding_vat")}
           </button>
+          {sortedVouchers.length > 0 && (
+            <button onClick={handlePrint} className="payments-tab__btn-outline">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 17V3M6 11l6 6 6-6" />
+                <path d="M4 21h16" />
+              </svg>
+              {t("download_pdf", "Download PDF")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -173,6 +192,7 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
           </div>
 
           {/* Table */}
+          <TabPrintWrapper ref={printRef} title={t("receipt_vouchers", "Receipt Vouchers")}>
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
@@ -257,8 +277,45 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                  <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    {t("total")}
+                  </td>
+                  <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                    {renderAmount(vg(stats.total))}
+                  </td>
+                  <td colSpan={5}></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
+          {/* Print-only summary */}
+          <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+            <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+              <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {t("summary", "Summary")}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("rv_tab_total_vouchers")}</div>
+                  <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("rv_tab_total_amount")}</div>
+                  <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(stats.total))}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                </div>
+                {stats.totalCreditRemaining > 0 && (
+                  <div style={{ padding: '10px 14px', background: '#faf5ff', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
+                    <div style={{ fontSize: '7.5pt', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("rv_tab_credit_remaining")}</div>
+                    <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalCreditRemaining)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          </TabPrintWrapper>
         </>
       ) : (
         <div className="prj-empty-state">{t("rv_tab_no_vouchers")}</div>

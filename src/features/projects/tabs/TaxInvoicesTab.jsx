@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../services/api";
 import { logger } from "../../../utils/logger";
@@ -8,6 +8,9 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { VatAmount } from "../../../components/common/VatBreakdownPopover";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { useReactToPrint } from "react-to-print";
+import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import "./PaymentsTab.css";
 
 const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
  const { t, i18n } = useTranslation();
@@ -79,6 +82,13 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
   return { count: activeInvoices.length, totalNet, totalVat, totalGross };
  }, [activeInvoices]);
 
+ const printRef = useRef(null);
+ const handlePrint = useReactToPrint({
+  contentRef: printRef,
+  documentTitle: t("tax_invoices", "Tax Invoices"),
+  pageStyle: `@page { size: A4 landscape; margin: 8mm; } html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }`,
+ });
+
  if (loading) {
   return (
    <div className="prj-tab-panel">
@@ -98,6 +108,15 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
      >
       {showVoided ? t("hide_voided") : t("show_voided")}
      </Button>
+     {sortedInvoices.length > 0 && (
+      <button onClick={handlePrint} className="payments-tab__btn-outline">
+       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M12 17V3M6 11l6 6 6-6" />
+        <path d="M4 21h16" />
+       </svg>
+       {t("download_pdf", "Download PDF")}
+      </button>
+     )}
     </div>
    </div>
 
@@ -121,6 +140,7 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
      </div>
 
      {/* Table */}
+     <TabPrintWrapper ref={printRef} title={t("tax_invoices", "Tax Invoices")}>
      <div className="prj-table__wrapper">
       <table className="prj-table">
        <thead>
@@ -183,8 +203,53 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
          );
         })}
        </tbody>
+       <tfoot>
+        <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+         <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+          {t("total")}
+         </td>
+         <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+          {renderAmount(stats.totalNet)}
+         </td>
+         <td></td>
+         <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+          {renderAmount(stats.totalVat)}
+         </td>
+         <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+          {renderAmount(stats.totalGross)}
+         </td>
+         <td></td>
+        </tr>
+       </tfoot>
       </table>
      </div>
+     {/* Print-only summary */}
+     <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+      <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+       <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {t("summary", "Summary")}
+       </div>
+       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+         <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_invoices")}</div>
+         <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+         <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_net")}</div>
+         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalNet)}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+         <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_vat")}</div>
+         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalVat)}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#faf5ff', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
+         <div style={{ fontSize: '7.5pt', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_gross")}</div>
+         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalGross)}</div>
+        </div>
+       </div>
+      </div>
+     </div>
+     </TabPrintWrapper>
     </>
    ) : (
     <div className="prj-empty-state">{t("ti_tab_no_invoices")}</div>

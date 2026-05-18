@@ -296,6 +296,17 @@
     font-size: 7.5pt;
   }
 
+  /* ---- tfoot totals row ---- */
+  .tpw-root .prj-table tfoot td {
+    background: #17202f !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 9.5pt !important;
+    padding: 11px 12px !important;
+    border-top: 2px solid #2d4a6b !important;
+    border-bottom: none !important;
+  }
+
   /* ---- Page-break rules ---- */
   .tpw-header           { break-inside: avoid; page-break-inside: avoid; }
   .tpw-footer           { break-inside: avoid; page-break-inside: avoid; }

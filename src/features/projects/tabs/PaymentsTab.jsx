@@ -538,7 +538,81 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                   );
                 })}
               </tbody>
+              {activePayments.length > 0 && (
+                <tfoot>
+                  <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                    <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      {t("total")}
+                    </td>
+                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                      {renderAmount(vg(paymentStats.overallTotal))}
+                    </td>
+                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                      {renderAmount(vg(paymentStats.baseContractTotal))}
+                    </td>
+                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                      {renderAmount(vg(paymentStats.variationsTotal))}
+                    </td>
+                    <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
+                      {renderAmount(vg(paymentStats.bankVatTotal))}
+                    </td>
+                    <td colSpan={4}></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
+          </div>
+
+          {/* Print-only summary */}
+          <div className="tpw-print-only" style={{ marginTop: '16px' }}>
+            <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
+              <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {t("summary", "Summary")}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("payments_count", "Payments")}</div>
+                  <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{paymentStats.total}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>
+                    {t("payer_owner")}: {paymentStats.ownerCount} &nbsp;·&nbsp; {t("payer_bank")}: {paymentStats.bankCount}
+                  </div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("overall_total")}</div>
+                  <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.overallTotal))}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("payer_owner")}</div>
+                  <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.ownerTotal))}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: '7.5pt', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("payer_bank")}</div>
+                  <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.bankTotal))}</div>
+                  <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                </div>
+              </div>
+              {(paymentStats.baseContractTotal > 0 || paymentStats.variationsTotal > 0 || paymentStats.bankVatTotal > 0) && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '12px' }}>
+                  <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '7.5pt', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("base_contract_amount")}</div>
+                    <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.baseContractTotal))}</div>
+                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                  </div>
+                  <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '7.5pt', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("variations_amount")}</div>
+                    <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.variationsTotal))}</div>
+                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                  </div>
+                  <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '7.5pt', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("bank_vat_amount")}</div>
+                    <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(vg(paymentStats.bankVatTotal))}</div>
+                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px' }}>{vatLabel}</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           </TabPrintWrapper>
         </>
