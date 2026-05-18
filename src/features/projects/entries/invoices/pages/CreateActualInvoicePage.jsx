@@ -187,39 +187,37 @@ export default function CreateActualInvoicePage() {
     };
 
     previousInvoices.forEach(inv => {
-      const amount = parseFloat(inv.amount) || 0;
-      if (inv.payer === "owner") stats.ownerTotal += amount;
-      if (inv.payer === "bank") stats.bankTotal += amount;
-      if (inv.payer !== "owner") return;
-
       const invItems = Array.isArray(inv.items) ? inv.items : [];
-      invItems.forEach(it => {
-        if (it.variation_id != null) {
-          const id = String(it.variation_id);
-          const gross = (parseFloat(it.total) || 0) * (1 + VAT_RATE);
-          stats.invoicedVOIds.add(id);
-          stats.variationInclVatById.set(id, (stats.variationInclVatById.get(id) || 0) + gross);
-          return;
-        }
 
-        if (it.prolongation_fee_id != null) {
-          const id = String(it.prolongation_fee_id);
-          const feeTotal = parseFloat(it.total) || 0;
-          const gross = isNoVatProlongationFee(id) ? feeTotal : feeTotal * (1 + VAT_RATE);
-          stats.invoicedProlongationFeeIds.add(id);
-          stats.prolongationFeeById.set(id, (stats.prolongationFeeById.get(id) || 0) + gross);
-          return;
-        }
+      if (inv.payer === "owner") {
+        stats.ownerTotal += parseFloat(inv.amount) || 0;
+        invItems.forEach(it => {
+          if (it.variation_id != null) {
+            const id = String(it.variation_id);
+            const gross = (parseFloat(it.total) || 0) * (1 + VAT_RATE);
+            stats.invoicedVOIds.add(id);
+            stats.variationInclVatById.set(id, (stats.variationInclVatById.get(id) || 0) + gross);
+            return;
+          }
+          if (it.prolongation_fee_id != null) {
+            const id = String(it.prolongation_fee_id);
+            const feeTotal = parseFloat(it.total) || 0;
+            const gross = isNoVatProlongationFee(id) ? feeTotal : feeTotal * (1 + VAT_RATE);
+            stats.invoicedProlongationFeeIds.add(id);
+            stats.prolongationFeeById.set(id, (stats.prolongationFeeById.get(id) || 0) + gross);
+            return;
+          }
+          if (it.source === "prolongation_fee") return;
+          stats.ownerBaseInclVat += (parseFloat(it.total) || 0) * (1 + VAT_RATE);
+        });
+      }
 
-        if (it.source === "bank_vat") {
-          stats.bankVatTotal += parseFloat(it.total) || 0;
-          return;
-        }
-
-        if (it.source === "prolongation_fee") return;
-
-        stats.ownerBaseInclVat += (parseFloat(it.total) || 0) * (1 + VAT_RATE);
-      });
+      if (inv.payer === "bank") {
+        const net = parseFloat(inv.net_amount || 0);
+        const vat = parseFloat(inv.vat || 0) || Math.round(net * VAT_RATE * 100) / 100;
+        stats.bankTotal += net;
+        stats.bankVatTotal += vat;
+      }
     });
 
     return stats;
@@ -255,28 +253,27 @@ export default function CreateActualInvoicePage() {
   const ownerTotalOriginal = fin?.rebuiltContract?.ownerTotalOriginal || 0;
   // Owner's share obligation (incl VAT on owner's share only)
   const ownerShareOblig = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * 100) / 100;
-  // Owner's TOTAL obligation to contractor includes owner share + bank VAT
-  const ownerBaseObligInclVAT = Math.round((ownerShareOblig + bankVATpaidByOwner) * 100) / 100;
+  // Owner's obligation to contractor — owner share only (bank VAT is now on the bank invoice)
+  const ownerBaseObligInclVAT = ownerShareOblig;
 
   // Cumulative amounts due by progress
   const ownerShareDueCumul = Math.round(ownerTotalOriginal * (1 + VAT_RATE) * ownerBaseProgress / 100 * 100) / 100;
-  // Bank VAT due is proportional to bank's progress (not owner's)
+  // Bank VAT due is proportional to bank's progress (used for bank invoice bank_vat item suggestions)
   const bankVATdueByCumul = Math.round(bankVATpaidByOwner * bankBaseProgress / 100 * 100) / 100;
-  // Combined cumulative (for overall tracking)
-  const ownerBaseDueCumul = ownerShareDueCumul + bankVATdueByCumul;
+  // Owner cumulative (owner share only)
+  const ownerBaseDueCumul = ownerShareDueCumul;
 
-  // ── SEPARATED due this cycle (the key fix) ──
-  // Base contract due = owner share cumulative − previous base contract invoices
+  // Base contract due this cycle = owner share cumulative − previous base contract invoices
   const ownerBaseOnlyDueThisCycle = Math.max(0, ownerShareDueCumul - prevOwnerBaseInvoiced);
-  // Bank VAT due = bank VAT cumulative − previous bank VAT invoices
+  // Bank VAT due this cycle (used for bank invoice bank_vat item suggestions)
   const bankVATDueThisCycle = Math.max(0, bankVATdueByCumul - prevBankVATInvoiced);
-  // Combined (for overall tracking)
-  const ownerBaseDueThisCycle = ownerBaseOnlyDueThisCycle + bankVATDueThisCycle;
+  // Owner due this cycle (owner share only)
+  const ownerBaseDueThisCycle = ownerBaseOnlyDueThisCycle;
 
   // Remaining
   const ownerBaseOnlyRemaining = Math.max(0, ownerShareOblig - prevOwnerBaseInvoiced);
   const bankVATRemaining = Math.max(0, bankVATpaidByOwner - prevBankVATInvoiced);
-  const ownerBaseRemaining = ownerBaseOnlyRemaining + bankVATRemaining;
+  const ownerBaseRemaining = ownerBaseOnlyRemaining;
 
   // ── Bank obligation & due (bank pays NO VAT — owner pays VAT on bank's share) ──
   const bankObligationToContractor = bankActualFixed;  // net only, no VAT
@@ -380,7 +377,6 @@ export default function CreateActualInvoicePage() {
     if (hasBase) {
       if (variations.length > 0) newItem.source = "variation";
       else if (prolongationFees.length > 0) newItem.source = "prolongation_fee";
-      else if (bankVATpaidByOwner > 0 && !hasBankVat) newItem.source = "bank_vat";
     }
     return [...prev, newItem];
   });
@@ -435,7 +431,7 @@ export default function CreateActualInvoicePage() {
   // ── Totals ────────────────────────────────────────────────────────
   const totalInclVAT = items.reduce((s, it) => s + (parseFloat(removeCommas(it.amount_incl_vat || "0")) || 0), 0);
   const totalExclVAT = items.reduce((s, it) => s + (parseFloat(it.total) || 0), 0);
-  // For bank: user enters net; VAT = 5% on net. For owner: VAT = incl-VAT − net.
+  // For bank: user enters net; VAT = 5% of net. For owner: VAT = incl-VAT − net.
   const vatAmount = payer === "bank"
     ? Math.round(totalExclVAT * VAT_RATE * 100) / 100
     : Math.round((totalInclVAT - totalExclVAT) * 100) / 100;
@@ -469,7 +465,7 @@ export default function CreateActualInvoicePage() {
       showError(t("invoice_amount_required"));
       return false;
     }
-    // Bank items cannot have variation, prolongation fee, or bank_vat source
+    // Bank items can only have base contract source
     if (payer === "bank") {
       const hasVO = items.some(it => it.source === "variation" || it.source === "prolongation_fee" || it.source === "bank_vat");
       if (hasVO) {
@@ -985,11 +981,6 @@ export default function CreateActualInvoicePage() {
                               {payer === "owner" && prolongationFees.length > 0 && (
                                 <option value="prolongation_fee">{t("prolongation_fees") || "Prolongation Fees"}</option>
                               )}
-                              {payer === "owner" && bankVATpaidByOwner > 0 && (
-                                <option value="bank_vat" disabled={bankVatUsedInOther}>
-                                  {bankVatUsedInOther ? `✓ ${t("invoice_source_bank_vat")}` : t("invoice_source_bank_vat")}
-                                </option>
-                              )}
                             </select>
 
                             {/* Warning: base contract already used */}
@@ -1040,23 +1031,6 @@ export default function CreateActualInvoicePage() {
                               <small style={{ color: "var(--error-500, #ef4444)", display: "block", marginTop: "4px" }}>
                                 ⚠ {t("bank_vat_already_used")}
                               </small>
-                            )}
-
-                            {/* Bank VAT info panel — horizontal */}
-                            {item.source === "bank_vat" && payer === "owner" && (
-                              <div className="inv-item-chips" style={{ marginTop: "6px" }}>
-                                <span className="inv-item-chip">{t("bank_vat_total")}: <b>{renderAmount(bankVATpaidByOwner)}</b></span>
-                                <span className="inv-item-chip">{t("bank_progress")}: <b className="inv-item-chip__val--primary">{Number(bankBaseProgress).toFixed(1)}%</b></span>
-                                <span className="inv-item-chip">{t("cumulative_due_by_progress")}: <b>{renderAmount(bankVATdueByCumul)}</b></span>
-                                <span className="inv-item-chip inv-item-chip--danger">{t("previously_invoiced_bank_vat")}: <b>−{renderAmount(prevBankVATInvoiced)}</b></span>
-                                <span
-                                  className="inv-item-chip inv-item-chip--success inv-item-chip--clickable"
-                                  title={t("click_to_fill_amount")}
-                                  onClick={() => updateItem(idx, { amount_incl_vat: bankVATDueThisCycle.toFixed(2) })}
-                                >
-                                  {t("due_bank_vat")}: <b>{renderAmount(bankVATDueThisCycle)}</b>
-                                </span>
-                              </div>
                             )}
 
                             {/* VO selector when source = variation */}

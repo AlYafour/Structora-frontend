@@ -110,8 +110,44 @@ export default function CreatePaymentPage() {
   const paymentAmount = rawPaymentAmount + creditAmountUsed;
   const creditBalance = getCreditBalance(paymentAmount);
 
-  // Filter invoices by selected payer (owner sees only owner invoices, bank sees only bank invoices)
-  const filteredInvoices = actualInvoices.filter(inv => inv.payer === formData.payer);
+  // Bank invoices are split: bank pays NET, owner pays VAT independently.
+  // Bank sees the net portion; owner sees the VAT portion at any time.
+  const filteredInvoices = actualInvoices
+    .map(inv => {
+      if (inv.payer === 'bank') {
+        const remaining = parseFloat(inv.remaining_amount || 0);
+        // Only use stored vat field — no fallback. Old invoices (vat=0) have no owner-payable VAT.
+        const vatTotal = parseFloat(inv.vat || 0);
+        const netTotal = parseFloat(inv.net_amount || 0) || parseFloat(inv.amount || 0);
+
+        if (formData.payer === 'bank') {
+          // Bank pays NET portion.
+          // When remaining <= vatTotal, bank has fully paid their net share.
+          // Use min(netTotal, remaining) so that if owner paid VAT early (reducing remaining),
+          // the bank still sees the correct net amount outstanding.
+          const bankRemaining = remaining <= vatTotal
+            ? 0
+            : Math.min(netTotal, remaining);
+          if (bankRemaining <= 0.001) return null;
+          return { ...inv, amount: netTotal, remaining_amount: bankRemaining };
+        }
+
+        if (formData.payer === 'owner') {
+          // Owner pays VAT on bank's invoice — only for new invoices that store vat
+          if (vatTotal <= 0) return null;
+          const ownerRemaining = Math.min(vatTotal, remaining);
+          if (ownerRemaining <= 0.001) return null;
+          return { ...inv, amount: vatTotal, remaining_amount: ownerRemaining };
+        }
+
+        return null;
+      }
+
+      // Non-bank invoices: only visible to the matching payer
+      if (inv.payer !== formData.payer) return null;
+      return inv;
+    })
+    .filter(inv => inv !== null && parseFloat(inv.remaining_amount || 0) > 0.001);
 
   /**
    * Load actual invoices for the project

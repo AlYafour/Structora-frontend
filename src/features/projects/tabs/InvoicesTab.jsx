@@ -11,7 +11,6 @@ import ActionMenu from "../../../components/common/ActionMenu";
 import Dialog from "../../../components/common/Dialog";
 import { formatMoney, formatDate } from "../../../utils/formatters";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
-import { VatAmount } from "../../../components/common/VatBreakdownPopover";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -397,12 +396,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                           {formatDate(invoice.invoice_date, i18n.language)}
                         </td>
                         <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
-                          <VatAmount
-                            net={parseFloat(invoice.net_amount) || totalAmount / 1.05}
-                            withVat={totalAmount}
-                            format={(v) => formatMoney(v, { lang: i18n.language })}
-                            showBtn={false}
-                          />
+                          {renderAmount(totalAmount)}
                         </td>
                         <td className="prj-nowrap ds-text-right prj-td--paid" onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           {renderAmount(paidAmount)}

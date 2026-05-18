@@ -207,10 +207,8 @@ export default function UnifiedFinancialPrintTemplate({
 
       let subtotal, vat, total;
       if (isBank) {
-        // Bank: user is invoiced on net; VAT 5% is always added on top.
-        // net_amount holds the net (works for both old and new invoices).
         subtotal = netAmount > 0 ? netAmount : storedTotal;
-        vat = Math.round(subtotal * 0.05 * 100) / 100;
+        vat = vatAmount > 0 ? vatAmount : Math.round(subtotal * 0.05 * 100) / 100;
         total = Math.round((subtotal + vat) * 100) / 100;
       } else {
         subtotal = netAmount > 0 ? netAmount : storedTotal / 1.05;
@@ -225,9 +223,13 @@ export default function UnifiedFinancialPrintTemplate({
         .map((owner) => buildBilingualValue(owner.owner_name_ar || owner.name, owner.owner_name_en))
         .filter((owner) => owner.ar || owner.en);
 
+      // For bank invoices, exclude bank_vat items from rows — VAT is shown in the totals section
+      const displayItems = Array.isArray(data.items)
+        ? (isBank ? data.items.filter(item => item.source !== "bank_vat") : data.items)
+        : [];
       const rows =
-        Array.isArray(data.items) && data.items.length > 0
-          ? data.items.map((item, index) => {
+        displayItems.length > 0
+          ? displayItems.map((item, index) => {
               const variation = item.variation_id
                 ? variations.find((entry) => entry.id === item.variation_id)
                 : null;
