@@ -13,6 +13,12 @@ export default function ProgressHistoryTable({
   navigate,
   projectId,
   t,
+  canDeleteProgress,
+  selectedIds,
+  handleSelect,
+  handleSelectAll,
+  isAllSelected,
+  selectAllRef,
 }) {
   if (history.length === 0) {
     return (
@@ -31,6 +37,16 @@ export default function ProgressHistoryTable({
         <table className="prj-table">
           <thead>
             <tr>
+              {canDeleteProgress && (
+                <th rowSpan="2" style={{ width: '40px' }} onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    ref={selectAllRef}
+                    checked={isAllSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </th>
+              )}
               <th rowSpan="2" className="ds-text-center">{t('progress_history_date')}</th>
               <th colSpan="3" className="ds-text-center prj-history-th--owner">{t('progress_history_owner')}</th>
               <th colSpan="3" className="ds-text-center prj-history-th--bank">{t('progress_history_bank')}</th>
@@ -53,7 +69,20 @@ export default function ProgressHistoryTable({
           </thead>
           <tbody>
             {history.map((entry) => (
-              <tr key={entry.id} onClick={() => navigate(`/projects/${projectId}/progress/${entry.id}/view`)}>
+              <tr
+                key={entry.id}
+                style={selectedIds?.has(entry.id) ? { backgroundColor: '#eff6ff' } : undefined}
+                onClick={() => navigate(`/projects/${projectId}/progress/${entry.id}/view`)}
+              >
+                {canDeleteProgress && (
+                  <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds?.has(entry.id) ?? false}
+                      onChange={(e) => handleSelect(entry.id, e.target.checked)}
+                    />
+                  </td>
+                )}
                 <td className="ds-text-center prj-nowrap ds-font-semibold">
                   {entry.entry_date ? formatDate(entry.entry_date, i18n.language) : '-'}
                 </td>

@@ -5,6 +5,8 @@ import { useNotifications } from '../../../contexts/NotificationContext';
 import { projectApi } from '../../../services/projects';
 import Button from '../../../components/common/Button';
 import Dialog from '../../../components/common/Dialog';
+import useTableSelection from '../hooks/useTableSelection';
+import BulkActionsBar from '../../../components/common/BulkActionsBar';
 
 import { useProgressData } from '../financial-pages/progress/hooks/useProgressData';
 import ProgressSummaryCard from '../financial-pages/progress/components/ProgressSummaryCard';
@@ -40,6 +42,27 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
     includeHistory: canViewProgress,
     includeVariations: canViewProgress,
     includeProject: canViewProgress || canAddProgress,
+  });
+
+  const {
+    selectedIds: selectedProgressIds,
+    handleSelect: handleSelectProgress,
+    handleSelectAll: handleSelectAllProgress,
+    clearSelection: clearProgressSelection,
+    isAllSelected: isAllProgressSelected,
+    selectAllRef: progressSelectAllRef,
+    bulkDeleteOpen,
+    setBulkDeleteOpen,
+    bulkDeleting,
+    askBulkDelete,
+    handleBulkDelete,
+  } = useTableSelection({
+    items: history,
+    deleteApi: (id) => projectApi.deleteProjectProgress(projectId, id),
+    onReload: () => { loadHistory(); loadProjectData(); if (onReload) onReload(); },
+    showToast: (type, msg) => type === 'success' ? showSuccess(msg) : showError(msg),
+    t,
+    labels: { itemName: 'progress entry', context: 'ProgressTab' },
   });
 
   const handleDeleteClick = (id) => {
@@ -124,6 +147,17 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
             isAR={isAR}
           />
 
+          {canDeleteProgress && (
+            <BulkActionsBar
+              selectedCount={selectedProgressIds.size}
+              onClear={clearProgressSelection}
+              actions={[{
+                label: t('bulk_delete', 'Delete Selected'),
+                onClick: askBulkDelete,
+                variant: 'danger',
+              }]}
+            />
+          )}
           <ProgressHistoryTable
             history={history}
             projectData={projectData}
@@ -135,9 +169,27 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
             navigate={navigate}
             projectId={projectId}
             t={t}
+            canDeleteProgress={canDeleteProgress}
+            selectedIds={selectedProgressIds}
+            handleSelect={handleSelectProgress}
+            handleSelectAll={handleSelectAllProgress}
+            isAllSelected={isAllProgressSelected}
+            selectAllRef={progressSelectAllRef}
           />
         </>
       )}
+
+      <Dialog
+        open={bulkDeleteOpen}
+        title={t('confirm_delete')}
+        desc={`${t('confirm_delete_selected', 'Delete')} ${selectedProgressIds.size} ${t('progress_entries', 'progress entries')}? ${t('delete_cannot_undo', 'This cannot be undone.')}`}
+        confirmLabel={bulkDeleting ? t('deleting') : t('delete')}
+        cancelLabel={t('cancel')}
+        onClose={() => !bulkDeleting && setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        danger
+        busy={bulkDeleting}
+      />
 
       <Dialog
         open={deleteConfirmOpen}

@@ -15,6 +15,8 @@ import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useNotifications } from "../../../contexts/NotificationContext";
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import "./PaymentsTab.css";
+import useTableSelection from '../hooks/useTableSelection';
+import BulkActionsBar from '../../../components/common/BulkActionsBar';
 
 const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
   const { t, i18n } = useTranslation();
@@ -96,6 +98,27 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
     [...displayedVouchers].sort((a, b) => (b.date || '').localeCompare(a.date || '')),
     [displayedVouchers]
   );
+
+  const {
+    selectedIds: selectedVoucherIds,
+    handleSelect: handleSelectVoucher,
+    handleSelectAll: handleSelectAllVouchers,
+    clearSelection: clearVoucherSelection,
+    isAllSelected: isAllVouchersSelected,
+    selectAllRef: voucherSelectAllRef,
+    bulkDeleteOpen,
+    setBulkDeleteOpen,
+    bulkDeleting,
+    askBulkDelete,
+    handleBulkDelete,
+  } = useTableSelection({
+    items: sortedVouchers,
+    deleteApi: (id) => receiptVoucherApi.delete(projectId, id),
+    onReload: () => loadVouchers(showVoided),
+    showToast: (type, msg) => type === 'success' ? success(msg) : showError(msg),
+    t,
+    labels: { itemName: 'voucher', context: 'ReceiptVouchersTab' },
+  });
 
   // Stats (active only)
   const stats = useMemo(() => {
@@ -228,11 +251,28 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
           </div>
 
           {/* Table */}
+          <BulkActionsBar
+            selectedCount={selectedVoucherIds.size}
+            onClear={clearVoucherSelection}
+            actions={[{
+              label: t('bulk_delete', 'Delete Selected'),
+              onClick: askBulkDelete,
+              variant: 'danger',
+            }]}
+          />
           <TabPrintWrapper ref={printRef} title={t("receipt_vouchers", "Receipt Vouchers")}>
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
                 <tr>
+                  <th style={{ width: '40px' }} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      ref={voucherSelectAllRef}
+                      checked={isAllVouchersSelected}
+                      onChange={(e) => handleSelectAllVouchers(e.target.checked)}
+                    />
+                  </th>
                   <th className="ds-text-center ds-w-60">#</th>
                   <th>{t("rv_tab_voucher_number")}</th>
                   <th>{t("rv_tab_date")}</th>
@@ -254,9 +294,16 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
                     <tr
                       key={v.id}
                       className={isVoided ? "prj-table__row--voided" : "ds-cursor-pointer"}
-                      style={isVoided ? { opacity: 0.5 } : undefined}
+                      style={isVoided ? { opacity: 0.5 } : (selectedVoucherIds.has(v.id) ? { backgroundColor: '#eff6ff' } : undefined)}
                       onClick={() => navigate(`/receipt-vouchers/${v.id}/view?project=${projectId}`)}
                     >
+                      <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedVoucherIds.has(v.id)}
+                          onChange={(e) => handleSelectVoucher(v.id, e.target.checked)}
+                        />
+                      </td>
                       <td className="ds-text-center ds-font-medium prj-table__index">{i + 1}</td>
                       <td>
                         <span className="prj-link" style={{ fontWeight: 600 }}>
@@ -382,6 +429,19 @@ const ReceiptVouchersTab = memo(function ReceiptVouchersTab({ projectId }) {
       ) : (
         <div className="prj-empty-state">{t("rv_tab_no_vouchers")}</div>
       )}
+
+      {/* Bulk Delete Confirm Dialog */}
+      <Dialog
+        open={bulkDeleteOpen}
+        title={t("confirm_delete")}
+        desc={`${t("confirm_delete_selected", "Delete")} ${selectedVoucherIds.size} ${t("rv_tab_total_vouchers", "voucher(s)")}? ${t("delete_cannot_undo", "This cannot be undone.")}`}
+        confirmLabel={bulkDeleting ? t("deleting") : t("delete")}
+        cancelLabel={t("cancel")}
+        onClose={() => !bulkDeleting && setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        danger
+        busy={bulkDeleting}
+      />
 
       {/* Delete Confirm Dialog */}
       <Dialog

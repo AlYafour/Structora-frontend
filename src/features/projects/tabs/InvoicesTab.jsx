@@ -17,6 +17,8 @@ import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import useTableSelection from '../hooks/useTableSelection';
+import BulkActionsBar from '../../../components/common/BulkActionsBar';
 
 const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload }) {
   const { t, i18n } = useTranslation();
@@ -43,6 +45,11 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
   const [showVat, setShowVat] = useState(false);
   const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
   const vg = (val) => showVat ? val : val / 1.05;
+
+  // Bulk void state
+  const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
+  const [bulkVoidReason, setBulkVoidReason] = useState('');
+  const [bulkVoiding, setBulkVoiding] = useState(false);
 
   // Void state
   const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
@@ -202,8 +209,46 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
     }
   };
 
+  // Selectable invoices for bulk void: non-voided only
+  const selectableInvoices = useMemo(() =>
+    displayedInvoices.filter(inv => inv.status !== 'voided'),
+    [displayedInvoices]
+  );
+
+  const {
+    selectedIds: selectedInvoiceIds,
+    handleSelect: handleSelectInvoice,
+    handleSelectAll: handleSelectAllInvoices,
+    clearSelection: clearInvoiceSelection,
+    isAllSelected: isAllInvoicesSelected,
+    selectAllRef: invoiceSelectAllRef,
+  } = useTableSelection({ items: selectableInvoices, t });
+
+  const handleBulkVoidInvoices = async () => {
+    setBulkVoiding(true);
+    const ids = Array.from(selectedInvoiceIds);
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try {
+        await projectApi.voidInvoice(projectId, id, bulkVoidReason);
+        ok++;
+      } catch (_e) {
+        fail++;
+      }
+    }
+    clearInvoiceSelection();
+    setBulkVoiding(false);
+    setBulkVoidOpen(false);
+    setBulkVoidReason('');
+    if (fail === 0) success(t('void_success'));
+    else if (ok > 0) showError(`${ok} ${t('voided_successfully', 'voided')}, ${fail} ${t('failed', 'failed')}`);
+    else showError(t('void_error'));
+    onReload();
+    reloadAllInvoices();
+  };
+
   // Count total columns for expand row colspan
-  const totalColumns = 10; // # + expand + invoice_number + payer + date + amount + paid + remaining + status + action
+  const totalColumns = 11; // checkbox + expand + # + invoice_number + payer + date + amount + paid + remaining + status + action
 
   return (
     <div className="prj-tab-panel">
@@ -376,11 +421,32 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
           </div>
 
           {/* Invoice table */}
+          {canVoidInvoice && (
+            <BulkActionsBar
+              selectedCount={selectedInvoiceIds.size}
+              onClear={clearInvoiceSelection}
+              actions={[{
+                label: t('bulk_void', 'Void Selected'),
+                onClick: () => setBulkVoidOpen(true),
+                variant: 'danger',
+              }]}
+            />
+          )}
           <TabPrintWrapper ref={printRef} title={t("invoices", "Invoices")}>
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
                 <tr>
+                  {canVoidInvoice && (
+                    <th style={{ width: '40px' }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        ref={invoiceSelectAllRef}
+                        checked={isAllInvoicesSelected}
+                        onChange={(e) => handleSelectAllInvoices(e.target.checked)}
+                      />
+                    </th>
+                  )}
                   <th style={{ width: '36px' }}></th>
                   <th className="ds-text-center ds-w-60">#</th>
                   <th>{t("invoice_number")}</th>
@@ -413,8 +479,19 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                     <Fragment key={invoice.id}>
                       <tr
                         className={isVoided ? "prj-table__row--voided" : ""}
-                        style={isVoided ? { opacity: 0.5 } : undefined}
+                        style={isVoided ? { opacity: 0.5 } : (selectedInvoiceIds.has(invoice.id) ? { backgroundColor: '#eff6ff' } : undefined)}
                       >
+                        {canVoidInvoice && (
+                          <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
+                            {!isVoided && (
+                              <input
+                                type="checkbox"
+                                checked={selectedInvoiceIds.has(invoice.id)}
+                                onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                              />
+                            )}
+                          </td>
+                        )}
                         <td onClick={(e) => e.stopPropagation()} style={{ padding: '4px 6px', textAlign: 'center' }}>
                           {!isVoided && hasLinkedDocs && (
                             <button
@@ -644,6 +721,35 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
         onConfirm={handleVoidInvoice}
         danger
         busy={voidLoading}
+      />
+
+      {/* Bulk Void Invoices Dialog */}
+      <Dialog
+        open={bulkVoidOpen}
+        title={t("bulk_void_invoices", "Void Selected Invoices")}
+        desc={
+          <div>
+            <p>{t("bulk_void_invoices_confirm", `Void ${selectedInvoiceIds.size} selected invoice(s)?`)}</p>
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {t("void_reason")}
+              </label>
+              <textarea
+                value={bulkVoidReason}
+                onChange={(e) => setBulkVoidReason(e.target.value)}
+                placeholder={t("void_reason_placeholder")}
+                rows={3}
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '14px', resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        }
+        confirmLabel={bulkVoiding ? t("voiding") : t("void")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!bulkVoiding) { setBulkVoidOpen(false); setBulkVoidReason(''); } }}
+        onConfirm={handleBulkVoidInvoices}
+        danger
+        busy={bulkVoiding}
       />
 
     </div>

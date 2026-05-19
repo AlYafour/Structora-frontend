@@ -19,6 +19,8 @@ import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import "./PaymentsTab.css";
+import useTableSelection from '../hooks/useTableSelection';
+import BulkActionsBar from '../../../components/common/BulkActionsBar';
 
 const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload }) {
   const { t, i18n } = useTranslation();
@@ -177,6 +179,11 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
 
   const [payerFilter, setPayerFilter] = useState("");
 
+  // Bulk void state
+  const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
+  const [bulkVoidReason, setBulkVoidReason] = useState('');
+  const [bulkVoiding, setBulkVoiding] = useState(false);
+
   const filteredRows = useMemo(() => {
     if (!payerFilter) return allRows;
     return allRows.filter(row => {
@@ -184,6 +191,21 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       return (row.payer || "owner") === payerFilter;
     });
   }, [allRows, payerFilter]);
+
+  // Selectable rows for bulk void: active payment rows only
+  const selectablePayments = useMemo(() =>
+    filteredRows.filter(r => r._type === 'payment' && r.status !== 'voided'),
+    [filteredRows]
+  );
+
+  const {
+    selectedIds: selectedPaymentIds,
+    handleSelect: handleSelectPayment,
+    handleSelectAll: handleSelectAllPayments,
+    clearSelection: clearPaymentSelection,
+    isAllSelected: isAllPaymentsSelected,
+    selectAllRef: paymentSelectAllRef,
+  } = useTableSelection({ items: selectablePayments, t });
 
   const printRef = useRef(null);
   const handlePrint = useReactToPrint({
@@ -246,6 +268,29 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       setVoidReason("");
       setVoidLoading(false);
     }
+  };
+
+  const handleBulkVoidPayments = async () => {
+    setBulkVoiding(true);
+    const ids = Array.from(selectedPaymentIds);
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try {
+        await paymentApi.void(id, bulkVoidReason);
+        ok++;
+      } catch (_e) {
+        fail++;
+      }
+    }
+    clearPaymentSelection();
+    setBulkVoiding(false);
+    setBulkVoidOpen(false);
+    setBulkVoidReason('');
+    if (fail === 0) success(t('void_success'));
+    else if (ok > 0) showError(`${ok} ${t('voided_successfully', 'voided')}, ${fail} ${t('failed', 'failed')}`);
+    else showError(t('void_error'));
+    onReload();
+    reloadAllPayments();
   };
 
 
@@ -398,6 +443,17 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             )}
           </div>
 
+          {canVoidPayment && (
+            <BulkActionsBar
+              selectedCount={selectedPaymentIds.size}
+              onClear={clearPaymentSelection}
+              actions={[{
+                label: t('bulk_void', 'Void Selected'),
+                onClick: () => setBulkVoidOpen(true),
+                variant: 'danger',
+              }]}
+            />
+          )}
           <TabPrintWrapper
             ref={printRef}
             title={t("payments", "Payments")}
@@ -407,6 +463,16 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             <table className="prj-table">
               <thead>
                 <tr>
+                  {canVoidPayment && (
+                    <th style={{ width: '40px' }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        ref={paymentSelectAllRef}
+                        checked={isAllPaymentsSelected}
+                        onChange={(e) => handleSelectAllPayments(e.target.checked)}
+                      />
+                    </th>
+                  )}
                   <th className="ds-text-center ds-w-60">#</th>
                   <th>{t("payment_date")}</th>
                   <th>{t("payment_type")}</th>
@@ -429,6 +495,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                       .join(', ');
                     return (
                       <tr key={row.id} className="prj-table__row--credit">
+                        {canVoidPayment && <td onClick={(e) => e.stopPropagation()}></td>}
                         <td className="ds-text-center ds-font-medium prj-table__index">
                           {i + 1}
                         </td>
@@ -483,9 +550,20 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                     <tr
                       key={payment.id}
                       className={isVoided ? "prj-table__row--voided" : ""}
-                      style={isVoided ? { opacity: 0.5 } : undefined}
+                      style={isVoided ? { opacity: 0.5 } : (selectedPaymentIds.has(payment.id) ? { backgroundColor: '#eff6ff' } : undefined)}
                       onClick={() => navigate(`/payments/${payment.id}/view?project=${projectId}`)}
                     >
+                      {canVoidPayment && (
+                        <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
+                          {!isVoided && (
+                            <input
+                              type="checkbox"
+                              checked={selectedPaymentIds.has(payment.id)}
+                              onChange={(e) => handleSelectPayment(payment.id, e.target.checked)}
+                            />
+                          )}
+                        </td>
+                      )}
                       <td className="ds-text-center ds-font-medium prj-table__index">
                         {i + 1}
                       </td>
@@ -696,6 +774,35 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
         onConfirm={handleVoidPayment}
         danger
         busy={voidLoading}
+      />
+
+      {/* Bulk Void Payments Dialog */}
+      <Dialog
+        open={bulkVoidOpen}
+        title={t("bulk_void_payments", "Void Selected Payments")}
+        desc={
+          <div>
+            <p>{t("bulk_void_payments_confirm", `Void ${selectedPaymentIds.size} selected payment(s)?`)}</p>
+            <div style={{ marginTop: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {t("void_reason")}
+              </label>
+              <textarea
+                value={bulkVoidReason}
+                onChange={(e) => setBulkVoidReason(e.target.value)}
+                placeholder={t("void_reason_placeholder")}
+                rows={3}
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '14px', resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        }
+        confirmLabel={bulkVoiding ? t("voiding") : t("void")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!bulkVoiding) { setBulkVoidOpen(false); setBulkVoidReason(''); } }}
+        onConfirm={handleBulkVoidPayments}
+        danger
+        busy={bulkVoiding}
       />
 
     </div>

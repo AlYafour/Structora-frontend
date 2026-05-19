@@ -12,6 +12,8 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { useReactToPrint } from "react-to-print";
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import "./PaymentsTab.css";
+import useTableSelection from '../hooks/useTableSelection';
+import BulkActionsBar from '../../../components/common/BulkActionsBar';
 
 const VAT_RATE = 5;
 
@@ -85,6 +87,27 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
     const totalVat = fees.reduce((s, f) => s + parseFloat(f.vat_amount || 0), 0);
     return { count: fees.length, totalGross, totalNet, totalVat };
   }, [fees]);
+
+  const {
+    selectedIds: selectedFeeIds,
+    handleSelect: handleSelectFee,
+    handleSelectAll: handleSelectAllFees,
+    clearSelection: clearFeeSelection,
+    isAllSelected: isAllFeesSelected,
+    selectAllRef: feeSelectAllRef,
+    bulkDeleteOpen,
+    setBulkDeleteOpen,
+    bulkDeleting,
+    askBulkDelete,
+    handleBulkDelete,
+  } = useTableSelection({
+    items: fees,
+    deleteApi: (id) => api.delete(`projects/${projectId}/prolongation-fees/${id}/`),
+    onReload: () => { fetchFees(); if (onReload) onReload(); },
+    showToast: (type, msg) => type === 'success' ? success(msg) : showError(msg),
+    t,
+    labels: { itemName: 'fee', context: 'ProlongationFeesTab' },
+  });
 
   const printRef = useRef(null);
   const handlePrint = useReactToPrint({
@@ -200,11 +223,29 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
       ) : fees.length === 0 ? (
         <div className="prj-empty-state">{t("pf_no_fees", "No prolongation fees added yet")}</div>
       ) : (
+        <>
+        <BulkActionsBar
+          selectedCount={selectedFeeIds.size}
+          onClear={clearFeeSelection}
+          actions={[{
+            label: t('bulk_delete', 'Delete Selected'),
+            onClick: askBulkDelete,
+            variant: 'danger',
+          }]}
+        />
         <TabPrintWrapper ref={printRef} title={t("prolongation_fees", "Prolongation Fees")}>
         <div className="prj-table__wrapper">
           <table className="prj-table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }} onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    ref={feeSelectAllRef}
+                    checked={isAllFeesSelected}
+                    onChange={(e) => handleSelectAllFees(e.target.checked)}
+                  />
+                </th>
                 <th className="ds-text-center ds-w-60">#</th>
                 <th>{t("pf_description", "Description")}</th>
                 <th className="ds-text-center">{t("pf_vat_type", "Amount Type")}</th>
@@ -216,7 +257,14 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
             </thead>
             <tbody>
               {fees.map((fee, i) => (
-                <tr key={fee.id}>
+                <tr key={fee.id} style={selectedFeeIds.has(fee.id) ? { backgroundColor: '#eff6ff' } : undefined}>
+                  <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedFeeIds.has(fee.id)}
+                      onChange={(e) => handleSelectFee(fee.id, e.target.checked)}
+                    />
+                  </td>
                   <td className="ds-text-center ds-font-medium prj-table__index">{i + 1}</td>
                   <td>
                     <span title={fee.description}>{fee.description || "-"}</span>
@@ -306,6 +354,7 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
           </div>
         </div>
         </TabPrintWrapper>
+        </>
       )}
 
       {/* Add / Edit Dialog */}
@@ -404,6 +453,19 @@ const ProlongationFeesTab = memo(function ProlongationFeesTab({ projectId, onRel
             )}
           </div>
         }
+      />
+
+      {/* Bulk Delete Confirm Dialog */}
+      <Dialog
+        open={bulkDeleteOpen}
+        title={t("pf_bulk_delete_title", "Delete Selected Fees")}
+        desc={`${t("confirm_delete_selected", "Delete")} ${selectedFeeIds.size} ${t("pf_total_count", "fee(s)")}? ${t("delete_cannot_undo", "This cannot be undone.")}`}
+        confirmLabel={bulkDeleting ? t("deleting", "Deleting...") : t("delete", "Delete")}
+        cancelLabel={t("cancel", "Cancel")}
+        onClose={() => !bulkDeleting && setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        danger
+        busy={bulkDeleting}
       />
 
       {/* Delete Confirm Dialog */}

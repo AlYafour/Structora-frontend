@@ -364,5 +364,14 @@
   "remaining_amount_tooltip": "Includes consultant fees paid by the owner. Excludes consultant fees paid directly by the bank to the consultant.",
   "bank_share_tooltip": "includes consultant fees paid by the bank.",
   "owner_share_tooltip": "Includes consultant fees paid by the owner.",
-  "invoices_total_amount_tooltip": "includes consultant fees paid by the owner, excludes consultant fees paid by the bank to the consultant."
+  "invoices_total_amount_tooltip": "includes consultant fees paid by the owner, excludes consultant fees paid by the bank to the consultant.",
+  "bulk_void": "Void Selected",
+  "bulk_delete": "Delete Selected",
+  "bulk_void_payments": "Void Selected Payments",
+  "bulk_void_payments_confirm": "Are you sure you want to void the selected payment(s)?",
+  "bulk_void_invoices": "Void Selected Invoices",
+  "bulk_void_invoices_confirm": "Are you sure you want to void the selected invoice(s)?",
+  "pf_bulk_delete_title": "Delete Selected Fees",
+  "voided_successfully": "voided successfully",
+  "failed": "failed"
 }

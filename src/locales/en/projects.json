@@ -1270,5 +1270,7 @@
   "add_option": "Add",
   "final_approved": "Final Approved",
   "prolongation_fees": "Extra Fees",
-  "total_variations": "Total Variation"
+  "total_variations": "Total Variation",
+  "confirm_delete_selected": "Delete",
+  "progress_entries": "progress entries"
 }
