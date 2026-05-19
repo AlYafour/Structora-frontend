@@ -61,6 +61,7 @@ export default function UnifiedFinancialPrintTemplate({
   const tEn = useMemo(() => i18n.getFixedT("en"), [i18n]);
   const [invoiceAttachments, setInvoiceAttachments] = useState([]);
   const [variations, setVariations] = useState([]);
+  const [linkedInvoiceItems, setLinkedInvoiceItems] = useState([]);
   const [printModeInternal, setPrintMode] = useState("detailed"); // "detailed" | "summary"
   const printMode = printModeProp ?? printModeInternal;
 
@@ -140,6 +141,57 @@ export default function UnifiedFinancialPrintTemplate({
       isActive = false;
     };
   }, [documentType, data?.project]);
+
+  useEffect(() => {
+    if (documentType !== "taxInvoice") {
+      setLinkedInvoiceItems([]);
+      return;
+    }
+
+    let isActive = true;
+    (async () => {
+      try {
+        // Case 1: single linked invoice FK
+        if (data?.invoice) {
+          const response = await projectApi.findInvoiceById(data.invoice);
+          const invoice = response?.invoice || response;
+          const items = Array.isArray(invoice?.items) ? invoice.items : [];
+          if (isActive) setLinkedInvoiceItems(items);
+          return;
+        }
+
+        // Case 2: quarterly tax invoice — match by invoice_number
+        if (data?.invoice_number && data?.project) {
+          const invoiceNumbers = data.invoice_number.split(",").map((n) => n.trim()).filter(Boolean);
+          const allInvoices = await projectApi.getInvoices(data.project);
+          const matched = allInvoices.filter((inv) => invoiceNumbers.includes(String(inv.invoice_number)));
+
+          if (matched.length === 0) {
+            if (isActive) setLinkedInvoiceItems([]);
+            return;
+          }
+
+          const itemArrays = await Promise.all(
+            matched.map(async (inv) => {
+              if (Array.isArray(inv.items) && inv.items.length > 0) return inv.items;
+              const full = await projectApi.findInvoiceById(inv.id);
+              const fullInvoice = full?.invoice || full;
+              return Array.isArray(fullInvoice?.items) ? fullInvoice.items : [];
+            })
+          );
+
+          if (isActive) setLinkedInvoiceItems(itemArrays.flat());
+        }
+      } catch (err) {
+        console.error("[TaxInvoice] failed to load linked invoice items:", err);
+        if (isActive) setLinkedInvoiceItems([]);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [documentType, data?.invoice, data?.invoice_number, data?.project]);
 
   const projectName = useMemo(
     () =>
@@ -540,6 +592,53 @@ export default function UnifiedFinancialPrintTemplate({
       const vatAmount = numberOrZero(data.vat_amount || (netAmount * vatRate) / 100);
       const grossAmount = numberOrZero(data.gross_amount || netAmount + vatAmount);
 
+      const tiDisplayItems = linkedInvoiceItems.filter(item => item.source !== "bank_vat");
+
+      const buildTaxSummaryRows = () => {
+        if (tiDisplayItems.length === 0) {
+          return [
+            { cells: ["01", label("ti_print_net_amount"), renderAmount(netAmount), renderAmount(vatAmount)] },
+          ];
+        }
+
+        const consolidatedSources = ["variation", "prolongation_fee"];
+        const baseItems = tiDisplayItems.filter(item => !consolidatedSources.includes(item.source));
+        const consolidatedItems = tiDisplayItems.filter(item => consolidatedSources.includes(item.source));
+
+        const baseRows = baseItems.map((item, index) => {
+          const itemNet = item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0;
+          const itemVat = Math.round(itemNet * (vatRate / 100) * 100) / 100;
+          return {
+            cells: [
+              String(index + 1).padStart(2, "0"),
+              item.description || EMPTY,
+              renderAmount(itemNet),
+              renderAmount(itemVat),
+            ],
+          };
+        });
+
+        if (consolidatedItems.length === 0) return baseRows;
+
+        const consolidatedNet = consolidatedItems.reduce((sum, item) => {
+          return sum + (item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0);
+        }, 0);
+        const consolidatedVat = Math.round(consolidatedNet * (vatRate / 100) * 100) / 100;
+
+        const consolidatedRow = {
+          cells: [
+            String(baseRows.length + 1).padStart(2, "0"),
+            { ar: "إجمالي أوامر التغيير المعتمدة", en: "Total Approved Variations" },
+            renderAmount(consolidatedNet),
+            renderAmount(consolidatedVat),
+          ],
+        };
+
+        return [...baseRows, consolidatedRow];
+      };
+
+      const tiRows = buildTaxSummaryRows();
+
       return {
         ...base,
         title: label("ti_print_title"),
@@ -557,17 +656,14 @@ export default function UnifiedFinancialPrintTemplate({
           ...(data.invoice_number ? [{ label: label("ti_print_linked_invoice_number"), value: data.invoice_number }] : []),
         ],
         sectionTitle: label("ti_print_amount_breakdown"),
-        lineCount: "02",
+        lineCount: String(tiRows.length).padStart(2, "0"),
         columns: [
           "#",
           label("invoice_print_description"),
-          label("ti_print_vat_rate"),
-          label("pc_print_amount"),
+          label("ti_print_net_amount"),
+          label("ti_print_vat_amount"),
         ],
-        rows: [
-          { cells: ["01", label("ti_print_net_amount"), EMPTY, renderAmount(netAmount)] },
-          { cells: ["02", label("ti_print_vat_amount"), `${vatRate}%`, renderAmount(vatAmount)] },
-        ],
+        rows: tiRows,
         totals: [
           { label: label("ti_print_net_amount"), value: renderAmount(netAmount) },
           { label: { ar: `${tAr("ti_print_vat_amount")} (${vatRate}%)`, en: `${tEn("ti_print_vat_amount")} (${vatRate}%)` }, value: renderAmount(vatAmount) },
@@ -593,6 +689,7 @@ export default function UnifiedFinancialPrintTemplate({
     documentType,
     invoiceAttachments,
     label,
+    linkedInvoiceItems,
     printMode,
     project,
     projectName,

@@ -1,12 +1,29 @@
 import { useState, useCallback } from "react";
 import { pdf } from "@react-pdf/renderer";
 import JSZip from "jszip";
+import QRCode from "qrcode";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "../contexts/NotificationContext";
 import { api } from "../services/api";
 import { projectApi } from "../services";
 import { downloadBlob } from "../utils/helpers/file";
 import FinancialDocumentPDF from "../components/pdf/FinancialDocumentPDF";
+
+function buildQRData(documentType, item, company) {
+  if (documentType === "invoice") {
+    return JSON.stringify({ type: "INVOICE", id: item.id, number: item.invoice_number || item.id, amount: item.amount, date: item.invoice_date, company: company?.name, vat_number: company?.vat_number });
+  }
+  if (documentType === "payment") {
+    return JSON.stringify({ type: "PAYMENT_RECEIPT", id: item.id, amount: item.amount, date: item.date, method: item.payment_method, payer: item.payer, company: company?.name });
+  }
+  if (documentType === "receiptVoucher") {
+    return JSON.stringify({ type: "RECEIPT_VOUCHER", voucher_number: item.voucher_number, amount: item.amount, date: item.date, company: company?.name });
+  }
+  if (documentType === "taxInvoice") {
+    return JSON.stringify({ type: "TAX_INVOICE", invoice_number: item.tax_invoice_number, net_amount: item.net_amount, vat_amount: item.vat_amount, gross_amount: item.gross_amount, date: item.date, company: company?.name, vat_number: company?.vat_number });
+  }
+  return JSON.stringify({ id: item.id });
+}
 
 /**
  * Shared hook for downloading a list of financial documents as a ZIP of PDFs.
@@ -67,10 +84,48 @@ export function useDownloadFinancialPDFs(projectId) {
         ? (Array.isArray(variationsData) ? variationsData : (variationsData?.results || []))
         : [];
 
+      const needsLinkedItems = documentType === "taxInvoice";
+
       const zip = new JSZip();
       let skipped = 0;
       for (const item of items) {
         try {
+          let linkedInvoiceItems = [];
+          if (needsLinkedItems) {
+            try {
+              if (item.invoice) {
+                const res = await projectApi.findInvoiceById(item.invoice);
+                const inv = res?.invoice || res;
+                linkedInvoiceItems = Array.isArray(inv?.items) ? inv.items : [];
+              } else if (item.invoice_number && projectId) {
+                const nums = String(item.invoice_number).split(",").map(x => x.trim()).filter(Boolean);
+                const allInv = await projectApi.getInvoices(projectId);
+                const matched = (Array.isArray(allInv) ? allInv : allInv?.results || [])
+                  .filter(inv => nums.includes(String(inv.invoice_number)));
+                if (matched.length > 0) {
+                  const arrays = await Promise.all(
+                    matched.map(async (inv) => {
+                      if (Array.isArray(inv.items) && inv.items.length > 0) return inv.items;
+                      const full = await projectApi.findInvoiceById(inv.id);
+                      const fi = full?.invoice || full;
+                      return Array.isArray(fi?.items) ? fi.items : [];
+                    })
+                  );
+                  linkedInvoiceItems = arrays.flat();
+                }
+              }
+            } catch (linkErr) {
+              console.warn("[useDownloadFinancialPDFs] linked items fetch failed for item", item?.id, linkErr);
+            }
+          }
+
+          let qrDataUrl = null;
+          try {
+            qrDataUrl = await QRCode.toDataURL(buildQRData(documentType, item, companyForPDF), { width: 64, margin: 1 });
+          } catch (qrErr) {
+            console.warn("[useDownloadFinancialPDFs] QR generation failed", item?.id, qrErr);
+          }
+
           const blob = await pdf(
             <FinancialDocumentPDF
               documentType={documentType}
@@ -78,6 +133,8 @@ export function useDownloadFinancialPDFs(projectId) {
               project={projectForPDF}
               company={companyForPDF}
               variations={variations}
+              linkedInvoiceItems={linkedInvoiceItems}
+              qrDataUrl={qrDataUrl}
             />
           ).toBlob();
           if (blob) {

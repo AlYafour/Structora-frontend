@@ -272,27 +272,55 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
       </table>
      </div>
      {/* Print-only summary */}
-     <div className="tpw-print-only" style={{ marginTop: '16px' }}>
-      <div style={{ border: '1.5px solid #d8c9b3', borderRadius: '10px', padding: '16px 20px', background: '#fff' }}>
-       <div style={{ fontWeight: 800, fontSize: '11pt', color: '#17202f', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {t("summary", "Summary")}
+     <div className="tpw-print-only" style={{ marginTop: '12px' }}>
+      <div style={{ display: 'flex', border: '1.5px solid #d8c9b3', borderRadius: '12px', overflow: 'hidden', minHeight: '130px' }}>
+       {/* Left — dark panel */}
+       <div style={{ flex: '0 0 42%', background: '#17202f', padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: '7pt', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+         {t("ti_tab_total_gross")}
+        </div>
+        <div>
+         <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginTop: '8px' }}>
+          <span style={{ fontSize: '26pt', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
+           {parseFloat(stats.totalGross || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span style={{ fontSize: '12pt', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>AED</span>
+         </div>
+         <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '20px', padding: '2px 9px', fontSize: '6.5pt', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+           {t("including_vat")}
+          </span>
+          <span style={{ fontSize: '7.5pt', color: 'rgba(255,255,255,0.4)' }}>
+           {stats.count} {t("ti_tab_total_invoices", "invoices").toLowerCase()}
+          </span>
+         </div>
+        </div>
        </div>
-       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-        <div style={{ padding: '10px 14px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-         <div style={{ fontSize: '7.5pt', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_invoices")}</div>
-         <div style={{ fontSize: '14pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{stats.count}</div>
+       {/* Right — light panel */}
+       <div style={{ flex: 1, background: '#fff', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+         <span style={{ fontSize: '8pt', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          {t("tax_invoices", "Tax Invoices")}
+         </span>
+         <span style={{ fontSize: '24pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>
+          {stats.count}
+         </span>
         </div>
-        <div style={{ padding: '10px 14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-         <div style={{ fontSize: '7.5pt', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_net")}</div>
-         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalNet)}</div>
-        </div>
-        <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
-         <div style={{ fontSize: '7.5pt', color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_vat")}</div>
-         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalVat)}</div>
-        </div>
-        <div style={{ padding: '10px 14px', background: '#faf5ff', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
-         <div style={{ fontSize: '7.5pt', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t("ti_tab_total_gross")}</div>
-         <div style={{ fontSize: '12pt', fontWeight: 800, color: '#17202f', marginTop: '4px' }}>{renderAmount(stats.totalGross)}</div>
+        <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+         {[
+          { dot: '#10b981', label: t("ti_tab_total_net"), value: renderAmount(stats.totalNet), sub: null },
+          { dot: '#f59e0b', label: t("ti_tab_total_vat"), value: renderAmount(stats.totalVat), sub: null },
+          { dot: '#6366f1', label: t("ti_tab_total_gross"), value: renderAmount(stats.totalGross), sub: null },
+         ].map(({ dot, label, value, sub }) => (
+          <div key={label}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
+            {label}
+           </div>
+           <div style={{ fontSize: '11pt', fontWeight: 900, color: '#17202f', lineHeight: 1 }}>{value}</div>
+           {sub && <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '3px' }}>{sub}</div>}
+          </div>
+         ))}
         </div>
        </div>
       </div>
