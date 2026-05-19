@@ -25,6 +25,7 @@ export default function InvoiceViewPage() {
   const [project, setProject] = useState(null);
   const [company, setCompany] = useState(null);
   const [projectId, setProjectId] = useState(null);
+  const [printMode, setPrintMode] = useState("detailed");
 
   // Set document title for print (hides "Project Management System" in browser header)
   useEffect(() => {
@@ -200,9 +201,25 @@ export default function InvoiceViewPage() {
         <PageHeader
           onBack={handleBack}
           actions={
-            <Button variant="primary" size="sm" onClick={() => window.print()} startIcon={<FaPrint />}>
-              {t("print")}
-            </Button>
+            <>
+              <div style={{ display: 'flex', border: '1.5px solid #d1d5db', borderRadius: '7px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setPrintMode("detailed")}
+                  style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 0.15s, color 0.15s', background: printMode === 'detailed' ? '#17202f' : 'transparent', color: printMode === 'detailed' ? '#fff' : '#6b7280' }}
+                >
+                  {t("print_mode_detailed", "Detailed")}
+                </button>
+                <button
+                  onClick={() => setPrintMode("summary")}
+                  style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600, border: 'none', borderLeft: '1.5px solid #d1d5db', cursor: 'pointer', transition: 'background 0.15s, color 0.15s', background: printMode === 'summary' ? '#17202f' : 'transparent', color: printMode === 'summary' ? '#fff' : '#6b7280' }}
+                >
+                  {t("print_mode_summary", "Summary")}
+                </button>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => window.print()} startIcon={<FaPrint />}>
+                {t("print")}
+              </Button>
+            </>
           }
         >
           <ProjectEntryInfo project={project} />
@@ -217,6 +234,7 @@ export default function InvoiceViewPage() {
         company={company}
         onClose={handleBack}
         hideControls={true}
+        printMode={printMode}
       />
     </PageLayout>
   );

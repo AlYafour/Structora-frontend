@@ -2,17 +2,11 @@ import {
   Document, Page, Text, View, StyleSheet, Image, Font,
 } from "@react-pdf/renderer";
 import { formatMoney, formatDate } from "../../../../../utils/formatters";
+import { registerPDFFonts } from "../../../../../components/pdf/registerFonts";
+
+registerPDFFonts();
 
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
-
-Font.register({
-  family: "Cairo",
-  fonts: [
-    { src: `${ORIGIN}/fonts/Cairo-Regular.ttf`, fontWeight: 400 },
-    { src: `${ORIGIN}/fonts/Cairo-Bold.ttf`,    fontWeight: 700 },
-  ],
-});
-Font.registerHyphenationCallback((w) => [w]);
 
 const C = {
   bg:       "#fbf8f2",

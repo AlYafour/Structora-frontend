@@ -68,19 +68,25 @@ export function useDownloadFinancialPDFs(projectId) {
         : [];
 
       const zip = new JSZip();
+      let skipped = 0;
       for (const item of items) {
-        const blob = await pdf(
-          <FinancialDocumentPDF
-            documentType={documentType}
-            data={item}
-            project={projectForPDF}
-            company={companyForPDF}
-            variations={variations}
-          />
-        ).toBlob();
-        if (blob) {
-          const fileName = getFileName(item).replace(/[\\/:*?"<>|]/g, "_");
-          zip.file(`${fileName}.pdf`, blob);
+        try {
+          const blob = await pdf(
+            <FinancialDocumentPDF
+              documentType={documentType}
+              data={item}
+              project={projectForPDF}
+              company={companyForPDF}
+              variations={variations}
+            />
+          ).toBlob();
+          if (blob) {
+            const fileName = getFileName(item).replace(/[\\/:*?"<>|]/g, "_");
+            zip.file(`${fileName}.pdf`, blob);
+          }
+        } catch (itemErr) {
+          console.error("[useDownloadFinancialPDFs] item failed:", item?.id, itemErr);
+          skipped++;
         }
       }
 
@@ -89,7 +95,11 @@ export function useDownloadFinancialPDFs(projectId) {
       const finalName = (zipName || `${projectName}_Documents.zip`).replace(/[\\/:*?"<>|]/g, "_");
       const zipBlob = await zip.generateAsync({ type: "blob" });
       downloadBlob(zipBlob, finalName);
-      success(t("documents_downloaded", "Documents downloaded successfully"));
+      if (skipped > 0) {
+        showError(t("documents_partial", `Downloaded with ${skipped} item(s) skipped due to errors.`));
+      } else {
+        success(t("documents_downloaded", "Documents downloaded successfully"));
+      }
     } catch (err) {
       console.error("[useDownloadFinancialPDFs]", err);
       showError(t("download_error", "Download failed. Please try again."));

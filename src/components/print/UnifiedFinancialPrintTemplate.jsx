@@ -54,12 +54,15 @@ export default function UnifiedFinancialPrintTemplate({
   company,
   onClose,
   hideControls = false,
+  printMode: printModeProp,
 }) {
   const { t, i18n } = useTranslation();
   const tAr = useMemo(() => i18n.getFixedT("ar"), [i18n]);
   const tEn = useMemo(() => i18n.getFixedT("en"), [i18n]);
   const [invoiceAttachments, setInvoiceAttachments] = useState([]);
   const [variations, setVariations] = useState([]);
+  const [printModeInternal, setPrintMode] = useState("detailed"); // "detailed" | "summary"
+  const printMode = printModeProp ?? printModeInternal;
 
   const label = useCallback(
     (key, fallback) => ({
@@ -227,7 +230,8 @@ export default function UnifiedFinancialPrintTemplate({
       const displayItems = Array.isArray(data.items)
         ? (isBank ? data.items.filter(item => item.source !== "bank_vat") : data.items)
         : [];
-      const rows =
+
+      const buildDetailedRows = () =>
         displayItems.length > 0
           ? displayItems.map((item, index) => {
               const variation = item.variation_id
@@ -263,6 +267,49 @@ export default function UnifiedFinancialPrintTemplate({
                 ],
               },
             ];
+
+      const buildSummaryRows = () => {
+        if (displayItems.length === 0) return buildDetailedRows();
+        const consolidatedSources = ["variation", "prolongation_fee"];
+        const baseItems = displayItems.filter(item => !consolidatedSources.includes(item.source));
+        const consolidatedItems = displayItems.filter(item => consolidatedSources.includes(item.source));
+        if (consolidatedItems.length === 0) return buildDetailedRows();
+
+        const baseRows = baseItems.map((item, index) => {
+          const itemTotal = item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0;
+          return {
+            cells: [
+              String(index + 1).padStart(2, "0"),
+              item.description || EMPTY,
+              ...(data.payer === "owner" ? [label("invoice_print_base_contract")] : []),
+              item.quantity || 0,
+              renderAmount(item.unit_price || 0),
+              renderAmount(itemTotal),
+            ],
+          };
+        });
+
+        const consolidatedTotal = consolidatedItems.reduce((sum, item) => {
+          return sum + (item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0);
+        }, 0);
+
+        const consolidatedRow = {
+          cells: [
+            String(baseRows.length + 1).padStart(2, "0"),
+            { ar: "إجمالي أوامر التغيير المعتمدة", en: "Total Approved Variations" },
+            ...(data.payer === "owner"
+              ? [{ ar: `${consolidatedItems.length} بند`, en: `${consolidatedItems.length} Item(s)` }]
+              : []),
+            consolidatedItems.length,
+            renderAmount(consolidatedTotal),
+            renderAmount(consolidatedTotal),
+          ],
+        };
+
+        return [...baseRows, consolidatedRow];
+      };
+
+      const rows = printMode === "summary" ? buildSummaryRows() : buildDetailedRows();
 
       return {
         ...base,
@@ -546,6 +593,7 @@ export default function UnifiedFinancialPrintTemplate({
     documentType,
     invoiceAttachments,
     label,
+    printMode,
     project,
     projectName,
     tAr,
@@ -560,6 +608,22 @@ export default function UnifiedFinancialPrintTemplate({
       {!hideControls && (
         <div className="ufp-controls no-print">
           <Button variant="secondary" onClick={onClose}>{t("back")}</Button>
+          {documentType === "invoice" && (
+            <div className="ufp-print-mode-toggle">
+              <button
+                className={`ufp-print-mode-btn${printMode === "detailed" ? " ufp-print-mode-btn--active" : ""}`}
+                onClick={() => setPrintMode("detailed")}
+              >
+                {t("print_mode_detailed", "Detailed")}
+              </button>
+              <button
+                className={`ufp-print-mode-btn${printMode === "summary" ? " ufp-print-mode-btn--active" : ""}`}
+                onClick={() => setPrintMode("summary")}
+              >
+                {t("print_mode_summary", "Summary")}
+              </button>
+            </div>
+          )}
           <Button variant="primary" onClick={() => window.print()}>{t("print")}</Button>
         </div>
       )}
