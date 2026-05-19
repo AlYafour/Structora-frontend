@@ -211,6 +211,8 @@ export default defineConfig(({ mode }) => {
         "@services": "/src/services",
         "@utils": "/src/utils",
         "@styles": "/src/styles",
+        // Buffer polyfill for jszip (and other Node.js packages used in the browser)
+        buffer: "buffer/",
       },
     },
 
@@ -218,6 +220,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __DEV__: !isProduction,
       __PROD__: isProduction,
+      global: 'globalThis',
     },
   };
 });

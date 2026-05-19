@@ -11,6 +11,10 @@
  * 6. App - Application routes
  */
 
+// Polyfill Buffer globally for jszip (and other Node.js libs used in the browser)
+import { Buffer } from 'buffer';
+if (!globalThis.Buffer) globalThis.Buffer = Buffer;
+
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QUERY_STALE_TIME, QUERY_GC_TIME } from './utils/constants';
