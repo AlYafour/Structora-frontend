@@ -264,20 +264,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
           </Button>
           <button
             onClick={() => setShowVat(s => !s)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '6px',
-              border: showVat ? '2px solid #3b82f6' : '1.5px solid #d1d5db',
-              background: showVat ? '#eff6ff' : 'transparent',
-              color: showVat ? '#1d4ed8' : '#6b7280',
-              fontWeight: 600,
-              fontSize: '0.82rem',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              transition: 'all 0.15s',
-            }}
+            className={`financial-tab-action-btn ${showVat ? 'financial-tab-action-btn--vat-active' : ''}`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -287,20 +274,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
           {displayedInvoices.length > 0 && (
             <button
               onClick={handlePrint}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                border: '1.5px solid #d1d5db',
-                background: 'transparent',
-                color: '#6b7280',
-                fontWeight: 600,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s',
-              }}
+              className="financial-tab-action-btn"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M12 17V3M6 11l6 6 6-6" />
@@ -313,20 +287,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
             <button
               onClick={handleDownloadZip}
               disabled={zipLoading}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                border: zipLoading ? '1.5px solid #d1d5db' : '1.5px solid #6366f1',
-                background: zipLoading ? 'transparent' : '#f5f3ff',
-                color: zipLoading ? '#9ca3af' : '#4f46e5',
-                fontWeight: 600,
-                fontSize: '0.82rem',
-                cursor: zipLoading ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s',
-              }}
+              className={`financial-tab-action-btn financial-tab-action-btn--zip ${zipLoading ? 'financial-tab-action-btn--loading' : ''}`}
             >
               {zipLoading ? (
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}>
