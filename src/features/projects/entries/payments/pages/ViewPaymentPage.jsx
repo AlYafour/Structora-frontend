@@ -90,7 +90,7 @@ export default function ViewPaymentPage() {
   return (
     <PageLayout>
       {/* Top bar — hidden when printing */}
-      <div className="no-print">
+      <div className="no-print" style={{ maxWidth: 1320, flexDirection: "row", justifyContent: "center", alignItems: "center", margin: "0 auto" }}>
         <PageHeader
           onBack={handleBack}
           actions={

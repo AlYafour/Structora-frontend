@@ -184,6 +184,8 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
          <th className="ds-text-center ds-w-60">#</th>
          <th>{t("ti_tab_invoice_number")}</th>
          <th>{t("ti_tab_date")}</th>
+         <th className="ds-text-center">{t("ti_tab_quarter", "Quarter")}</th>
+         <th className="ds-text-center">{t("ti_tab_payer", "Payer")}</th>
          <th>{t("ti_tab_linked_invoice")}</th>
          <th className="ds-text-right">{t("ti_tab_net_amount")}</th>
          <th className="ds-text-center">{t("ti_tab_vat_rate")}</th>
@@ -210,6 +212,16 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
             </span>
            </td>
            <td className="prj-nowrap">{formatDate(inv.date, i18n.language)}</td>
+           <td className="ds-text-center">
+            {inv.quarter ? `Q${inv.quarter} ${inv.year}` : '-'}
+           </td>
+           <td className="ds-text-center">
+            {inv.payer_display ? (
+             <span className={`prj-badge ${inv.payer === 'bank' ? 'prj-badge--info' : 'prj-badge--purple'}`}>
+              {inv.payer_display}
+             </span>
+            ) : '-'}
+           </td>
            <td>{inv.invoice_number || '-'}</td>
            <td className="prj-nowrap ds-text-right ds-font-semibold">
             {renderAmount(inv.net_amount)}
@@ -241,7 +253,7 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
        </tbody>
        <tfoot>
         <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
-         <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+         <td colSpan={6} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.88rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
           {t("total")}
          </td>
          <td className="prj-nowrap ds-text-right" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.92rem' }}>
