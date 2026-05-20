@@ -226,15 +226,18 @@ export default function useFinancialEntitlement({
       let calculatedOwnerPayments = n(ownerPaymentsTotal);
       let calculatedBankPayments = n(bankPaymentsTotal);
 
+      const isPendingNote = (p) =>
+        p.payment_method === 'promissory_note' && p.promissory_note_status !== 'honored';
+
       if (calculatedOwnerPayments === 0 && payments.length) {
         calculatedOwnerPayments = payments
-          .filter((p) => p.payer === "owner")
+          .filter((p) => p.payer === "owner" && !isPendingNote(p))
           .reduce((sum, p) => sum + n(p.amount || 0), 0);
       }
 
       if (calculatedBankPayments === 0 && payments.length) {
         calculatedBankPayments = payments
-          .filter((p) => p.payer === "bank")
+          .filter((p) => p.payer === "bank" && !isPendingNote(p))
           .reduce((sum, p) => sum + n(p.amount || 0), 0);
       }
 

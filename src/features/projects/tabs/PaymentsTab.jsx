@@ -50,6 +50,16 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   const [voidReason, setVoidReason] = useState("");
   const [voidLoading, setVoidLoading] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
+
+  // Promissory note honor/dishonor state
+  const [honorOpen, setHonorOpen] = useState(false);
+  const [honorPaymentId, setHonorPaymentId] = useState(null);
+  const [honorDate, setHonorDate] = useState('');
+  const [honorLoading, setHonorLoading] = useState(false);
+  const [dishonorOpen, setDishonorOpen] = useState(false);
+  const [dishonorPaymentId, setDishonorPaymentId] = useState(null);
+  const [dishonorReason, setDishonorReason] = useState('');
+  const [dishonorLoading, setDishonorLoading] = useState(false);
   const [allPayments, setAllPayments] = useState(null);
   const [totalCredit, setTotalCredit] = useState(0);
   const [creditApps, setCreditApps] = useState([]);
@@ -150,27 +160,44 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
     const ownerPayments = activePayments.filter(p => (p.payer || "owner") === "owner");
     const bankPayments = activePayments.filter(p => (p.payer || "owner") === "bank");
 
-    const ownerTotal = ownerPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    // Separate non-honored promissory notes from real cash payments
+    // pending = awaiting honor, dishonored = bounced — neither counts as cash received
+    const isNonHonoredNote = p =>
+      p.payment_method === 'promissory_note' && p.promissory_note_status !== 'honored';
+
+    const ownerCashPayments = ownerPayments.filter(p => !isNonHonoredNote(p));
+    const ownerPendingNotes = ownerPayments.filter(p =>
+      p.payment_method === 'promissory_note' && p.promissory_note_status === 'pending'
+    );
+
+    // Only count cash payments in financial totals — pending notes are not received cash
+    const ownerTotal = ownerCashPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const bankTotal = bankPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const overallTotal = ownerTotal + bankTotal;
+    const promissoryNoteTotal = ownerPendingNotes.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const promissoryNoteCount = ownerPendingNotes.length;
 
-    const baseContractTotal = activePayments.reduce(
+    // Breakdown totals exclude all non-honored promissory notes
+    const cashPayments = activePayments.filter(p => !isNonHonoredNote(p));
+    const baseContractTotal = cashPayments.reduce(
       (sum, p) => sum + (parseFloat(p.breakdown?.base_contract) || 0), 0
     );
-    const variationsTotal = activePayments.reduce(
+    const variationsTotal = cashPayments.reduce(
       (sum, p) => sum + (parseFloat(p.breakdown?.variations) || 0), 0
     );
-    const bankVatTotal = activePayments.reduce(
+    const bankVatTotal = cashPayments.reduce(
       (sum, p) => sum + (parseFloat(p.breakdown?.bank_vat) || 0), 0
     );
 
     return {
       total: activePayments.length,
-      ownerCount: ownerPayments.length,
+      ownerCount: ownerCashPayments.length,
       bankCount: bankPayments.length,
       ownerTotal,
       bankTotal,
       overallTotal,
+      promissoryNoteTotal,
+      promissoryNoteCount,
       baseContractTotal,
       variationsTotal,
       bankVatTotal
@@ -267,6 +294,44 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       setVoidingPaymentId(null);
       setVoidReason("");
       setVoidLoading(false);
+    }
+  };
+
+  const handleHonorNote = async () => {
+    if (!honorPaymentId) return;
+    setHonorLoading(true);
+    try {
+      await paymentApi.honorPromissoryNote(honorPaymentId, honorDate);
+      success(t('promissory_note_honored_success', 'Promissory note marked as honored. Receipt voucher created.'));
+      onReload();
+      reloadAllPayments();
+    } catch (error) {
+      const apiDetail = error?.response?.data?.detail;
+      showError(apiDetail || t('promissory_note_honor_error', 'Failed to honor promissory note.'));
+    } finally {
+      setHonorOpen(false);
+      setHonorPaymentId(null);
+      setHonorDate('');
+      setHonorLoading(false);
+    }
+  };
+
+  const handleDishonorNote = async () => {
+    if (!dishonorPaymentId) return;
+    setDishonorLoading(true);
+    try {
+      await paymentApi.dishonorPromissoryNote(dishonorPaymentId, dishonorReason);
+      success(t('promissory_note_dishonored_success', 'Promissory note marked as dishonored. Allocations reversed.'));
+      onReload();
+      reloadAllPayments();
+    } catch (error) {
+      const apiDetail = error?.response?.data?.detail;
+      showError(apiDetail || t('promissory_note_dishonor_error', 'Failed to dishonor promissory note.'));
+    } finally {
+      setDishonorOpen(false);
+      setDishonorPaymentId(null);
+      setDishonorReason('');
+      setDishonorLoading(false);
     }
   };
 
@@ -398,6 +463,15 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                 )}
                 variant="blue" icon="building" label={t("bank_total")} value={renderAmount(vg(paymentStats.bankTotal))} sub={vatLabel} />
               <MetricCard variant="blue" icon="hash" label={t("bank_payments_count")} value={paymentStats.bankCount} />
+              {paymentStats.promissoryNoteTotal > 0 && (
+                <MetricCard
+                  variant="amber"
+                  icon="file"
+                  label={t("promissory_notes_pending", "Promissory Notes (Pending)")}
+                  value={renderAmount(vg(paymentStats.promissoryNoteTotal))}
+                  sub={`${paymentStats.promissoryNoteCount} ${t("notes", "note(s)")} — ${t("not_yet_honored", "not yet honored / لم تُصرف بعد")}`}
+                />
+              )}
               {totalCredit > 0 && (
                 <MetricCard variant="violet" icon="creditCard" label={t("available_credit")} value={renderAmount(totalCredit)} />
               )}
@@ -574,6 +648,30 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                         <span className={`prj-badge ${payerType === "bank" ? "prj-badge--info" : "prj-badge--success"}`}>
                           {payerLabel}
                         </span>
+                        {payment.payment_method === 'promissory_note' && (
+                          <span
+                            className="prj-badge"
+                            style={{
+                              marginInlineStart: '4px',
+                              background: payment.promissory_note_status === 'honored'
+                                ? '#d1fae5' : payment.promissory_note_status === 'dishonored'
+                                ? '#fee2e2' : '#fef3c7',
+                              color: payment.promissory_note_status === 'honored'
+                                ? '#065f46' : payment.promissory_note_status === 'dishonored'
+                                ? '#991b1b' : '#92400e',
+                              border: payment.promissory_note_status === 'honored'
+                                ? '1px solid #6ee7b7' : payment.promissory_note_status === 'dishonored'
+                                ? '1px solid #fca5a5' : '1px solid #fcd34d',
+                            }}
+                          >
+                            {payment.promissory_note_status === 'honored'
+                              ? `✓ ${t('promissory_note_honored', 'Note Honored')}`
+                              : payment.promissory_note_status === 'dishonored'
+                              ? `✗ ${t('promissory_note_dishonored', 'Note Dishonored')}`
+                              : `⏳ ${t('promissory_note_pending', 'Promissory Note — Pending')}`
+                            }
+                          </span>
+                        )}
                         {payment.is_advance_payment && (
                           <span className="prj-badge prj-badge--warning" style={{ marginInlineStart: '4px' }}>
                             {t("advance_payment")}
@@ -645,6 +743,10 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                         {!isVoided && (
                           <ActionMenu items={[
                             ...(canEditPayment ? [{ label: t("edit"), type: "button", onClick: () => handleEditPayment(payment) }] : []),
+                            ...(payment.payment_method === 'promissory_note' && payment.promissory_note_status === 'pending' && canEditPayment ? [
+                              { label: `✓ ${t('honor_note', 'Honor Note')}`, type: "button", onClick: () => { setHonorPaymentId(payment.id); setHonorDate(new Date().toISOString().slice(0, 10)); setHonorOpen(true); } },
+                              { label: `✗ ${t('dishonor_note', 'Dishonor Note')}`, type: "button", variant: "danger", onClick: () => { setDishonorPaymentId(payment.id); setDishonorOpen(true); } },
+                            ] : []),
                             ...(canVoidPayment ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingPaymentId(payment.id); setVoidConfirmOpen(true); } }] : []),
                           ]} />
                         )}
@@ -803,6 +905,66 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
         onConfirm={handleBulkVoidPayments}
         danger
         busy={bulkVoiding}
+      />
+
+      {/* Honor Promissory Note Dialog */}
+      <Dialog
+        open={honorOpen}
+        title={t('honor_promissory_note', 'Honor Promissory Note')}
+        desc={
+          <div>
+            <p style={{ marginBottom: '12px', color: '#374151' }}>
+              {t('honor_note_confirm', 'Mark this promissory note as honored (cash received). A receipt voucher will be created and the amount will be deducted from the outstanding balance.')}
+            </p>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {t('honored_date', 'Date Honored')} *
+              </label>
+              <input
+                type="date"
+                value={honorDate}
+                onChange={(e) => setHonorDate(e.target.value)}
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '14px' }}
+              />
+            </div>
+          </div>
+        }
+        confirmLabel={honorLoading ? t('processing', 'Processing…') : `✓ ${t('honor_note', 'Honor Note')}`}
+        cancelLabel={t('cancel')}
+        onClose={() => { if (!honorLoading) { setHonorOpen(false); setHonorPaymentId(null); setHonorDate(''); } }}
+        onConfirm={handleHonorNote}
+        busy={honorLoading}
+      />
+
+      {/* Dishonor Promissory Note Dialog */}
+      <Dialog
+        open={dishonorOpen}
+        title={t('dishonor_promissory_note', 'Dishonor Promissory Note')}
+        desc={
+          <div>
+            <p style={{ marginBottom: '12px', color: '#374151' }}>
+              {t('dishonor_note_confirm', 'Mark this note as dishonored (bounced/returned). Invoice allocations will be reversed and the outstanding balance will be restored.')}
+            </p>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {t('dishonor_reason', 'Reason')}
+              </label>
+              <textarea
+                value={dishonorReason}
+                onChange={(e) => setDishonorReason(e.target.value)}
+                placeholder={t('dishonor_reason_placeholder', 'e.g. Insufficient funds, account closed…')}
+                rows={3}
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '14px', resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        }
+        confirmLabel={dishonorLoading ? t('processing', 'Processing…') : `✗ ${t('dishonor_note', 'Dishonor Note')}`}
+        cancelLabel={t('cancel')}
+        onClose={() => { if (!dishonorLoading) { setDishonorOpen(false); setDishonorPaymentId(null); setDishonorReason(''); } }}
+        onConfirm={handleDishonorNote}
+        danger
+        busy={dishonorLoading}
       />
 
     </div>

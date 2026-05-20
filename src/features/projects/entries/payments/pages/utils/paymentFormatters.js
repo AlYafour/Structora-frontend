@@ -30,6 +30,15 @@ export function formatPaymentDataForForm(data) {
     completion_percentage: data.completion_percentage || '',
     is_advance_payment: data.is_advance_payment || false,
     advance_percentage: data.advance_percentage || '',
+    // Promissory note fields
+    promissory_note_number: data.promissory_note_number || '',
+    promissory_note_due_date: data.promissory_note_due_date
+      ? new Date(data.promissory_note_due_date).toISOString().split('T')[0]
+      : '',
+    promissory_note_status: data.promissory_note_status || '',
+    promissory_note_honored_date: data.promissory_note_honored_date
+      ? new Date(data.promissory_note_honored_date).toISOString().split('T')[0]
+      : '',
   };
 }
 
@@ -80,6 +89,16 @@ export function buildPaymentFormData(formData, allocations, allocationMode, file
 
     if (allocationsData.length > 0) {
       formDataToSend.append('allocations', JSON.stringify(allocationsData));
+    }
+  }
+
+  // Promissory note fields
+  if (formData.payment_method === 'promissory_note') {
+    if (formData.promissory_note_number) {
+      formDataToSend.append('promissory_note_number', formData.promissory_note_number);
+    }
+    if (formData.promissory_note_due_date) {
+      formDataToSend.append('promissory_note_due_date', formData.promissory_note_due_date);
     }
   }
 
@@ -161,7 +180,8 @@ export function getPaymentMethodOptions(payer, t) {
     { value: 'cash_office', label: t('cash_office') },
     { value: 'bank_cheque', label: t('bank_cheque') },
     { value: 'bank_transfer', label: t('bank_transfer') },
-    { value: 'cash_deposit', label: t('cash_deposit') }
+    { value: 'cash_deposit', label: t('cash_deposit') },
+    { value: 'promissory_note', label: t('promissory_note') }
   ];
 }
 

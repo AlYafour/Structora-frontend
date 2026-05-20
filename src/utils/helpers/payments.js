@@ -15,6 +15,9 @@
  */
 export function sumPaymentsByPayer(payments, payer) {
   return (payments || [])
-    .filter(p => p.payer === payer)
+    .filter(p =>
+      p.payer === payer &&
+      !(p.payment_method === 'promissory_note' && p.promissory_note_status !== 'honored')
+    )
     .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 }

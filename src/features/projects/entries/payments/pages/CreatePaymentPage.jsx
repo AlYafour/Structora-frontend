@@ -495,6 +495,21 @@ export default function CreatePaymentPage() {
                   creditBalance={creditBalance}
                   allocations={allocations}
                   creditAmountUsed={creditAmountUsed}
+                  isPromissoryNote={formData.payment_method === 'promissory_note'}
+                  invoiceRemainingAmount={
+                    allocations.length === 1
+                      ? parseFloat(
+                          filteredInvoices.find(inv => inv.id === allocations[0]?.invoice_id)?.remaining_amount || 0
+                        )
+                      : 0
+                  }
+                  invoicePromissoryNoteAmount={
+                    allocations.length === 1
+                      ? parseFloat(
+                          filteredInvoices.find(inv => inv.id === allocations[0]?.invoice_id)?.promissory_note_amount || 0
+                        )
+                      : 0
+                  }
                   t={t}
                 />
               </div>

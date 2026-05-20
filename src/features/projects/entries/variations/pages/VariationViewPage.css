@@ -5,8 +5,11 @@
 /* ==================== PRINT WRAPPER (hidden offscreen) ==================== */
 .var-print-document-wrapper {
   position: fixed;
-  left: 0; top: 0;
-  width: 210mm; height: auto;
+  left: -9999px;
+  top: 0;
+  width: 1400px;
+  height: auto;
+  overflow: visible;
   z-index: -9999;
   opacity: 0;
   pointer-events: none;
@@ -610,10 +613,9 @@
 
 .print-preview-content {
   width: 100%;
-  max-width: 210mm;
+  max-width: 860px;
   background: #fff;
   box-shadow: 0 0 60px rgba(0,0,0,.5);
-  border-radius: 8px;
   overflow: hidden;
   animation: varPreviewIn 0.25s ease-out;
   margin-top: 64px;
@@ -634,7 +636,7 @@
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 
-  @page { size: A4 portrait; margin: 15mm 20mm; orphans: 3; widows: 3; }
+  @page { size: A4 portrait; margin: 8mm 6mm; orphans: 3; widows: 3; }
 
   html, body {
     background: #fff; margin: 0; padding: 0;

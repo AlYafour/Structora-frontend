@@ -222,6 +222,99 @@ const PaymentFormFields = memo(({
    </div>
   )}
 
+  {/* Promissory Note Sub-section */}
+  {formData.payment_method === 'promissory_note' && (
+   <div className="payment-form-fields__sub-section">
+    <div className="payment-form-fields__sub-title">
+     {t('promissory_note_details', 'Promissory Note Details — تفاصيل السند الأذني')}
+    </div>
+
+    {/* Info banner */}
+    <div style={{
+     background: '#fffbeb',
+     border: '1px solid #f59e0b',
+     borderRadius: '6px',
+     padding: '10px 14px',
+     marginBottom: '12px',
+     fontSize: '13px',
+     color: '#92400e',
+     display: 'flex',
+     alignItems: 'flex-start',
+     gap: '8px'
+    }}>
+     <span style={{ fontSize: '16px', lineHeight: 1 }}>⚠</span>
+     <span>
+      {t('promissory_note_info',
+       'A tax invoice will be issued for this payment. However, the outstanding balance will NOT decrease until the note is honored (cashed). — سيتم إصدار فاتورة ضريبية، لكن الرصيد المتبقي لن يتغير حتى يتم صرف السند.'
+      )}
+     </span>
+    </div>
+
+    <div className="ds-grid ds-grid-cols-2 ds-gap-4">
+     <div>
+      <label className="payment-form-fields__label">
+       {t('promissory_note_number', 'Note Number / رقم السند')}
+       <span className="payment-form-fields__required"> *</span>
+      </label>
+      <input
+       type="text"
+       className="prj-input"
+       value={formData.promissory_note_number || ''}
+       onChange={e => onUpdateField('promissory_note_number', e.target.value)}
+       placeholder={t('promissory_note_number_placeholder', 'e.g. PN-2026-001')}
+      />
+     </div>
+     <div>
+      <label className="payment-form-fields__label">
+       {t('promissory_note_due_date', 'Maturity Date / تاريخ الاستحقاق')}
+       <span className="payment-form-fields__required"> *</span>
+      </label>
+      <DateInput
+       className="prj-input"
+       value={formData.promissory_note_due_date || ''}
+       onChange={value => onUpdateField('promissory_note_due_date', value)}
+      />
+     </div>
+    </div>
+
+    {/* Status badge for edit mode */}
+    {formData.promissory_note_status && (
+     <div style={{ marginTop: '10px' }}>
+      <span style={{
+       display: 'inline-flex',
+       alignItems: 'center',
+       gap: '6px',
+       padding: '4px 10px',
+       borderRadius: '9999px',
+       fontSize: '12px',
+       fontWeight: 600,
+       ...(formData.promissory_note_status === 'pending'
+        ? { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }
+        : formData.promissory_note_status === 'honored'
+        ? { background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7' }
+        : { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }
+       )
+      }}>
+       {formData.promissory_note_status === 'pending' && '⏳ '}
+       {formData.promissory_note_status === 'honored' && '✓ '}
+       {formData.promissory_note_status === 'dishonored' && '✗ '}
+       {formData.promissory_note_status === 'pending'
+        ? t('promissory_note_status_pending', 'Pending — Awaiting Honor')
+        : formData.promissory_note_status === 'honored'
+        ? t('promissory_note_status_honored', 'Honored ✓')
+        : t('promissory_note_status_dishonored', 'Dishonored ✗')
+       }
+      </span>
+      {formData.promissory_note_honored_date && (
+       <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6b7280' }}>
+        {t('honored_on', 'Honored on')}: {formData.promissory_note_honored_date}
+       </span>
+      )}
+     </div>
+    )}
+   </div>
+  )}
+
   {/* Advance Payment Sub-section - Owner only */}
   {formData.payer === 'owner' && (
    <div className="payment-form-fields__sub-section">

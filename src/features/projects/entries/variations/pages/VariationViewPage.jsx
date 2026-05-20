@@ -2,9 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 import { useReactToPrint } from "react-to-print";
-import { projectApi, companyApi } from "../../../../../services";
 import { logger } from "../../../../../utils/logger";
-import { downloadBlob } from "../../../../../utils/helpers/file";
 import PageLayout from "../../../../../components/layout/PageLayout";
 import { getProjectName } from "../../../utils/projectNameUtils.jsx";
 import Button from "../../../../../components/common/Button";
@@ -102,20 +100,14 @@ export default function VariationViewPage() {
   const permissions = calculatePermissions(variation, user);
   const isRejected = checkRejected(variation);
 
-  // Professional Print Handler using react-to-print
+  // Professional Print Handler using react-to-print v3
   const handlePrint = useReactToPrint({
-    content: () => {
-      if (!printDocumentRef.current) {
-        logger.error("Print document ref is not available");
-        return null;
-      }
-      return printDocumentRef.current;
-    },
-    documentTitle: () => generateDocumentTitle(variation, noticeData),
+    contentRef: printDocumentRef,
+    documentTitle: generateDocumentTitle(variation, noticeData),
     pageStyle: `
       @page {
         size: A4 portrait;
-        margin: 15mm 20mm;
+        margin: 8mm 6mm;
       }
       @media print {
         body {
@@ -124,22 +116,6 @@ export default function VariationViewPage() {
         }
       }
     `,
-    onBeforeGetContent: () => {
-      if (!printDocumentRef.current) {
-        logger.warn("Print document ref is not ready, waiting");
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            if (printDocumentRef.current) {
-              resolve();
-            } else {
-              logger.error("Print document ref still not available after wait");
-              resolve();
-            }
-          }, 100);
-        });
-      }
-      return Promise.resolve();
-    },
   });
 
   // Print Preview handlers
@@ -152,17 +128,54 @@ export default function VariationViewPage() {
     setIsPrintPreview(false);
   };
 
-  // PDF Export — always uses server-side WeasyPrint (correct Arabic/RTL support)
+  // PDF Export — client-side using html2canvas + jsPDF
   const handleExportPDF = async () => {
-    if (!variation || !project) {
-      showError(t("variation_not_found"));
+    if (!variation || !project || !printDocumentRef.current) {
+      showError(t("pdf_export_error"));
       return;
     }
     setPdfLoading(true);
     try {
       success(t("generating_pdf"));
-      const blob = await projectApi.generateVariationPDF(project.id, variation.id);
-      downloadBlob(blob, generatePDFFilename(variation, noticeData));
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const el = printDocumentRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+      });
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 14;
+      const contentW = pageW - 2 * margin;
+      const contentH = pageH - 2 * margin;
+      const scale = contentW / canvas.width;
+      const totalH = canvas.height * scale;
+      const pages = Math.ceil(totalH / contentH);
+
+      for (let i = 0; i < pages; i++) {
+        if (i > 0) pdf.addPage();
+        const srcY = Math.round((i * contentH) / scale);
+        const srcH = Math.min(Math.round(contentH / scale), canvas.height - srcY);
+        const slice = document.createElement('canvas');
+        slice.width = canvas.width;
+        slice.height = srcH;
+        slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+        pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, margin, contentW, srcH * scale);
+      }
+
+      pdf.save(generatePDFFilename(variation, noticeData));
       success(t("pdf_exported_successfully"));
     } catch (error) {
       logger.error("Error generating PDF", error);
@@ -422,7 +435,7 @@ export default function VariationViewPage() {
         {/* ========== TAB CONTENT ========== */}
         <div className="var-content prj-tab-panel">
           {activeTab === "view" && (
-            <div className="var-view-content" ref={printDocumentRef}>
+            <div className="var-view-content">
               <NoticeOfVariationPage variation={variation} project={project} viewMode={true} />
 
               {/* ========== BOTTOM PANELS: ATTACHMENTS + AUDIT ========== */}

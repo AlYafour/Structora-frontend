@@ -72,6 +72,39 @@ class PaymentService extends BaseService {
       throw handleError(error, 'PaymentService.void');
     }
   }
+
+  /**
+   * Honor a pending promissory note — marks it as cashed, creates receipt voucher,
+   * and the note's amount now reduces the invoice's remaining balance.
+   * @param {string|number} id - Payment ID
+   * @param {string} honoredDate - ISO date string (YYYY-MM-DD), defaults to today
+   * @returns {Promise} Updated payment data
+   */
+  async honorPromissoryNote(id, honoredDate = null) {
+    try {
+      const payload = honoredDate ? { honored_date: honoredDate } : {};
+      const { data } = await api.post(`${this.basePath}${id}/honor-promissory-note/`, payload);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'PaymentService.honorPromissoryNote');
+    }
+  }
+
+  /**
+   * Dishonor a pending promissory note — removes allocations, recalculates tax invoice.
+   * The balance returns to the state before the note was recorded.
+   * @param {string|number} id - Payment ID
+   * @param {string} reason - Reason for dishonoring
+   * @returns {Promise} Updated payment data
+   */
+  async dishonorPromissoryNote(id, reason = '') {
+    try {
+      const { data } = await api.post(`${this.basePath}${id}/dishonor-promissory-note/`, { reason });
+      return data;
+    } catch (error) {
+      throw handleError(error, 'PaymentService.dishonorPromissoryNote');
+    }
+  }
 }
 
 export const paymentApi = new PaymentService();
