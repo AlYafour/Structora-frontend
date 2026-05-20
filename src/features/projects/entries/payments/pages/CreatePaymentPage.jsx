@@ -145,7 +145,13 @@ export default function CreatePaymentPage() {
 
       // Non-bank invoices: only visible to the matching payer
       if (inv.payer !== formData.payer) return null;
-      return inv;
+      // Use net_cash_exposure so amounts already committed to a pending promissory note
+      // are not offered again as available capacity for a new cash payment.
+      // Falls back to remaining_amount for invoices that don't carry the field (old data).
+      const netExposure = parseFloat(
+        inv.net_cash_exposure != null ? inv.net_cash_exposure : (inv.remaining_amount ?? 0)
+      );
+      return { ...inv, remaining_amount: netExposure };
     })
     .filter(inv => inv !== null && parseFloat(inv.remaining_amount || 0) > 0.001);
 

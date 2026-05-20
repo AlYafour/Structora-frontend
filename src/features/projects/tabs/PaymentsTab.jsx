@@ -652,6 +652,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                           <span
                             className="prj-badge"
                             style={{
+                              marginTop: '4px',
                               marginInlineStart: '4px',
                               background: payment.promissory_note_status === 'honored'
                                 ? '#d1fae5' : payment.promissory_note_status === 'dishonored'
