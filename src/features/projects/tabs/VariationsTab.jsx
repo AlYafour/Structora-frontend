@@ -19,6 +19,8 @@ import BulkActionsBar from "../../../components/common/BulkActionsBar";
 import "./VariationsTab.css";
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import useTenantNavigate from "../../../hooks/useTenantNavigate";
+import { useDownloadVariationPDFs } from "../../../hooks/useDownloadVariationPDFs";
+import DownloadAllButton from "../../../components/common/DownloadAllButton";
 
 // Map status → prj-badge CSS class
 const getStatusBadgeClass = (status) => {
@@ -714,6 +716,13 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
     };
 
+    const { downloadZip, zipLoading } = useDownloadVariationPDFs(projectId);
+    const handleDownloadAllVariations = () =>
+        downloadZip({
+            items: filteredVariations,
+            zipName: `Variations.zip`,
+        });
+
     const printRef = useRef(null);
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -836,6 +845,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         </svg>
                         {showVat ? t("including_vat") : t("excluding_vat")}
                     </button>
+
+                    <DownloadAllButton
+                        onClick={handleDownloadAllVariations}
+                        loading={zipLoading}
+                        count={filteredVariations.length}
+                    />
 
                     {variations && variations.length > 0 && (
                         <button

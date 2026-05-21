@@ -1,6 +1,5 @@
 /* =========================================================
    VARIATION PRINT DOCUMENT
-   Design matches UnifiedFinancialPrintTemplate (UFP)
    Color tokens: #fbf8f2 bg · #17202f text · #d8c9b3 border
                  #7f7364 labels · #f0eadf table-header
    ========================================================= */
@@ -24,8 +23,8 @@
   background: #fbf8f2;
   color: #17202f;
   font-family: "Inter", "Segoe UI", Arial, Tahoma, sans-serif;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  font-size: 14pt;
+  line-height: 1.6;
   box-shadow: 0 10px 40px rgba(20, 33, 61, 0.14);
   display: flex;
   flex-direction: column;
@@ -39,19 +38,19 @@
 .vpd-bilingual {
   display: inline-flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   max-width: 100%;
 }
 
 .vpd-bilingual__ar {
   font-family: "Cairo", Tahoma, Arial, sans-serif;
   text-align: right;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 .vpd-bilingual__en {
   text-align: left;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 /* ── Amount ── */
@@ -71,27 +70,27 @@
 /* ── Header ── */
 .vpd-top {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(72mm, 0.85fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(60mm, 0.85fr) auto;
   border-left: none;
   border-right: none;
   border-top: 1px solid #d8c9b3;
   border-bottom: 1px solid #d8c9b3;
   overflow: hidden;
   background: #fff;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .vpd-company {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
+  gap: 18px;
+  padding: 22px 26px;
   min-width: 0;
 }
 
 .vpd-company__logo {
-  width: 68px;
-  height: 68px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
   flex: 0 0 auto;
 }
@@ -103,44 +102,63 @@
 .vpd-company__name {
   color: #17202f;
   font-weight: 850;
-  font-size: 15pt;
+  font-size: 20pt;
 }
 
 .vpd-company__name .vpd-bilingual__en {
   color: #7f7364;
-  font-size: 9.5pt;
+  font-size: 13pt;
   font-weight: 650;
 }
 
 .vpd-company__details {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 8px;
-  margin-top: 7px;
+  gap: 4px 10px;
+  margin-top: 8px;
   color: #7f7364;
-  font-size: 8.3pt;
+  font-size: 12pt;
 }
 
 .vpd-company__details > span:not(:last-child)::after {
   content: " /";
 }
 
+.vpd-qr-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-left: 1px solid #d8c9b3;
+  background: #faf7f2;
+}
+
+.vpd-qr-panel span {
+  font-size: 7pt;
+  color: #7f7364;
+  letter-spacing: 1.8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .vpd-title-panel {
   background: #fff;
   color: #17202f;
-  padding: 18px 22px;
+  padding: 22px 26px;
   min-width: 0;
 }
 
 .vpd-title {
   font-weight: 800;
   color: #17202f;
-  font-size: 19pt;
+  font-size: 25pt;
 }
 
 .vpd-title .vpd-bilingual__en {
   color: #7f7364;
-  font-size: 11pt;
+  font-size: 14pt;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -148,8 +166,8 @@
 .vpd-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .vpd-meta div {
@@ -158,24 +176,24 @@
 
 .vpd-meta__label {
   color: #7f7364;
-  font-size: 7.2pt;
+  font-size: 11pt;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .vpd-meta strong {
   display: block;
-  margin-top: 5px;
+  margin-top: 6px;
   color: #17202f;
-  font-size: 10pt;
+  font-size: 13pt;
 }
 
 /* ── Info Cards ── */
 .vpd-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
   padding: 0;
 }
 
@@ -183,8 +201,8 @@
   background: #fff;
   border: 1px solid #d8c9b3;
   border-radius: 0;
-  padding: 12px 14px;
-  min-height: 70px;
+  padding: 14px 16px;
+  min-height: 80px;
   min-width: 0;
 }
 
@@ -192,39 +210,99 @@
   grid-column: span 2;
 }
 
+.vpd-info-card--span3 {
+  grid-column: 1 / -1;
+}
+
+/* Row layout: label left · value right · same line */
+.vpd-info-card--sm {
+  padding: 8px 12px;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.vpd-info-card--sm .vpd-info-card__label {
+  font-size: 8.5pt;
+  flex: 0 0 auto;
+}
+
+.vpd-info-card--sm .vpd-info-card__value,
+.vpd-info-card--sm .vpd-info-card__value--plain {
+  font-size: 10.5pt;
+  margin-top: 0;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Location lines sit on their own row below label+value */
+.vpd-info-card--sm .vpd-info-card__lines {
+  flex: 0 0 100%;
+  margin-top: 2px;
+}
+
+.vpd-info-card--sm .vpd-info-card__line {
+  font-size: 9pt;
+}
+
+/* Description card stays vertical since content is long */
+.vpd-info-card--sm.vpd-info-card--desc {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.vpd-info-card--desc .vpd-info-card__desc-text {
+  margin: 5px 0 0;
+  font-size: 10.5pt;
+  color: #17202f;
+  line-height: 1.45;
+}
+
+.vpd-info-card--desc .vpd-info-card__desc-cause {
+  margin: 4px 0 0;
+  font-size: 9.5pt;
+  color: #7f7364;
+  line-height: 1.4;
+}
+
 .vpd-info-card__label {
   color: #7f7364;
-  font-size: 7.5pt;
+  font-size: 10.5pt;
   font-weight: 850;
   text-transform: uppercase;
 }
 
 .vpd-info-card__value {
   display: flex;
-  margin-top: 9px;
+  margin-top: 10px;
   color: #17202f;
-  font-size: 10pt;
+  font-size: 13pt;
   font-weight: 750;
 }
 
 .vpd-info-card__value--plain {
-  font-size: 10pt;
+  font-size: 13pt;
   font-weight: 750;
   color: #17202f;
-  margin-top: 9px;
+  margin-top: 10px;
   display: block;
 }
 
 .vpd-info-card__lines {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 5px;
+  gap: 3px;
+  margin-top: 6px;
 }
 
 .vpd-info-card__line {
   color: #7f7364;
-  font-size: 8pt;
+  font-size: 11pt;
 }
 
 /* ── Sections ── */
@@ -235,7 +313,7 @@
   border-left: none;
   border-right: none;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .vpd-section--desc {
@@ -247,31 +325,31 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 12px 0 10px;
+  padding: 13px 0 11px;
   color: #7f7364;
-  font-size: 8pt;
+  font-size: 11pt;
   font-weight: 850;
   text-transform: uppercase;
 }
 
 .vpd-desc-text {
   margin: 0;
-  padding: 0 0 12px;
-  font-size: 9.2pt;
+  padding: 0 0 14px;
+  font-size: 13pt;
   color: #17202f;
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
 .vpd-desc-text--secondary {
   color: #7f7364;
-  font-size: 8.8pt;
-  padding-top: 4px;
+  font-size: 12pt;
+  padding-top: 6px;
 }
 
 /* ── Table ── */
 .vpd-table {
   width: 100%;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -279,22 +357,22 @@
 .vpd-table th {
   background: #f0eadf;
   color: #17202f;
-  padding: 8px;
-  font-size: 7.3pt;
+  padding: 11px 10px;
+  font-size: 11.5pt;
   font-weight: 850;
   text-align: center;
   vertical-align: middle;
 }
 
 .vpd-table th:first-child {
-  width: 36px;
+  width: 44px;
 }
 
 .vpd-table td {
-  padding: 11px 8px;
+  padding: 13px 10px;
   border-bottom: 1px solid #d8c9b3;
   color: #17202f;
-  font-size: 9.2pt;
+  font-size: 12.5pt;
   text-align: center;
   vertical-align: top;
   word-break: break-word;
@@ -303,7 +381,7 @@
 .vpd-table td:first-child {
   color: #7f7364;
   text-align: center;
-  width: 36px;
+  width: 44px;
 }
 
 .vpd-td--desc {
@@ -322,81 +400,116 @@
 }
 
 .vpd-td--remark {
-  font-size: 8.3pt !important;
+  font-size: 11.5pt !important;
   color: #7f7364 !important;
   font-style: italic;
   text-align: left !important;
-  padding: 5px 10px !important;
+  padding: 7px 12px !important;
 }
 
 .vpd-remark-label {
   font-style: normal;
   font-weight: 850;
   color: #17202f;
-  font-size: 7.5pt;
+  font-size: 11pt;
 }
 
 /* ── Totals ── */
 .vpd-bottom {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
+/* ── Totals horizontal strip ──
+   Container background acts as the divider colour via gap.
+   Cells wrap naturally when they can't fit on one row.        */
 .vpd-totals-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background: #d8c9b3;   /* gap colour = divider lines */
+  border: 1px solid #d8c9b3;
+}
+
+.vpd-totals-cell {
+  flex: 1 1 150px;        /* wrap when narrower than 150px */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 14px;
+  text-align: center;
   background: #fff;
-  border-top: 1px solid #d8c9b3;
-  border-bottom: 1px solid #d8c9b3;
-  border-left: none;
-  border-right: none;
+  min-width: 0;
 }
 
-.vpd-totals {
+.vpd-totals-row-break {
+  flex: 0 0 100%;
   width: 100%;
-  border-collapse: collapse;
+  height: 0;
+  padding: 0;
+  margin: 0;
 }
 
-.vpd-totals td {
-  padding: 11px 8px;
-  border-bottom: 1px solid #d8c9b3;
-  font-size: 9pt;
-}
-
-.vpd-totals tr:last-child td {
-  border-bottom: none;
-}
-
-.vpd-totals td:first-child {
+.vpd-totals-cell__label {
   color: #7f7364;
+  font-size: 9pt;
   font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.35;
+  margin-bottom: 10px;
 }
 
-.vpd-totals td:last-child {
-  text-align: right;
+.vpd-totals-cell__note {
+  display: block;
+  margin-top: 3px;
+  font-size: 7pt;
+  font-weight: 650;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.vpd-totals-cell__value {
+  font-size: 13.5pt;
   font-weight: 850;
   color: #17202f;
+  white-space: nowrap;
 }
 
-.vpd-totals__highlight td {
+.vpd-totals-cell--highlight {
   background: #f0eadf;
-  font-weight: 900;
 }
 
-.vpd-totals__subtotal td {
-  border-top: 1px solid #d8c9b3;
+.vpd-totals-cell--subtotal {
   background: #faf7f2;
-  font-weight: 800;
 }
 
-.vpd-totals__grand td {
-  background: #fff;
+/* Grand total — full-width accent row at the bottom */
+.vpd-totals-cell--grand {
+  flex: 2 1 260px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+  background: #17202f;
 }
 
-.vpd-totals__grand td:last-child {
-  font-size: 17pt;
-  color: #17202f;
+.vpd-totals-cell--grand .vpd-totals-cell__label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11pt;
+  margin-bottom: 0;
+  text-align: center;
 }
 
-.vpd-totals__grand td:first-child {
-  color: #7f7364;
+.vpd-totals-cell--grand .vpd-totals-cell__note {
+  color: #fff;
+  font-size: 7pt;
+}
+
+.vpd-totals-cell--grand .vpd-totals-cell__value {
+  color: #fff;
+  font-size: 26pt;
+  font-weight: 900;
 }
 
 /* ── Remarks + QR row ── */
@@ -404,7 +517,7 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .vpd-remarks-qr-row__spacer {
@@ -417,7 +530,7 @@
   border-bottom: 1px solid #d8c9b3;
   border-left: none;
   border-right: none;
-  padding: 10px 0;
+  padding: 12px 0;
   margin-bottom: 0;
 }
 
@@ -428,9 +541,10 @@
 
 .vpd-notes p {
   display: flex;
-  gap: 10px;
-  margin: 5px 0;
+  gap: 12px;
+  margin: 6px 0;
   color: #17202f;
+  font-size: 12.5pt;
 }
 
 .vpd-notes strong {
@@ -444,27 +558,25 @@
   gap: 10px;
   align-items: center;
   justify-content: center;
-  padding: 14px 16px;
+  padding: 16px 20px;
   text-align: center;
-  background: #fff;
+  background: #faf7f2;
   border-top: 1px solid #d8c9b3;
   border-bottom: 1px solid #d8c9b3;
-  border-left: none;
-  border-right: none;
-  min-width: 110px;
+  min-width: 130px;
   flex-shrink: 0;
 }
 
 .vpd-verify h4 {
-  margin: 0 0 9px;
+  margin: 0 0 8px;
   color: #7f7364;
-  font-size: 8pt;
+  font-size: 10pt;
   letter-spacing: 1.8px;
 }
 
 .vpd-verify .vpd-bilingual {
   color: #7f7364;
-  font-size: 8.3pt;
+  font-size: 10.5pt;
 }
 
 /* ── Signatures ── */
@@ -472,8 +584,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  margin-top: 8px;
-  margin-bottom: 12px;
+  margin-top: 10px;
+  margin-bottom: 14px;
   padding: 0;
 }
 
@@ -481,8 +593,8 @@
   background: #fff;
   border: 1px solid #d8c9b3;
   border-radius: 0;
-  min-height: 68px;
-  padding: 15px 18px;
+  min-height: 80px;
+  padding: 18px 22px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -496,12 +608,12 @@
   display: block;
   height: 1px;
   background: #17202f;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .vpd-sign-card strong {
   color: #7f7364;
-  font-size: 7.5pt;
+  font-size: 10.5pt;
   font-weight: 850;
   text-transform: uppercase;
 }
@@ -513,12 +625,12 @@
 
 .vpd-sign-card--stamp div {
   width: 100%;
-  padding: 12px 0;
+  padding: 14px 0;
   border: 1px dashed #d8c9b3;
   border-radius: 0;
   text-align: center;
   color: #7f7364;
-  font-size: 7.5pt;
+  font-size: 10.5pt;
   font-weight: 850;
 }
 
@@ -527,7 +639,7 @@
   margin: 16px 0 0;
   text-align: center;
   color: #7f7364;
-  font-size: 8pt;
+  font-size: 11pt;
   font-style: italic;
 }
 
@@ -535,13 +647,16 @@
 .vpd-creds-banner {
   display: block;
   width: 100%;
-  margin-top: 10px;
+  max-height: 68px;
+  margin-top: 8px;
   border-radius: 0;
   object-fit: contain;
 }
 
 /* ═══════════════════════════════════════════
-   PRINT MEDIA
+   PRINT MEDIA — element hiding + page setup only
+   (Layout/font overrides live in .vpd-print-mode below,
+    applied programmatically for both print and PDF export)
    ═══════════════════════════════════════════ */
 @media print {
   .app-sidebar,
@@ -560,7 +675,7 @@
 
   @page {
     size: A4;
-    margin: 8mm 6mm;
+    margin: 0;
   }
 
   * {
@@ -573,61 +688,124 @@
     padding: 0;
     background: #fff;
   }
+}
 
-  .vpd-wrap {
-    padding: 0;
-    background: #fff;
-    min-height: auto;
+/* ═══════════════════════════════════════════
+   PRINT MODE — A4 layout shared by browser print + PDF export
+   Added as class by JS before printing/capturing, removed after
+   ═══════════════════════════════════════════ */
+.vpd-print-mode {
+  padding: 0;
+  background: #fff;
+  min-height: auto;
+}
+
+.vpd-print-mode .vpd-doc {
+  width: 100%;
+  min-height: auto;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  font-size: 11pt;
+  line-height: 1.4;
+  display: block;   /* removes flex so margin-top:auto on footer has no effect */
+}
+
+.vpd-print-mode .vpd-doc__footer {
+  margin-top: 0;
+}
+
+/* Header */
+.vpd-print-mode .vpd-top         { margin-bottom: 6px; }
+.vpd-print-mode .vpd-company,
+.vpd-print-mode .vpd-title-panel { padding: 10px 14px; }
+.vpd-print-mode .vpd-qr-panel { padding: 10px 14px; }
+.vpd-print-mode .vpd-qr-panel svg { width: 54px !important; height: 54px !important; }
+.vpd-print-mode .vpd-qr-panel span { font-size: 6pt; }
+.vpd-print-mode .vpd-company__logo { width: 52px; height: 52px; }
+.vpd-print-mode .vpd-company__name { font-size: 14pt; }
+.vpd-print-mode .vpd-company__name .vpd-bilingual__en { font-size: 11pt; }
+.vpd-print-mode .vpd-company__details { font-size: 9.5pt; margin-top: 5px; }
+.vpd-print-mode .vpd-title       { font-size: 18pt; }
+.vpd-print-mode .vpd-title .vpd-bilingual__en { font-size: 11pt; }
+.vpd-print-mode .vpd-meta        { margin-top: 8px; gap: 8px; }
+.vpd-print-mode .vpd-meta__label { font-size: 9pt; }
+.vpd-print-mode .vpd-meta strong { font-size: 11pt; margin-top: 4px; }
+
+/* Info cards */
+.vpd-print-mode .vpd-cards       { gap: 0; margin-bottom: 6px; }
+.vpd-print-mode .vpd-info-card   { padding: 8px 10px; min-height: auto; }
+.vpd-print-mode .vpd-info-card--sm { padding: 5px 8px; column-gap: 8px; }
+.vpd-print-mode .vpd-info-card--sm .vpd-info-card__label { font-size: 7.5pt; }
+.vpd-print-mode .vpd-info-card--sm .vpd-info-card__value,
+.vpd-print-mode .vpd-info-card--sm .vpd-info-card__value--plain { font-size: 9.5pt; }
+.vpd-print-mode .vpd-info-card__line { font-size: 8pt; }
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-text { font-size: 9pt; margin-top: 4px; }
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-cause { font-size: 8.5pt; margin-top: 3px; }
+
+/* Sections */
+.vpd-print-mode .vpd-section     { margin-bottom: 6px; }
+.vpd-print-mode .vpd-section__header { padding: 7px 0 5px; font-size: 9pt; }
+.vpd-print-mode .vpd-desc-text   { padding: 0 0 8px; font-size: 10.5pt; line-height: 1.5; }
+.vpd-print-mode .vpd-desc-text--secondary { font-size: 10pt; }
+
+/* Item tables */
+.vpd-print-mode .vpd-table       { margin: 0 0 8px; }
+.vpd-print-mode .vpd-table th    { padding: 6px 7px; font-size: 9pt; }
+.vpd-print-mode .vpd-table td    { padding: 7px 7px; font-size: 10pt; }
+.vpd-print-mode .vpd-td--remark  { font-size: 9.5pt !important; padding: 4px 8px !important; }
+.vpd-print-mode .vpd-remark-label { font-size: 9pt; }
+
+/* Totals horizontal strip */
+.vpd-print-mode .vpd-bottom                           { margin-bottom: 6px; }
+.vpd-print-mode .vpd-totals-cell                      { flex: 1 1 120px; padding: 10px 8px; }
+.vpd-print-mode .vpd-totals-cell__label               { font-size: 7pt; margin-bottom: 6px; }
+.vpd-print-mode .vpd-totals-cell__value               { font-size: 10pt; }
+.vpd-print-mode .vpd-totals-cell--grand               { flex: 2 1 220px; padding: 12px 16px; gap: 14px; }
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label { font-size: 9pt; }
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note { font-size: 6pt; }
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value { font-size: 18pt; }
+
+/* Remarks + QR */
+.vpd-print-mode .vpd-remarks-qr-row { margin-bottom: 6px; }
+.vpd-print-mode .vpd-verify      { padding: 10px 14px; min-width: 100px; gap: 7px; }
+.vpd-print-mode .vpd-verify h4   { font-size: 8.5pt; margin-bottom: 5px; }
+.vpd-print-mode .vpd-verify .vpd-bilingual { font-size: 9pt; }
+.vpd-print-mode .vpd-notes       { padding: 8px 0; }
+.vpd-print-mode .vpd-notes p     { font-size: 10.5pt; gap: 10px; }
+
+/* Signatures */
+.vpd-print-mode .vpd-signatures  { margin-top: 6px; margin-bottom: 0; }
+.vpd-print-mode .vpd-sign-card   { min-height: 52px; padding: 10px 14px; }
+.vpd-print-mode .vpd-sign-card strong { font-size: 8.5pt; }
+.vpd-print-mode .vpd-sign-card--stamp div { font-size: 8.5pt; padding: 10px 0; }
+.vpd-print-mode .vpd-final-notice { margin: 0; font-size: 9pt; }
+.vpd-print-mode .vpd-creds-banner {
+  width: 100%;
+  height: 60px;
+  max-height: none;
+  margin-top: 0;
+  object-fit: fill;
+}
+
+/* Page-break rules (effective during browser print) */
+.vpd-print-mode .vpd-top,
+.vpd-print-mode .vpd-sign-card,
+.vpd-print-mode .vpd-remarks-qr-row {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.vpd-print-mode .vpd-table thead { display: table-header-group; }
+.vpd-print-mode .vpd-table tr    { break-inside: avoid; page-break-inside: avoid; }
+
+@media print {
+  .vpd-print-mode .vpd-section,
+  .vpd-print-mode .vpd-totals-box,
+  .vpd-print-mode .vpd-sign-card,
+  .vpd-print-mode .vpd-remarks-qr-row,
+  .vpd-print-mode .vpd-table tr {
+    break-inside: auto;
+    page-break-inside: auto;
   }
-
-  .vpd-doc {
-    width: 100%;
-    min-height: 285mm;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    font-size: 8.5pt;
-  }
-
-  .vpd-top       { margin-bottom: 5px; }
-  .vpd-company,
-  .vpd-title-panel { padding: 10px 14px; }
-  .vpd-company__logo { width: 52px; height: 52px; }
-  .vpd-company__name { font-size: 13pt; }
-  .vpd-title     { font-size: 15pt; }
-  .vpd-meta      { margin-top: 8px; gap: 8px; }
-
-  .vpd-cards     { gap: 0; margin-bottom: 5px; }
-  .vpd-info-card { padding: 7px 10px; min-height: auto; }
-
-  .vpd-section   { margin-bottom: 5px; }
-  .vpd-section__header { padding: 6px 0 5px; }
-  .vpd-desc-text { padding: 0 0 8px; }
-  .vpd-table     { margin: 0 0 7px; }
-  .vpd-table th  { padding: 5px 6px; font-size: 6.5pt; }
-  .vpd-table td  { padding: 6px 6px; font-size: 8pt; }
-
-  .vpd-bottom    { margin-bottom: 5px; }
-  .vpd-verify    { padding: 10px 12px; gap: 8px; min-width: 88px; }
-  .vpd-totals td { padding: 6px 4px; font-size: 8.5pt; }
-  .vpd-totals__grand td:last-child { font-size: 14pt; }
-  .vpd-notes     { padding: 7px 0; }
-  .vpd-remarks-qr-row { margin-bottom: 5px; }
-  .vpd-signatures { gap: 0; margin-top: 4px; }
-  .vpd-sign-card { min-height: 48px; padding: 8px 14px; }
-  .vpd-final-notice { margin: 6px 0 0; }
-
-  /* Page-break rules */
-  .vpd-top,
-  .vpd-info-card,
-  .vpd-verify,
-  .vpd-totals-box,
-  .vpd-sign-card,
-  .vpd-remarks-qr-row {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .vpd-table thead { display: table-header-group; }
-  .vpd-table tr { break-inside: avoid; page-break-inside: avoid; }
 }

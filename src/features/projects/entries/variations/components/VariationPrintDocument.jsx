@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { Fragment, forwardRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { formatMoney, formatDate } from "../../../../../utils/formatters";
@@ -102,14 +102,22 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
       value: consultantFees,
     }] : []),
     ...(discountAmt > 0 ? [
-      { ar: "المجموع قبل الخصم", en: "Total Before Discount", value: beforeDiscount, variant: "subtotal" },
+      { ar: "المجموع قبل الخصم", en: "Total Before Discount", value: beforeDiscount, variant: "subtotal", startsSummaryRow: true },
       {
         ar: `خصم${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}`,
         en: `Discount${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}`,
         value: discountAmt, sign: "neg",
       },
     ] : []),
-    { ar: "المبلغ الإجمالي", en: "Total Amount", value: finalAmount, variant: "grand" },
+    {
+      ar: "المبلغ الإجمالي",
+      en: "Total Amount",
+      noteAr: "بدون ضريبة القيمة المضافة",
+      noteEn: "Excluding VAT",
+      value: finalAmount,
+      variant: "grand",
+      startsSummaryRow: discountAmt <= 0,
+    },
   ];
 
   return (
@@ -154,11 +162,17 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               </div>
             </div>
           </div>
+
+          <div className="vpd-qr-panel">
+            <QRCodeSVG value={qrData} size={72} level="M" includeMargin={false} />
+            <span>SCAN TO VERIFY</span>
+          </div>
         </header>
 
         {/* ── INFO CARDS ── */}
         <section className="vpd-cards">
-          <div className="vpd-info-card vpd-info-card--span2">
+          {/* Row 1: Project Name | Project No | Description */}
+          <div className="vpd-info-card vpd-info-card--sm">
             <BilingualText ar="اسم المشروع" en="PROJECT NAME" className="vpd-info-card__label" />
             <BilingualText ar={projectNameAr} en={projectNameEn} className="vpd-info-card__value" />
             {getProjectLocation() && (
@@ -168,14 +182,30 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             )}
           </div>
 
-          <div className="vpd-info-card">
+          <div className="vpd-info-card vpd-info-card--sm">
             <BilingualText ar="رقم المشروع" en="PROJECT NO." className="vpd-info-card__label" />
             <span className="vpd-info-card__value vpd-info-card__value--plain">
               {getProjectNumber() || EMPTY}
             </span>
           </div>
 
-          <div className="vpd-info-card">
+          <div className="vpd-info-card vpd-info-card--sm vpd-info-card--desc">
+            <BilingualText ar="وصف التغيير" en="VARIATION DESCRIPTION" className="vpd-info-card__label" />
+            {data.variation_description && (
+              <p className="vpd-info-card__desc-text">{data.variation_description}</p>
+            )}
+            {data.variation_cause && data.variation_cause !== data.variation_description && (
+              <p className="vpd-info-card__desc-cause">
+                <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {data.variation_cause}
+              </p>
+            )}
+            {!data.variation_description && !data.variation_cause && (
+              <span className="vpd-info-card__value vpd-info-card__value--plain">{EMPTY}</span>
+            )}
+          </div>
+
+          {/* Row 2+: Ref No, optional fields */}
+          <div className="vpd-info-card vpd-info-card--sm">
             <BilingualText ar="رقم المرجع" en="REFERENCE NO." className="vpd-info-card__label" />
             <span className="vpd-info-card__value vpd-info-card__value--plain">
               {data.reference_no || variation?.variation_number || EMPTY}
@@ -183,7 +213,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           </div>
 
           {data.first_variation_date && (
-            <div className="vpd-info-card">
+            <div className="vpd-info-card vpd-info-card--sm">
               <BilingualText ar="تاريخ أول تغيير" en="FIRST VAR. DATE" className="vpd-info-card__label" />
               <span className="vpd-info-card__value vpd-info-card__value--plain">
                 {formatDate(data.first_variation_date)}
@@ -192,7 +222,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           )}
 
           {data.trade_discipline && (
-            <div className="vpd-info-card">
+            <div className="vpd-info-card vpd-info-card--sm">
               <BilingualText ar="التخصص" en="TRADE / DISCIPLINE" className="vpd-info-card__label" />
               <span className="vpd-info-card__value vpd-info-card__value--plain">
                 {data.trade_discipline}
@@ -201,7 +231,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           )}
 
           {data.additional_time && (
-            <div className="vpd-info-card">
+            <div className="vpd-info-card vpd-info-card--sm">
               <BilingualText ar="وقت إضافي" en="ADDITIONAL TIME" className="vpd-info-card__label" />
               <span className="vpd-info-card__value vpd-info-card__value--plain">
                 {data.additional_time}
@@ -209,23 +239,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           )}
         </section>
-
-        {/* ── DESCRIPTION ── */}
-        {(data.variation_description || data.variation_cause) && (
-          <section className="vpd-section vpd-section--desc">
-            <div className="vpd-section__header">
-              <BilingualText ar="وصف التغيير" en="VARIATION DESCRIPTION" />
-            </div>
-            {data.variation_description && (
-              <p className="vpd-desc-text">{data.variation_description}</p>
-            )}
-            {data.variation_cause && data.variation_cause !== data.variation_description && (
-              <p className="vpd-desc-text vpd-desc-text--secondary">
-                <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {data.variation_cause}
-              </p>
-            )}
-          </section>
-        )}
 
         {/* ── OMITTED ITEMS ── */}
         {omittedItems.length > 0 && (
@@ -247,8 +260,8 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               </thead>
               <tbody>
                 {omittedItems.map((item, i) => (
-                  <>
-                    <tr key={i}>
+                  <Fragment key={`omitted-${item.id || i}`}>
+                    <tr>
                       <td>{String(i + 1).padStart(2, "0")}</td>
                       <td className="vpd-td--desc">{item.description || EMPTY}</td>
                       <td>{item.qty || EMPTY}</td>
@@ -257,7 +270,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td><Amount value={item.amount || 0} /></td>
                     </tr>
                     {item.remarks?.trim() && (
-                      <tr key={`r-${i}`} className="vpd-item-remark-row">
+                      <tr className="vpd-item-remark-row">
                         <td />
                         <td colSpan={5} className="vpd-td--remark">
                           <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
@@ -265,7 +278,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -292,8 +305,8 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               </thead>
               <tbody>
                 {addedItems.map((item, i) => (
-                  <>
-                    <tr key={i}>
+                  <Fragment key={`added-${item.id || i}`}>
+                    <tr>
                       <td>{String(i + 1).padStart(2, "0")}</td>
                       <td className="vpd-td--desc">{item.description || EMPTY}</td>
                       <td>{item.qty || EMPTY}</td>
@@ -302,7 +315,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td><Amount value={item.amount || 0} /></td>
                     </tr>
                     {item.remarks?.trim() && (
-                      <tr key={`r-${i}`} className="vpd-item-remark-row">
+                      <tr className="vpd-item-remark-row">
                         <td />
                         <td colSpan={5} className="vpd-td--remark">
                           <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
@@ -310,7 +323,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -323,51 +336,47 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           {/* Totals */}
           <section className="vpd-bottom">
             <div className="vpd-totals-box">
-              <table className="vpd-totals">
-                <tbody>
-                  {totalsRows.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={
-                        row.variant === "grand"    ? "vpd-totals__grand"    :
-                        row.variant === "highlight" ? "vpd-totals__highlight" :
-                        row.variant === "subtotal"  ? "vpd-totals__subtotal"  : ""
-                      }
-                    >
-                      <td><BilingualText ar={row.ar} en={row.en} /></td>
-                      <td>
-                        <span className={
-                          row.sign === "neg" ? "vpd-amt--neg" :
-                          row.sign === "pos" ? "vpd-amt--pos" : ""
-                        }>
-                          <Amount value={row.value} />
+              {totalsRows.map((row, i) => (
+                <Fragment key={i}>
+                  {row.startsSummaryRow ? <span key={`break-${i}`} className="vpd-totals-row-break" /> : null}
+                  <div
+                    className={[
+                      "vpd-totals-cell",
+                      row.variant === "grand"     ? "vpd-totals-cell--grand"     : "",
+                      row.variant === "highlight" ? "vpd-totals-cell--highlight" : "",
+                      row.variant === "subtotal"  ? "vpd-totals-cell--subtotal"  : "",
+                    ].filter(Boolean).join(" ")}
+                  >
+                    <span className="vpd-totals-cell__label">
+                      <BilingualText ar={row.ar} en={row.en} />
+                      {row.noteAr || row.noteEn ? (
+                        <span className="vpd-totals-cell__note">
+                          <BilingualText ar={row.noteAr} en={row.noteEn} />
                         </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      ) : null}
+                    </span>
+                    <span className={[
+                      "vpd-totals-cell__value",
+                      row.sign === "neg" ? "vpd-amt--neg" : "",
+                      row.sign === "pos" ? "vpd-amt--pos" : "",
+                    ].filter(Boolean).join(" ")}>
+                      <Amount value={row.value} />
+                    </span>
+                  </div>
+                </Fragment>
+              ))}
             </div>
           </section>
 
-          {/* Remarks + QR in one row */}
-          <div className="vpd-remarks-qr-row">
-            {data.remarks ? (
-              <section className="vpd-notes vpd-notes--flex">
-                <p>
-                  <strong><BilingualText ar="ملاحظات" en="Remarks" /></strong>
-                  <span>{data.remarks}</span>
-                </p>
-              </section>
-            ) : <div className="vpd-remarks-qr-row__spacer" />}
-            <div className="vpd-verify">
-              <QRCodeSVG value={qrData} size={64} level="M" includeMargin={false} />
-              <div>
-                <h4>SCAN TO VERIFY</h4>
-                <BilingualText ar="مستند إلكتروني معتمد" en="Verified Document" />
-              </div>
-            </div>
-          </div>
+          {/* Remarks */}
+          {data.remarks && (
+            <section className="vpd-notes">
+              <p>
+                <strong><BilingualText ar="ملاحظات" en="Remarks" /></strong>
+                <span>{data.remarks}</span>
+              </p>
+            </section>
+          )}
 
           {/* Signatures */}
           <section className="vpd-signatures">

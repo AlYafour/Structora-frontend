@@ -636,7 +636,7 @@
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 
-  @page { size: A4 portrait; margin: 8mm 6mm; orphans: 3; widows: 3; }
+  @page { size: A4 portrait; margin: 0; orphans: 3; widows: 3; }
 
   html, body {
     background: #fff; margin: 0; padding: 0;

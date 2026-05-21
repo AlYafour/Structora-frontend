@@ -6,7 +6,7 @@
   "description": "Project Management Frontend - Production Ready",
   "scripts": {
     "dev": "vite",
-    "build": "node -e \"console.log('VITE_API_URL present:', !!process.env.VITE_API_URL)\" && vite build",
+    "build": "vite build",
     "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "test": "vitest",

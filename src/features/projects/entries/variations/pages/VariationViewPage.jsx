@@ -23,6 +23,9 @@ import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilename
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
+const PRINT_A4_WIDTH_PX = 794;
+const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
+
 export default function VariationViewPage() {
   const { variationId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,6 +44,7 @@ export default function VariationViewPage() {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const printPreviewTimerRef = useRef(null);
+  const printLayoutCleanupRef = useRef(null);
 
   useEffect(() => {
     return () => clearTimeout(printPreviewTimerRef.current);
@@ -100,6 +104,29 @@ export default function VariationViewPage() {
   const permissions = calculatePermissions(variation, user);
   const isRejected = checkRejected(variation);
 
+  const preparePrintDocumentLayout = async (el) => {
+    const footer = el?.querySelector('.vpd-doc__footer');
+    const prevWidth = el?.style.width || "";
+    const prevFooterMarginTop = footer?.style.marginTop || "";
+
+    el.classList.add('vpd-print-mode');
+    el.style.width = `${PRINT_A4_WIDTH_PX}px`;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    if (footer) {
+      const remainder = el.scrollHeight % PRINT_A4_HEIGHT_PX;
+      const footerOffset = remainder === 0 ? 0 : PRINT_A4_HEIGHT_PX - remainder;
+      footer.style.marginTop = `${footerOffset}px`;
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+
+    return () => {
+      el.classList.remove('vpd-print-mode');
+      el.style.width = prevWidth;
+      if (footer) footer.style.marginTop = prevFooterMarginTop;
+    };
+  };
+
   // Professional Print Handler using react-to-print v3
   const handlePrint = useReactToPrint({
     contentRef: printDocumentRef,
@@ -107,7 +134,7 @@ export default function VariationViewPage() {
     pageStyle: `
       @page {
         size: A4 portrait;
-        margin: 8mm 6mm;
+        margin: 0;
       }
       @media print {
         body {
@@ -116,6 +143,14 @@ export default function VariationViewPage() {
         }
       }
     `,
+    onBeforePrint: async () => {
+      if (!printDocumentRef.current) return;
+      printLayoutCleanupRef.current = await preparePrintDocumentLayout(printDocumentRef.current);
+    },
+    onAfterPrint: () => {
+      printLayoutCleanupRef.current?.();
+      printLayoutCleanupRef.current = null;
+    },
   });
 
   // Print Preview handlers
@@ -135,12 +170,15 @@ export default function VariationViewPage() {
       return;
     }
     setPdfLoading(true);
+    let cleanupPrintLayout = null;
     try {
       success(t("generating_pdf"));
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
       const el = printDocumentRef.current;
+      cleanupPrintLayout = await preparePrintDocumentLayout(el);
+
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
@@ -148,7 +186,7 @@ export default function VariationViewPage() {
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        windowWidth: el.scrollWidth,
+        windowWidth: 794,
         windowHeight: el.scrollHeight,
         width: el.scrollWidth,
         height: el.scrollHeight,
@@ -157,15 +195,17 @@ export default function VariationViewPage() {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 14;
-      const contentW = pageW - 2 * margin;
-      const contentH = pageH - 2 * margin;
+      const margin = 0;
+      const contentW = pageW;
+      const contentH = pageH;
       const scale = contentW / canvas.width;
       const totalH = canvas.height * scale;
       const pages = Math.ceil(totalH / contentH);
 
       for (let i = 0; i < pages; i++) {
         if (i > 0) pdf.addPage();
+        pdf.setFillColor(251, 248, 242);
+        pdf.rect(0, 0, pageW, pageH, 'F');
         const srcY = Math.round((i * contentH) / scale);
         const srcH = Math.min(Math.round(contentH / scale), canvas.height - srcY);
         const slice = document.createElement('canvas');
@@ -181,6 +221,7 @@ export default function VariationViewPage() {
       logger.error("Error generating PDF", error);
       showError(t("pdf_export_error"));
     } finally {
+      cleanupPrintLayout?.();
       setPdfLoading(false);
     }
   };

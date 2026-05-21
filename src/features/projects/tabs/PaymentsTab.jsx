@@ -18,6 +18,7 @@ import AdvancePaymentMonitor from "../entries/payments/pages/components/AdvanceP
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
+import DownloadAllButton from "../../../components/common/DownloadAllButton";
 import "./PaymentsTab.css";
 import useTableSelection from '../hooks/useTableSelection';
 import BulkActionsBar from '../../../components/common/BulkActionsBar';
@@ -405,33 +406,11 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
               {t("download_pdf", "Download PDF")}
             </button>
           )}
-          {displayedPayments.length > 0 && (
-            <button
-              onClick={handleDownloadZip}
-              disabled={zipLoading}
-              style={{
-                padding: '6px 14px', borderRadius: '6px',
-                border: zipLoading ? '1.5px solid #d1d5db' : '1.5px solid #6366f1',
-                background: zipLoading ? 'transparent' : '#f5f3ff',
-                color: zipLoading ? '#9ca3af' : '#4f46e5',
-                fontWeight: 600, fontSize: '0.82rem',
-                cursor: zipLoading ? 'not-allowed' : 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'all 0.15s',
-              }}
-            >
-              {zipLoading ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}>
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                  <path d="M7 10l5 5 5-5" /><path d="M12 15V3" />
-                </svg>
-              )}
-              {zipLoading ? t("generating_zip", "Generating…") : t("download_payments_zip", "Download All PDFs")}
-            </button>
-          )}
+          <DownloadAllButton
+            onClick={handleDownloadZip}
+            loading={zipLoading}
+            count={displayedPayments.length}
+          />
         </div>
       </div>
       {/* Advance Payment Monitor */}

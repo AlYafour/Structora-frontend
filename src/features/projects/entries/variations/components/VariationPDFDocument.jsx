@@ -1,936 +1,359 @@
-import React from "react";
-import {
-  Document, Page, Text, View, StyleSheet, Image, Font,
-} from "@react-pdf/renderer";
+/**
+ * VariationPDFDocument — @react-pdf/renderer component.
+ * Design matches VariationPrintDocument.jsx (.vpd-* CSS) exactly.
+ */
+import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import { formatMoney, formatDate } from "../../../../../utils/formatters";
+import { registerPDFFonts } from "../../../../../components/pdf/registerFonts";
 
-/* ═══════════════════════════════════════════════════════════════
-   FONT REGISTRATION
-   Cairo supports Arabic + Latin in one file.
-   We load from /public/fonts/ (Vite serves public/* at root).
-════════════════════════════════════════════════════════════════ */
+registerPDFFonts();
+
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+const EMPTY = "—";
 
-Font.register({
-  family: "Cairo",
-  fonts: [
-    { src: `${ORIGIN}/fonts/Cairo-Regular.ttf`, fontWeight: 400 },
-    { src: `${ORIGIN}/fonts/Cairo-Bold.ttf`,    fontWeight: 700 },
-  ],
-});
-Font.registerHyphenationCallback((w) => [w]);
-
-/* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS
-════════════════════════════════════════════════════════════════ */
-const T = {
-  black:     "#0A0A0A",
-  navy:      "#0B1629",
-  gold:      "#B8960C",
-  goldLight: "#F5E9C0",
-  white:     "#FFFFFF",
-  offWhite:  "#F8F7F4",
-  gray1:     "#1A1A1A",
-  gray3:     "#444444",
-  gray5:     "#888888",
-  gray7:     "#BBBBBB",
-  gray9:     "#EEEEEE",
-  border:    "#D4D0C8",
-  negRed:    "#7B0000",
-  negLight:  "#FFF0F0",
-  posGreen:  "#004D1A",
-  posLight:  "#F0FFF4",
-  headerBg:  "#0B1629",
-  rowAlt:    "#F8F7F4",
+const C = {
+  bg:       "#fbf8f2",
+  white:    "#ffffff",
+  border:   "#d8c9b3",
+  primary:  "#17202f",
+  secondary:"#7f7364",
+  tableHdr: "#f0eadf",
+  offWhite: "#faf7f2",
+  grandBg:  "#17202f",
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   STYLES
-════════════════════════════════════════════════════════════════ */
 const S = StyleSheet.create({
-  /* Page */
   page: {
-    fontFamily: "Cairo",
-    fontSize: 9,
-    color: T.gray1,
-    backgroundColor: T.white,
-    paddingTop: 52,
-    paddingBottom: 52,
-    paddingLeft: 40,
-    paddingRight: 40,
+    fontFamily: "Cairo", fontSize: 9, color: C.primary,
+    backgroundColor: C.bg, paddingTop: 12, paddingBottom: 12,
+    paddingLeft: 14, paddingRight: 14,
   },
 
-  /* ── Running header (fixed) ── */
-  runningHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    backgroundColor: T.navy,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 40,
-    justifyContent: "space-between",
+  /* Header */
+  topRow: {
+    flexDirection: "row", borderTopWidth: 1, borderBottomWidth: 1,
+    borderTopColor: C.border, borderBottomColor: C.border,
+    borderTopStyle: "solid", borderBottomStyle: "solid",
+    backgroundColor: C.white, marginBottom: 8, minHeight: 72,
   },
-  runningHeaderText: {
-    fontFamily: "Cairo",
-    fontSize: 7.5,
-    color: "rgba(255,255,255,0.55)",
-    fontWeight: 400,
+  companyPanel: {
+    flex: 1.35, flexDirection: "row", alignItems: "center", gap: 10,
+    padding: "10 14", borderRightWidth: 1, borderRightColor: C.border, borderRightStyle: "solid",
   },
-  runningHeaderBrand: {
-    fontFamily: "Cairo",
-    fontSize: 8,
-    fontWeight: 700,
-    color: T.gold,
-  },
+  logoBox: { width: 52, height: 52, objectFit: "contain", flexShrink: 0 },
+  companyBody: { flex: 1 },
+  companyNameAr: { fontFamily: "Cairo", fontSize: 14, fontWeight: 700, color: C.primary },
+  companyNameEn: { fontFamily: "Cairo", fontSize: 10, fontWeight: 400, color: C.secondary, marginTop: 1 },
+  companyDetails: { flexDirection: "row", flexWrap: "wrap", gap: 3, marginTop: 5 },
+  companyDetail: { fontFamily: "Cairo", fontSize: 7.5, color: C.secondary },
 
-  /* ── Running footer (fixed) ── */
-  runningFooter: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: T.offWhite,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-    borderTopStyle: "solid",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 40,
-    justifyContent: "space-between",
-  },
-  runningFooterText: {
-    fontFamily: "Cairo",
-    fontSize: 7.5,
-    color: T.gray5,
-  },
-  runningFooterPage: {
-    fontFamily: "Cairo",
-    fontSize: 7.5,
-    color: T.gray5,
-  },
+  titlePanel: { flex: 0.85, padding: "10 14", justifyContent: "center" },
+  docTitleAr: { fontFamily: "Cairo", fontSize: 18, fontWeight: 700, color: C.primary },
+  docTitleEn: { fontFamily: "Cairo", fontSize: 11, fontWeight: 400, color: C.secondary, textTransform: "uppercase", marginTop: 1 },
+  metaGrid: { flexDirection: "row", gap: 14, marginTop: 8 },
+  metaLabel: { fontFamily: "Cairo", fontSize: 8, fontWeight: 700, color: C.secondary, textTransform: "uppercase" },
+  metaValue: { fontFamily: "Cairo", fontSize: 11, fontWeight: 700, color: C.primary, marginTop: 3 },
 
-  /* ── Document header (logo / company / doc type) ── */
-  docHeader: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "solid",
-    borderRadius: 2,
-    overflow: "hidden",
+  qrPanel: {
+    width: 80, alignItems: "center", justifyContent: "center", gap: 5,
+    padding: "10 12", borderLeftWidth: 1, borderLeftColor: C.border,
+    borderLeftStyle: "solid", backgroundColor: C.offWhite,
   },
-  /* Gold left accent bar */
-  docHeaderAccent: {
-    width: 4,
-    backgroundColor: T.gold,
-  },
-  docHeaderLogo: {
-    width: 64,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.offWhite,
-    borderRightWidth: 1,
-    borderRightColor: T.border,
-    borderRightStyle: "solid",
-  },
-  logoImg: { width: 48, height: 48, objectFit: "contain" },
-  docHeaderCenter: {
-    flex: 1,
-    padding: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  /* Bilingual company name: Arabic right, English left */
-  companyNameRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "baseline",
-    gap: 8,
-    marginBottom: 2,
-  },
-  companyNameAr: {
-    fontFamily: "Cairo",
-    fontSize: 13,
-    fontWeight: 700,
-    color: T.black,
-  },
-  companyNameEn: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    fontWeight: 400,
-    color: T.gray3,
-  },
-  docHeaderRight: {
-    width: 100,
-    borderLeftWidth: 1,
-    borderLeftColor: T.border,
-    borderLeftStyle: "solid",
-    backgroundColor: T.navy,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  docTypeLabelAr: {
-    fontFamily: "Cairo",
-    fontSize: 11,
-    fontWeight: 700,
-    color: T.gold,
-    textAlign: "center",
-    marginBottom: 2,
-  },
-  docTypeLabelEn: {
-    fontFamily: "Cairo",
-    fontSize: 7,
-    fontWeight: 400,
-    color: "rgba(255,255,255,0.6)",
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  docDate: {
-    fontFamily: "Cairo",
-    fontSize: 8,
-    color: T.white,
-    textAlign: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: 2,
-  },
+  qrImage: { width: 52, height: 52 },
+  qrLabel: { fontFamily: "Cairo", fontSize: 5.5, fontWeight: 700, color: C.secondary, textTransform: "uppercase", textAlign: "center", letterSpacing: 1 },
 
-  /* ── Section ── */
-  section: { marginBottom: 14 },
+  /* Info cards */
+  cardsRow: { flexDirection: "row", gap: 0, marginBottom: 8 },
+  card: {
+    flex: 1, backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+    borderStyle: "solid", padding: "6 8", flexDirection: "row",
+    flexWrap: "wrap", alignItems: "center", gap: 6,
+  },
+  cardLabel: { fontFamily: "Cairo", fontSize: 7, fontWeight: 700, color: C.secondary, textTransform: "uppercase", flexShrink: 0 },
+  cardValue: { fontFamily: "Cairo", fontSize: 9.5, fontWeight: 700, color: C.primary, flex: 1 },
+  cardValueSub: { fontFamily: "Cairo", fontSize: 7.5, color: C.secondary, flex: "0 0 100%", marginTop: 1 },
+  cardDescCol: {
+    flex: 2, flexDirection: "column", backgroundColor: C.white,
+    borderWidth: 1, borderColor: C.border, borderStyle: "solid", padding: "6 8",
+  },
+  cardDescLabel: { fontFamily: "Cairo", fontSize: 7, fontWeight: 700, color: C.secondary, textTransform: "uppercase", marginBottom: 4 },
+  cardDescText: { fontFamily: "Cairo", fontSize: 8.5, color: C.primary, lineHeight: 1.4 },
+  cardDescCause: { fontFamily: "Cairo", fontSize: 8, color: C.secondary, marginTop: 3 },
 
-  /* Bilingual section title */
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    borderBottomWidth: 1.5,
-    borderBottomColor: T.navy,
-    borderBottomStyle: "solid",
-    paddingBottom: 4,
+  /* Section */
+  section: {
+    backgroundColor: C.white, borderTopWidth: 1, borderBottomWidth: 1,
+    borderTopColor: C.border, borderBottomColor: C.border,
+    borderTopStyle: "solid", borderBottomStyle: "solid", marginBottom: 8,
   },
-  sectionTitleAr: {
-    fontFamily: "Cairo",
-    fontSize: 10,
-    fontWeight: 700,
-    color: T.navy,
-    flex: 1,
-    textAlign: "right",
+  sectionHeader: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: C.border, borderBottomStyle: "solid",
   },
-  sectionTitleSep: {
-    width: 1,
-    height: 12,
-    backgroundColor: T.gold,
-    marginHorizontal: 8,
-  },
-  sectionTitleEn: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    fontWeight: 700,
-    color: T.gray3,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    flex: 1,
-    textAlign: "left",
-  },
+  sectionLabel: { fontFamily: "Cairo", fontSize: 8.5, fontWeight: 700, color: C.secondary, textTransform: "uppercase" },
+  sectionCount: { fontFamily: "Cairo", fontSize: 7, color: C.secondary },
 
-  /* ── Info grid (bilingual key–value pairs) ── */
-  infoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "solid",
-    marginBottom: 8,
-  },
-  infoCell: {
-    width: "33.33%",
-    borderRightWidth: 0.5,
-    borderRightColor: T.border,
-    borderRightStyle: "solid",
-    borderBottomWidth: 0.5,
-    borderBottomColor: T.border,
-    borderBottomStyle: "solid",
-    padding: 7,
-  },
-  infoCellWide: {
-    width: "50%",
-    borderRightWidth: 0.5,
-    borderRightColor: T.border,
-    borderRightStyle: "solid",
-    borderBottomWidth: 0.5,
-    borderBottomColor: T.border,
-    borderBottomStyle: "solid",
-    padding: 7,
-  },
-  infoCellFull: {
-    width: "100%",
-    borderBottomWidth: 0.5,
-    borderBottomColor: T.border,
-    borderBottomStyle: "solid",
-    padding: 7,
-  },
-  /* Inside each cell: English label top-left, Arabic label top-right */
-  infoCellLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 3,
-  },
-  infoCellLabelEn: {
-    fontFamily: "Cairo",
-    fontSize: 6.5,
-    fontWeight: 700,
-    color: T.gray5,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  infoCellLabelAr: {
-    fontFamily: "Cairo",
-    fontSize: 7,
-    fontWeight: 700,
-    color: T.gray5,
-  },
-  infoCellValue: {
-    fontFamily: "Cairo",
-    fontSize: 9,
-    color: T.gray1,
-    fontWeight: 400,
-    textAlign: "right",
-  },
-  infoCellValueMono: {
-    fontFamily: "Cairo",
-    fontSize: 9,
-    color: T.navy,
-    fontWeight: 700,
-    textAlign: "left",
-  },
-
-  /* ── Items Table ── */
-  table: {
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "solid",
-    marginBottom: 4,
-  },
-  /* Table header row — navy background */
-  tableHeaderRow: {
-    flexDirection: "row",
-    backgroundColor: T.headerBg,
-    borderBottomWidth: 1,
-    borderBottomColor: T.gold,
-    borderBottomStyle: "solid",
-  },
-  /* Bilingual column header */
-  thCell: {
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thAr: {
-    fontFamily: "Cairo",
-    fontSize: 7.5,
-    fontWeight: 700,
-    color: T.white,
-    textAlign: "center",
-  },
-  thEn: {
-    fontFamily: "Cairo",
-    fontSize: 6,
-    fontWeight: 400,
-    color: "rgba(255,255,255,0.5)",
-    textAlign: "center",
-    textTransform: "uppercase",
-  },
-  /* Data row */
+  /* Table */
+  tableHdrRow: { flexDirection: "row", backgroundColor: C.tableHdr },
+  thCell: { paddingVertical: 6, paddingHorizontal: 5, alignItems: "center", justifyContent: "center" },
+  thText: { fontFamily: "Cairo", fontSize: 7.5, fontWeight: 700, color: C.primary, textAlign: "center" },
   tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: T.border,
-    borderBottomStyle: "solid",
-    minHeight: 22,
+    flexDirection: "row", borderBottomWidth: 1,
+    borderBottomColor: C.border, borderBottomStyle: "solid", minHeight: 24,
   },
-  tableRowAlt: { backgroundColor: T.rowAlt },
-  /* Data cell */
-  tdCell: {
-    paddingVertical: 5,
-    paddingHorizontal: 5,
-    justifyContent: "center",
-  },
-  tdText: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    color: T.gray1,
-    textAlign: "right",
-  },
-  tdTextCenter: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    color: T.gray1,
-    textAlign: "center",
-  },
-  tdTextLeft: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    color: T.gray1,
-    textAlign: "left",
-  },
-  tdMono: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    color: T.gray1,
-    textAlign: "right",
-  },
-  /* Amount cell colored */
-  tdAmountNeg: { color: T.negRed, fontWeight: 700, fontFamily: "Cairo", fontSize: 8.5, textAlign: "right" },
-  tdAmountPos: { color: T.posGreen, fontWeight: 700, fontFamily: "Cairo", fontSize: 8.5, textAlign: "right" },
-  /* Footer row */
-  tableFooterRow: {
-    flexDirection: "row",
-    borderTopWidth: 1.5,
-    borderTopColor: T.navy,
-    borderTopStyle: "solid",
-    backgroundColor: T.offWhite,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-  },
-  tableFooterLabel: {
-    flex: 1,
-    fontFamily: "Cairo",
-    fontSize: 9,
-    fontWeight: 700,
-    color: T.navy,
-    textAlign: "right",
-  },
-  tableFooterValue: {
-    width: 90,
-    fontFamily: "Cairo",
-    fontSize: 9,
-    fontWeight: 700,
-    textAlign: "right",
-  },
+  tdCell: { paddingVertical: 6, paddingHorizontal: 5, justifyContent: "center" },
+  tdMuted:  { fontFamily: "Cairo", fontSize: 8,   color: C.secondary, textAlign: "center" },
+  tdLeft:   { fontFamily: "Cairo", fontSize: 9,   color: C.primary,   fontWeight: 700 },
+  tdCenter: { fontFamily: "Cairo", fontSize: 9,   color: C.primary,   textAlign: "center" },
+  tdRight:  { fontFamily: "Cairo", fontSize: 9,   color: C.primary,   fontWeight: 700, textAlign: "right" },
 
-  /* Column widths */
-  colDesc:   { flex: 4 },
-  colQty:    { width: 36 },
-  colUnit:   { width: 30 },
-  colRate:   { width: 68 },
-  colOHP:    { width: 36 },
-  colAmount: { width: 80 },
+  /* Totals strip */
+  totalsBox: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
+  totalsCell: {
+    flex: 1, backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+    borderStyle: "solid", alignItems: "center", justifyContent: "center",
+    padding: "10 8", minWidth: 80,
+  },
+  totalsCellHighlight: { backgroundColor: C.tableHdr },
+  totalsCellSubtotal:  { backgroundColor: C.offWhite },
+  totalsCellLabel: { fontFamily: "Cairo", fontSize: 7, fontWeight: 700, color: C.secondary, textTransform: "uppercase", textAlign: "center", marginBottom: 6 },
+  totalsCellValue: { fontFamily: "Cairo", fontSize: 10, fontWeight: 700, color: C.primary, textAlign: "center" },
+  grandCell: {
+    flex: "0 0 100%", flexDirection: "row", backgroundColor: C.grandBg,
+    alignItems: "center", justifyContent: "center", gap: 16,
+    padding: "12 16", borderWidth: 1, borderColor: C.grandBg, borderStyle: "solid",
+  },
+  grandLabel: { fontFamily: "Cairo", fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", textAlign: "center" },
+  grandValue: { fontFamily: "Cairo", fontSize: 18, fontWeight: 700, color: "#ffffff" },
 
-  /* ── Financial Summary ── */
-  summaryTable: {
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "solid",
+  /* Signatures */
+  sigRow: { flexDirection: "row", marginBottom: 8 },
+  sigCard: {
+    flex: 1, backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+    borderStyle: "solid", padding: "10 12", minHeight: 52, justifyContent: "flex-end",
   },
-  summaryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: T.border,
-    borderBottomStyle: "solid",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  summaryRowAlt: { backgroundColor: T.rowAlt },
-  summaryRowBold: { backgroundColor: T.offWhite },
-  summaryRowNegLight: { backgroundColor: T.negLight },
-  summaryRowPosLight: { backgroundColor: T.posLight },
-  /* Bilingual label */
-  summaryLabelWrap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 6 },
-  summaryLabelEn: { fontFamily: "Cairo", fontSize: 7.5, color: T.gray5 },
-  summaryLabelSep: { fontSize: 8, color: T.gray7 },
-  summaryLabelAr: { fontFamily: "Cairo", fontSize: 8.5, color: T.gray1, textAlign: "right" },
-  summaryLabelArBold: { fontFamily: "Cairo", fontSize: 9, fontWeight: 700, color: T.navy, textAlign: "right" },
-  summaryValue: {
-    width: 110,
-    fontFamily: "Cairo",
-    fontSize: 9,
-    textAlign: "right",
-    color: T.gray1,
-  },
-  summaryValueBold: { fontWeight: 700, color: T.navy },
-  summaryValueNeg: { color: T.negRed, fontWeight: 700 },
-  summaryValuePos: { color: T.posGreen, fontWeight: 700 },
-  /* Final row */
-  summaryFinalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.navy,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
-  summaryFinalLabelWrap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
-  summaryFinalLabelEn: { fontFamily: "Cairo", fontSize: 8, color: "rgba(255,255,255,0.55)" },
-  summaryFinalLabelAr: { fontFamily: "Cairo", fontSize: 11, fontWeight: 700, color: T.white },
-  summaryFinalValue: {
-    width: 120,
-    fontFamily: "Cairo",
-    fontSize: 13,
-    fontWeight: 700,
-    color: T.gold,
-    textAlign: "right",
-  },
+  sigCardStamp: { alignItems: "center", justifyContent: "center" },
+  sigLine: { height: 1, backgroundColor: C.primary, marginBottom: 8 },
+  sigLabel: { fontFamily: "Cairo", fontSize: 7.5, fontWeight: 700, color: C.secondary, textAlign: "center", textTransform: "uppercase" },
+  stampBox: { borderWidth: 1, borderColor: C.border, borderStyle: "dashed", paddingVertical: 10, paddingHorizontal: 8, width: "100%", alignItems: "center" },
 
-  /* ── Remarks box ── */
-  remarksBox: {
-    fontFamily: "Cairo",
-    fontSize: 8.5,
-    color: T.gray3,
-    lineHeight: 1.6,
-    padding: 10,
-    backgroundColor: T.offWhite,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "solid",
-    textAlign: "right",
-  },
-
-  /* ── Gold divider ── */
-  goldLine: {
-    height: 1.5,
-    backgroundColor: T.gold,
-    marginBottom: 4,
-    opacity: 0.35,
-  },
+  /* Footer */
+  notice: { textAlign: "center", fontFamily: "Cairo", fontSize: 7, color: C.secondary, marginTop: 6, marginBottom: 2 },
+  noticeSub: { textAlign: "center", fontFamily: "Cairo", fontSize: 6, color: C.secondary, marginBottom: 4 },
+  credsBanner: { width: "100%", marginTop: 4 },
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   HELPER COMPONENTS
-════════════════════════════════════════════════════════════════ */
+const n = (v) => parseFloat(v || 0) || 0;
+const fmt = (v) => formatMoney(v ?? 0, { lang: "en" });
+const fmtDate = (v) => (v ? (formatDate(v, "en") || String(v)) : null) || EMPTY;
+const safe = (v) => (v !== null && v !== undefined && v !== "") ? String(v) : EMPTY;
 
-/** Bilingual section title */
-const SectionTitle = ({ ar, en }) => (
-  <View style={S.sectionTitleRow}>
-    <Text style={S.sectionTitleEn}>{en}</Text>
-    <View style={S.sectionTitleSep} />
-    <Text style={S.sectionTitleAr}>{ar}</Text>
-  </View>
-);
+const ITEM_COLS = [
+  { label: "#",                          width: 28,  align: "muted"  },
+  { label: "وصف الصنف / Description",    flex: 4,    align: "left"   },
+  { label: "الكمية / Qty",               width: 32,  align: "center" },
+  { label: "الوحدة / Unit",              width: 36,  align: "center" },
+  { label: "السعر / Rate",               width: 74,  align: "right"  },
+  { label: "المبلغ / Amount",            width: 80,  align: "right"  },
+];
 
-/** Info grid cell with bilingual label */
-const InfoCell = ({ labelAr, labelEn, value, wide, full, mono }) => (
-  <View style={full ? S.infoCellFull : wide ? S.infoCellWide : S.infoCell}>
-    <View style={S.infoCellLabels}>
-      <Text style={S.infoCellLabelEn}>{labelEn}</Text>
-      <Text style={S.infoCellLabelAr}>{labelAr}</Text>
-    </View>
-    <Text style={mono ? S.infoCellValueMono : S.infoCellValue}>
-      {value || "—"}
-    </Text>
-  </View>
-);
+function colSize(col) { return col.width ? { width: col.width } : { flex: col.flex || 1 }; }
 
-/** Bilingual table column header */
-const Th = ({ ar, en, style }) => (
-  <View style={[S.thCell, style]}>
-    <Text style={S.thAr}>{ar}</Text>
-    <Text style={S.thEn}>{en}</Text>
-  </View>
-);
-
-/** Items table */
-const ItemsTable = ({ items, isOmitted, tAr, tEn }) => {
-  if (!items || items.length === 0) return null;
-  const total = items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-  const accentColor = isOmitted ? T.negRed : T.posGreen;
-  const accentLight = isOmitted ? T.negLight : T.posLight;
-
+function ItemsTable({ items }) {
+  if (!items?.length) return null;
   return (
-    <View style={S.table}>
-      {/* Header */}
-      <View style={S.tableHeaderRow}>
-        <Th style={S.colDesc}  ar={tAr("item_description", "وصف الصنف")} en={tEn("item_description", "Description")} />
-        <Th style={S.colQty}   ar={tAr("quantity", "الكمية")}            en={tEn("quantity", "Qty")} />
-        <Th style={S.colUnit}  ar={tAr("unit", "الوحدة")}               en={tEn("unit", "Unit")} />
-        <Th style={S.colRate}  ar={tAr("rate", "السعر")}                en={tEn("rate", "Rate")} />
-        {isOmitted && <Th style={S.colOHP} ar="O.H&P" en="O.H&P" />}
-        <Th style={S.colAmount} ar={tAr("amount", "المبلغ")}            en={tEn("amount", "Amount")} />
+    <View>
+      <View style={S.tableHdrRow}>
+        {ITEM_COLS.map((col, i) => (
+          <View key={i} style={[S.thCell, colSize(col)]}>
+            <Text style={S.thText}>{col.label}</Text>
+          </View>
+        ))}
       </View>
-
-      {/* Rows */}
-      {items.map((item, idx) => (
-        <View key={idx} style={[S.tableRow, idx % 2 === 1 && S.tableRowAlt]}>
-          {/* Description — right-aligned Arabic */}
-          <View style={[S.tdCell, S.colDesc]}>
-            <Text style={S.tdText}>{item.description || "—"}</Text>
+      {items.map((item, ri) => {
+        const cells = [
+          { value: String(ri + 1).padStart(2, "0"), align: "muted",  width: 28  },
+          { value: item.description || EMPTY,        align: "left",   flex: 4    },
+          { value: safe(item.qty ?? item.quantity),  align: "center", width: 32  },
+          { value: safe(item.unit || "LS"),          align: "center", width: 36  },
+          { value: fmt(item.rate ?? item.unit_price ?? 0), align: "right", width: 74 },
+          { value: fmt(item.amount ?? item.total ?? 0),    align: "right", width: 80 },
+        ];
+        return (
+          <View key={ri} style={S.tableRow}>
+            {cells.map((cell, ci) => {
+              const ts = cell.align === "right" ? S.tdRight : cell.align === "center" ? S.tdCenter : cell.align === "muted" ? S.tdMuted : S.tdLeft;
+              return (
+                <View key={ci} style={[S.tdCell, cell.width ? { width: cell.width } : { flex: cell.flex || 1 }]}>
+                  <Text style={ts}>{safe(cell.value)}</Text>
+                </View>
+              );
+            })}
           </View>
-          <View style={[S.tdCell, S.colQty]}>
-            <Text style={S.tdTextCenter}>{item.qty ?? "—"}</Text>
-          </View>
-          <View style={[S.tdCell, S.colUnit]}>
-            <Text style={S.tdTextCenter}>{item.unit || "LS"}</Text>
-          </View>
-          <View style={[S.tdCell, S.colRate]}>
-            <Text style={S.tdMono}>{formatMoney(item.rate || 0)}</Text>
-          </View>
-          {isOmitted && (
-            <View style={[S.tdCell, S.colOHP]}>
-              <Text style={S.tdTextCenter}>
-                {item.includesOverheadProfit ? "✓" : "—"}
-              </Text>
-            </View>
-          )}
-          <View style={[S.tdCell, S.colAmount, { backgroundColor: `${accentLight}55` }]}>
-            <Text style={isOmitted ? S.tdAmountNeg : S.tdAmountPos}>
-              {formatMoney(item.amount || 0)}
-            </Text>
-          </View>
-        </View>
-      ))}
-
-      {/* Footer */}
-      <View style={[S.tableFooterRow, { borderTopColor: accentColor }]}>
-        <Text style={S.tableFooterLabel}>
-          {isOmitted
-            ? `${tEn("total_omitted", "Total Omitted")}  |  ${tAr("total_omitted", "الإجمالي المحذوف")}`
-            : `${tEn("total_added", "Total Added")}  |  ${tAr("total_added", "الإجمالي المضاف")}`
-          }
-        </Text>
-        <Text style={[S.tableFooterValue, { color: accentColor }]}>
-          {isOmitted ? `− ${formatMoney(total)}` : `+ ${formatMoney(total)}`}
-        </Text>
-      </View>
+        );
+      })}
     </View>
   );
-};
+}
 
-/** Summary row — bilingual label */
-const SummaryRow = ({ labelAr, labelEn, value, valueStyle, rowStyle }) => (
-  <View style={[S.summaryRow, rowStyle]}>
-    <View style={S.summaryLabelWrap}>
-      <Text style={S.summaryLabelEn}>{labelEn}</Text>
-      <Text style={S.summaryLabelSep}>|</Text>
-      <Text style={S.summaryLabelAr}>{labelAr}</Text>
-    </View>
-    <Text style={[S.summaryValue, valueStyle]}>{value}</Text>
-  </View>
-);
+const VariationPDFDocument = ({ variation, project, companyInfo, qrDataUrl }) => {
+  let nd = {};
+  if (variation?.description) {
+    try { nd = JSON.parse(variation.description); } catch { nd = {}; }
+  }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN DOCUMENT
-════════════════════════════════════════════════════════════════ */
-const VariationPDFDocument = ({
-  variation, project, companyInfo, noticeData, translations = {},
-}) => {
-  /* Translation helpers — Arabic and English separately */
-  const AR = {
-    variation_order:          "أمر التغيير",
-    variation_details:        "تفاصيل التعديل",
-    project_name:             "اسم المشروع",
-    project_no:               "رقم المشروع",
-    variation_no:             "رقم التعديل",
-    reference_no:             "الرقم المرجعي",
-    document_date:            "تاريخ المستند",
-    project_address:          "عنوان المشروع",
-    trade_discipline:         "التخصص / الحرفة",
-    variation_cause:          "سبب التعديل",
-    additional_time:          "الوقت الإضافي",
-    variation_description:    "وصف التعديل",
-    omitted_items:            "المحذوف (حسب العقد)",
-    added_items:              "المضاف (حسب المورد الفعلي)",
-    item_description:         "وصف الصنف",
-    quantity:                 "الكمية",
-    unit:                     "الوحدة",
-    rate:                     "السعر",
-    amount:                   "المبلغ",
-    total_omitted:            "الإجمالي المحذوف",
-    total_added:              "الإجمالي المضاف",
-    variation_summary:        "ملخص التعديل",
-    total_variation_amount:   "إجمالي مبلغ التعديل",
-    contractor_ohp:           "رأس مال وربح المقاول",
-    consultant_fees:          "أتعاب الاستشاري",
-    total_before_discount:    "الإجمالي قبل الخصم",
-    discount:                 "الخصم",
-    final_amount:             "المبلغ النهائي",
-    remarks:                  "ملاحظات",
-  };
+  const totalOmitted   = n(nd.total_omitted);
+  const totalAdded     = n(nd.total_added);
+  const totalVar       = n(nd.total_variation_amount || (totalAdded - totalOmitted));
+  const contractorOHP  = n(nd.contractor_engineering_oh_p);
+  const consultantFees = n(nd.consultant_fees);
+  const beforeDiscount = n(nd.total_amount_before_discount || (totalVar + contractorOHP + consultantFees));
+  const discountAmt    = n(nd.discount_amount);
+  const discountPct    = n(nd.discount_percentage);
+  const finalAmount    = n(nd.total_amount || variation?.total_amount);
+  const omittedItems   = nd.omitted_items || [];
+  const addedItems     = nd.added_items   || [];
 
-  const tAr = (key, fallback = "") => AR[key] || fallback;
-  const tEn = (key, fallback = "") => translations[key] || fallback || key;
+  const sp = project?.siteplan || project?.siteplan_data || {};
+  const location = [sp.municipality, sp.zone, sp.sector, sp.land_no].filter(Boolean).join(" - ");
+  const projectNo = project?.contract_data?.tender_no || project?.awarding_data?.project_number || project?.internal_code || "";
+  const projectNameAr = project?.display_name || project?.name || "";
+  const projectNameEn = project?.display_name_en || project?.display_name || project?.name || "";
 
-  /* Parse notice data */
-  const data = (() => {
-    if (noticeData) return noticeData;
-    if (!variation?.description) return {};
-    try { return JSON.parse(variation.description); }
-    catch { return {}; }
-  })();
+  const companyAr = companyInfo?.name || "";
+  const companyEn = companyInfo?.name_en || companyInfo?.name || "";
 
-  /* Financials */
-  const totalOmitted         = parseFloat(data.total_omitted)                || 0;
-  const totalAdded           = parseFloat(data.total_added)                  || 0;
-  const totalVariation       = parseFloat(data.total_variation_amount)       || (totalAdded - totalOmitted);
-  const contractorOHP        = parseFloat(data.contractor_engineering_oh_p)  || 0;
-  const consultantFees       = parseFloat(data.consultant_fees)              || 0;
-  const totalBeforeDiscount  = parseFloat(data.total_amount_before_discount) || (totalVariation + contractorOHP + consultantFees);
-  const discountAmount       = parseFloat(data.discount_amount)              || 0;
-  const discountPct          = parseFloat(data.discount_percentage)          || 0;
-  const finalAmount          = parseFloat(data.total_amount || variation?.total_amount) || 0;
-
-  const omittedItems = data.omitted_items || [];
-  const addedItems   = data.added_items   || [];
-
-  const projectNo = () =>
-    project?.contract_data?.tender_no ||
-    project?.awarding_data?.project_number ||
-    project?.siteplan?.project_no ||
-    project?.internal_code ||
-    (project?.id ? `PRJ-${project.id}` : "—");
-
-  const projectLocation = () => {
-    const sp = project?.siteplan || project?.siteplan_data;
-    if (!sp) return "—";
-    return [sp.municipality, sp.zone, sp.sector, sp.land_no].filter(Boolean).join(" - ") || "—";
-  };
-
-  const companyNameAr = companyInfo?.name || "";
-  const companyNameEn = companyInfo?.name_en || "";
+  const totalsCells = [
+    ...(totalOmitted !== 0 ? [{ label: `إجمالي البنود المحذوفة\nTotal Omitted`, value: fmt(totalOmitted) }] : []),
+    ...(totalAdded   !== 0 ? [{ label: `إجمالي البنود المضافة\nTotal Added`,   value: fmt(totalAdded), highlight: true }] : []),
+    { label: `صافي أمر التغيير\nNet Variation`, value: fmt(totalVar), highlight: true },
+    ...(contractorOHP  !== 0 ? [{ label: `مصاريف المقاول${nd.contractor_ohp_percentage ? ` (${nd.contractor_ohp_percentage}%)` : ""}\nContractor O&P`, value: fmt(contractorOHP) }] : []),
+    ...(consultantFees !== 0 ? [{ label: `رسوم الاستشاري${nd.consultant_fees_percentage ? ` (${nd.consultant_fees_percentage}%)` : ""}\nConsultant Fees`, value: fmt(consultantFees) }] : []),
+    ...(discountAmt > 0 ? [
+      { label: `المجموع قبل الخصم\nTotal Before Discount`, value: fmt(beforeDiscount), subtotal: true },
+      { label: `خصم${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}\nDiscount`, value: `(${fmt(discountAmt)})` },
+    ] : []),
+  ];
 
   return (
     <Document>
       <Page size="A4" style={S.page}>
 
-        {/* ── Fixed Running Header ── */}
-        <View style={S.runningHeader} fixed>
-          <Text style={S.runningHeaderText}>
-            {tEn("variation_order", "Variation Order")} · {variation?.variation_number || ""}
-          </Text>
-          <Text style={S.runningHeaderBrand}>{companyNameEn || companyNameAr}</Text>
-        </View>
-
-        {/* ── Document Header ── */}
-        <View style={S.docHeader}>
-          <View style={S.docHeaderAccent} />
-          <View style={S.docHeaderLogo}>
-            {companyInfo?.logo
-              ? <Image src={companyInfo.logo} style={S.logoImg} />
-              : <View style={{ width: 48, height: 48 }} />}
-          </View>
-          <View style={S.docHeaderCenter}>
-            <View style={S.companyNameRow}>
-              {companyNameEn ? (
-                <Text style={S.companyNameEn}>{companyNameEn}</Text>
-              ) : null}
-              {companyNameAr ? (
-                <Text style={S.companyNameAr}>{companyNameAr}</Text>
-              ) : null}
-            </View>
-            {/* Gold separator line */}
-            <View style={{ height: 1, backgroundColor: T.gold, width: 120, opacity: 0.5, marginTop: 2 }} />
-          </View>
-          <View style={S.docHeaderRight}>
-            <Text style={S.docTypeLabelAr}>{tAr("variation_order")}</Text>
-            <Text style={S.docTypeLabelEn}>Variation Order</Text>
-            <Text style={S.docDate}>
-              {formatDate(data.document_date || variation?.created_at)}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Project / Variation Details ── */}
-        <View style={S.section}>
-          <SectionTitle ar={tAr("variation_details")} en="Variation Details" />
-          <View style={S.infoGrid}>
-            <InfoCell
-              wide
-              labelAr={tAr("project_name")} labelEn="Project Name"
-              value={project?.display_name || project?.name}
-            />
-            <InfoCell
-              labelAr={tAr("project_no")} labelEn="Project No."
-              value={projectNo()} mono
-            />
-            <InfoCell
-              labelAr={tAr("variation_no")} labelEn="Variation No."
-              value={variation?.variation_number || data.reference_no} mono
-            />
-            <InfoCell
-              labelAr={tAr("reference_no")} labelEn="Reference No."
-              value={data.reference_no || variation?.variation_number} mono
-            />
-            <InfoCell
-              labelAr={tAr("document_date")} labelEn="Document Date"
-              value={formatDate(data.document_date || variation?.created_at)}
-            />
-            <InfoCell
-              labelAr={tAr("project_address")} labelEn="Location"
-              value={projectLocation()}
-            />
-            {data.trade_discipline && (
-              <InfoCell
-                labelAr={tAr("trade_discipline")} labelEn="Trade / Discipline"
-                value={data.trade_discipline}
-              />
-            )}
-            {data.variation_cause && (
-              <InfoCell
-                labelAr={tAr("variation_cause")} labelEn="Cause"
-                value={data.variation_cause}
-              />
-            )}
-            {data.additional_time && (
-              <InfoCell
-                labelAr={tAr("additional_time")} labelEn="Additional Time"
-                value={data.additional_time}
-              />
-            )}
-          </View>
-          {data.variation_description && (
-            <Text style={S.remarksBox}>{data.variation_description}</Text>
-          )}
-        </View>
-
-        {/* ── Omitted Items ── */}
-        {omittedItems.length > 0 && (
-          <View style={S.section}>
-            <SectionTitle
-              ar={tAr("omitted_items")}
-              en="Omitted Items (As per Contract)"
-            />
-            <ItemsTable items={omittedItems} isOmitted tAr={tAr} tEn={tEn} />
-          </View>
-        )}
-
-        {/* ── Added Items ── */}
-        {addedItems.length > 0 && (
-          <View style={S.section}>
-            <SectionTitle
-              ar={tAr("added_items")}
-              en="Added Items (As per Actual Supplied)"
-            />
-            <ItemsTable items={addedItems} isOmitted={false} tAr={tAr} tEn={tEn} />
-          </View>
-        )}
-
-        {/* ── Financial Summary ── */}
-        <View style={S.section}>
-          <SectionTitle ar={tAr("variation_summary")} en="Financial Summary" />
-          <View style={S.summaryTable}>
-
-            <SummaryRow
-              labelAr={tAr("total_omitted")} labelEn="Total Omitted"
-              value={`− ${formatMoney(totalOmitted)}`}
-              valueStyle={S.summaryValueNeg}
-              rowStyle={S.summaryRowNegLight}
-            />
-            <SummaryRow
-              labelAr={tAr("total_added")} labelEn="Total Added"
-              value={`+ ${formatMoney(totalAdded)}`}
-              valueStyle={S.summaryValuePos}
-              rowStyle={S.summaryRowPosLight}
-            />
-            <SummaryRow
-              labelAr={tAr("total_variation_amount")} labelEn="Total Variation Amount"
-              value={formatMoney(totalVariation)}
-              valueStyle={S.summaryValueBold}
-              rowStyle={S.summaryRowBold}
-            />
-
-            {contractorOHP !== 0 && (
-              <SummaryRow
-                labelAr={`${tAr("contractor_ohp")}${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`}
-                labelEn={`Contractor OH&P${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`}
-                value={formatMoney(contractorOHP)}
-                rowStyle={S.summaryRowAlt}
-              />
-            )}
-
-            {consultantFees !== 0 && (
-              <SummaryRow
-                labelAr={`${tAr("consultant_fees")}${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`}
-                labelEn={`Consultant Fees${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`}
-                value={formatMoney(consultantFees)}
-              />
-            )}
-
-            {(contractorOHP !== 0 || consultantFees !== 0) && (
-              <SummaryRow
-                labelAr={tAr("total_before_discount")} labelEn="Sub-Total Before Discount"
-                value={formatMoney(totalBeforeDiscount)}
-                valueStyle={S.summaryValueBold}
-                rowStyle={S.summaryRowBold}
-              />
-            )}
-
-            {discountAmount > 0 && (
-              <SummaryRow
-                labelAr={`${tAr("discount")}${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}`}
-                labelEn={`Discount${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}`}
-                value={`− ${formatMoney(discountAmount)}`}
-                valueStyle={S.summaryValueNeg}
-                rowStyle={S.summaryRowNegLight}
-              />
-            )}
-
-            {/* Final Amount */}
-            <View style={S.summaryFinalRow}>
-              <View style={S.summaryFinalLabelWrap}>
-                <Text style={S.summaryFinalLabelEn}>Net Amount</Text>
-                <Text style={[S.summaryFinalLabelEn, { color: "rgba(255,255,255,0.3)" }]}>|</Text>
-                <Text style={S.summaryFinalLabelAr}>{tAr("final_amount")}</Text>
+        {/* Header */}
+        <View style={S.topRow}>
+          <View style={S.companyPanel}>
+            {companyInfo?.logo ? <Image src={companyInfo.logo} style={S.logoBox} /> : null}
+            <View style={S.companyBody}>
+              {companyAr ? <Text style={S.companyNameAr}>{safe(companyAr)}</Text> : null}
+              {companyEn && companyEn !== companyAr ? <Text style={S.companyNameEn}>{safe(companyEn)}</Text> : null}
+              <View style={S.companyDetails}>
+                {companyInfo?.address && <Text style={S.companyDetail}>{safe(companyInfo.address)}</Text>}
+                {companyInfo?.phone   && <Text style={S.companyDetail}>{safe(companyInfo.phone)}</Text>}
+                {companyInfo?.email   && <Text style={S.companyDetail}>{safe(companyInfo.email)}</Text>}
               </View>
-              <Text style={S.summaryFinalValue}>{formatMoney(finalAmount)}</Text>
             </View>
-
           </View>
+          <View style={S.titlePanel}>
+            <Text style={S.docTitleAr}>أمر التغيير</Text>
+            <Text style={S.docTitleEn}>Variation Order</Text>
+            <View style={S.metaGrid}>
+              <View>
+                <Text style={S.metaLabel}>رقم التغيير / VAR. NO.</Text>
+                <Text style={S.metaValue}>{safe(variation?.variation_number || nd.reference_no)}</Text>
+              </View>
+              <View>
+                <Text style={S.metaLabel}>التاريخ / DATE</Text>
+                <Text style={S.metaValue}>{fmtDate(nd.document_date || variation?.created_at)}</Text>
+              </View>
+            </View>
+          </View>
+          {qrDataUrl ? (
+            <View style={S.qrPanel}>
+              <Image src={qrDataUrl} style={S.qrImage} />
+              <Text style={S.qrLabel}>SCAN TO{"\n"}VERIFY</Text>
+            </View>
+          ) : null}
         </View>
 
-        {/* ── Remarks ── */}
-        {data.remarks && (
-          <View style={S.section}>
-            <SectionTitle ar={tAr("remarks")} en="Remarks / Notes" />
-            <Text style={S.remarksBox}>{data.remarks}</Text>
+        {/* Info Cards */}
+        <View style={S.cardsRow}>
+          <View style={[S.card, { flex: 2 }]}>
+            <Text style={S.cardLabel}>اسم المشروع / Project Name</Text>
+            <Text style={S.cardValue}>{safe(projectNameAr)}</Text>
+            {projectNameEn && projectNameEn !== projectNameAr ? <Text style={S.cardValueSub}>{safe(projectNameEn)}</Text> : null}
+            {location ? <Text style={S.cardValueSub}>{safe(location)}</Text> : null}
           </View>
-        )}
+          <View style={S.card}>
+            <Text style={S.cardLabel}>رقم المشروع / Project No.</Text>
+            <Text style={S.cardValue}>{safe(projectNo)}</Text>
+          </View>
+          {nd.variation_description ? (
+            <View style={S.cardDescCol}>
+              <Text style={S.cardDescLabel}>وصف التغيير / Variation Description</Text>
+              <Text style={S.cardDescText}>{safe(nd.variation_description)}</Text>
+              {nd.variation_cause && nd.variation_cause !== nd.variation_description
+                ? <Text style={S.cardDescCause}>Cause: {safe(nd.variation_cause)}</Text> : null}
+            </View>
+          ) : null}
+        </View>
 
-        {/* ── Signature block ── */}
-        <View style={{ marginTop: 20, flexDirection: "row", gap: 20 }}>
-          {[
-            { ar: "توقيع المقاول", en: "Contractor Signature" },
-            { ar: "توقيع الاستشاري", en: "Consultant Signature" },
-            { ar: "توقيع صاحب العمل", en: "Owner Signature" },
-          ].map((sig, i) => (
-            <View key={i} style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: T.border,
-              borderStyle: "solid",
-              padding: 8,
-              alignItems: "center",
-            }}>
-              <View style={{ height: 30, borderBottomWidth: 0.5, borderBottomColor: T.border, borderBottomStyle: "solid", width: "100%", marginBottom: 4 }} />
-              <Text style={{ fontFamily: "Cairo", fontSize: 7.5, color: T.gray3, textAlign: "center" }}>{sig.ar}</Text>
-              <Text style={{ fontFamily: "Cairo", fontSize: 6.5, color: T.gray5, textAlign: "center" }}>{sig.en}</Text>
+        {/* Added Items */}
+        {addedItems.length > 0 ? (
+          <View style={S.section}>
+            <View style={S.sectionHeader}>
+              <Text style={S.sectionLabel}>البنود المضافة / Added Items</Text>
+              <Text style={S.sectionCount}>{String(addedItems.length).padStart(2, "0")} lines</Text>
+            </View>
+            <ItemsTable items={addedItems} />
+          </View>
+        ) : null}
+
+        {/* Omitted Items */}
+        {omittedItems.length > 0 ? (
+          <View style={S.section}>
+            <View style={S.sectionHeader}>
+              <Text style={S.sectionLabel}>البنود المحذوفة / Omitted Items</Text>
+              <Text style={S.sectionCount}>{String(omittedItems.length).padStart(2, "0")} lines</Text>
+            </View>
+            <ItemsTable items={omittedItems} />
+          </View>
+        ) : null}
+
+        {/* Totals strip */}
+        <View style={S.totalsBox}>
+          {totalsCells.map((cell, i) => (
+            <View key={i} style={[S.totalsCell, cell.highlight && S.totalsCellHighlight, cell.subtotal && S.totalsCellSubtotal]}>
+              <Text style={S.totalsCellLabel}>{safe(cell.label)}</Text>
+              <Text style={S.totalsCellValue}>{safe(cell.value)}</Text>
             </View>
           ))}
+          <View style={S.grandCell}>
+            <Text style={S.grandLabel}>{`المبلغ الإجمالي\nTotal Amount`}</Text>
+            <Text style={S.grandValue}>{fmt(finalAmount)}</Text>
+          </View>
         </View>
 
-        {/* ── Gold line before footer ── */}
-        <View style={[S.goldLine, { marginTop: 10 }]} />
-
-        {/* ── Fixed Running Footer ── */}
-        <View style={S.runningFooter} fixed>
-          <Text style={S.runningFooterText}>
-            {companyInfo?.phone ? `${companyInfo.phone}  ·  ` : ""}
-            {companyInfo?.email || ""}
-            {companyInfo?.website ? `  ·  ${companyInfo.website}` : ""}
-          </Text>
-          <Text
-            style={S.runningFooterPage}
-            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-          />
+        {/* Signatures */}
+        <View style={S.sigRow}>
+          <View style={S.sigCard}>
+            <View style={S.sigLine} />
+            <Text style={S.sigLabel}>استلمه / Received By</Text>
+          </View>
+          <View style={[S.sigCard, S.sigCardStamp]}>
+            <View style={S.stampBox}>
+              <Text style={S.sigLabel}>ختم الشركة / Company Stamp</Text>
+            </View>
+          </View>
+          <View style={S.sigCard}>
+            <View style={S.sigLine} />
+            <Text style={S.sigLabel}>توقيع مخوّل / Authorized Signature</Text>
+          </View>
         </View>
+
+        {/* Footer */}
+        <Text style={S.notice}>هذه الوثيقة صادرة إلكترونياً وصالحة دون توقيع يدوي.</Text>
+        <Text style={S.noticeSub}>This document is electronically generated and valid without a handwritten signature.</Text>
+        <Image src={`${ORIGIN}/credsnewfix.png`} style={S.credsBanner} />
 
       </Page>
     </Document>
