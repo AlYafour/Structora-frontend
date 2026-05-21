@@ -64,8 +64,13 @@
   white-space: nowrap;
 }
 
-.vpd-amt--pos { color: #166534; }
-.vpd-amt--neg { color: #991b1b; }
+.vpd-amt--pos {
+  color: #166534;
+}
+
+.vpd-amt--neg {
+  color: #991b1b;
+}
 
 /* ── Header ── */
 .vpd-top {
@@ -120,7 +125,7 @@
   font-size: 12pt;
 }
 
-.vpd-company__details > span:not(:last-child)::after {
+.vpd-company__details>span:not(:last-child)::after {
   content: " /";
 }
 
@@ -400,18 +405,28 @@
 }
 
 .vpd-td--remark {
-  font-size: 11.5pt !important;
-  color: #7f7364 !important;
-  font-style: italic;
+  font-size: 12.5pt !important;
+  color: #17202f !important;
+  font-style: normal;
+  font-weight: 400 !important;
   text-align: left !important;
   padding: 7px 12px !important;
+}
+
+.vpd-remark-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
 }
 
 .vpd-remark-label {
   font-style: normal;
   font-weight: 850;
-  color: #17202f;
-  font-size: 11pt;
+  color: #7f7364;
+  font-size: 12.5pt;
+  flex-shrink: 0;
 }
 
 /* ── Totals ── */
@@ -423,15 +438,25 @@
    Container background acts as the divider colour via gap.
    Cells wrap naturally when they can't fit on one row.        */
 .vpd-totals-box {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1px;
-  background: #d8c9b3;   /* gap colour = divider lines */
+  background: #d8c9b3;
+  /* gap colour = divider lines */
   border: 1px solid #d8c9b3;
 }
 
+.vpd-totals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background: #d8c9b3;
+}
+
+.vpd-totals-row+.vpd-totals-row {
+  margin-top: 1px;
+}
+
 .vpd-totals-cell {
-  flex: 1 1 150px;        /* wrap when narrower than 150px */
+  flex: 1 1 150px;
+  /* wrap when narrower than 150px */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -440,14 +465,6 @@
   text-align: center;
   background: #fff;
   min-width: 0;
-}
-
-.vpd-totals-row-break {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 0;
-  padding: 0;
-  margin: 0;
 }
 
 .vpd-totals-cell__label {
@@ -600,11 +617,11 @@
   justify-content: flex-end;
 }
 
-.vpd-sign-card + .vpd-sign-card {
+.vpd-sign-card+.vpd-sign-card {
   border-left: none;
 }
 
-.vpd-sign-card > span {
+.vpd-sign-card>span {
   display: block;
   height: 1px;
   background: #17202f;
@@ -659,6 +676,7 @@
     applied programmatically for both print and PDF export)
    ═══════════════════════════════════════════ */
 @media print {
+
   .app-sidebar,
   .app-topbar,
   .page-bar,
@@ -683,7 +701,8 @@
     print-color-adjust: exact !important;
   }
 
-  html, body {
+  html,
+  body {
     margin: 0;
     padding: 0;
     background: #fff;
@@ -708,7 +727,8 @@
   box-shadow: none;
   font-size: 11pt;
   line-height: 1.4;
-  display: block;   /* removes flex so margin-top:auto on footer has no effect */
+  display: block;
+  /* removes flex so margin-top:auto on footer has no effect */
 }
 
 .vpd-print-mode .vpd-doc__footer {
@@ -716,70 +736,242 @@
 }
 
 /* Header */
-.vpd-print-mode .vpd-top         { margin-bottom: 6px; }
+.vpd-print-mode .vpd-top {
+  margin-bottom: 6px;
+}
+
 .vpd-print-mode .vpd-company,
-.vpd-print-mode .vpd-title-panel { padding: 10px 14px; }
-.vpd-print-mode .vpd-qr-panel { padding: 10px 14px; }
-.vpd-print-mode .vpd-qr-panel svg { width: 54px !important; height: 54px !important; }
-.vpd-print-mode .vpd-qr-panel span { font-size: 6pt; }
-.vpd-print-mode .vpd-company__logo { width: 52px; height: 52px; }
-.vpd-print-mode .vpd-company__name { font-size: 14pt; }
-.vpd-print-mode .vpd-company__name .vpd-bilingual__en { font-size: 11pt; }
-.vpd-print-mode .vpd-company__details { font-size: 9.5pt; margin-top: 5px; }
-.vpd-print-mode .vpd-title       { font-size: 18pt; }
-.vpd-print-mode .vpd-title .vpd-bilingual__en { font-size: 11pt; }
-.vpd-print-mode .vpd-meta        { margin-top: 8px; gap: 8px; }
-.vpd-print-mode .vpd-meta__label { font-size: 9pt; }
-.vpd-print-mode .vpd-meta strong { font-size: 11pt; margin-top: 4px; }
+.vpd-print-mode .vpd-title-panel {
+  padding: 10px 14px;
+}
+
+.vpd-print-mode .vpd-qr-panel {
+  padding: 10px 14px;
+}
+
+.vpd-print-mode .vpd-qr-panel svg {
+  width: 54px !important;
+  height: 54px !important;
+}
+
+.vpd-print-mode .vpd-qr-panel span {
+  font-size: 6pt;
+}
+
+.vpd-print-mode .vpd-company__logo {
+  width: 52px;
+  height: 52px;
+}
+
+.vpd-print-mode .vpd-company__name {
+  font-size: 14pt;
+}
+
+.vpd-print-mode .vpd-company__name .vpd-bilingual__en {
+  font-size: 11pt;
+}
+
+.vpd-print-mode .vpd-company__details {
+  font-size: 9.5pt;
+  margin-top: 5px;
+}
+
+.vpd-print-mode .vpd-title {
+  font-size: 18pt;
+}
+
+.vpd-print-mode .vpd-title .vpd-bilingual__en {
+  font-size: 11pt;
+}
+
+.vpd-print-mode .vpd-meta {
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.vpd-print-mode .vpd-meta__label {
+  font-size: 9pt;
+}
+
+.vpd-print-mode .vpd-meta strong {
+  font-size: 11pt;
+  margin-top: 4px;
+}
 
 /* Info cards */
-.vpd-print-mode .vpd-cards       { gap: 0; margin-bottom: 6px; }
-.vpd-print-mode .vpd-info-card   { padding: 8px 10px; min-height: auto; }
-.vpd-print-mode .vpd-info-card--sm { padding: 5px 8px; column-gap: 8px; }
-.vpd-print-mode .vpd-info-card--sm .vpd-info-card__label { font-size: 7.5pt; }
+.vpd-print-mode .vpd-cards {
+  gap: 0;
+  margin-bottom: 6px;
+}
+
+.vpd-print-mode .vpd-info-card {
+  padding: 8px 10px;
+  min-height: auto;
+}
+
+.vpd-print-mode .vpd-info-card--sm {
+  padding: 5px 8px;
+  column-gap: 8px;
+}
+
+.vpd-print-mode .vpd-info-card--sm .vpd-info-card__label {
+  font-size: 7.5pt;
+}
+
 .vpd-print-mode .vpd-info-card--sm .vpd-info-card__value,
-.vpd-print-mode .vpd-info-card--sm .vpd-info-card__value--plain { font-size: 9.5pt; }
-.vpd-print-mode .vpd-info-card__line { font-size: 8pt; }
-.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-text { font-size: 9pt; margin-top: 4px; }
-.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-cause { font-size: 8.5pt; margin-top: 3px; }
+.vpd-print-mode .vpd-info-card--sm .vpd-info-card__value--plain {
+  font-size: 9.5pt;
+}
+
+.vpd-print-mode .vpd-info-card__line {
+  font-size: 8pt;
+}
+
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-text {
+  font-size: 9pt;
+  margin-top: 4px;
+}
+
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-cause {
+  font-size: 8.5pt;
+  margin-top: 3px;
+}
 
 /* Sections */
-.vpd-print-mode .vpd-section     { margin-bottom: 6px; }
-.vpd-print-mode .vpd-section__header { padding: 7px 0 5px; font-size: 9pt; }
-.vpd-print-mode .vpd-desc-text   { padding: 0 0 8px; font-size: 10.5pt; line-height: 1.5; }
-.vpd-print-mode .vpd-desc-text--secondary { font-size: 10pt; }
+.vpd-print-mode .vpd-section {
+  margin-bottom: 6px;
+}
+
+.vpd-print-mode .vpd-section__header {
+  padding: 7px 0 5px;
+  font-size: 9pt;
+}
+
+.vpd-print-mode .vpd-desc-text {
+  padding: 0 0 8px;
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+
+.vpd-print-mode .vpd-desc-text--secondary {
+  font-size: 10pt;
+}
 
 /* Item tables */
-.vpd-print-mode .vpd-table       { margin: 0 0 8px; }
-.vpd-print-mode .vpd-table th    { padding: 6px 7px; font-size: 9pt; }
-.vpd-print-mode .vpd-table td    { padding: 7px 7px; font-size: 10pt; }
-.vpd-print-mode .vpd-td--remark  { font-size: 9.5pt !important; padding: 4px 8px !important; }
-.vpd-print-mode .vpd-remark-label { font-size: 9pt; }
+.vpd-print-mode .vpd-table {
+  margin: 0 0 8px;
+}
+
+.vpd-print-mode .vpd-table th {
+  padding: 6px 7px;
+  font-size: 9pt;
+}
+
+.vpd-print-mode .vpd-table td {
+  padding: 7px 7px;
+  font-size: 10pt;
+}
+
+.vpd-print-mode .vpd-td--remark {
+  font-size: 9.5pt !important;
+  padding: 4px 8px !important;
+}
+
+.vpd-print-mode .vpd-remark-label {
+  font-size: 9pt;
+}
 
 /* Totals horizontal strip */
-.vpd-print-mode .vpd-bottom                           { margin-bottom: 6px; }
-.vpd-print-mode .vpd-totals-cell                      { flex: 1 1 120px; padding: 10px 8px; }
-.vpd-print-mode .vpd-totals-cell__label               { font-size: 7pt; margin-bottom: 6px; }
-.vpd-print-mode .vpd-totals-cell__value               { font-size: 10pt; }
-.vpd-print-mode .vpd-totals-cell--grand               { flex: 2 1 220px; padding: 12px 16px; gap: 14px; }
-.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label { font-size: 9pt; }
-.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note { font-size: 6pt; }
-.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value { font-size: 18pt; }
+.vpd-print-mode .vpd-bottom {
+  margin-bottom: 6px;
+}
+
+.vpd-print-mode .vpd-totals-cell {
+  flex: 1 1 120px;
+  padding: 10px 8px;
+}
+
+.vpd-print-mode .vpd-totals-cell__label {
+  font-size: 7pt;
+  margin-bottom: 6px;
+}
+
+.vpd-print-mode .vpd-totals-cell__value {
+  font-size: 10pt;
+}
+
+.vpd-print-mode .vpd-totals-cell--grand {
+  flex: 2 1 220px;
+  padding: 12px 16px;
+  gap: 14px;
+}
+
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label {
+  font-size: 9pt;
+}
+
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note {
+  font-size: 6pt;
+}
+
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value {
+  font-size: 18pt;
+}
 
 /* Remarks + QR */
-.vpd-print-mode .vpd-remarks-qr-row { margin-bottom: 6px; }
-.vpd-print-mode .vpd-verify      { padding: 10px 14px; min-width: 100px; gap: 7px; }
-.vpd-print-mode .vpd-verify h4   { font-size: 8.5pt; margin-bottom: 5px; }
-.vpd-print-mode .vpd-verify .vpd-bilingual { font-size: 9pt; }
-.vpd-print-mode .vpd-notes       { padding: 8px 0; }
-.vpd-print-mode .vpd-notes p     { font-size: 10.5pt; gap: 10px; }
+.vpd-print-mode .vpd-remarks-qr-row {
+  margin-bottom: 6px;
+}
+
+.vpd-print-mode .vpd-verify {
+  padding: 10px 14px;
+  min-width: 100px;
+  gap: 7px;
+}
+
+.vpd-print-mode .vpd-verify h4 {
+  font-size: 8.5pt;
+  margin-bottom: 5px;
+}
+
+.vpd-print-mode .vpd-verify .vpd-bilingual {
+  font-size: 9pt;
+}
+
+.vpd-print-mode .vpd-notes {
+  padding: 8px 0;
+}
+
+.vpd-print-mode .vpd-notes p {
+  font-size: 10.5pt;
+  gap: 10px;
+}
 
 /* Signatures */
-.vpd-print-mode .vpd-signatures  { margin-top: 6px; margin-bottom: 0; }
-.vpd-print-mode .vpd-sign-card   { min-height: 52px; padding: 10px 14px; }
-.vpd-print-mode .vpd-sign-card strong { font-size: 8.5pt; }
-.vpd-print-mode .vpd-sign-card--stamp div { font-size: 8.5pt; padding: 10px 0; }
-.vpd-print-mode .vpd-final-notice { margin: 0; font-size: 9pt; }
+.vpd-print-mode .vpd-signatures {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.vpd-print-mode .vpd-sign-card {
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
+.vpd-print-mode .vpd-sign-card strong {
+  font-size: 8.5pt;
+}
+
+.vpd-print-mode .vpd-sign-card--stamp div {
+  font-size: 8.5pt;
+  padding: 10px 0;
+}
+
+.vpd-print-mode .vpd-final-notice {
+  margin: 0;
+  font-size: 9pt;
+}
+
 .vpd-print-mode .vpd-creds-banner {
   width: 100%;
   height: 60px;
@@ -796,10 +988,17 @@
   page-break-inside: avoid;
 }
 
-.vpd-print-mode .vpd-table thead { display: table-header-group; }
-.vpd-print-mode .vpd-table tr    { break-inside: avoid; page-break-inside: avoid; }
+.vpd-print-mode .vpd-table thead {
+  display: table-header-group;
+}
+
+.vpd-print-mode .vpd-table tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 
 @media print {
+
   .vpd-print-mode .vpd-section,
   .vpd-print-mode .vpd-totals-box,
   .vpd-print-mode .vpd-sign-card,

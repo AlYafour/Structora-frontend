@@ -20,6 +20,7 @@ import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandl
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
+import { applyPrintPagePartBreaks } from "../utils/printPagination";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
@@ -108,6 +109,7 @@ export default function VariationViewPage() {
     const footer = el?.querySelector('.vpd-doc__footer');
     const prevWidth = el?.style.width || "";
     const prevFooterMarginTop = footer?.style.marginTop || "";
+    let cleanupPageBreaks = null;
 
     el.classList.add('vpd-print-mode');
     el.style.width = `${PRINT_A4_WIDTH_PX}px`;
@@ -124,7 +126,11 @@ export default function VariationViewPage() {
       await new Promise(resolve => requestAnimationFrame(resolve));
     }
 
+    cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
     return () => {
+      cleanupPageBreaks?.();
       el.classList.remove('vpd-print-mode');
       el.style.width = prevWidth;
       if (footer) footer.style.marginTop = prevFooterMarginTop;

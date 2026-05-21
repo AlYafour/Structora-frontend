@@ -7,6 +7,7 @@ import { api } from "../services/api";
 import { projectApi } from "../services";
 import { downloadBlob } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
+import { applyPrintPagePartBreaks } from "../features/projects/entries/variations/utils/printPagination";
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
@@ -58,6 +59,9 @@ async function preparePrintDocumentLayout(el) {
     footer.style.marginTop = `${footerOffset}px`;
     await waitForFrame();
   }
+
+  applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+  await waitForFrame();
 }
 
 async function renderVariationPrintPdfBlob({ variation, project, companyInfo, noticeData }) {

@@ -120,6 +120,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     },
   ];
 
+  const totalsRowGroups = totalsRows.reduce((groups, row) => {
+    if (row.startsSummaryRow || groups.length === 0) groups.push([]);
+    groups[groups.length - 1].push(row);
+    return groups;
+  }, []);
+
   return (
     <div ref={ref} className="vpd-wrap">
       <article className="vpd-doc" dir="ltr">
@@ -273,8 +279,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <tr className="vpd-item-remark-row">
                         <td />
                         <td colSpan={5} className="vpd-td--remark">
-                          <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
-                          {" "}{item.remarks}
+                          <div className="vpd-remark-inner">
+                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
+                            <span>{item.remarks}</span>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -318,8 +326,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <tr className="vpd-item-remark-row">
                         <td />
                         <td colSpan={5} className="vpd-td--remark">
-                          <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
-                          {" "}{item.remarks}
+                          <div className="vpd-remark-inner">
+                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
+                            <span>{item.remarks}</span>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -336,41 +346,43 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           {/* Totals */}
           <section className="vpd-bottom">
             <div className="vpd-totals-box">
-              {totalsRows.map((row, i) => (
-                <Fragment key={i}>
-                  {row.startsSummaryRow ? <span key={`break-${i}`} className="vpd-totals-row-break" /> : null}
-                  <div
-                    className={[
-                      "vpd-totals-cell",
-                      row.variant === "grand"     ? "vpd-totals-cell--grand"     : "",
-                      row.variant === "highlight" ? "vpd-totals-cell--highlight" : "",
-                      row.variant === "subtotal"  ? "vpd-totals-cell--subtotal"  : "",
-                    ].filter(Boolean).join(" ")}
-                  >
-                    <span className="vpd-totals-cell__label">
-                      <BilingualText ar={row.ar} en={row.en} />
-                      {row.noteAr || row.noteEn ? (
-                        <span className="vpd-totals-cell__note">
-                          <BilingualText ar={row.noteAr} en={row.noteEn} />
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className={[
-                      "vpd-totals-cell__value",
-                      row.sign === "neg" ? "vpd-amt--neg" : "",
-                      row.sign === "pos" ? "vpd-amt--pos" : "",
-                    ].filter(Boolean).join(" ")}>
-                      <Amount value={row.value} />
-                    </span>
-                  </div>
-                </Fragment>
+              {totalsRowGroups.map((group, groupIndex) => (
+                <div className="vpd-totals-row" data-vpd-page-part key={`totals-row-${groupIndex}`}>
+                  {group.map((row, i) => (
+                    <div
+                      key={`${groupIndex}-${i}`}
+                      className={[
+                        "vpd-totals-cell",
+                        row.variant === "grand"     ? "vpd-totals-cell--grand"     : "",
+                        row.variant === "highlight" ? "vpd-totals-cell--highlight" : "",
+                        row.variant === "subtotal"  ? "vpd-totals-cell--subtotal"  : "",
+                      ].filter(Boolean).join(" ")}
+                    >
+                      <span className="vpd-totals-cell__label">
+                        <BilingualText ar={row.ar} en={row.en} />
+                        {row.noteAr || row.noteEn ? (
+                          <span className="vpd-totals-cell__note">
+                            <BilingualText ar={row.noteAr} en={row.noteEn} />
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={[
+                        "vpd-totals-cell__value",
+                        row.sign === "neg" ? "vpd-amt--neg" : "",
+                        row.sign === "pos" ? "vpd-amt--pos" : "",
+                      ].filter(Boolean).join(" ")}>
+                        <Amount value={row.value} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </section>
 
           {/* Remarks */}
           {data.remarks && (
-            <section className="vpd-notes">
+            <section className="vpd-notes" data-vpd-page-part>
               <p>
                 <strong><BilingualText ar="ملاحظات" en="Remarks" /></strong>
                 <span>{data.remarks}</span>
@@ -379,7 +391,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           )}
 
           {/* Signatures */}
-          <section className="vpd-signatures">
+          <section className="vpd-signatures" data-vpd-page-part>
             <div className="vpd-sign-card">
               <span />
               <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
@@ -393,14 +405,14 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           </section>
 
-          <p className="vpd-final-notice">
+          <p className="vpd-final-notice" data-vpd-page-part>
             <BilingualText
               ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
               en="This is an electronically generated document"
             />
           </p>
 
-          <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
+          <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" data-vpd-page-part />
         </div>
 
       </article>

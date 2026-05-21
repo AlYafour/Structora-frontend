@@ -110,7 +110,7 @@ const S = StyleSheet.create({
   /* Totals strip */
   totalsBox: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
   totalsCell: {
-    flex: 1, backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+    flex: 1, backgroundColor: C.white, borderWidth: 1, borderColor: C.white,
     borderStyle: "solid", alignItems: "center", justifyContent: "center",
     padding: "10 8", minWidth: 80,
   },
