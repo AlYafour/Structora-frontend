@@ -114,8 +114,12 @@ export default function VariationViewPage() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     if (footer) {
-      const remainder = el.scrollHeight % PRINT_A4_HEIGHT_PX;
-      const footerOffset = remainder === 0 ? 0 : PRINT_A4_HEIGHT_PX - remainder;
+      const footerHeight = footer.scrollHeight;
+      const contentHeight = el.scrollHeight - footerHeight;
+      const remainingPageSpace = PRINT_A4_HEIGHT_PX - (contentHeight % PRINT_A4_HEIGHT_PX || PRINT_A4_HEIGHT_PX);
+      const footerOffset = footerHeight <= remainingPageSpace
+        ? remainingPageSpace - footerHeight
+        : 0;
       footer.style.marginTop = `${footerOffset}px`;
       await new Promise(resolve => requestAnimationFrame(resolve));
     }
