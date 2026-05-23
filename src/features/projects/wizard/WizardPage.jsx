@@ -197,7 +197,11 @@ export default function WizardPage() {
 
   const allowSitePlanFlow = !!setup.projectType && !!setup.contractType;
 
-  const noPermit = setup._classification?.requiresPermit === "false" || setup.requiresPermit === "false";
+  const noPermit =
+    setup._classification?.requiresPermit === "false" ||
+    setup.requiresPermit === "false" ||
+    // Fallback: when requiresPermit is not set in classification_data, use actual license existence
+    (!setup._classification?.requiresPermit && !isNewProject && project !== null && !project?.has_license);
 
   const STEP_INDEX = noPermit ? STEP_INDEX_WITHOUT_LICENSE : STEP_INDEX_WITH_LICENSE;
 

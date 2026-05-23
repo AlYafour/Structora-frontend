@@ -277,6 +277,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_super_admin');
       sessionStorage.removeItem('admin_last_activity');
+      sessionStorage.removeItem('ai_assistant_shown');
 
       setUser(null);
       setPermissions([]);

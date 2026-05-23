@@ -19,7 +19,7 @@
   box-sizing: border-box;
   min-height: 297mm;
   margin: 0;
-  padding: 6mm 0;
+  padding: 6mm 8mm;
   background: #fbf8f2;
   color: #17202f;
   font-family: "Inter", "Segoe UI", Arial, Tahoma, sans-serif;
@@ -723,7 +723,7 @@
   width: 100%;
   min-height: auto;
   margin: 0;
-  padding: 0;
+  padding: 0 10px;
   box-shadow: none;
   font-size: 11pt;
   line-height: 1.4;

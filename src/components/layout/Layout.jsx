@@ -6,7 +6,7 @@ import AppSidebar from "./AppSidebar";
 import AppTopBar from "./AppTopBar";
 import Breadcrumbs from "./Breadcrumbs";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
-import ChatbotWidget from "../../features/chatbot/components/ChatbotWidget";
+import AiAssistantModal from "../../features/ai-assistant/AiAssistantModal";
 import PageSkeleton from "./PageSkeleton";
 
 function LayoutContent() {
@@ -19,6 +19,10 @@ function LayoutContent() {
 
   // Superusers ALWAYS see admin sidebar
   const isAdmin = user?.is_superuser;
+
+  // Extract project ID from URL (e.g. /projects/42 or /projects/42/...)
+  const projectIdMatch = location.pathname.match(/\/projects\/(\d+)/);
+  const currentProjectId = projectIdMatch ? Number(projectIdMatch[1]) : null;
 
   return (
     <div className="app-layout" lang={lang} dir={isRTL ? "rtl" : "ltr"}>
@@ -41,8 +45,8 @@ function LayoutContent() {
         </main>
       </div>
 
-      {/* Chatbot for company users */}
-      {!isAdmin && <ChatbotWidget />}
+      {/* AI Assistant for company users */}
+      {!isAdmin && <AiAssistantModal projectId={currentProjectId} />}
     </div>
   );
 }

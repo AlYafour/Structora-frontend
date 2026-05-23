@@ -716,7 +716,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
     };
 
-    const { downloadZip, zipLoading } = useDownloadVariationPDFs(projectId);
+    const { downloadZip, zipLoading, downloadSingle, singleLoading } = useDownloadVariationPDFs(projectId);
     const handleDownloadAllVariations = () =>
         downloadZip({
             items: filteredVariations,
@@ -1129,10 +1129,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                             ]
                                                             : []),
                                                         {
-                                                            label: t("download_pdf"),
-                                                            to: `/variations/${variation.id}/view?project=${projectId}`,
-                                                            type: "link",
-                                                            target: "_blank",
+                                                            label: singleLoading === variation.id ? t("downloading", "Downloading...") : t("download_pdf"),
+                                                            type: "button",
+                                                            onClick: () => downloadSingle(variation),
+                                                            disabled: singleLoading === variation.id,
                                                         },
                                                     ]}
                                                 />

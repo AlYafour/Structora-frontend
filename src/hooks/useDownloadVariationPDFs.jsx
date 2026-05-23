@@ -140,34 +140,73 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
   }
 }
 
+async function fetchProjectAndCompanyInfo(projectId) {
+  const [projectData, settingsRes] = await Promise.all([
+    projectApi.getWithIncludes(projectId, ["siteplan", "license", "contract"]),
+    api.get("auth/tenant-settings/current/", { _skipAuthRedirect: true }),
+  ]);
+
+  const settingsData = settingsRes.data;
+  const rawLogoPath = (settingsData.logo_url || settingsData.company_logo || "").split("?")[0];
+  const logoUrl = rawLogoPath
+    ? (rawLogoPath.startsWith("http") ? rawLogoPath : `${window.location.origin}/media/${rawLogoPath}`)
+    : null;
+
+  const companyInfo = {
+    logo:    logoUrl,
+    name:    settingsData.contractor_name    || settingsData.company_name    || "",
+    name_en: settingsData.contractor_name_en || settingsData.company_name    || "",
+    phone:   settingsData.company_phone      || settingsData.contractor_phone || "",
+    email:   settingsData.company_email      || settingsData.contractor_email || "",
+    address: settingsData.company_address    || settingsData.contractor_address || "",
+  };
+
+  return { projectData, companyInfo };
+}
+
 export function useDownloadVariationPDFs(projectId) {
   const { t } = useTranslation();
   const { success, error: showError } = useNotifications();
   const [zipLoading, setZipLoading] = useState(false);
+  const [singleLoading, setSingleLoading] = useState(null);
+
+  const downloadSingle = useCallback(async (variation) => {
+    setSingleLoading(variation.id);
+    try {
+      const { projectData, companyInfo } = await fetchProjectAndCompanyInfo(projectId);
+
+      let noticeData = {};
+      if (variation?.description) {
+        try { noticeData = JSON.parse(variation.description); } catch { noticeData = {}; }
+      }
+
+      const blob = await renderVariationPrintPdfBlob({
+        variation,
+        project: projectData,
+        companyInfo,
+        noticeData,
+      });
+
+      if (blob) {
+        const fileName = (variation.variation_number || `VAR-${variation.id}`)
+          .replace(/[\\/:*?"<>|]/g, "_");
+        downloadBlob(blob, `${fileName}.pdf`);
+      }
+
+      success(t("document_downloaded", "Document downloaded successfully"));
+    } catch (err) {
+      console.error("[useDownloadVariationPDFs] single failed:", variation?.id, err);
+      showError(t("download_error", "Download failed. Please try again."));
+    } finally {
+      setSingleLoading(null);
+    }
+  }, [projectId, t, success, showError]);
 
   const downloadZip = useCallback(async ({ items, zipName }) => {
     if (!items?.length) return;
     setZipLoading(true);
     try {
-      const [projectData, settingsRes] = await Promise.all([
-        projectApi.getWithIncludes(projectId, ["siteplan", "license", "contract"]),
-        api.get("auth/tenant-settings/current/", { _skipAuthRedirect: true }),
-      ]);
-
-      const settingsData = settingsRes.data;
-      const rawLogoPath = (settingsData.logo_url || settingsData.company_logo || "").split("?")[0];
-      const logoUrl = rawLogoPath
-        ? (rawLogoPath.startsWith("http") ? rawLogoPath : `${window.location.origin}/media/${rawLogoPath}`)
-        : null;
-
-      const companyInfo = {
-        logo:    logoUrl,
-        name:    settingsData.contractor_name    || settingsData.company_name    || "",
-        name_en: settingsData.contractor_name_en || settingsData.company_name    || "",
-        phone:   settingsData.company_phone      || settingsData.contractor_phone || "",
-        email:   settingsData.company_email      || settingsData.contractor_email || "",
-        address: settingsData.company_address    || settingsData.contractor_address || "",
-      };
+      const { projectData, companyInfo } = await fetchProjectAndCompanyInfo(projectId);
 
       const zip = new JSZip();
       let skipped = 0;
@@ -220,5 +259,5 @@ export function useDownloadVariationPDFs(projectId) {
     }
   }, [projectId, t, success, showError]);
 
-  return { downloadZip, zipLoading };
+  return { downloadZip, zipLoading, downloadSingle, singleLoading };
 }

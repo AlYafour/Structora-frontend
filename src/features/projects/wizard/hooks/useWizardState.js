@@ -28,7 +28,7 @@ export default function useWizardState() {
   useEffect(() => {
     try {
       // Exclude File objects from localStorage (not serializable)
-      const { _projectImageFile, ...serializable } = setup;
+      const { _projectImageFile, _classification, ...serializable } = setup;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
     } catch { /* localStorage write may fail in private browsing */ }
   }, [setup]);

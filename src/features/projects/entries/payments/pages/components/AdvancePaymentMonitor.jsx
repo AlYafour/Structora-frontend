@@ -17,6 +17,7 @@ import { MetricCard, MetricGrid } from "../../../../../../components/common/Metr
 import Dialog from "../../../../../../components/common/Dialog";
 import ActionMenu from "../../../../../../components/common/ActionMenu";
 import "./AdvancePaymentMonitor.css";
+import DirhamsIcon from "../../../../../../components/common/DirhamsIcon";
 
 export default function AdvancePaymentMonitor({ projectId, onReload }) {
   const { t, i18n } = useTranslation();
@@ -77,6 +78,23 @@ export default function AdvancePaymentMonitor({ projectId, onReload }) {
   const totalRemaining = parseFloat(totals.total_remaining) || 0;
   const overallProgress = totalAmount > 0 ? (totalRecovered / totalAmount) * 100 : 0;
 
+  const renderAmount = (value) => {
+    const str = formatMoney(value, { lang: i18n.language });
+
+    if (i18n.language === "en") {
+      const numPart = str.replace(/AED\s?/, "").trim();
+
+      return (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          {numPart}
+          <DirhamsIcon size={10} color="#374151" />
+        </span>
+      );
+    }
+
+    return str;
+  };
+
   return (
     <div className="advance-monitor">
       <div className="advance-monitor__header">
@@ -93,9 +111,26 @@ export default function AdvancePaymentMonitor({ projectId, onReload }) {
 
       {/* Summary Cards — unified MetricCard design */}
       <MetricGrid>
-        <MetricCard variant="amber" icon="wallet" label={t("total_advance")} value={formatMoney(totalAmount)} />
-        <MetricCard variant="emerald" icon="check" label={t("recovered")} value={formatMoney(totalRecovered)} />
-        <MetricCard variant={totalRemaining > 0 ? 'danger' : 'success'} icon="alert" label={t("remaining")} value={formatMoney(totalRemaining)} />
+        <MetricCard
+          variant="amber"
+          icon="wallet"
+          label={t("total_advance")}
+          value={renderAmount(totalAmount)}
+        />
+
+        <MetricCard
+          variant="emerald"
+          icon="check"
+          label={t("recovered")}
+          value={renderAmount(totalRecovered)}
+        />
+
+        <MetricCard
+          variant={totalRemaining > 0 ? "danger" : "success"}
+          icon="alert"
+          label={t("remaining")}
+          value={renderAmount(totalRemaining)}
+        />
       </MetricGrid>
 
       {/* Overall Progress Bar */}
