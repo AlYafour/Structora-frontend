@@ -1,5 +1,145 @@
 /* ── AI Assistant Chat Widget ───────────────────────────────────── */
 
+/* ── Action confirmation bar ─────────────────────────────────────── */
+.ai-action-confirm-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8f9ff;
+  border-radius: 10px;
+  border: 1px solid #e0e4ff;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+.ai-confirm-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 16px;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ai-confirm-btn:hover:not(:disabled) { background: #16a34a; }
+.ai-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ai-cancel-action-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ai-cancel-action-btn:hover:not(:disabled) { background: #e2e8f0; }
+.ai-cancel-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Excel preview block ─────────────────────────────────────────── */
+.ai-excel-preview {
+  background: #f8faff;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 6px 0;
+  font-size: 12px;
+}
+.ai-excel-preview-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 10px;
+}
+.ai-excel-preview-rows { display: flex; flex-direction: column; gap: 6px; }
+.ai-excel-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e0e7ff;
+}
+.ai-excel-chip {
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+.ai-excel-more {
+  color: #64748b;
+  font-size: 11px;
+  font-style: italic;
+  padding: 2px 6px;
+}
+
+/* ── Input form wrapper (chip + row) ─────────────────────────────── */
+.ai-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Attached file chip ──────────────────────────────────────────── */
+.ai-attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #1d4ed8;
+  max-width: 100%;
+}
+.ai-attachment-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ai-attachment-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #93c5fd;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.ai-attachment-remove:hover { color: #1d4ed8; }
+
+/* ── Attach button ───────────────────────────────────────────────── */
+.ai-attach-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.ai-attach-btn:hover:not(:disabled) { background: #e0f2fe; color: #0284c7; }
+.ai-attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .ai-overlay {
   display: none; /* no full-screen overlay for bottom-right widget */
 }

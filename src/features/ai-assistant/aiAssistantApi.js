@@ -21,7 +21,31 @@ export const aiAssistantApi = {
 
     const response = await api.post("ai-assistant/create-project/", form, {
       headers: { "Content-Type": "multipart/form-data" },
-      timeout: 180000, // 3 min — parsing multiple PDFs takes time
+      timeout: 180000,
+    });
+    return response.data;
+  },
+
+  async executeAction(action, projectId = null, language = "ar") {
+    const response = await api.post("ai-assistant/execute-action/", {
+      action,
+      language,
+      ...(projectId ? { project_id: projectId } : {}),
+    });
+    return response.data;
+  },
+
+  async importExcel(file, { projectId = null, dataType = "auto", dryRun = true, language = "ar" } = {}) {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("data_type", dataType);
+    form.append("dry_run", dryRun ? "true" : "false");
+    form.append("language", language);
+    if (projectId) form.append("project_id", projectId);
+
+    const response = await api.post("ai-assistant/import-excel/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 60000,
     });
     return response.data;
   },
