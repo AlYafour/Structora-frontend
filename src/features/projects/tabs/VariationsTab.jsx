@@ -1016,7 +1016,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                         }
                                     }
 
-                                    const displayNumber = referenceNo || variation.variation_number || variation.modification_number || `VAR-${variation.id}`;
+                                    const rawNumber = variation.variation_number || variation.modification_number || referenceNo || variation.id;
+                                    const displayNumber = `VAR${String(rawNumber).replace(/^VAR/i, "")}`;
 
                                     return (
                                         <tr
