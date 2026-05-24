@@ -316,35 +316,31 @@ export default function useContract(projectId) {
             general_specifications_file_name: s.general_specifications_file ? (s.general_specifications_file_name || extractFileNameFromUrl(s.general_specifications_file) || null) : null,
           }));
           // Don't set setIsView(true) automatically - stays in edit mode until user chooses view
-          // Auto-populate consultant company name from license — also backfill _en for existing records
-          const existingComm = s.official_communication || {};
-          const existingConsultantComm = existingComm.consultant || {};
-          if (!existingConsultantComm.company_name || !existingConsultantComm.company_name_en) {
-            if (licRes.status === "fulfilled" && Array.isArray(licRes.value?.data) && licRes.value.data.length > 0) {
-              const lic = licRes.value.data[0];
-              const consultantName =
-                lic.supervision_consultant?.name || lic.supervision_consultant_name ||
-                lic.design_consultant?.name || lic.design_consultant_name || "";
-              const consultantNameEn =
-                lic.supervision_consultant?.name_en || lic.supervision_consultant_name_en ||
-                lic.design_consultant?.name_en || lic.design_consultant_name_en || "";
-              if (consultantName || consultantNameEn) {
-                setForm((prev) => {
-                  const prevComm = prev.official_communication || {};
-                  const prevConsultant = prevComm.consultant || {};
-                  return {
-                    ...prev,
-                    official_communication: {
-                      ...prevComm,
-                      consultant: {
-                        ...prevConsultant,
-                        company_name: prevConsultant.company_name || consultantName,
-                        company_name_en: prevConsultant.company_name_en || consultantNameEn,
-                      },
+          // Always sync consultant company name from license — license is source of truth
+          if (licRes.status === "fulfilled" && Array.isArray(licRes.value?.data) && licRes.value.data.length > 0) {
+            const lic = licRes.value.data[0];
+            const consultantName =
+              lic.supervision_consultant?.name || lic.supervision_consultant_name ||
+              lic.design_consultant?.name || lic.design_consultant_name || "";
+            const consultantNameEn =
+              lic.supervision_consultant?.name_en || lic.supervision_consultant_name_en ||
+              lic.design_consultant?.name_en || lic.design_consultant_name_en || "";
+            if (consultantName || consultantNameEn) {
+              setForm((prev) => {
+                const prevComm = prev.official_communication || {};
+                const prevConsultant = prevComm.consultant || {};
+                return {
+                  ...prev,
+                  official_communication: {
+                    ...prevComm,
+                    consultant: {
+                      ...prevConsultant,
+                      company_name: consultantName || prevConsultant.company_name,
+                      company_name_en: consultantNameEn || prevConsultant.company_name_en,
                     },
-                  };
-                });
-              }
+                  },
+                };
+              });
             }
           }
         } else {
@@ -379,8 +375,8 @@ export default function useContract(projectId) {
                     ...prevComm,
                     consultant: {
                       ...prevConsultant,
-                      company_name: prevConsultant.company_name || consultantName,
-                      company_name_en: prevConsultant.company_name_en || consultantNameEn,
+                      company_name: consultantName || prevConsultant.company_name,
+                      company_name_en: consultantNameEn || prevConsultant.company_name_en,
                     },
                   },
                 };
