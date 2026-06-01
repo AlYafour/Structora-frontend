@@ -144,6 +144,12 @@ export function NotificationProvider({ children }) {
     }, 300);
   }, [processQueue]);
 
+  const clearToastQueue = useCallback(() => {
+    toastQueue.current = [];
+    isProcessing.current = false;
+    setToast((prev) => (prev.open ? { ...prev, open: false } : prev));
+  }, []);
+
   const addNotification = useCallback((notification) => {
     const newNotification = {
       id: notification.id || generateId(),
@@ -220,6 +226,7 @@ export function NotificationProvider({ children }) {
     notifications,
     unreadCount,
     showToast,
+    clearToastQueue,
     success,
     error,
     addNotification,

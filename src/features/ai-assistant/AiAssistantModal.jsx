@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { aiAssistantApi } from "./aiAssistantApi";
 import useTenantNavigate from "../../hooks/useTenantNavigate";
 import FileUpload from "../../components/file-upload/FileUpload";
+import { useValidation } from "../../contexts/ValidationContext";
 import "./AiAssistantModal.css";
 
 const SESSION_KEY = "ai_assistant_shown";
@@ -116,13 +117,15 @@ export default function AiAssistantModal({ projectId = null }) {
     return !sessionStorage.getItem(SESSION_KEY);
   });
 
-  // Restore messages from previous session (survives remounts / lazy-load suspense)
+  // Restore messages — strip stale validation messages from previous session
   const [messages, setMessages] = useState(() => {
     try {
       const saved = sessionStorage.getItem(MESSAGES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(m => !m.isValidation);
+        }
       }
     } catch {}
     return [];
@@ -132,6 +135,7 @@ export default function AiAssistantModal({ projectId = null }) {
 
   // Project creation flow
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [uploadInsertIndex, setUploadInsertIndex] = useState(-1);
   const [createdProjectId, setCreatedProjectId] = useState(null);
   const [files, setFiles] = useState({
     site_plan: null, owner_id: null, build_permit: null, contract: null,
@@ -146,7 +150,50 @@ export default function AiAssistantModal({ projectId = null }) {
   const excelInputRef = useRef(null);
 
   const messagesEndRef = useRef(null);
+  const lastMsgRef = useRef(null);
   const inputRef = useRef(null);
+
+  // ── Validation results from wizard ─────────────────────────────────────────
+  const { validationIssues } = useValidation() || {};
+  const lastValidationSignatureRef = useRef(null);
+
+  useEffect(() => {
+    if (!validationIssues || validationIssues.length === 0) {
+      // Issues resolved — show a brief success note without forcing modal open
+      if (lastValidationSignatureRef.current) {
+        lastValidationSignatureRef.current = null;
+        const clearText = isAR
+          ? "✅ تم حل جميع مشكلات التحقق من المستندات."
+          : "✅ All document validation issues resolved.";
+        setMessages(prev => [
+          ...prev.filter(m => !m.isValidation),
+          { role: "ai", text: clearText, isValidation: true },
+        ]);
+      }
+      return;
+    }
+
+    const signature = validationIssues.map(i => i.code).sort().join(",");
+    const isNewIssues = signature !== lastValidationSignatureRef.current;
+    lastValidationSignatureRef.current = signature;
+
+    const header = isAR
+      ? "**⚠️ تنبيهات التحقق من المستندات:**\n\n"
+      : "**⚠️ Document validation alerts:**\n\n";
+    const lines = validationIssues.map(i =>
+      `${i.severity === "error" ? "🔴" : "⚠️"} ${i.message}`
+    );
+    const text = header + lines.join("\n\n");
+
+    setMessages(prev => [
+      ...prev.filter(m => !m.isValidation),
+      { role: "ai", text, isValidation: true },
+    ]);
+
+    // Auto-open only when the set of issues changes
+    if (isNewIssues) setIsOpen(true);
+  }, [validationIssues, isAR]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ───────────────────────────────────────────────────────────────────────────
 
   // Add greeting only if no messages were restored from sessionStorage
   useEffect(() => {
@@ -176,9 +223,26 @@ export default function AiAssistantModal({ projectId = null }) {
     });
   }, [i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When a new message arrives, scroll to the last message so it's visible even if upload block is below
+  useEffect(() => {
+    if (messages.length > 0) {
+      lastMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [messages]);
+
+  // For all other state changes (upload block appearing, loading, etc.) scroll to the very bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, showFileUpload, loading, pendingAction, excelPreview]);
+  }, [showFileUpload, loading, pendingAction, excelPreview]);
+
+  // Track which message index the upload block was inserted after, so responses render below it
+  useEffect(() => {
+    if (showFileUpload) {
+      setUploadInsertIndex(prev => prev === -1 ? messages.length - 1 : prev);
+    } else {
+      setUploadInsertIndex(-1);
+    }
+  }, [showFileUpload, messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isOpen && !loading) {
@@ -188,7 +252,7 @@ export default function AiAssistantModal({ projectId = null }) {
 
   const buildHistory = useCallback((msgs) => {
     return msgs
-      .filter((m) => m.role === "user" || m.role === "ai")
+      .filter((m) => (m.role === "user" || m.role === "ai") && !m.isValidation)
       .map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
   }, []);
 
@@ -465,8 +529,9 @@ export default function AiAssistantModal({ projectId = null }) {
 
         {/* Messages */}
         <div className="ai-messages">
-          {messages.map((msg, i) => (
-            <div key={i} className={`ai-msg ai-msg--${msg.role}`}>
+          {/* Messages before the upload block */}
+          {(uploadInsertIndex >= 0 ? messages.slice(0, uploadInsertIndex + 1) : messages).map((msg, i) => (
+            <div key={i} className={`ai-msg ai-msg--${msg.role}`} ref={i === messages.length - 1 ? lastMsgRef : null}>
               {msg.role === "ai" && <span className="ai-msg-avatar">✦</span>}
               <div className="ai-msg-bubble">
                 <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -474,17 +539,8 @@ export default function AiAssistantModal({ projectId = null }) {
             </div>
           ))}
 
-          {loading && (
-            <div className="ai-msg ai-msg--ai">
-              <span className="ai-msg-avatar">✦</span>
-              <div className="ai-msg-bubble ai-typing">
-                <span /><span /><span />
-              </div>
-            </div>
-          )}
-
           {/* Pending action confirmation */}
-          {pendingAction && !loading && (
+          {pendingAction && !loading && uploadInsertIndex === -1 && (
             <ActionConfirmBar
               pendingAction={pendingAction}
               onConfirm={handleConfirmAction}
@@ -495,7 +551,7 @@ export default function AiAssistantModal({ projectId = null }) {
           )}
 
           {/* Excel preview confirmation */}
-          {excelPreview && !loading && (
+          {excelPreview && !loading && uploadInsertIndex === -1 && (
             <ExcelPreviewBlock
               preview={excelPreview}
               onConfirm={handleConfirmExcel}
@@ -505,7 +561,7 @@ export default function AiAssistantModal({ projectId = null }) {
             />
           )}
 
-          {/* Project creation file slots */}
+          {/* Project creation file slots — rendered in-flow so responses appear below */}
           {showFileUpload && !createdProjectId && (
             <div className="ai-file-upload-block">
               <FileSlot label={t("ai_assistant_file_site_plan")} required file={files.site_plan} onChange={(f) => setFiles((p) => ({ ...p, site_plan: f }))} disabled={loading} />
@@ -515,6 +571,28 @@ export default function AiAssistantModal({ projectId = null }) {
               <button className="ai-create-btn" onClick={handleCreate} disabled={!canCreate || loading}>
                 {loading ? t("ai_assistant_creating") : t("ai_assistant_create_btn")}
               </button>
+            </div>
+          )}
+
+          {/* Messages after the upload block (validation errors, success, etc.) */}
+          {uploadInsertIndex >= 0 && messages.slice(uploadInsertIndex + 1).map((msg, i) => {
+            const globalIdx = uploadInsertIndex + 1 + i;
+            return (
+              <div key={globalIdx} className={`ai-msg ai-msg--${msg.role}`} ref={globalIdx === messages.length - 1 ? lastMsgRef : null}>
+                {msg.role === "ai" && <span className="ai-msg-avatar">✦</span>}
+                <div className="ai-msg-bubble">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              </div>
+            );
+          })}
+
+          {loading && (
+            <div className="ai-msg ai-msg--ai">
+              <span className="ai-msg-avatar">✦</span>
+              <div className="ai-msg-bubble ai-typing">
+                <span /><span /><span />
+              </div>
             </div>
           )}
 

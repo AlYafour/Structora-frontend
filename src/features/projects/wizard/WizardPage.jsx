@@ -11,6 +11,8 @@ import BrandedLoader from "../../../components/common/BrandedLoader";
 import Dialog from "../../../components/common/Dialog";
 import PageHeader from "../../../components/layout/PageHeader";
 import { useNotifications } from "../../../contexts/NotificationContext";
+import { useValidation } from "../../../contexts/ValidationContext";
+import { aiAssistantApi } from "../../ai-assistant/aiAssistantApi";
 
 import useWizardState from "./hooks/useWizardState";
 import useProjectData from "../../../hooks/useProjectData";
@@ -33,7 +35,59 @@ export default function WizardPage() {
   const isAR = i18n.language === "ar";
 
   const { error: showError, success: showSuccess } = useNotifications();
+  const { pushValidationResults } = useValidation();
   const navigate = useTenantNavigate();
+
+  // ── Document validation (real-time, non-blocking) ──────────────────────────
+  const docFilesRef = useRef({ site_plan: null, owner_id: null, build_permit: null, contract: null });
+  const formDataRef = useRef({});
+  const validationTimerRef = useRef(null);
+  const isValidatingRef = useRef(false);
+  const pendingRevalidationRef = useRef(false);
+  const scheduleValidationRef = useRef(null);
+
+  const scheduleValidation = useCallback(() => {
+    clearTimeout(validationTimerRef.current);
+    validationTimerRef.current = setTimeout(async () => {
+      if (isValidatingRef.current) {
+        pendingRevalidationRef.current = true;
+        return;
+      }
+      const files = docFilesRef.current;
+      const fileCount = Object.values(files).filter(f => f instanceof File).length;
+      if (fileCount < 2) return;
+
+      isValidatingRef.current = true;
+      pendingRevalidationRef.current = false;
+      try {
+        const lang = /^ar\b/i.test(i18n.language) ? "ar" : "en";
+        const result = await aiAssistantApi.validateDocuments(files, lang, formDataRef.current);
+        pushValidationResults(result?.issues || []);
+      } catch (e) {
+        logger.warn("Document validation failed silently", e);
+      } finally {
+        isValidatingRef.current = false;
+        if (pendingRevalidationRef.current) {
+          pendingRevalidationRef.current = false;
+          scheduleValidationRef.current?.();
+        }
+      }
+    }, 1500);
+  }, [i18n, pushValidationResults]);
+
+  scheduleValidationRef.current = scheduleValidation;
+
+  const handleDocFilesChange = useCallback((type, file) => {
+    if (!(file instanceof File)) return;
+    docFilesRef.current = { ...docFilesRef.current, [type]: file };
+    scheduleValidation();
+  }, [scheduleValidation]);
+
+  const handleFormSectionChange = useCallback((sectionKey, sectionData) => {
+    formDataRef.current = { ...formDataRef.current, [sectionKey]: sectionData };
+    scheduleValidation();
+  }, [scheduleValidation]);
+  // ───────────────────────────────────────────────────────────────────────────
   const location = useLocation();
   const queryClient = useQueryClient();
 
@@ -585,6 +639,8 @@ export default function WizardPage() {
                   isNewProject={isNewProject}
                   noPermit={noPermit}
                   isActive={index === 1}
+                  onDocFilesChange={handleDocFilesChange}
+                  onFormSectionChange={handleFormSectionChange}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -606,6 +662,8 @@ export default function WizardPage() {
                   isView={isView}
                   isNewProject={isNewProject}
                   isActive={index === 2}
+                  onDocFilesChange={handleDocFilesChange}
+                  onFormSectionChange={handleFormSectionChange}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -639,6 +697,8 @@ export default function WizardPage() {
                 onSetupChange={setSetup}
                 siteplanSnapshot={isNewProject ? wizardData.siteplan : null}
                 noPermit={noPermit}
+                onDocFilesChange={handleDocFilesChange}
+                onFormSectionChange={handleFormSectionChange}
               />
             </div>
           )}

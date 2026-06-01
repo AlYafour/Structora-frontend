@@ -75,10 +75,29 @@ const OverviewTab = memo(function OverviewTab({
     ? t(BUILDING_TYPE_LABEL_KEYS[cd.constructionType])
     : null;
 
-  const subClassLabel =
-    Array.isArray(cd.subClassifications) && cd.subClassifications.length > 0
-      ? cd.subClassifications.join(isAR ? "، " : ", ")
-      : null;
+  const subClassLabel = (() => {
+    if (!Array.isArray(cd.subClassifications) || cd.subClassifications.length === 0) return null;
+
+    const buildingKey = cd.constructionType;
+    const targetLng = isAR ? "ar" : "en";
+
+    const translated = cd.subClassifications.map((val) => {
+      if (!buildingKey || typeof val !== "string") return val;
+
+      const enItems = t(`subClassifications.${buildingKey}`, { returnObjects: true, lng: "en" });
+      const arItems = t(`subClassifications.${buildingKey}`, { returnObjects: true, lng: "ar" });
+      const targetItems = isAR ? arItems : enItems;
+
+      if (Array.isArray(enItems) && Array.isArray(arItems)) {
+        let idx = enItems.indexOf(val);
+        if (idx < 0) idx = arItems.indexOf(val);
+        if (idx >= 0 && targetItems[idx]) return targetItems[idx];
+      }
+      return val;
+    });
+
+    return translated.join(isAR ? "، " : ", ");
+  })();
 
   const hasNewClassification = !!(
     categoryLabel ||

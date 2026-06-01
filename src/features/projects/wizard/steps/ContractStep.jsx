@@ -43,7 +43,7 @@ import { extractFileNameFromUrl, buildFileUrl } from "../../../../utils/helpers/
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 import UniqueFieldInput from "../../../../components/forms/UniqueFieldInput";
 
-export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false }) {
+export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false, onDocFilesChange, onFormSectionChange }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { isArabic: isAR } = useLanguage();
@@ -58,6 +58,14 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
     return () => clearTimeout(navTimerRef.current);
   }, []);
 
+  // Report the complete contract section only when at least one date has been entered
+  useEffect(() => {
+    if (!form.contract_date && !form.project_end_date) return;
+    onFormSectionChange?.("contract_section", {
+      contract_date:      form.contract_date      || "",
+      project_end_date:   form.project_end_date   || "",
+    });
+  }, [form.contract_date, form.project_end_date, onFormSectionChange]);
 
   const [viewMode, updateViewMode] = useViewMode(isViewProp, isViewState, setIsView);
   const { isSaving, errorMsg, setErrorMsg, runSave } = useStepSave();
@@ -1126,6 +1134,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         acknowledgmentChecked={acknowledgmentChecked}
         onAcknowledgmentChange={setAcknowledgmentChecked}
         reviewerName={user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.username || user.email : ""}
+        onDocFilesChange={onDocFilesChange}
       />
 
       {/* Contract drawings */}

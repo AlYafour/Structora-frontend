@@ -35,6 +35,24 @@ export const aiAssistantApi = {
     return response.data;
   },
 
+  async validateDocuments(files = {}, language = "ar", formData = {}) {
+    const form = new FormData();
+    form.append("language", language);
+    if (formData && Object.keys(formData).length > 0) {
+      form.append("form_data", JSON.stringify(formData));
+    }
+    if (files.site_plan   instanceof File) form.append("site_plan",    files.site_plan);
+    if (files.owner_id    instanceof File) form.append("owner_id",     files.owner_id);
+    if (files.build_permit instanceof File) form.append("build_permit", files.build_permit);
+    if (files.contract    instanceof File) form.append("contract",     files.contract);
+
+    const response = await api.post("ai-assistant/validate-documents/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 90000,
+    });
+    return response.data;
+  },
+
   async importExcel(file, { projectId = null, dataType = "auto", dryRun = true, language = "ar" } = {}) {
     const form = new FormData();
     form.append("file", file);

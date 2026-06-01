@@ -63,6 +63,8 @@ export default function SitePlanStep({
   onSitePlanReady,
   noPermit = false,
   isActive = true,
+  onDocFilesChange,
+  onFormSectionChange,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -111,6 +113,24 @@ export default function SitePlanStep({
   const [sitePlanPreviewSrc, setSitePlanPreviewSrc] = useState("");
   const [idPreviewSrc, setIdPreviewSrc] = useState("");
   const [previewError, setPreviewError] = useState("");
+
+  // Report the complete owner section only when at least one owner has meaningful data
+  useEffect(() => {
+    const hasData = (owners || []).some(o => o.owner_name_ar || o.owner_name_en || o.id_number);
+    if (!hasData) return;
+    onFormSectionChange?.("owner_section", {
+      owners: owners.map(o => ({
+        owner_name_ar:  o.owner_name_ar  || "",
+        owner_name_en:  o.owner_name_en  || "",
+        id_number:      o.id_number      || "",
+        nationality:    o.nationality    || "",
+        id_expiry_date: o.id_expiry_date || "",
+        id_issue_date:  o.id_issue_date  || "",
+        gender:         o.gender         || "",
+        share_percent:  o.share_percent  || "",
+      })),
+    });
+  }, [owners, onFormSectionChange]);
 
   useEffect(() => {
     if (!showPdfPanel) {
@@ -406,6 +426,7 @@ export default function SitePlanStep({
    */
   const handleSitePlanFileChange = async (file) => {
     setF("site_plan_file", file);
+    if (file instanceof File) onDocFilesChange?.("site_plan", file);
 
     if (file instanceof File) {
       setSitePlanUploaded(true);
@@ -491,6 +512,15 @@ export default function SitePlanStep({
    */
   const handleOwnerIdFileChange = async (ownerIndex, file) => {
     updateOwner(ownerIndex, "id_attachment", file);
+    if (file instanceof File && ownerIndex === 0) {
+      // Clear name/ID fields so stale data from the previous card doesn't
+      // produce false form-vs-document mismatches while the new card is extracted.
+      updateOwner(ownerIndex, "owner_name_ar", "");
+      updateOwner(ownerIndex, "owner_name_en", "");
+      updateOwner(ownerIndex, "id_number", "");
+      onFormSectionChange?.("owner_section", null);
+      onDocFilesChange?.("owner_id", file);
+    }
 
     if (file instanceof File) {
       setOwnerIdUploaded(true);

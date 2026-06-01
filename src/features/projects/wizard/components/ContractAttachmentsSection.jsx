@@ -35,6 +35,7 @@ export default function ContractAttachmentsSection({
   acknowledgmentChecked = false,
   onAcknowledgmentChange,
   reviewerName = "",
+  onDocFilesChange,
 }) {
   const { t } = useTranslation();
 
@@ -105,6 +106,7 @@ export default function ContractAttachmentsSection({
             fileName={form.contract_file_name}
             onChange={(file) => {
               setF("contract_file", file);
+              if (file instanceof File) onDocFilesChange?.("contract", file);
 
               // reset review ONLY when a new file is selected
               onContractReviewStateChange?.({

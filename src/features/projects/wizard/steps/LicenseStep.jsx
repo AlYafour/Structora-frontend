@@ -36,7 +36,7 @@ import { logger } from "../../../../utils/logger";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
-export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true }) {
+export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true, onDocFilesChange, onFormSectionChange }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { form, setForm, setF, owners, existingId, setExistingId, isView: isViewState, setIsView } = useLicense(projectId);
@@ -118,9 +118,27 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
     if (!isActive) setShowLicensePanel(false);
   }, [isActive]);
 
+  // Report the complete license section only when at least one field has meaningful data
+  useEffect(() => {
+    if (!form.license_no && !form.issue_date && !form.expiry_date) return;
+    onFormSectionChange?.("license_section", {
+      license_no:          form.license_no          || "",
+      license_project_no:  form.license_project_no  || "",
+      issue_date:          form.issue_date          || "",
+      expiry_date:         form.expiry_date         || "",
+      license_type:        form.license_type        || "",
+    });
+  }, [form.license_no, form.license_project_no, form.issue_date, form.expiry_date, form.license_type, onFormSectionChange]);
+
   const handleLicenseFileChange = async (file) => {
     setF("building_license_file", file);
-    if (file instanceof File) setShowLicensePanel(true);
+    if (file instanceof File) {
+      // Clear stale permit fields so old values don't cause false mismatches
+      // while the new permit is being extracted.
+      onFormSectionChange?.("license_section", null);
+      onDocFilesChange?.("build_permit", file);
+      setShowLicensePanel(true);
+    }
     if (!file || !(file instanceof File)) return;
 
     setIsExtracting(true);

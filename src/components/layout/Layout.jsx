@@ -7,6 +7,7 @@ import AppTopBar from "./AppTopBar";
 import Breadcrumbs from "./Breadcrumbs";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import AiAssistantModal from "../../features/ai-assistant/AiAssistantModal";
+import { ValidationProvider } from "../../contexts/ValidationContext";
 import PageSkeleton from "./PageSkeleton";
 
 function LayoutContent() {
@@ -54,7 +55,9 @@ function LayoutContent() {
 export default function Layout() {
   return (
     <SidebarProvider>
-      <LayoutContent />
+      <ValidationProvider>
+        <LayoutContent />
+      </ValidationProvider>
     </SidebarProvider>
   );
 }
