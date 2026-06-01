@@ -9,7 +9,7 @@ import Button from '../../../components/common/Button';
 import Field from '../../../components/forms/Field';
 import BRAND from '../../../config/brand';
 import {
-  FaBuilding, FaUser, FaInfoCircle, FaSave, FaUpload,
+  FaBuilding, FaUser, FaInfoCircle, FaSave, FaUpload, FaTrash,
   FaPalette, FaFileContract, FaCheckCircle, FaCalendarAlt,
   FaUsers, FaProjectDiagram, FaPhone, FaEnvelope,
   FaMapMarkerAlt, FaIdCard, FaGlobe, FaLock,
@@ -35,6 +35,7 @@ export default function CompanySettingsPage() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [settingsData, setSettingsData] = useState(null);
+  const [removedFields, setRemovedFields] = useState(new Set());
 
   const [companyData, setCompanyData] = useState({
     company_name: '',
@@ -82,6 +83,7 @@ export default function CompanySettingsPage() {
   }, [user]);
 
 
+
   const loadData = async () => {
     setLoadingData(true);
     try {
@@ -98,6 +100,7 @@ export default function CompanySettingsPage() {
         company_activity_type: settings.company_activity_type || 'construction',
         company_logo: null,
         background_image: null,
+        letter_head_template: null,
         primary_color: settings.primary_color || BRAND.primaryColor,
         secondary_color: settings.secondary_color || BRAND.secondaryColor,
         contractor_name: settings.contractor_name || '',
@@ -134,8 +137,17 @@ export default function CompanySettingsPage() {
 
   const handleCompanyChange = (e) => {
     const { name, value, files } = e.target;
-    if (files && files[0]) setCompanyData(prev => ({ ...prev, [name]: files[0] }));
-    else setCompanyData(prev => ({ ...prev, [name]: value }));
+    if (files && files[0]) {
+      setCompanyData(prev => ({ ...prev, [name]: files[0] }));
+      setRemovedFields(prev => { const n = new Set(prev); n.delete(name); return n; });
+    } else {
+      setCompanyData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleRemoveFile = (fieldName) => {
+    setCompanyData(prev => ({ ...prev, [fieldName]: null }));
+    setRemovedFields(prev => new Set([...prev, fieldName]));
   };
 
   const handleOwnerChange = (e) => {
@@ -154,21 +166,26 @@ export default function CompanySettingsPage() {
         'contractor_license_no','contractor_phone','contractor_email','contractor_address',
         'contractor_registration_number',
       ];
-      const fileFields = ['company_logo','background_image','contractor_signature'];
-      const hasFiles = fileFields.some(f => companyData[f] instanceof File);
+      const fileFields = ['company_logo','background_image','contractor_signature','letter_head_template'];
+      const hasFiles = fileFields.some(f => companyData[f] instanceof File) || removedFields.size > 0;
 
       let payload;
       const isValidValue = (v) => v !== undefined && v !== null && v !== '' && v !== 'undefined';
       if (hasFiles) {
         payload = new FormData();
         textFields.forEach(f => { if (isValidValue(companyData[f])) payload.append(f, companyData[f]); });
-        fileFields.forEach(f => { if (companyData[f] instanceof File) payload.append(f, companyData[f]); });
+        fileFields.forEach(f => {
+          if (companyData[f] instanceof File) payload.append(f, companyData[f]);
+          else if (removedFields.has(f)) payload.append(`remove_${f}`, 'true');
+        });
       } else {
         payload = {};
         textFields.forEach(f => { if (isValidValue(companyData[f])) payload[f] = companyData[f]; });
       }
       await companyApi.updateCurrentSettings(payload);
       await loadTenantTheme(false);
+      setRemovedFields(new Set());
+      await loadData();
       success(t('company_data_saved_success'));
     } catch (err) {
       logger.error('Error saving company data', err);
@@ -443,6 +460,43 @@ export default function CompanySettingsPage() {
                         {t('company_choose_background_image')}
                       </Button>
                     </label>
+                  </div>
+                </div>
+
+                {/* Letter Head Template */}
+                <div className="cs-upload-card cs-upload-card--bg">
+                  <div className="cs-upload-card__preview cs-upload-card__preview--wide">
+                    {companyData.letter_head_template ? (
+                      <img src={URL.createObjectURL(companyData.letter_head_template)} alt="New letterhead" className="cs-upload-card__img cs-upload-card__img--cover" />
+                    ) : settingsData?.letter_head_template_url && !removedFields.has('letter_head_template') ? (
+                      <img src={settingsData.letter_head_template_url} alt="Letter Head" className="cs-upload-card__img cs-upload-card__img--cover" />
+                    ) : (
+                      <div className="cs-upload-card__placeholder"><FaFileContract /></div>
+                    )}
+                  </div>
+                  <div className="cs-upload-card__body">
+                    <p className="cs-upload-card__title">{t('company_letter_head_template')}</p>
+                    <p className="cs-upload-card__hint">{t('company_letter_head_template_hint')}</p>
+                    <input type="file" name="letter_head_template" accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleCompanyChange} className="ds-hidden" id="letterhead-upload" />
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <label htmlFor="letterhead-upload">
+                        <Button type="button" variant="secondary" size="sm" as="span" startIcon={<FaUpload />}>
+                          {t('company_choose_letter_head')}
+                        </Button>
+                      </label>
+                      {(companyData.letter_head_template || (settingsData?.letter_head_template_url && !removedFields.has('letter_head_template'))) && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          startIcon={<FaTrash />}
+                          onClick={() => handleRemoveFile('letter_head_template')}
+                        >
+                          {t('remove', { defaultValue: 'Remove' })}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
 

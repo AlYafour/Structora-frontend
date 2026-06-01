@@ -324,6 +324,18 @@ class ProjectService extends BaseService {
     }
   }
 
+  async getExtensionLetterData(projectId, startOrderId, extIndex) {
+    try {
+      const { data } = await api.get(
+        `${this.basePath}${projectId}/start-order/${startOrderId}/extension-letter/`,
+        { params: { ext_index: extIndex } }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getExtensionLetterData');
+    }
+  }
+
   /**
    * Delete variation
    * @param {string|number} projectId - Project ID

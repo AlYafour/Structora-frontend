@@ -20,9 +20,15 @@ const EMPTY_EXTENSION = {
   months: 0,
   extension_date: "",
   approval_number: "",
+  extension_period_from: "",
+  extension_period_to: "",
+  note: "",
   file: null,
   file_url: null,
   file_name: null,
+  letter_attachment: null,
+  letter_attachment_url: null,
+  letter_attachment_name: null,
 };
 
 export default function ExtensionsPage() {
@@ -64,9 +70,15 @@ export default function ExtensionsPage() {
               months: ext.months || 0,
               extension_date: ext.extension_date || "",
               approval_number: ext.approval_number || "",
+              extension_period_from: ext.extension_period_from || "",
+              extension_period_to: ext.extension_period_to || "",
+              note: ext.note || "",
               file: null,
               file_url: ext.file_url || null,
               file_name: ext.file_name || null,
+              letter_attachment: null,
+              letter_attachment_url: ext.letter_attachment_url || null,
+              letter_attachment_name: ext.letter_attachment_name || null,
               _isExisting: true,
             }))
           : [];
@@ -126,20 +138,31 @@ export default function ExtensionsPage() {
           months: Number(ext.months) || 0,
           extension_date: ext.extension_date ? String(ext.extension_date).trim() : null,
           approval_number: ext.approval_number ? String(ext.approval_number).trim() : null,
+          extension_period_from: ext.extension_period_from ? String(ext.extension_period_from).trim() : null,
+          extension_period_to: ext.extension_period_to ? String(ext.extension_period_to).trim() : null,
+          note: ext.note ? String(ext.note).trim() : null,
           file_url: ext.file_url || null,
           file_name: ext.file_name || null,
+          letter_attachment_url: ext.letter_attachment_url || null,
+          letter_attachment_name: ext.letter_attachment_name || null,
           _file: ext.file instanceof File ? ext.file : null,
+          _letter_attachment: ext.letter_attachment instanceof File ? ext.letter_attachment : null,
         }));
 
-      // Convert extensions to JSON (without _file)
+      // Convert extensions to JSON (without _file fields)
       const extensionsForJson = cleanExtensions.map((ext) => ({
         reason: ext.reason,
         days: ext.days,
         months: ext.months,
         extension_date: ext.extension_date,
         approval_number: ext.approval_number,
+        extension_period_from: ext.extension_period_from,
+        extension_period_to: ext.extension_period_to,
+        note: ext.note,
         file_url: ext.file_url,
         file_name: ext.file_name,
+        letter_attachment_url: ext.letter_attachment_url,
+        letter_attachment_name: ext.letter_attachment_name,
       }));
 
       formData.append("extensions", JSON.stringify(extensionsForJson));
@@ -148,6 +171,9 @@ export default function ExtensionsPage() {
       cleanExtensions.forEach((ext, idx) => {
         if (ext._file instanceof File) {
           formData.append(`extensions[${idx}][file]`, ext._file);
+        }
+        if (ext._letter_attachment instanceof File) {
+          formData.append(`extensions[${idx}][letter_attachment]`, ext._letter_attachment);
         }
       });
 

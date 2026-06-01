@@ -9,15 +9,73 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
+import { pdf } from '@react-pdf/renderer';
+import { projectApi } from "../../../services/projects";
+import { api } from "../../../services/api";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { logger } from "../../../utils/logger";
+
+async function toBase64(url) {
+  if (!url) return null;
+  try {
+    // Strip origin + strip the /api/ prefix that axios baseURL will add back.
+    // e.g. http://127.0.0.1:8000/api/files/projects/... → files/projects/...
+    // api.get('files/projects/...') with baseURL='/api/' → /api/files/projects/... ✓
+    let path = url;
+    try {
+      path = new URL(url).pathname;         // /api/files/projects/...
+      path = path.replace(/^\/api\//, '');  // files/projects/...
+    } catch {}
+    const { data } = await api.get(path, { responseType: 'blob' });
+    return await new Promise((res) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => res(null);
+      r.readAsDataURL(data);
+    });
+  } catch { return null; }
+}
+import ExtensionLetterDocument from "../entries/extensions/ExtensionLetterDocument";
 
 const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
+  const { error: showError } = useNotifications();
   const extensions = startOrder?.extensions;
   const hasExtensions = Array.isArray(extensions) && extensions.length > 0;
+  const startOrderId = startOrder?.id;
 
-  // Selection state (index-based since extensions don't have individual IDs)
   const [selectedIdxs, setSelectedIdxs] = useState(new Set());
+  const [downloadingIdx, setDownloadingIdx] = useState(null);
+
+  const handleDownloadLetter = useCallback(async (idx) => {
+    if (!startOrderId) return;
+    setDownloadingIdx(idx);
+    try {
+      const data = await projectApi.getExtensionLetterData(projectId, startOrderId, idx);
+      // Project attachment files require auth — convert to base64 so react-pdf can load them
+      if (data.attachment_url && data.attachment_is_image) {
+        const b64 = await toBase64(data.attachment_url);
+        if (b64) data.attachment_url = b64;
+        else data.attachment_is_image = false; // skip attachment page if load failed
+      }
+      const blob = await pdf(<ExtensionLetterDocument data={data} />).toBlob();
+      const refNo = data.approval_number || `EOT${String(idx + 1).padStart(4, "0")}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Extension_Letter_${refNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      logger.error("Download extension letter failed", err);
+      showError(t("download_extension_letter_failed"));
+    } finally {
+      setDownloadingIdx(null);
+    }
+  }, [projectId, startOrderId, showError, t]);
 
   const isAllSelected = hasExtensions && selectedIdxs.size === extensions.length;
   const isIndeterminate = selectedIdxs.size > 0 && selectedIdxs.size < (extensions?.length || 0);
@@ -177,6 +235,12 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <ActionMenu items={[
                           { label: t("edit"), to: editUrl, type: "link" },
+                          {
+                            label: downloadingIdx === i ? t("downloading") : t("download_extension_letter"),
+                            onClick: () => handleDownloadLetter(i),
+                            type: "button",
+                            disabled: downloadingIdx === i,
+                          },
                         ]} />
                       </td>
                     </tr>
