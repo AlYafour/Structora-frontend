@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useNotifications } from "../contexts/NotificationContext";
 import { api } from "../services/api";
 import { projectApi } from "../services";
-import { downloadBlob } from "../utils/helpers/file";
+import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
 import { applyPrintPagePartBreaks } from "../features/projects/entries/variations/utils/printPagination";
 
@@ -133,7 +133,50 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
       pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, pageW, srcH * scale);
     }
 
-    return pdf.output("blob");
+    const attachments = variation?.variation_attachments || [];
+    if (attachments.length === 0) {
+      return pdf.output("blob");
+    }
+
+    // Merge PDF attachments using pdf-lib
+    const { PDFDocument } = await import("pdf-lib");
+    const mainBytes = pdf.output("arraybuffer");
+    const mergedDoc = await PDFDocument.load(mainBytes);
+
+    for (const att of attachments) {
+      const fileUrl = att.file || att.url;
+      if (!fileUrl) continue;
+      try {
+        const blob = await fetchFileWithAuth(fileUrl);
+        const bytes = await blob.arrayBuffer();
+        const fullUrl = buildFileUrl(fileUrl) || fileUrl;
+        const lowerUrl = fullUrl.toLowerCase();
+        const contentType = blob.type || "";
+
+        if (contentType.includes("pdf") || lowerUrl.endsWith(".pdf")) {
+          const attDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+          const copied = await mergedDoc.copyPages(attDoc, attDoc.getPageIndices());
+          copied.forEach(p => mergedDoc.addPage(p));
+        } else {
+          const imgPage = mergedDoc.addPage([pageW, pageH]);
+          const embeddedImg = lowerUrl.endsWith(".png") || contentType.includes("png")
+            ? await mergedDoc.embedPng(bytes)
+            : await mergedDoc.embedJpg(bytes);
+          const { width: iW, height: iH } = embeddedImg.scaleToFit(pageW, pageH);
+          imgPage.drawImage(embeddedImg, {
+            x: (pageW - iW) / 2,
+            y: (pageH - iH) / 2,
+            width: iW,
+            height: iH,
+          });
+        }
+      } catch (attErr) {
+        console.warn("[useDownloadVariationPDFs] Could not append attachment", fileUrl, attErr);
+      }
+    }
+
+    const mergedBytes = await mergedDoc.save();
+    return new Blob([mergedBytes], { type: "application/pdf" });
   } finally {
     root.unmount();
     container.remove();

@@ -147,6 +147,12 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
       fd.append("file", file);
       const { data: result } = await api.post("extract-license-data/", fd);
 
+      if (result?.error === "wrong_document_type") {
+        setF("building_license_file", null);
+        setErrorMsg(t("wrong_document_type_building_permit"));
+        return;
+      }
+
       if (result?.data && Object.keys(result.data).length > 0) {
         const d = result.data;
         // Batch all extracted fields in one atomic state update — avoids race conditions
@@ -187,7 +193,12 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
         }
       }
     } catch (err) {
-      logger.warn("Could not extract data from license file", err);
+      if (err?.response?.data?.error === "wrong_document_type") {
+        setF("building_license_file", null);
+        setErrorMsg(t("wrong_document_type_building_permit"));
+      } else {
+        logger.warn("Could not extract data from license file", err);
+      }
     } finally {
       setIsExtracting(false);
     }

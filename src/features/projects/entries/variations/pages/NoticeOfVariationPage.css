@@ -215,6 +215,82 @@
   margin-top: 16px;
 }
 
+/* ==================== VARIATION ATTACHMENTS ==================== */
+.nvc-attachments-label {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+}
+.nvc-attachments-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+.nvc-attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nvc-attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nvc-attachment-saved,
+.nvc-attachment-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.nvc-attachment-new > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.nvc-attachment-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #fca5a5;
+  background: #fff1f2;
+  color: #ef4444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nvc-attachment-remove:hover {
+  background: #fee2e2;
+}
+.nvc-attachment-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 7px 14px;
+  background: #f9fafb;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  width: fit-content;
+}
+.nvc-attachment-add-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
 /* ==================== GRID SYSTEM ==================== */
 .nvc-grid {
   display: grid;

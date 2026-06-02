@@ -1,10 +1,5 @@
-/**
- * RemarksAttachmentsSection Component
- *
- * Displays remarks and file attachments section
- */
-
 import { memo } from 'react';
+import { FaPaperclip, FaTrash, FaPlus } from 'react-icons/fa';
 import FileUpload from '../../../../../../components/file-upload/FileUpload';
 import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
 
@@ -16,16 +11,31 @@ const RemarksAttachmentsSection = memo(({
   setVariationAttachment,
   existingVariationAttachment,
   setExistingVariationAttachment,
+  // new multi-attachment props
+  variationAttachments,
+  setVariationAttachments,
   project,
   variationId,
   variation,
   t
 }) => {
-  // In view mode: show section only if there's remarks OR an attachment to display
-  // In edit mode: always show so user can add/upload
-  if (!isEditMode && !formData.remarks && !existingVariationAttachment) {
+  if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
   }
+
+  const handleAddAttachment = () => {
+    setVariationAttachments(prev => [...prev, { id: null, url: null, name: '', newFile: null }]);
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setVariationAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAttachmentFileChange = (index, file) => {
+    setVariationAttachments(prev => prev.map((item, i) =>
+      i === index ? { ...item, newFile: file, name: file?.name || item.name } : item
+    ));
+  };
 
   return (
     <div className="nvc-section nvc-section--remarks">
@@ -43,6 +53,8 @@ const RemarksAttachmentsSection = memo(({
             placeholder={t('remarks')}
           />
         </div>
+
+        {/* Single variation document (existing) */}
         {isEditMode ? (
           <div className="nvc-field no-print">
             <label>{t('variation_document')}</label>
@@ -72,6 +84,86 @@ const RemarksAttachmentsSection = memo(({
             />
           </div>
         ) : null}
+
+        {/* Multi-file PDF attachments */}
+        <div className="nvc-field nvc-field--full no-print">
+          <label className="nvc-attachments-label">
+            <FaPaperclip style={{ marginRight: 6 }} />
+            {t('pdf_attachments')}
+            <span className="nvc-attachments-hint"> — {t('pdf_attachments_hint')}</span>
+          </label>
+
+          {/* Existing saved attachments (view mode) */}
+          {!isEditMode && variationAttachments?.length > 0 && (
+            <div className="nvc-attachment-list">
+              {variationAttachments.map((att, i) => (
+                <div key={att.id || i} className="nvc-attachment-row">
+                  <FileAttachmentView
+                    fileUrl={att.url || att.file}
+                    fileName={att.file_name || att.name || (att.url || att.file || '').split('/').pop()}
+                    projectId={project?.id}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Edit mode: new + existing */}
+          {isEditMode && (
+            <div className="nvc-attachment-list">
+              {variationAttachments.map((att, i) => (
+                <div key={i} className="nvc-attachment-row">
+                  {att.url || att.file ? (
+                    /* Already saved on server */
+                    <div className="nvc-attachment-saved">
+                      <FileAttachmentView
+                        fileUrl={att.url || att.file}
+                        fileName={att.file_name || att.name || (att.url || att.file || '').split('/').pop()}
+                        projectId={project?.id}
+                      />
+                      <button
+                        type="button"
+                        className="nvc-attachment-remove"
+                        onClick={() => handleRemoveAttachment(i)}
+                        title={t('remove')}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ) : (
+                    /* New slot — not yet uploaded */
+                    <div className="nvc-attachment-new">
+                      <FileUpload
+                        value={att.newFile}
+                        onChange={(file) => handleAttachmentFileChange(i, file)}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        maxSizeMB={50}
+                        showPreview={false}
+                      />
+                      <button
+                        type="button"
+                        className="nvc-attachment-remove"
+                        onClick={() => handleRemoveAttachment(i)}
+                        title={t('remove')}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="nvc-attachment-add-btn"
+                onClick={handleAddAttachment}
+              >
+                <FaPlus style={{ marginRight: 6 }} />
+                {t('add_attachment')}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

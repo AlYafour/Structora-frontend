@@ -62,13 +62,37 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   useEffect(() => {
     if (!form.contract_date && !form.project_end_date) return;
     onFormSectionChange?.("contract_section", {
-      contract_date:      form.contract_date      || "",
-      project_end_date:   form.project_end_date   || "",
+      contract_date:           form.contract_date           || "",
+      total_project_value:     form.total_project_value ? String(parseFloat(String(form.total_project_value).replace(/,/g, "")) || "") : "",
+      total_bank_value:        form.total_bank_value    ? String(parseFloat(String(form.total_bank_value).replace(/,/g, ""))    || "") : "",
+      total_owner_value:       form.total_owner_value   ? String(parseFloat(String(form.total_owner_value).replace(/,/g, ""))   || "") : "",
     });
-  }, [form.contract_date, form.project_end_date, onFormSectionChange]);
+  }, [
+    form.contract_date,
+    form.total_project_value, form.total_bank_value, form.total_owner_value,
+    onFormSectionChange,
+  ]);
 
   const [viewMode, updateViewMode] = useViewMode(isViewProp, isViewState, setIsView);
   const { isSaving, errorMsg, setErrorMsg, runSave } = useStepSave();
+
+  const handleContractFileChange = async (file) => {
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data: result } = await api.post("ai-assistant/parse-contract/", fd);
+      if (result?.error === "wrong_document_type") {
+        setF("contract_file", null);
+        setErrorMsg(t("wrong_document_type_contract"));
+      }
+    } catch (err) {
+      if (err?.response?.data?.error === "wrong_document_type") {
+        setF("contract_file", null);
+        setErrorMsg(t("wrong_document_type_contract"));
+      }
+    }
+  };
 
   // ─── Project Codes & Image ───
   const internalCode = setup?.internalCode || "";   // auto-generated (read-only)
@@ -1135,6 +1159,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         onAcknowledgmentChange={setAcknowledgmentChecked}
         reviewerName={user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.username || user.email : ""}
         onDocFilesChange={onDocFilesChange}
+        onContractFileChange={handleContractFileChange}
       />
 
       {/* Contract drawings */}

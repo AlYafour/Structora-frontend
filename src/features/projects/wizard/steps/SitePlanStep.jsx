@@ -444,6 +444,11 @@ export default function SitePlanStep({
       fd.append("file", file);
       const { data: result } = await api.post("extract-siteplan-data/", fd);
 
+      if (result?.error === "wrong_document_type") {
+        setF("site_plan_file", null);
+        setErrorMsg(t("wrong_document_type_site_plan"));
+        return;
+      }
 
       if (result?.data && Object.keys(result.data).length > 0) {
         const d = result.data;
@@ -500,8 +505,12 @@ export default function SitePlanStep({
         }
       }
     } catch (err) {
-      logger.warn("Could not extract data from site plan PDF", err);
-      // Don't show error — extraction is a best-effort feature
+      if (err?.response?.data?.error === "wrong_document_type") {
+        setF("site_plan_file", null);
+        setErrorMsg(t("wrong_document_type_site_plan"));
+      } else {
+        logger.warn("Could not extract data from site plan PDF", err);
+      }
     } finally {
       setIsExtracting(false);
     }
@@ -540,6 +549,11 @@ export default function SitePlanStep({
       fd.append("file", file);
       const { data: result } = await api.post("extract-id-card-data/", fd);
 
+      if (result?.error === "wrong_document_type") {
+        updateOwner(ownerIndex, "id_attachment", null);
+        setErrorMsg(t("wrong_document_type_id_card"));
+        return;
+      }
 
       if (result?.data && Object.keys(result.data).length > 0) {
         const d = result.data;
@@ -575,7 +589,12 @@ export default function SitePlanStep({
         setAiFilledFields((prev) => [...new Set([...prev, ...newAiFields])]);
       }
     } catch (err) {
-      logger.warn("Could not extract data from ID card", err);
+      if (err?.response?.data?.error === "wrong_document_type") {
+        updateOwner(ownerIndex, "id_attachment", null);
+        setErrorMsg(t("wrong_document_type_id_card"));
+      } else {
+        logger.warn("Could not extract data from ID card", err);
+      }
     }
   };
 

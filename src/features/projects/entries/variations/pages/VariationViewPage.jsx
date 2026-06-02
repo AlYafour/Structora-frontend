@@ -173,7 +173,7 @@ export default function VariationViewPage() {
     setIsPrintPreview(false);
   };
 
-  // PDF Export — client-side using html2canvas + jsPDF
+  // PDF Export — client-side using html2canvas + jsPDF, then pdf-lib to append attachments
   const handleExportPDF = async () => {
     if (!variation || !project || !printDocumentRef.current) {
       showError(t("pdf_export_error"));
@@ -225,7 +225,63 @@ export default function VariationViewPage() {
         pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, margin, contentW, srcH * scale);
       }
 
-      pdf.save(generatePDFFilename(variation, noticeData));
+      // Merge variation_attachments (PDFs/images) using pdf-lib
+      const attachments = variation?.variation_attachments || [];
+      if (attachments.length > 0) {
+        const { PDFDocument } = await import('pdf-lib');
+        const mainPdfBytes = pdf.output('arraybuffer');
+        const mergedDoc = await PDFDocument.load(mainPdfBytes);
+
+        const { fetchFileWithAuth, buildFileUrl } = await import('../../../../../utils/helpers/file');
+
+        for (const att of attachments) {
+          const fileUrl = att.file || att.url;
+          if (!fileUrl) continue;
+          try {
+            const blob = await fetchFileWithAuth(fileUrl);
+            const bytes = await blob.arrayBuffer();
+            const fullUrl = buildFileUrl(fileUrl) || fileUrl;
+            const contentType = blob.type || '';
+            const lowerUrl = fullUrl.toLowerCase();
+
+            if (contentType.includes('pdf') || lowerUrl.endsWith('.pdf')) {
+              const attDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+              const copiedPages = await mergedDoc.copyPages(attDoc, attDoc.getPageIndices());
+              copiedPages.forEach(p => mergedDoc.addPage(p));
+            } else {
+              // Image — embed as a full A4 page
+              const imgPage = mergedDoc.addPage([pageW, pageH]);
+              let embeddedImg;
+              if (lowerUrl.endsWith('.png') || contentType.includes('png')) {
+                embeddedImg = await mergedDoc.embedPng(bytes);
+              } else {
+                embeddedImg = await mergedDoc.embedJpg(bytes);
+              }
+              const { width: iW, height: iH } = embeddedImg.scaleToFit(pageW, pageH);
+              imgPage.drawImage(embeddedImg, {
+                x: (pageW - iW) / 2,
+                y: (pageH - iH) / 2,
+                width: iW,
+                height: iH,
+              });
+            }
+          } catch (attErr) {
+            logger.warn('Could not append attachment', fileUrl, attErr);
+          }
+        }
+
+        const mergedBytes = await mergedDoc.save();
+        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = generatePDFFilename(variation, noticeData);
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        pdf.save(generatePDFFilename(variation, noticeData));
+      }
+
       success(t("pdf_exported_successfully"));
     } catch (error) {
       logger.error("Error generating PDF", error);

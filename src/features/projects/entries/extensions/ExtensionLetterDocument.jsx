@@ -23,10 +23,8 @@ function registerCalibri() {
 registerCalibri();
 
 const ORANGE    = '#E07B20';
-const GRAY_SIDE = '#aaa';
 const DARK      = '#1a1a1a';
 const TEXT_GRAY = '#555';
-const FOOTER_BG = '#3a3a3a';
 
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
@@ -80,47 +78,6 @@ const S = StyleSheet.create({
   },
 
 
-  /* ── Coded header (fallback) ── */
-  header: { flexDirection: 'row', height: 100, backgroundColor: '#fff' },
-  leftStrip:  { width: 50, flexDirection: 'row' },
-  leftOrange: { width: 36, backgroundColor: ORANGE },
-  leftGray:   { width: 14, backgroundColor: GRAY_SIDE },
-  centerBlock: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
-  },
-  nameAr: {
-    fontFamily: 'Calibri', fontWeight: 700, fontSize: 17,
-    color: ORANGE, marginBottom: 5, textAlign: 'center',
-  },
-  nameEn: {
-    fontFamily: 'Calibri', fontWeight: 700, fontSize: 13,
-    color: TEXT_GRAY, textAlign: 'center', letterSpacing: 0.8,
-  },
-  rightBlock: { width: 100, position: 'relative' },
-  rightGray:   { position: 'absolute', top: 0, left: 0,  width: 14, bottom: 0, backgroundColor: GRAY_SIDE },
-  rightOrange: { position: 'absolute', top: 0, left: 14, right: 0,  bottom: 0, backgroundColor: ORANGE },
-  logoWrap: {
-    position: 'absolute', top: 6, left: 10, right: 4, bottom: 6,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  logoImg: { width: 78, height: 84, objectFit: 'contain' },
-
-  divider: { height: 3, backgroundColor: ORANGE },
-
-  /* Watermark */
-  watermark: {
-    position: 'absolute', top: 160, left: 90, right: 90, bottom: 100, opacity: 0.06,
-  },
-  watermarkImg: { width: '100%', height: '100%', objectFit: 'contain' },
-
-  /* Body row (coded mode) */
-  bodyRow: { flexDirection: 'row', flex: 1 },
-  leftBar:  { width: 8, backgroundColor: ORANGE },
-  content: {
-    flex: 1, paddingLeft: 42, paddingRight: 42,
-    paddingTop: 18, paddingBottom: 14,
-  },
-
   /* Letter fields */
   metaBlock:     { marginBottom: 10 },
   metaLine:      { fontSize: 10, marginBottom: 2 },
@@ -162,68 +119,13 @@ const S = StyleSheet.create({
   sigName:      { fontSize: 8.5, textAlign: 'center', color: TEXT_GRAY, flexWrap: 'wrap', marginTop: 2 },
   sigDate:      { fontSize: 8.5, color: TEXT_GRAY },
 
-  /* Footer (coded mode) */
-  footer:      { flexDirection: 'row', backgroundColor: FOOTER_BG, minHeight: 50 },
-  footerLeft:  { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
-  footerItem:  { color: '#ddd', fontSize: 8, marginRight: 20 },
-  footerPageBox: { backgroundColor: ORANGE, width: 72, alignItems: 'center', justifyContent: 'center' },
-  footerPageTxt: { color: '#fff', fontSize: 8.5, fontFamily: 'Calibri', fontWeight: 700 },
 
-  /* Attachment */
-  attachTitle: {
-    fontFamily: 'Calibri', fontWeight: 700, fontSize: 11,
-    borderBottom: '2pt solid #E07B20', paddingBottom: 5, marginBottom: 14,
-  },
-  attachImg: { width: '100%', objectFit: 'contain' },
 });
-
-/* ──────────────────────────────────────────────── */
-/*  Sub-views (letterhead mode only)               */
-/* ──────────────────────────────────────────────── */
-function CodedHeader({ d }) {
-  return (
-    <View style={S.header} fixed>
-      <View style={S.leftStrip}>
-        <View style={S.leftOrange} />
-        <View style={S.leftGray} />
-      </View>
-      <View style={S.centerBlock}>
-        {d.company_name
-          ? <Text style={S.nameAr}>{safe(d.company_name)}</Text> : null}
-        {d.company_name_en
-          ? <Text style={S.nameEn}>{safe(d.company_name_en).toUpperCase()}</Text> : null}
-      </View>
-      <View style={S.rightBlock}>
-        <View style={S.rightGray} />
-        <View style={S.rightOrange} />
-        {d.logo_url
-          ? <View style={S.logoWrap}><Image style={S.logoImg} src={d.logo_url} /></View>
-          : null}
-      </View>
-    </View>
-  );
-}
-
-function CodedFooter({ d }) {
-  return (
-    <View style={S.footer} fixed>
-      <View style={S.footerLeft}>
-        {d.company_phone  ? <Text style={S.footerItem}>{safe(d.company_phone)}</Text>  : null}
-        {d.company_email  ? <Text style={S.footerItem}>{safe(d.company_email)}</Text>  : null}
-        {d.company_website? <Text style={S.footerItem}>{safe(d.company_website)}</Text>: null}
-      </View>
-      <View style={S.footerPageBox}>
-        <Text style={S.footerPageTxt}
-          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
-      </View>
-    </View>
-  );
-}
 
 /* ──────────────────────────────────────────────── */
 /*  Shared letter content (works in both modes)   */
 /* ──────────────────────────────────────────────── */
-function LetterContent({ d, letterDateFmt, sigDateFmt, durationText, hasDuration, hasPeriod, subjectText }) {
+function LetterContent({ d, letterDateFmt, durationText, hasDuration, hasPeriod, subjectText }) {
   return (
     <>
       {/* Date + Reference */}

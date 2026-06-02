@@ -74,6 +74,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const [itemToRemove, setItemToRemove] = useState({ id: null, isOmitted: false });
   const [variationAttachment, setVariationAttachment] = useState(null);
   const [existingVariationAttachment, setExistingVariationAttachment] = useState(null);
+  const [variationAttachments, setVariationAttachments] = useState([]);
   const navTimerRef = useRef(null);
 
   useEffect(() => {
@@ -242,6 +243,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       if (foundVariation?.variation_invoice_file) {
         setExistingVariationAttachment(foundVariation.variation_invoice_file);
       }
+      if (foundVariation?.variation_attachments?.length) {
+        setVariationAttachments(foundVariation.variation_attachments.map(a => ({
+          id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null
+        })));
+      }
 
       loadVariationData(foundVariation);
     } catch (e) {
@@ -263,6 +269,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         loadVariationData(variationProp);
         if (variationProp.variation_invoice_file) {
           setExistingVariationAttachment(variationProp.variation_invoice_file);
+        }
+        if (variationProp.variation_attachments?.length) {
+          setVariationAttachments(variationProp.variation_attachments.map(a => ({
+            id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null
+          })));
         }
       } else {
         computeNextVariationNumber(projectProp.id).then(nextNum => {
@@ -429,35 +440,47 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       };
 
       const hasNewFile = variationAttachment instanceof File;
+      const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
+      const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
+      const needsFormData = hasNewFile || newAttachmentFiles.length > 0;
 
-      if (hasNewFile) {
-        // Only use FormData when there's a new file to upload
-        const formDataToSend = new FormData();
-        // Sanitize: JSON.stringify converts NaN→null (backend accepts), but FormData converts NaN→"NaN" (backend rejects DecimalField)
-        const safeVal = (v) => {
-          const s = String(v ?? '0');
-          return (s === 'NaN' || s === 'Infinity' || s === '-Infinity') ? '0' : s;
-        };
-        Object.keys(variationData).forEach(key => formDataToSend.append(key, safeVal(variationData[key])));
-        formDataToSend.append('variation_invoice_file', variationAttachment);
+      const safeVal = (v) => {
+        const s = String(v ?? '0');
+        return (s === 'NaN' || s === 'Infinity' || s === '-Infinity') ? '0' : s;
+      };
+
+      const buildFormData = (base) => {
+        const fd = new FormData();
+        Object.keys(base).forEach(key => fd.append(key, safeVal(base[key])));
+        if (variationAttachment instanceof File) fd.append('variation_invoice_file', variationAttachment);
+        // Upload new attachment files (only once — never re-call buildFormData for these)
+        newAttachmentFiles.forEach((a, i) => fd.append(`variation_attachments[${i}]`, a.newFile));
+        // Tell backend which saved IDs to keep; it will delete the rest
+        fd.append('keep_attachment_ids', currentSavedIds.join(','));
+        return fd;
+      };
+
+      if (needsFormData) {
+        const formDataToSend = buildFormData(variationData);
 
         if (variationId) {
           await projectApi.updateVariation(project.id, variationId, formDataToSend);
         } else {
           const data = await projectApi.createVariation(project.id, formDataToSend);
           if (data.variation_number) {
+            // Second call: only update description (no files — already saved above)
             const generatedReferenceNo = `VAR${data.variation_number}`;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
-            const updateFD = new FormData();
-            updateFD.append('description', JSON.stringify(updatedNoticeData));
-            updateFD.append('variation_invoice_file', variationAttachment);
-            await projectApi.updateVariation(project.id, data.id, updateFD);
+            await projectApi.updateVariation(project.id, data.id, { description: JSON.stringify(updatedNoticeData) });
           }
         }
       } else {
-        // No new file — send JSON (existing file stays untouched on server)
+        // No new files — send JSON; still need to tell backend which IDs to keep for deletions
         if (variationId) {
-          await projectApi.updateVariation(project.id, variationId, variationData);
+          const fd = new FormData();
+          Object.keys(variationData).forEach(key => fd.append(key, safeVal(variationData[key])));
+          fd.append('keep_attachment_ids', currentSavedIds.join(','));
+          await projectApi.updateVariation(project.id, variationId, fd);
         } else {
           const data = await projectApi.createVariation(project.id, variationData);
           if (data?.variation_number) {
@@ -761,6 +784,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             setVariationAttachment={setVariationAttachment}
             existingVariationAttachment={existingVariationAttachment}
             setExistingVariationAttachment={setExistingVariationAttachment}
+            variationAttachments={variationAttachments}
+            setVariationAttachments={setVariationAttachments}
             project={project}
             variationId={variationId}
             variation={variation}
