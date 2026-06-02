@@ -65,10 +65,21 @@ export default function ViewExtensionsPage() {
     setDownloadingIdx(idx);
     try {
       const data = await projectApi.getExtensionLetterData(projectId, startOrderId, idx);
-      if (data.attachment_url && data.attachment_is_image) {
-        const b64 = await toBase64(data.attachment_url);
-        if (b64) data.attachment_url = b64;
-        else data.attachment_is_image = false;
+      if (Array.isArray(data.attachments)) {
+        data.attachments = await Promise.all(
+          data.attachments.map(async (att) => {
+            if (!att.is_image || !att.url) return att;
+            const b64 = await toBase64(att.url);
+            if (!b64) return { ...att, is_image: false };
+            const isPortrait = await new Promise((res) => {
+              const img = new window.Image();
+              img.onload = () => res(img.naturalHeight > img.naturalWidth);
+              img.onerror = () => res(false);
+              img.src = b64;
+            });
+            return { ...att, url: b64, isPortrait };
+          })
+        );
       }
       const blob = await pdf(<ExtensionLetterDocument data={data} />).toBlob();
       const refNo = data.approval_number || `EOT${String(idx + 1).padStart(4, "0")}`;

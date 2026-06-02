@@ -26,9 +26,7 @@ const EMPTY_EXTENSION = {
   file: null,
   file_url: null,
   file_name: null,
-  letter_attachment: null,
-  letter_attachment_url: null,
-  letter_attachment_name: null,
+  letter_attachments: [],
 };
 
 export default function ExtensionsPage() {
@@ -76,9 +74,11 @@ export default function ExtensionsPage() {
               file: null,
               file_url: ext.file_url || null,
               file_name: ext.file_name || null,
-              letter_attachment: null,
-              letter_attachment_url: ext.letter_attachment_url || null,
-              letter_attachment_name: ext.letter_attachment_name || null,
+              letter_attachments: Array.isArray(ext.letter_attachments)
+                ? ext.letter_attachments.map(a => ({ url: a.url || null, name: a.name || null, newFile: null }))
+                : ext.letter_attachment_url
+                  ? [{ url: ext.letter_attachment_url, name: ext.letter_attachment_name || null, newFile: null }]
+                  : [],
               _isExisting: true,
             }))
           : [];
@@ -143,10 +143,13 @@ export default function ExtensionsPage() {
           note: ext.note ? String(ext.note).trim() : null,
           file_url: ext.file_url || null,
           file_name: ext.file_name || null,
-          letter_attachment_url: ext.letter_attachment_url || null,
-          letter_attachment_name: ext.letter_attachment_name || null,
+          letter_attachments: (ext.letter_attachments || [])
+            .filter(a => a.url || a.newFile)
+            .map(a => ({ url: a.url || null, name: a.name || null, is_new: a.newFile instanceof File })),
+          _letter_attachment_files: (ext.letter_attachments || [])
+            .filter(a => a.url || a.newFile)
+            .map(a => (a.newFile instanceof File ? a.newFile : null)),
           _file: ext.file instanceof File ? ext.file : null,
-          _letter_attachment: ext.letter_attachment instanceof File ? ext.letter_attachment : null,
         }));
 
       // Convert extensions to JSON (without _file fields)
@@ -161,8 +164,7 @@ export default function ExtensionsPage() {
         note: ext.note,
         file_url: ext.file_url,
         file_name: ext.file_name,
-        letter_attachment_url: ext.letter_attachment_url,
-        letter_attachment_name: ext.letter_attachment_name,
+        letter_attachments: ext.letter_attachments || [],
       }));
 
       formData.append("extensions", JSON.stringify(extensionsForJson));
@@ -172,9 +174,14 @@ export default function ExtensionsPage() {
         if (ext._file instanceof File) {
           formData.append(`extensions[${idx}][file]`, ext._file);
         }
-        if (ext._letter_attachment instanceof File) {
-          formData.append(`extensions[${idx}][letter_attachment]`, ext._letter_attachment);
-        }
+        // Send new attachment files with consecutive keys (no gaps)
+        let newAttCounter = 0;
+        (ext._letter_attachment_files || []).forEach((f) => {
+          if (f instanceof File) {
+            formData.append(`extensions[${idx}][letter_attachment_new][${newAttCounter}]`, f);
+            newAttCounter++;
+          }
+        });
       });
 
       await projectApi.updateStartOrder(projectId, startOrderId, formData);

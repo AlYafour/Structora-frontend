@@ -70,15 +70,18 @@ export default function ContractExtension({
             </Field>
           )}
 
-          {/* Letter attachment */}
-          {extension.letter_attachment_url && (
+          {/* Letter attachments */}
+          {(extension.letter_attachments || []).length > 0 && (
             <Field label={t("letter_attachment")}>
-              <FileAttachmentView
-                fileUrl={extension.letter_attachment_url}
-                fileName={extension.letter_attachment_name || extractFileNameFromUrl(extension.letter_attachment_url)}
-                projectId={projectId}
-                endpoint={`projects/${projectId}/start-order/`}
-              />
+              {(extension.letter_attachments || []).map((att, i) => att.url ? (
+                <FileAttachmentView
+                  key={i}
+                  fileUrl={att.url}
+                  fileName={att.name || extractFileNameFromUrl(att.url)}
+                  projectId={projectId}
+                  endpoint={`projects/${projectId}/start-order/`}
+                />
+              ) : null)}
             </Field>
           )}
         </div>
@@ -225,24 +228,57 @@ export default function ContractExtension({
           />
         </Field>
 
-        {/* Letter attachment (optional) */}
+        {/* Letter attachments — multiple images */}
         <Field label={t("letter_attachment")}>
-          <FileUpload
-            value={extension.letter_attachment}
-            onChange={(file) => onUpdate(actualIndex, "letter_attachment", file)}
-            accept=".pdf,.jpg,.jpeg,.png"
-            maxSizeMB={30}
-            showPreview={true}
-            existingFileUrl={extension.letter_attachment_url}
-            existingFileName={extension.letter_attachment_name || (extension.letter_attachment_url ? extractFileNameFromUrl(extension.letter_attachment_url) : "")}
-            onRemoveExisting={() => {
-              onUpdate(actualIndex, "letter_attachment", null);
-              onUpdate(actualIndex, "letter_attachment_url", null);
-              onUpdate(actualIndex, "letter_attachment_name", null);
+          {(extension.letter_attachments || []).map((att, attIdx) => (
+            <div key={attIdx} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+              <div style={{ flex: 1 }}>
+                <FileUpload
+                  value={att.newFile || null}
+                  onChange={(file) => {
+                    const updated = [...(extension.letter_attachments || [])];
+                    // Clear old URL when new file is selected — prevents keeping both old + new
+                    updated[attIdx] = { url: null, name: null, newFile: file };
+                    onUpdate(actualIndex, "letter_attachments", updated);
+                  }}
+                  accept=".jpg,.jpeg,.png"
+                  maxSizeMB={30}
+                  showPreview={true}
+                  existingFileUrl={att.url}
+                  existingFileName={att.name || (att.url ? extractFileNameFromUrl(att.url) : "")}
+                  onRemoveExisting={() => {
+                    const updated = [...(extension.letter_attachments || [])];
+                    updated[attIdx] = { ...updated[attIdx], url: null, name: null, newFile: null };
+                    onUpdate(actualIndex, "letter_attachments", updated);
+                  }}
+                  fileType="letter_attachment"
+                  fileIndex={attIdx}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  const updated = (extension.letter_attachments || []).filter((_, i) => i !== attIdx);
+                  onUpdate(actualIndex, "letter_attachments", updated);
+                }}
+              >
+                {t("delete")}
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              const updated = [...(extension.letter_attachments || []), { url: null, name: null, newFile: null }];
+              onUpdate(actualIndex, "letter_attachments", updated);
             }}
-            fileType="letter_attachment"
-            fileIndex={actualIndex}
-          />
+          >
+            + {t("add_attachment")}
+          </Button>
         </Field>
       </div>
     </div>

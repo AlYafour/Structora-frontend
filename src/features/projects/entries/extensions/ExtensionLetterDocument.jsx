@@ -1,9 +1,26 @@
 import {
-  Document, Page, Text, View, Image, StyleSheet,
+  Document, Page, Text, View, Image, StyleSheet, Font,
 } from '@react-pdf/renderer';
 import { registerPDFFonts } from '../../../../components/pdf/registerFonts';
 
 registerPDFFonts();
+
+// Register Calibri for the extension letter only (does not affect other PDFs)
+const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
+let calibriRegistered = false;
+function registerCalibri() {
+  if (calibriRegistered) return;
+  calibriRegistered = true;
+  Font.register({
+    family: 'Calibri',
+    fonts: [
+      { src: `${ORIGIN}/fonts/Calibri-Regular.ttf`, fontWeight: 400 },
+      { src: `${ORIGIN}/fonts/Calibri-Bold.ttf`,    fontWeight: 700 },
+    ],
+  });
+  Font.registerHyphenationCallback((w) => [w]);
+}
+registerCalibri();
 
 const ORANGE    = '#E07B20';
 const GRAY_SIDE = '#aaa';
@@ -36,7 +53,7 @@ const safe = (v) => (v !== null && v !== undefined) ? String(v) : '';
 /* ──────────────────────────────────────────────── */
 const S = StyleSheet.create({
   page: {
-    fontFamily: 'Cairo', fontSize: 10, color: DARK,
+    fontFamily: 'Calibri', fontSize: 10.5, color: DARK,
     backgroundColor: '#fff',
     paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0,
   },
@@ -47,16 +64,21 @@ const S = StyleSheet.create({
     width: '100%', height: '100%',
   },
 
-  /* Content positioned inside the uploaded letterhead PNG.
-     These values push content below the header frame and above the footer frame.
-     Fine-tune if your specific PNG has different header/footer heights. */
+  /* Content area inside the letterhead — padding keeps content away from header/footer */
   lhContent: {
-    paddingTop: 138,    /* ~16% of 842pt — clears the letterhead header + orange divider */
-    paddingBottom: 78,  /* ~9% of 842pt  — clears the letterhead footer bar */
-    paddingLeft: 56,    /* clears the left orange bar of the letterhead */
+    paddingTop: 138,
+    paddingBottom: 0,
+    paddingLeft: 56,
     paddingRight: 44,
-    flex: 1,
   },
+  /* Signature pinned to bottom of the physical page */
+  sigFixed: {
+    position: 'absolute',
+    bottom: 74,   /* sits just above the letterhead footer graphic */
+    left: 56,
+    right: 44,
+  },
+
 
   /* ── Coded header (fallback) ── */
   header: { flexDirection: 'row', height: 100, backgroundColor: '#fff' },
@@ -67,11 +89,11 @@ const S = StyleSheet.create({
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
   },
   nameAr: {
-    fontFamily: 'Cairo', fontWeight: 700, fontSize: 17,
+    fontFamily: 'Calibri', fontWeight: 700, fontSize: 17,
     color: ORANGE, marginBottom: 5, textAlign: 'center',
   },
   nameEn: {
-    fontFamily: 'Cairo', fontWeight: 700, fontSize: 13,
+    fontFamily: 'Calibri', fontWeight: 700, fontSize: 13,
     color: TEXT_GRAY, textAlign: 'center', letterSpacing: 0.8,
   },
   rightBlock: { width: 100, position: 'relative' },
@@ -100,41 +122,43 @@ const S = StyleSheet.create({
   },
 
   /* Letter fields */
-  metaBlock:     { marginBottom: 16 },
-  metaLine:      { fontSize: 10, marginBottom: 3 },
-  bold:          { fontFamily: 'Cairo', fontWeight: 700 },
-  recipientBlock:{ marginBottom: 16 },
-  recipientName: { fontFamily: 'Cairo', fontWeight: 700, fontSize: 10 },
+  metaBlock:     { marginBottom: 10 },
+  metaLine:      { fontSize: 10, marginBottom: 2 },
+  bold:          { fontFamily: 'Calibri', fontWeight: 700 },
+  recipientBlock:{ marginBottom: 10 },
+  recipientName: { fontFamily: 'Calibri', fontWeight: 700, fontSize: 10 },
   recipientSub:  { fontSize: 10 },
-  projectBlock:  { marginBottom: 16 },
-  projectLine:   { fontSize: 10, marginBottom: 3 },
-  subjectRow:    { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
-  subjectLbl:    { fontFamily: 'Cairo', fontWeight: 700, fontSize: 10, marginRight: 4 },
+  projectBlock:  { marginBottom: 10 },
+  projectLine:   { fontSize: 10, marginBottom: 2 },
+  subjectRow:    { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  subjectLbl:    { fontFamily: 'Calibri', fontWeight: 700, fontSize: 10, marginRight: 4 },
   subjectVal: {
-    fontFamily: 'Cairo', fontWeight: 700, fontSize: 10,
+    fontFamily: 'Calibri', fontWeight: 700, fontSize: 10,
     textDecoration: 'underline', flex: 1, flexWrap: 'wrap',
   },
-  greeting:      { fontFamily: 'Cairo', fontWeight: 700, fontSize: 10, marginBottom: 12 },
+  greeting:      { fontFamily: 'Calibri', fontWeight: 700, fontSize: 10, marginBottom: 6 },
   para: {
-    fontSize: 10, lineHeight: 1.7, textAlign: 'justify',
-    marginBottom: 12, flexWrap: 'wrap',
+    fontSize: 10, lineHeight: 1.5, textAlign: 'justify',
+    marginBottom: 6, flexWrap: 'wrap',
   },
   noteBox: {
-    borderLeft: '2.5pt solid #E07B20', paddingLeft: 8, marginBottom: 12,
+    borderLeft: '2.5pt solid #E07B20', paddingLeft: 8, marginBottom: 6,
   },
   thankYou: {
-    fontFamily: 'Cairo', fontWeight: 700, fontSize: 10,
-    marginTop: 14, marginBottom: 22,
+    fontFamily: 'Calibri', fontWeight: 700, fontSize: 10,
+    marginTop: 6, marginBottom: 6,
   },
 
   /* Signature table */
-  sigTable:     { border: '1pt solid #bbb' },
+  sigTable:     { border: '1pt solid #bbb', backgroundColor: '#fff' },
   sigRow:       { flexDirection: 'row' },
   sigCell:      { flex: 1, borderRight: '1pt solid #bbb', padding: 6 },
   sigLast:      { flex: 1, padding: 6 },
+  sigCellSm:    { flex: 1, borderRight: '1pt solid #bbb', paddingHorizontal: 6, paddingVertical: 0.5 },
+  sigLastSm:    { flex: 1, paddingHorizontal: 6, paddingVertical: 0.5 },
   sigBorderTop: { borderTop: '1pt solid #bbb' },
   sigStampH:    { height: 55 },
-  sigLbl:       { fontFamily: 'Cairo', fontWeight: 700, fontSize: 8.5, textAlign: 'center', color: DARK },
+  sigLbl:       { fontFamily: 'Calibri', fontWeight: 700, fontSize: 8.5, textAlign: 'center', color: DARK },
   sigName:      { fontSize: 8.5, textAlign: 'center', color: TEXT_GRAY, flexWrap: 'wrap', marginTop: 2 },
   sigDate:      { fontSize: 8.5, color: TEXT_GRAY },
 
@@ -143,11 +167,11 @@ const S = StyleSheet.create({
   footerLeft:  { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
   footerItem:  { color: '#ddd', fontSize: 8, marginRight: 20 },
   footerPageBox: { backgroundColor: ORANGE, width: 72, alignItems: 'center', justifyContent: 'center' },
-  footerPageTxt: { color: '#fff', fontSize: 8.5, fontFamily: 'Cairo', fontWeight: 700 },
+  footerPageTxt: { color: '#fff', fontSize: 8.5, fontFamily: 'Calibri', fontWeight: 700 },
 
   /* Attachment */
   attachTitle: {
-    fontFamily: 'Cairo', fontWeight: 700, fontSize: 11,
+    fontFamily: 'Calibri', fontWeight: 700, fontSize: 11,
     borderBottom: '2pt solid #E07B20', paddingBottom: 5, marginBottom: 14,
   },
   attachImg: { width: '100%', objectFit: 'contain' },
@@ -282,31 +306,35 @@ function LetterContent({ d, letterDateFmt, sigDateFmt, durationText, hasDuration
 
       {/* Thank you */}
       <Text style={S.thankYou}>Thank you.</Text>
+    </>
+  );
+}
 
-      {/* Signatures */}
-      <View style={S.sigTable}>
+/* Signature block */
+function SignatureBlock({ d, sigDateFmt }) {
+  return (
+    <View style={S.sigTable}>
         <View style={S.sigRow}>
           <View style={[S.sigCell, S.sigStampH]} />
           <View style={[S.sigCell, S.sigStampH]} />
           <View style={[S.sigLast, S.sigStampH]} />
         </View>
         <View style={[S.sigRow, S.sigBorderTop]}>
-          <View style={S.sigCell}><Text style={S.sigLbl}>Main Contractor</Text></View>
-          <View style={S.sigCell}><Text style={S.sigLbl}>Consultant Engineer</Text></View>
-          <View style={S.sigLast}><Text style={S.sigLbl}>Client</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigLbl}>Main Contractor</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigLbl}>Consultant Engineer</Text></View>
+          <View style={S.sigLastSm}><Text style={S.sigLbl}>Client</Text></View>
         </View>
         <View style={[S.sigRow, S.sigBorderTop]}>
-          <View style={S.sigCell}><Text style={S.sigName}>{safe(d.company_name_en || d.company_name)}</Text></View>
-          <View style={S.sigCell}><Text style={S.sigName}>{safe(d.consultant_name)}</Text></View>
-          <View style={S.sigLast}><Text style={S.sigName}>{safe(d.owner_name)}</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigName}>{safe(d.company_name_en || d.company_name)}</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigName}>{safe(d.consultant_name)}</Text></View>
+          <View style={S.sigLastSm}><Text style={S.sigName}>{safe(d.owner_name)}</Text></View>
         </View>
         <View style={[S.sigRow, S.sigBorderTop]}>
-          <View style={S.sigCell}><Text style={S.sigDate}>Date : {sigDateFmt}</Text></View>
-          <View style={S.sigCell}><Text style={S.sigDate}>Date :</Text></View>
-          <View style={S.sigLast}><Text style={S.sigDate}>Date :</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigDate}>Date : {sigDateFmt}</Text></View>
+          <View style={S.sigCellSm}><Text style={S.sigDate}>Date :</Text></View>
+          <View style={S.sigLastSm}><Text style={S.sigDate}>Date :</Text></View>
         </View>
-      </View>
-    </>
+    </View>
   );
 }
 
@@ -338,51 +366,101 @@ export default function ExtensionLetterDocument({ data }) {
      If no letterhead is uploaded, fall back to the coded header/footer design. */
   const hasLetterhead = !!d.letterhead_url;
 
+  /* Build attachment groups before render */
+  const imgAtts = (d.attachments || []).filter(a => a.is_image && a.url);
+  const attGroups = [];
+  let _ai = 0;
+  while (_ai < imgAtts.length) {
+    const curr = imgAtts[_ai];
+    const next = imgAtts[_ai + 1];
+    if (curr.isPortrait && next && next.isPortrait) {
+      attGroups.push({ layout: 'side-by-side', images: [curr, next] });
+      _ai += 2;
+    } else {
+      const canStack = next && !next.isPortrait;
+      attGroups.push({ layout: 'stacked', images: canStack ? [curr, next] : [curr] });
+      _ai += canStack ? 2 : 1;
+    }
+  }
+
+  const renderAttGroup = (group) => {
+    if (group.layout === 'side-by-side') {
+      return (
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {group.images.map((att, ai) => (
+            <View key={ai} style={{ flex: 1 }}>
+              <Image src={att.url} style={{ width: '100%', maxHeight: 480, objectFit: 'contain' }} />
+            </View>
+          ))}
+        </View>
+      );
+    }
+    return (
+      <View>
+        {group.images.map((att, ai) => (
+          <View key={ai} style={{ marginBottom: ai < group.images.length - 1 ? 10 : 0 }}>
+            <Image src={att.url} style={{ width: '100%', maxHeight: 340, objectFit: 'contain' }} />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <Document>
+      {/*
+        ══ ALL CONTENT IN ONE <Page> — this eliminates the empty-page-2 problem ══
 
-      {/* ══════════ MAIN PAGE ══════════ */}
+        Previously: letter content on <Page 1>, attachments on separate <Page 2/3>.
+        If letter content overflowed page 1, react-pdf created page 2 for the overflow
+        (often with just the signature table), leaving a mostly-empty page, and
+        attachments ended up on page 3.
+
+        Now: everything is in ONE <Page> element. react-pdf flows content naturally
+        across as many pages as needed. Each attachment group uses `break` (page-break-before)
+        to start on its own page. The letterhead background is `fixed` so it appears on
+        every page automatically. No empty intermediate pages possible.
+      */}
+      {/* ── Main letter page ── */}
       <Page size="A4" style={S.page}>
-
         {hasLetterhead ? (
-          /* ── LETTERHEAD MODE: Word template as full-page background ── */
           <>
-            {/* Background: the full A4 letterhead PNG */}
             <Image style={S.lhBg} src={d.letterhead_url} fixed />
-
-            {/* Content floats on top, padded to sit inside the template's content area */}
+            {/* Body — paddingBottom:200 stops body text before the signature zone */}
             <View style={S.lhContent}>
               <LetterContent {...lc} />
             </View>
+            {/* Signature always at bottom of page, above the footer graphic */}
+            <View style={S.sigFixed}>
+              <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
+            </View>
           </>
         ) : (
-          /* ── NO LETTERHEAD: plain white page, no design ── */
-          <View style={{ paddingHorizontal: 56, paddingTop: 50, paddingBottom: 50, flex: 1 }}>
+          /* No letterhead: body + signature in normal flow */
+          <View style={{ paddingTop: 50, paddingBottom: 50, paddingLeft: 56, paddingRight: 56 }}>
             <LetterContent {...lc} />
+            <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
           </View>
         )}
       </Page>
 
-      {/* ══════════ ATTACHMENT PAGE ══════════ */}
-      {d.attachment_url && d.attachment_is_image ? (
-        <Page size="A4" style={S.page}>
+      {/* ── Attachment pages — each is a fresh Page so paddingTop is re-applied correctly ── */}
+      {attGroups.map((group, pi) => (
+        <Page key={pi} size="A4" style={S.page}>
           {hasLetterhead ? (
             <>
               <Image style={S.lhBg} src={d.letterhead_url} fixed />
               <View style={S.lhContent}>
-                <Image style={S.attachImg} src={d.attachment_url} />
+                {renderAttGroup(group)}
               </View>
             </>
           ) : (
-            <View style={{ paddingHorizontal: 56, paddingTop: 50, paddingBottom: 50, flex: 1 }}>
-              <Text style={S.attachTitle}>
-                Attachment – {safe(d.attachment_name || 'Document')}
-              </Text>
-              <Image style={S.attachImg} src={d.attachment_url} />
+            <View style={{ paddingTop: 50, paddingBottom: 50, paddingLeft: 56, paddingRight: 56 }}>
+              {renderAttGroup(group)}
             </View>
           )}
         </Page>
-      ) : null}
+      ))}
 
     </Document>
   );
