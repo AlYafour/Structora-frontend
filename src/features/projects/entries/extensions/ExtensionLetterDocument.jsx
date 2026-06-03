@@ -69,13 +69,6 @@ const S = StyleSheet.create({
     paddingLeft: 56,
     paddingRight: 44,
   },
-  /* Signature pinned to bottom of the physical page */
-  sigFixed: {
-    position: 'absolute',
-    bottom: 74,   /* sits just above the letterhead footer graphic */
-    left: 56,
-    right: 44,
-  },
 
 
   /* Letter fields */
@@ -301,7 +294,7 @@ export default function ExtensionLetterDocument({ data }) {
       <View>
         {group.images.map((att, ai) => (
           <View key={ai} style={{ marginBottom: ai < group.images.length - 1 ? 10 : 0 }}>
-            <Image src={att.url} style={{ width: '100%', maxHeight: 340, objectFit: 'contain' }} />
+            <Image src={att.url} style={{ width: '100%', maxHeight: 295, objectFit: 'contain' }} />
           </View>
         ))}
       </View>
@@ -328,20 +321,33 @@ export default function ExtensionLetterDocument({ data }) {
         {hasLetterhead ? (
           <>
             <Image style={S.lhBg} src={d.letterhead_url} fixed />
-            {/* Body — paddingBottom:200 stops body text before the signature zone */}
             <View style={S.lhContent}>
-              <LetterContent {...lc} />
-            </View>
-            {/* Signature always at bottom of page, above the footer graphic */}
-            <View style={S.sigFixed}>
-              <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
+              {/*
+                Fixed-height inner column = 630pt (842 page - 138 header - 74 footer).
+                Two flex:1 spacers split the void equally so the signature sits in the
+                middle of the empty space — not glued to the body, not at the very bottom.
+                Short letter → equal gaps above and below sig.
+                Long letter  → gaps shrink to near-zero, sig follows content naturally.
+              */}
+              <View style={{ height: 630, flexDirection: 'column' }}>
+                <View>
+                  <LetterContent {...lc} />
+                </View>
+                <View style={{ flex: 1 }} />
+                <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
+                <View style={{ flex: 1 }} />
+              </View>
             </View>
           </>
         ) : (
-          /* No letterhead: body + signature in normal flow */
-          <View style={{ paddingTop: 50, paddingBottom: 50, paddingLeft: 56, paddingRight: 56 }}>
-            <LetterContent {...lc} />
-            <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
+          /* No letterhead: same two-spacer layout, content area = 742pt */
+          <View style={{ paddingTop: 50, paddingBottom: 0, paddingLeft: 56, paddingRight: 56 }}>
+            <View style={{ height: 742, flexDirection: 'column' }}>
+              <View><LetterContent {...lc} /></View>
+              <View style={{ flex: 1 }} />
+              <SignatureBlock d={d} sigDateFmt={sigDateFmt} />
+              <View style={{ flex: 1 }} />
+            </View>
           </View>
         )}
       </Page>
@@ -352,7 +358,8 @@ export default function ExtensionLetterDocument({ data }) {
           {hasLetterhead ? (
             <>
               <Image style={S.lhBg} src={d.letterhead_url} fixed />
-              <View style={S.lhContent}>
+              {/* paddingBottom:86 safe here — images have fixed maxHeight so no overflow/empty-page risk */}
+              <View style={[S.lhContent, { paddingBottom: 86 }]}>
                 {renderAttGroup(group)}
               </View>
             </>
