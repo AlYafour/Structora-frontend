@@ -28,7 +28,8 @@ export default function ExcavationNoticePage() {
     notice_date: "",
     notice_file: null,
     notice_file_url: null,
-    notice_file_name: null
+    notice_file_name: null,
+    notice_file_cleared: false,
   });
   const { success, error: showError } = useNotifications();
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
@@ -75,7 +76,11 @@ export default function ExcavationNoticePage() {
     try {
       const fd = new FormData();
       if (formData.notice_date) fd.append("notice_date", formData.notice_date);
-      if (formData.notice_file instanceof File) fd.append("notice_file", formData.notice_file);
+      if (formData.notice_file instanceof File) {
+        fd.append("notice_file", formData.notice_file);
+      } else if (formData.notice_file_cleared) {
+        fd.append("notice_file_delete", "true");
+      }
 
       if (existingId) {
         await projectApi.updateExcavationNotice(projectId, existingId, fd);
@@ -128,7 +133,7 @@ export default function ExcavationNoticePage() {
                   fileUrl={formData.notice_file_url}
                   fileName={formData.notice_file_name}
                   onChange={(file) => setFormData((prev) => ({ ...prev, notice_file: file }))}
-                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, notice_file: null, notice_file_url: null, notice_file_name: null }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, notice_file: null, notice_file_url: null, notice_file_name: null, notice_file_cleared: true }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   maxSizeMB={30}
                   isView={false}

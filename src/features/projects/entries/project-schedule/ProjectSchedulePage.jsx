@@ -31,6 +31,7 @@ export default function ProjectSchedulePage() {
     schedule_file: null,
     schedule_file_url: null,
     schedule_file_name: null,
+    schedule_file_cleared: false,
   });
   const { success, error: showError } = useNotifications();
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
@@ -88,7 +89,11 @@ export default function ProjectSchedulePage() {
     try {
       const fd = new FormData();
       fd.append("project_start_date", formData.project_start_date);
-      if (formData.schedule_file instanceof File) fd.append("schedule_file", formData.schedule_file);
+      if (formData.schedule_file instanceof File) {
+        fd.append("schedule_file", formData.schedule_file);
+      } else if (formData.schedule_file_cleared) {
+        fd.append("schedule_file_delete", "true");
+      }
 
       if (existingId) {
         await projectApi.updateProjectSchedule(projectId, existingId, fd);
@@ -151,7 +156,7 @@ export default function ProjectSchedulePage() {
                   fileUrl={formData.schedule_file_url}
                   fileName={formData.schedule_file_name}
                   onChange={(file) => setFormData((prev) => ({ ...prev, schedule_file: file }))}
-                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, schedule_file: null, schedule_file_url: null, schedule_file_name: null }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, schedule_file: null, schedule_file_url: null, schedule_file_name: null, schedule_file_cleared: true }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   maxSizeMB={30}
                   isView={false}

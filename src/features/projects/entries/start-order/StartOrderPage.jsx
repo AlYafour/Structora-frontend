@@ -30,6 +30,7 @@ export default function StartOrderPage() {
     start_order_file: null,
     start_order_file_url: null,
     start_order_file_name: null,
+    start_order_file_cleared: false,
   });
 
   const { success, error: showError } = useNotifications();
@@ -92,6 +93,8 @@ export default function StartOrderPage() {
 
       if (formData.start_order_file instanceof File) {
         fd.append("start_order_file", formData.start_order_file);
+      } else if (formData.start_order_file_cleared) {
+        fd.append("start_order_file_delete", "true");
       }
 
       if (existingId) {
@@ -177,6 +180,7 @@ export default function StartOrderPage() {
                       start_order_file: null,
                       start_order_file_url: null,
                       start_order_file_name: null,
+                      start_order_file_cleared: true,
                     }))
                   }
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"

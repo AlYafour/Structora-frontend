@@ -35,6 +35,7 @@ export default function AwardingPage() {
     awarding_file: null,
     awarding_file_url: null,
     awarding_file_name: null,
+    awarding_file_cleared: false,
   });
   const { success, error: showError } = useNotifications();
   const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
@@ -97,6 +98,8 @@ export default function AwardingPage() {
       if (formData.contractor_registration_number) fd.append("contractor_registration_number", formData.contractor_registration_number);
       if (formData.awarding_file instanceof File) {
         fd.append("awarding_file", formData.awarding_file);
+      } else if (formData.awarding_file_cleared) {
+        fd.append("awarding_file_delete", "true");
       }
 
       if (existingId) {
@@ -181,7 +184,7 @@ export default function AwardingPage() {
                   fileUrl={formData.awarding_file_url}
                   fileName={formData.awarding_file_name}
                   onChange={(file) => setFormData((prev) => ({ ...prev, awarding_file: file }))}
-                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, awarding_file: null, awarding_file_url: null, awarding_file_name: null }))}
+                  onRemoveExisting={() => setFormData((prev) => ({ ...prev, awarding_file: null, awarding_file_url: null, awarding_file_name: null, awarding_file_cleared: true }))}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   maxSizeMB={30}
                   isView={false}
