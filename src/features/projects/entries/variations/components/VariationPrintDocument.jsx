@@ -102,12 +102,14 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
       value: consultantFees,
     }] : []),
     ...(data.custom_fees || [])
-      .filter(f => parseFloat(f.amount) > 0)
-      .map(f => ({
-        ar: f.name || 'رسوم إضافية',
-        en: f.name || 'Additional Fee',
-        value: parseFloat(f.amount) || 0,
-      })),
+      .map(f => {
+        const amt = f.type === 'percentage'
+          ? (totalVar * parseFloat(f.percentage || 0)) / 100
+          : parseFloat(f.amount) || 0;
+        const pctLabel = f.type === 'percentage' && f.percentage ? ` (${f.percentage}%)` : '';
+        return { ar: (f.name || 'رسوم إضافية') + pctLabel, en: (f.name || 'Additional Fee') + pctLabel, value: amt };
+      })
+      .filter(f => f.value !== 0),
     ...(discountAmt > 0 ? [
       { ar: "المجموع قبل الخصم", en: "Total Before Discount", value: beforeDiscount, variant: "subtotal", startsSummaryRow: true },
       {

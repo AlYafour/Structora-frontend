@@ -213,6 +213,8 @@
   "reason": "Reason",
   "variation_requires_final_approval": "Cannot create a price change order until the project receives final approval from the Super Admin.",
   "select_prolongation_fee_required": "Please select an extra fee",
-  "variation_approval_revoked": "Approval revoked. You can approve it again now."
-  
+  "variation_approval_revoked": "Approval revoked. You can approve it again now.",
+  "add_fee": "Add Fee",
+  "fee_name": "Fee name",
+  "custom_fee": "Custom Fee"
 }

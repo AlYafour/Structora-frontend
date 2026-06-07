@@ -235,11 +235,17 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
 }
 
 /**
- * Calculate total of all custom fees
+ * Resolve each custom fee to its computed amount.
+ * Percentage fees are applied against totalVariationAmount.
  */
-export function calculateCustomFeesTotal(customFees) {
-  if (!Array.isArray(customFees)) return 0;
-  return round2(customFees.reduce((sum, fee) => sum + (parseFloat(fee.amount) || 0), 0));
+export function calculateCustomFeesWithAmounts(customFees, totalVariationAmount) {
+  if (!Array.isArray(customFees)) return [];
+  return customFees.map(fee => {
+    const computedAmount = fee.type === 'percentage'
+      ? round2((totalVariationAmount * parseFloat(fee.percentage || 0)) / 100)
+      : round2(parseFloat(fee.amount) || 0);
+    return { ...fee, computedAmount };
+  });
 }
 
 /**
@@ -253,7 +259,8 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
   const totalOmittedForOverhead = calculateOmittedTotalForOverhead(omittedItems);
   const contractorOHP = calculateContractorOHP(formData, totalAdded, totalOmittedForOverhead);
   const consultantFees = calculateConsultantFees(formData, totalVariationAmount, totalAdded);
-  const customFeesTotal = calculateCustomFeesTotal(formData.custom_fees);
+  const customFeesWithAmounts = calculateCustomFeesWithAmounts(formData.custom_fees, totalVariationAmount);
+  const customFeesTotal = round2(customFeesWithAmounts.reduce((sum, f) => sum + f.computedAmount, 0));
 
   const totalAmountBeforeDiscount = totalVariationAmount + contractorOHP + consultantFees + customFeesTotal;
 
@@ -274,6 +281,7 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
     totalVariationAmount,
     contractorOHP,
     consultantFees,
+    customFeesWithAmounts,
     customFeesTotal,
     totalAmountBeforeDiscount,
     totalAmount,

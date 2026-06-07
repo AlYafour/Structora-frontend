@@ -2631,20 +2631,75 @@
 
 .nfs-fee-after strong { color: var(--ink, #374151); }
 
-.nfs-add-fee-btn {
-  display: inline-flex;
+/* ── Fees 2-column grid (contractor, consultant, custom — shared) ── */
+.nfs-fees-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px 10px 4px;
+}
+
+.nfs-custom-fee-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border-primary, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.nfs-custom-fee-card__name {
+  display: flex;
   align-items: center;
   gap: 6px;
-  margin: 6px 10px 4px;
-  padding: 5px 12px;
+}
+
+.nfs-custom-fee-card__name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.nfs-custom-fee-card__extras {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nfs-custom-fee-card__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nfs-custom-fee-card__controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.nfs-custom-fee-card__amount {
+  margin-left: auto;
+  font-size: 13px !important;
+  font-weight: 600;
+}
+
+.nfs-add-fee-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--primary, #2563eb);
   background: transparent;
   border: 1px dashed var(--primary, #2563eb);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
+  min-height: 64px;
 }
 .nfs-add-fee-btn:hover {
   background: color-mix(in srgb, var(--primary, #2563eb) 8%, transparent);
@@ -2654,8 +2709,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   color: #dc2626;
   background: transparent;

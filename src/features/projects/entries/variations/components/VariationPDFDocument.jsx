@@ -230,8 +230,16 @@ const VariationPDFDocument = ({ variation, project, companyInfo, qrDataUrl }) =>
     ...(contractorOHP  !== 0 ? [{ label: `مصاريف المقاول${nd.contractor_ohp_percentage ? ` (${nd.contractor_ohp_percentage}%)` : ""}\nContractor O&P`, value: fmt(contractorOHP) }] : []),
     ...(consultantFees !== 0 ? [{ label: `رسوم الاستشاري${nd.consultant_fees_percentage ? ` (${nd.consultant_fees_percentage}%)` : ""}\nConsultant Fees`, value: fmt(consultantFees) }] : []),
     ...(nd.custom_fees || [])
-      .filter(f => parseFloat(f.amount) > 0)
-      .map(f => ({ label: `${f.name || 'رسوم إضافية'}\n${f.name || 'Additional Fee'}`, value: fmt(parseFloat(f.amount) || 0) })),
+      .map(f => {
+        const amt = f.type === 'percentage'
+          ? (totalVar * parseFloat(f.percentage || 0)) / 100
+          : parseFloat(f.amount) || 0;
+        const pctLabel = f.type === 'percentage' && f.percentage ? ` (${f.percentage}%)` : '';
+        const name = f.name || 'رسوم إضافية';
+        return { label: `${name}${pctLabel}\n${name}${pctLabel}`, value: fmt(amt), _amt: amt };
+      })
+      .filter(f => f._amt !== 0)
+      .map(({ _amt: _ignored, ...rest }) => rest),
     ...(discountAmt > 0 ? [
       { label: `المجموع قبل الخصم\nTotal Before Discount`, value: fmt(beforeDiscount), subtotal: true },
       { label: `خصم${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}\nDiscount`, value: `(${fmt(discountAmt)})` },

@@ -749,6 +749,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             totalVariationAmount={calculations.totalVariationAmount}
             contractorEngineeringOHP={calculations.contractorOHP}
             consultantFees={calculations.consultantFees}
+            customFeesWithAmounts={calculations.customFeesWithAmounts}
             customFeesTotal={calculations.customFeesTotal}
             totalAmountBeforeDiscount={calculations.totalAmountBeforeDiscount}
             discountAmount={calculations.discountAmount}
