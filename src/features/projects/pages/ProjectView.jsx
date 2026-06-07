@@ -42,9 +42,10 @@ const projectDisplayName = isAR
  approveDialogOpen, setApproveDialogOpen,
  rejectDialogOpen, setRejectDialogOpen,
  finalApproveDialogOpen, setFinalApproveDialogOpen,
+ revokeFinalApprovalDialogOpen, setRevokeFinalApprovalDialogOpen,
  actionNotes, setActionNotes,
  processingAction,
- onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove,
+ onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove, handleRevokeFinalApproval,
  } = useProjectWorkflow(projectId, reload);
 
  const hasStartOrder = !!startOrder;
@@ -67,6 +68,7 @@ const projectDisplayName = isAR
  onApproveClick={() => setApproveDialogOpen(true)}
  onRejectClick={() => setRejectDialogOpen(true)}
  onFinalApproveClick={() => setFinalApproveDialogOpen(true)}
+ onRevokeFinalApprovalClick={() => setRevokeFinalApprovalDialogOpen(true)}
  siteplan={siteplan}
  />
 
@@ -310,6 +312,43 @@ const projectDisplayName = isAR
  }}
  onConfirm={handleFinalApprove}
  busy={processingAction}
+ />
+
+ {/* Dialog for revoking final approval */}
+ <Dialog
+ open={revokeFinalApprovalDialogOpen}
+ title={t("revoke_final_approval")}
+ desc={
+ <div>
+ <p className="project-view__final-approve-text">
+ {t("revoke_final_approval_confirmation")}
+ </p>
+ <p className="ds-mt-2 ds-text-sm ds-text-muted">
+ {t("revoke_final_approval_warning")}
+ </p>
+ <div className="ds-mt-4">
+ <label className="ds-block ds-mb-2 ds-font-medium">
+ {t("notes")} ({t("optional")})
+ </label>
+ <textarea
+ className="prj-input"
+ rows={3}
+ value={actionNotes}
+ onChange={(e) => setActionNotes(e.target.value)}
+ placeholder={t("revoke_final_approval_notes_placeholder")}
+ />
+ </div>
+ </div>
+ }
+ confirmLabel={t("revoke_final_approval")}
+ cancelLabel={t("cancel")}
+ onClose={() => {
+ setRevokeFinalApprovalDialogOpen(false);
+ setActionNotes("");
+ }}
+ onConfirm={handleRevokeFinalApproval}
+ busy={processingAction}
+ danger
  />
 
  </PageLayout>

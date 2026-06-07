@@ -22,6 +22,7 @@ export default function useProjectWorkflow(projectId, reload) {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [finalApproveDialogOpen, setFinalApproveDialogOpen] = useState(false);
+  const [revokeFinalApprovalDialogOpen, setRevokeFinalApprovalDialogOpen] = useState(false);
   const [actionNotes, setActionNotes] = useState("");
   const [processingAction, setProcessingAction] = useState(false);
 
@@ -79,6 +80,9 @@ export default function useProjectWorkflow(projectId, reload) {
   const handleFinalApprove = () =>
     runAction(() => projectApi.finalApprove(projectId, actionNotes || ""), setFinalApproveDialogOpen, "ProjectView.handleFinalApprove");
 
+  const handleRevokeFinalApproval = () =>
+    runAction(() => projectApi.revokeFinalApproval(projectId, actionNotes || ""), setRevokeFinalApprovalDialogOpen, "ProjectView.handleRevokeFinalApproval");
+
   return {
     confirmOpen, setConfirmOpen, deleting,
     errorMsg, setErrorMsg,
@@ -86,8 +90,9 @@ export default function useProjectWorkflow(projectId, reload) {
     approveDialogOpen, setApproveDialogOpen,
     rejectDialogOpen, setRejectDialogOpen,
     finalApproveDialogOpen, setFinalApproveDialogOpen,
+    revokeFinalApprovalDialogOpen, setRevokeFinalApprovalDialogOpen,
     actionNotes, setActionNotes,
     processingAction,
-    onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove,
+    onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove, handleRevokeFinalApproval,
   };
 }

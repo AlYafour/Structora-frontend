@@ -48,6 +48,9 @@ const INITIAL_FORM = {
   contract_explanation_file_name: null,
   general_notes: "",
   project_description: "", // Project description in contract
+  general_clauses: [],    // [{ text: "" }]  — بنود عامة
+  definitions: [],        // [{ term: "", definition: "" }]  — تعريفات
+  contract_sections: [],  // [{ title: "", sub_clauses: [{ text: "" }] }]  — البنود المرقمة
   attachments: [], // Dynamic attachments
   extensions: [], // Extensions: [{reason: string, days: number, months: number}, ...]
   // Static contract attachments
@@ -236,6 +239,21 @@ export default function useContract(projectId) {
             // Format numeric values with commas when loading from the API
             owner_fee_extra_value: formatNumberValue(s.owner_fee_extra_value),
             bank_fee_extra_value: formatNumberValue(s.bank_fee_extra_value),
+            // Load user-entered contract clauses
+            general_clauses: Array.isArray(s.general_clauses)
+              ? s.general_clauses.map(c => ({ text: c.text || "" }))
+              : [],
+            definitions: Array.isArray(s.definitions)
+              ? s.definitions.map(d => ({ term: d.term || "", definition: d.definition || "" }))
+              : [],
+            contract_sections: Array.isArray(s.contract_sections)
+              ? s.contract_sections.map(sec => ({
+                  title: sec.title || "",
+                  sub_clauses: Array.isArray(sec.sub_clauses)
+                    ? sec.sub_clauses.map(sub => ({ text: sub.text || "" }))
+                    : [],
+                }))
+              : [],
             // Load extensions with new fields
             extensions: Array.isArray(s.extensions) 
               ? s.extensions.map(ext => ({

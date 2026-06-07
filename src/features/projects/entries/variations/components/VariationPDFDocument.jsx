@@ -229,6 +229,9 @@ const VariationPDFDocument = ({ variation, project, companyInfo, qrDataUrl }) =>
     { label: `صافي أمر التغيير\nNet Variation`, value: fmt(totalVar), highlight: true },
     ...(contractorOHP  !== 0 ? [{ label: `مصاريف المقاول${nd.contractor_ohp_percentage ? ` (${nd.contractor_ohp_percentage}%)` : ""}\nContractor O&P`, value: fmt(contractorOHP) }] : []),
     ...(consultantFees !== 0 ? [{ label: `رسوم الاستشاري${nd.consultant_fees_percentage ? ` (${nd.consultant_fees_percentage}%)` : ""}\nConsultant Fees`, value: fmt(consultantFees) }] : []),
+    ...(nd.custom_fees || [])
+      .filter(f => parseFloat(f.amount) > 0)
+      .map(f => ({ label: `${f.name || 'رسوم إضافية'}\n${f.name || 'Additional Fee'}`, value: fmt(parseFloat(f.amount) || 0) })),
     ...(discountAmt > 0 ? [
       { label: `المجموع قبل الخصم\nTotal Before Discount`, value: fmt(beforeDiscount), subtotal: true },
       { label: `خصم${discountPct > 0 ? ` (${discountPct.toFixed(1)}%)` : ""}\nDiscount`, value: `(${fmt(discountAmt)})` },

@@ -22,6 +22,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   onApproveClick,
   onRejectClick,
   onFinalApproveClick,
+  onRevokeFinalApprovalClick,
   siteplan,
 }) {
   const { t } = useTranslation();
@@ -129,7 +130,6 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                   {isAR ? nameEn : nameAr}
                 </div>
               )}
-
             </div>
           ) : (
             <h1 className="prj-view-header__top-title">{titleText}</h1>
@@ -142,7 +142,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 <span>{t("project_view_internal_code")}:</span>
                 <span className="mono">
                   {formatInternalCode(project.internal_code)}
-                </span>
+                </span>ai 
               </div>
             )}
             {statusInfo && (
@@ -259,6 +259,12 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 </div>
               )}
               
+              {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
+                <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="md" fullWidth>
+                  {t("revoke_final_approval")}
+                </Button>
+              )}
+
             </div>
           </div>
 

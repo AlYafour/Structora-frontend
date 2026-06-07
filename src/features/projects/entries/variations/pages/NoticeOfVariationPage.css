@@ -2631,6 +2631,44 @@
 
 .nfs-fee-after strong { color: var(--ink, #374151); }
 
+.nfs-add-fee-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 10px 4px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary, #2563eb);
+  background: transparent;
+  border: 1px dashed var(--primary, #2563eb);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nfs-add-fee-btn:hover {
+  background: color-mix(in srgb, var(--primary, #2563eb) 8%, transparent);
+}
+
+.nfs-custom-fee-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: #dc2626;
+  background: transparent;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.nfs-custom-fee-remove:hover {
+  background: #fef2f2;
+}
+
 .nfs-select { padding: 4px 8px; font-size: 11px; }
 .nfs-num-input { width: 90px !important; padding: 4px 8px !important; font-size: 11px !important; }
 

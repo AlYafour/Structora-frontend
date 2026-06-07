@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown";
 import { aiAssistantApi } from "./aiAssistantApi";
 import useTenantNavigate from "../../hooks/useTenantNavigate";
 import FileUpload from "../../components/file-upload/FileUpload";
-import { useValidation } from "../../contexts/ValidationContext";
 import "./AiAssistantModal.css";
 
 const SESSION_KEY = "ai_assistant_shown";
@@ -153,48 +152,6 @@ export default function AiAssistantModal({ projectId = null }) {
   const lastMsgRef = useRef(null);
   const inputRef = useRef(null);
 
-  // ── Validation results from wizard ─────────────────────────────────────────
-  const { validationIssues } = useValidation() || {};
-  const lastValidationSignatureRef = useRef(null);
-
-  useEffect(() => {
-    if (!validationIssues || validationIssues.length === 0) {
-      // Issues resolved — show a brief success note without forcing modal open
-      if (lastValidationSignatureRef.current) {
-        lastValidationSignatureRef.current = null;
-        const clearText = isAR
-          ? "✅ تم حل جميع مشكلات التحقق من المستندات."
-          : "✅ All document validation issues resolved.";
-        setMessages(prev => [
-          ...prev.filter(m => !m.isValidation),
-          { role: "ai", text: clearText, isValidation: true },
-        ]);
-      }
-      return;
-    }
-
-    const signature = validationIssues.map(i => i.code).sort().join(",");
-    const isNewIssues = signature !== lastValidationSignatureRef.current;
-    lastValidationSignatureRef.current = signature;
-
-    const header = isAR
-      ? "**⚠️ تنبيهات التحقق من المستندات:**\n\n"
-      : "**⚠️ Document validation alerts:**\n\n";
-    const lines = validationIssues.map(i =>
-      `${i.severity === "error" ? "🔴" : "⚠️"} ${i.message}`
-    );
-    const text = header + lines.join("\n\n");
-
-    setMessages(prev => [
-      ...prev.filter(m => !m.isValidation),
-      { role: "ai", text, isValidation: true },
-    ]);
-
-    // Auto-open only when the set of issues changes
-    if (isNewIssues) setIsOpen(true);
-  }, [validationIssues, isAR]); // eslint-disable-line react-hooks/exhaustive-deps
-  // ───────────────────────────────────────────────────────────────────────────
-
   // Add greeting only if no messages were restored from sessionStorage
   useEffect(() => {
     setMessages((prev) =>
@@ -252,7 +209,7 @@ export default function AiAssistantModal({ projectId = null }) {
 
   const buildHistory = useCallback((msgs) => {
     return msgs
-      .filter((m) => (m.role === "user" || m.role === "ai") && !m.isValidation)
+      .filter((m) => m.role === "user" || m.role === "ai")
       .map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
   }, []);
 

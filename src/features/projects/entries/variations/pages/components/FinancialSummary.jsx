@@ -5,7 +5,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
-import { FaMinus, FaPlus, FaEquals, FaTag } from 'react-icons/fa';
+import { FaMinus, FaPlus, FaEquals, FaTag, FaTimes } from 'react-icons/fa';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 
 const FinancialSummary = memo(({
@@ -14,6 +14,7 @@ const FinancialSummary = memo(({
   totalVariationAmount,
   contractorEngineeringOHP,
   consultantFees,
+  customFeesTotal,
   totalAmountBeforeDiscount,
   discountAmount,
   discountPercentage,
@@ -51,6 +52,24 @@ const FinancialSummary = memo(({
       if (!Object.values(others).some(v => v)) return;
     }
     onFormDataChange({ ...formData, [field]: newValue });
+  };
+
+  const customFees = formData.custom_fees || [];
+
+  const addCustomFee = () => {
+    const newFee = { id: Date.now(), name: '', amount: '' };
+    onFormDataChange({ ...formData, custom_fees: [...customFees, newFee] });
+  };
+
+  const removeCustomFee = (id) => {
+    onFormDataChange({ ...formData, custom_fees: customFees.filter(f => f.id !== id) });
+  };
+
+  const updateCustomFee = (id, field, value) => {
+    onFormDataChange({
+      ...formData,
+      custom_fees: customFees.map(f => f.id === id ? { ...f, [field]: value } : f)
+    });
   };
 
   const isPositive = totalVariationAmount >= 0;
@@ -251,6 +270,63 @@ const FinancialSummary = memo(({
               </div>
             )}
 
+            {/* Custom Fees */}
+            {customFees.map(fee => (
+              <div key={fee.id} className="nfs-fee-row">
+                <div className="nfs-fee-row__info">
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      className="nvc-input nvc-input--sm"
+                      placeholder={t('fee_name') || 'Fee name'}
+                      value={fee.name}
+                      onChange={e => updateCustomFee(fee.id, 'name', e.target.value)}
+                      style={{ minWidth: 120 }}
+                    />
+                  ) : (
+                    <span className="nfs-fee-row__name">{fee.name || (t('custom_fee') || 'Custom Fee')}</span>
+                  )}
+                </div>
+                <div className="nfs-fee-row__right">
+                  {isEditMode && (
+                    <div className="nfs-fee-row__controls no-print" style={{ gap: 6 }}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="nvc-input nvc-input--sm nfs-num-input"
+                        placeholder="0.00"
+                        value={fee.amount}
+                        onChange={e => updateCustomFee(fee.id, 'amount', e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="nfs-custom-fee-remove no-print"
+                        onClick={() => removeCustomFee(fee.id)}
+                        title={t('remove') || 'Remove'}
+                      >
+                        <FaTimes size={11} />
+                      </button>
+                    </div>
+                  )}
+                  <span className="nfs-fee-row__amount">
+                    {renderAmount(parseFloat(fee.amount) || 0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {isEditMode && (
+              <button
+                type="button"
+                className="nfs-add-fee-btn no-print"
+                onClick={addCustomFee}
+              >
+                <FaPlus size={10} />
+                {t('add_fee') || 'Add Fee'}
+              </button>
+            )}
+
             {/* Discount line */}
             {hasDiscount && (
               <div className="nfs-fee-row nfs-fee-row--discount">
@@ -297,6 +373,31 @@ const FinancialSummary = memo(({
                   {renderAmount(totalVariationAmount)}
                 </span>
               </div>
+            </div>
+
+            <div className="nfs-total-card__divider" />
+
+            <div className="nfs-total-rows">
+              <div className="nfs-total-row">
+                <span>{t('contractor_ohp') || 'Contractor OHP'}</span>
+                <span className="nfs-total-row__val nfs-total-row__val--pos">
+                  + {renderAmount(contractorEngineeringOHP)}
+                </span>
+              </div>
+              <div className="nfs-total-row">
+                <span>{t('consultant_fees') || 'Consultant Fees'}</span>
+                <span className="nfs-total-row__val nfs-total-row__val--pos">
+                  + {renderAmount(consultantFees)}
+                </span>
+              </div>
+              {customFees.map(fee => (
+                <div key={fee.id} className="nfs-total-row">
+                  <span>{fee.name || (t('custom_fee') || 'Custom Fee')}</span>
+                  <span className="nfs-total-row__val nfs-total-row__val--pos">
+                    + {renderAmount(parseFloat(fee.amount) || 0)}
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div className="nfs-total-card__divider" />

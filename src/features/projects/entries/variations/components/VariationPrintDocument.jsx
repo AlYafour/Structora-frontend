@@ -101,6 +101,13 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
       en: `Consultant Fees${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`,
       value: consultantFees,
     }] : []),
+    ...(data.custom_fees || [])
+      .filter(f => parseFloat(f.amount) > 0)
+      .map(f => ({
+        ar: f.name || 'رسوم إضافية',
+        en: f.name || 'Additional Fee',
+        value: parseFloat(f.amount) || 0,
+      })),
     ...(discountAmt > 0 ? [
       { ar: "المجموع قبل الخصم", en: "Total Before Discount", value: beforeDiscount, variant: "subtotal", startsSummaryRow: true },
       {

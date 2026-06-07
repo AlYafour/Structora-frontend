@@ -33,6 +33,7 @@ const defaultFormData = {
   discount_applies_to_variation: true,
   discount_applies_to_contractor_ohp: true,
   discount_applies_to_consultant_fees: true,
+  custom_fees: [],
 };
 
 export function useVariationForm() {

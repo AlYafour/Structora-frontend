@@ -106,6 +106,21 @@ class ProjectService extends BaseService {
     }
   }
 
+  /**
+   * Revoke final approval and return project to draft
+   * @param {string|number} id - Project ID
+   * @param {string} notes - Revocation notes
+   * @returns {Promise} Response data
+   */
+  async revokeFinalApproval(id, notes = '') {
+    try {
+      const { data } = await api.post(`${this.basePath}${id}/revoke_final_approval/`, { notes });
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.revokeFinalApproval');
+    }
+  }
+
   // ===== Site Plan Operations =====
 
   /**

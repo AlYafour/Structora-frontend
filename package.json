@@ -24,6 +24,7 @@
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@react-pdf/renderer": "^4.3.2",
+    "@react-pdf/textkit": "^6.2.0",
     "@sentry/react": "^10.39.0",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-virtual": "^3.13.18",

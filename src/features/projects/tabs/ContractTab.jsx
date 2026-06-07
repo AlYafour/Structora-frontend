@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { pdf } from '@react-pdf/renderer';
 import Button from "../../../components/common/Button";
 import Card from "../../../components/common/Card";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
@@ -8,13 +9,40 @@ import { formatMoney, formatDate } from "../../../utils/formatters";
 import { getContractTypeLabel } from "../../../utils/projectLabels";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
+import { companyApi } from "../../../services/company/companyApi";
+import { projectApi } from "../../../services/projects/projectApi";
+import { api } from "../../../services/api";
+import { logger } from "../../../utils/logger";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import ContractPdfDocument from "./ContractPdfDocument";
 import "./ContractTab.css";
+
+async function toBase64(url) {
+  if (!url) return null;
+  try {
+    let path = url;
+    try {
+      path = new URL(url).pathname.replace(/^\/api\//, '');
+    } catch (_err) {
+      path = url;
+    }
+    const { data } = await api.get(path, { responseType: 'blob' });
+    return new Promise((res) => {
+      const r = new FileReader();
+      r.onload  = () => res(r.result);
+      r.onerror = () => res(null);
+      r.readAsDataURL(data);
+    });
+  } catch { return null; }
+}
 
 const ContractTab = memo(function ContractTab({ projectId, contract, startOrder, projectPermissions }) {
   const { t, i18n } = useTranslation();
   const isAR = i18n.language === 'ar';
   const hasContract = !!contract;
   const contractTypeLabel = getContractTypeLabel(contract?.contract_type, i18n.language);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const { error: showError } = useNotifications();
 
   // Helper function to render amount with Dirhams icon for English only
   const renderAmount = (value) => {
@@ -130,6 +158,39 @@ const ContractTab = memo(function ContractTab({ projectId, contract, startOrder,
       });
   }
 
+  const handleDownloadContract = async () => {
+    setDownloadingPdf(true);
+    try {
+      const [settings, projectData, freshContracts] = await Promise.all([
+        companyApi.getCurrentSettings(),
+        projectApi.getWithIncludes(projectId, ['siteplan']),
+        projectApi.getContract(projectId),
+      ]);
+      const lhBase64 = await toBase64(settings?.letter_head_template_url || null);
+      const sp = projectData?.siteplan_data || {};
+
+      // Use freshly-fetched contract data to guarantee new fields
+      // (general_clauses, definitions, contract_sections) are present.
+      const freshContract = Array.isArray(freshContracts) ? freshContracts[0] : freshContracts;
+      const pdfData = { ...contract, ...freshContract, letterhead_url: lhBase64, siteplan_data: sp };
+
+      const blob = await pdf(<ContractPdfDocument data={pdfData} />).toBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `Contract_${contract.tender_no || projectId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      logger.error('Download contract PDF failed', err);
+      showError(t('download_contract_pdf_failed'));
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   if (!hasContract) {
     return (
       <div className="prj-tab-panel">
@@ -181,6 +242,14 @@ const ContractTab = memo(function ContractTab({ projectId, contract, startOrder,
             disabled={!projectPermissions?.can_edit}
           >
             {t("edit")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={handleDownloadContract}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? t("generating_pdf") : t("download_pdf")}
           </Button>
         </div>
       </div>

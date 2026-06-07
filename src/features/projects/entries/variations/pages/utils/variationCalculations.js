@@ -235,6 +235,14 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
 }
 
 /**
+ * Calculate total of all custom fees
+ */
+export function calculateCustomFeesTotal(customFees) {
+  if (!Array.isArray(customFees)) return 0;
+  return round2(customFees.reduce((sum, fee) => sum + (parseFloat(fee.amount) || 0), 0));
+}
+
+/**
  * Calculate all variation financials with advanced discount logic
  */
 export function calculateAllFinancials(formData, omittedItems, addedItems) {
@@ -245,8 +253,9 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
   const totalOmittedForOverhead = calculateOmittedTotalForOverhead(omittedItems);
   const contractorOHP = calculateContractorOHP(formData, totalAdded, totalOmittedForOverhead);
   const consultantFees = calculateConsultantFees(formData, totalVariationAmount, totalAdded);
+  const customFeesTotal = calculateCustomFeesTotal(formData.custom_fees);
 
-  const totalAmountBeforeDiscount = totalVariationAmount + contractorOHP + consultantFees;
+  const totalAmountBeforeDiscount = totalVariationAmount + contractorOHP + consultantFees + customFeesTotal;
 
   const discountResults = calculateDiscountAdvanced(
     formData,
@@ -256,7 +265,8 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
     totalAmountBeforeDiscount
   );
 
-  const totalAmount = discountResults.finalAmountAfterDiscount;
+  // Custom fees are not discounted — added on top of the discounted subtotal
+  const totalAmount = round2(discountResults.finalAmountAfterDiscount + customFeesTotal);
 
   return {
     totalOmitted,
@@ -264,6 +274,7 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
     totalVariationAmount,
     contractorOHP,
     consultantFees,
+    customFeesTotal,
     totalAmountBeforeDiscount,
     totalAmount,
     ...discountResults

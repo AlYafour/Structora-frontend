@@ -36,7 +36,7 @@ import { logger } from "../../../../utils/logger";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
-export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true, onDocFilesChange, onFormSectionChange }) {
+export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { form, setForm, setF, owners, existingId, setExistingId, isView: isViewState, setIsView } = useLicense(projectId);
@@ -373,6 +373,7 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
           isLoading={isSaving}
           showPrev={!!onPrev}
           isLastStep={!onNext}
+          disableNext={hasBlockingErrors}
         />
       )}
     >

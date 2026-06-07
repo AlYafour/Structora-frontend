@@ -65,6 +65,7 @@ export default function SitePlanStep({
   isActive = true,
   onDocFilesChange,
   onFormSectionChange,
+  hasBlockingErrors = false,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -131,6 +132,13 @@ export default function SitePlanStep({
       })),
     });
   }, [owners, onFormSectionChange]);
+
+  // Report siteplan_section so field validation can check allocation_date
+  useEffect(() => {
+    onFormSectionChange?.("siteplan_section", {
+      allocation_date: form.allocation_date || "",
+    });
+  }, [form.allocation_date, onFormSectionChange]);
 
   useEffect(() => {
     if (!showPdfPanel) {
@@ -1003,6 +1011,7 @@ export default function SitePlanStep({
           isLoading={isUploading}
           showPrev={!!onPrev && !isNewProject}
           isLastStep={!isNewProject && !onNext}
+          disableNext={hasBlockingErrors}
         />
       )}
     >

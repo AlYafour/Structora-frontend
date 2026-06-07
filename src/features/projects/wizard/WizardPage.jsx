@@ -13,6 +13,7 @@ import PageHeader from "../../../components/layout/PageHeader";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { useValidation } from "../../../contexts/ValidationContext";
 import { aiAssistantApi } from "../../ai-assistant/aiAssistantApi";
+import { validateFormFields } from "../../../utils/fieldValidation";
 
 import useWizardState from "./hooks/useWizardState";
 import useProjectData from "../../../hooks/useProjectData";
@@ -35,7 +36,7 @@ export default function WizardPage() {
   const isAR = i18n.language === "ar";
 
   const { error: showError, success: showSuccess } = useNotifications();
-  const { pushValidationResults } = useValidation();
+  const { validationIssues, pushValidationResults, pushFieldIssues } = useValidation();
   const navigate = useTenantNavigate();
 
   // ── Document validation (real-time, non-blocking) ──────────────────────────
@@ -96,6 +97,15 @@ export default function WizardPage() {
 
   const isNewProject = !projectId || location.pathname === "/wizard/new";
   const draftIdFromUrl = params.get("draftId");
+
+  const hasBlockingErrors = !!(validationIssues?.some(i => i.severity === "error"));
+
+  const runFieldValidation = useCallback((currentStep, isNoPermit = false) => {
+    if (!isNewProject) return;
+    const lang = /^ar\b/i.test(i18n.language) ? "ar" : "en";
+    const issues = validateFormFields(formDataRef.current, lang, isNoPermit, currentStep);
+    pushFieldIssues(issues);
+  }, [isNewProject, i18n, pushFieldIssues]);
 
   const {
     permissions: projectPermissions,
@@ -410,6 +420,7 @@ export default function WizardPage() {
   }, [index, isNewProject, saveDraft]);
 
   const createProjectAndSaveAllData = async (contractFormData) => {
+    runFieldValidation("contract", noPermit);
     try {
       setIsCreatingProject(true);
 
@@ -641,12 +652,14 @@ export default function WizardPage() {
                   isActive={index === 1}
                   onDocFilesChange={handleDocFilesChange}
                   onFormSectionChange={handleFormSectionChange}
+                  hasBlockingErrors={hasBlockingErrors}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
                       sitePlanFormData: formData,
                       siteplan: snapshot || true,
                     }));
+                    runFieldValidation("siteplan", noPermit);
                     goNext();
                   }}
                 />
@@ -664,12 +677,14 @@ export default function WizardPage() {
                   isActive={index === 2}
                   onDocFilesChange={handleDocFilesChange}
                   onFormSectionChange={handleFormSectionChange}
+                  hasBlockingErrors={hasBlockingErrors}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
                       licenseFormData: formData,
                       license: snapshot || true,
                     }));
+                    runFieldValidation("license", noPermit);
                     goNext();
                   }}
                 />
@@ -692,6 +707,7 @@ export default function WizardPage() {
                 onNext={sectionOnly ? undefined : undefined}
                 isView={isView}
                 isNewProject={isNewProject}
+                hasBlockingErrors={hasBlockingErrors}
                 onCreateProject={isNewProject ? createProjectAndSaveAllData : undefined}
                 setup={setup}
                 onSetupChange={setSetup}

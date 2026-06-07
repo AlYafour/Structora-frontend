@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { api } from '../services/api';
+import axios from 'axios';
+import { api, API_BASE_URL } from '../services/api';
 import { logger } from '../utils/logger';
 import useThemeManager from '../hooks/useThemeManager';
 import useAdminSessionGuard from '../hooks/useAdminSessionGuard';
@@ -73,14 +74,34 @@ export function AuthProvider({ children }) {
             localStorage.setItem('permissions', JSON.stringify(freshData.permissions || []));
             userRef.current = freshData;
           } catch (verifyErr) {
-            // If API returns 401, the session is truly expired - clear everything
+            // On 401, try refreshing the token first before logging out.
+            // Safari ITP blocks cross-site cookies, causing false 401s right after login.
             if (verifyErr?.response?.status === 401) {
-              localStorage.removeItem('user');
-              localStorage.removeItem('permissions');
-              localStorage.removeItem('tenant_theme');
-              setUser(null);
-              setPermissions([]);
-              userRef.current = null;
+              try {
+                await axios.post(
+                  `${API_BASE_URL}auth/token/refresh/`,
+                  {},
+                  { withCredentials: true }
+                );
+                // Refresh succeeded — re-fetch profile
+                const retryResponse = await apiClient.get('auth/users/profile/', {
+                  _skipAuthRedirect: true,
+                });
+                const freshData = retryResponse.data;
+                setUser(freshData);
+                setPermissions(freshData.permissions || []);
+                localStorage.setItem('user', JSON.stringify(freshData));
+                localStorage.setItem('permissions', JSON.stringify(freshData.permissions || []));
+                userRef.current = freshData;
+              } catch {
+                // Refresh also failed — session is truly expired, clear everything
+                localStorage.removeItem('user');
+                localStorage.removeItem('permissions');
+                localStorage.removeItem('tenant_theme');
+                setUser(null);
+                setPermissions([]);
+                userRef.current = null;
+              }
             }
             // For other errors (network, 500), keep the stored user data
           }

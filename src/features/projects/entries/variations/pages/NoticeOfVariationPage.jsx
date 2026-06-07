@@ -168,7 +168,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         final_amount_after_discount: noticeData.final_amount_after_discount ?? '',
         discount_applies_to_variation: noticeData.discount_applies_to_variation !== undefined ? noticeData.discount_applies_to_variation : true,
         discount_applies_to_contractor_ohp: noticeData.discount_applies_to_contractor_ohp !== undefined ? noticeData.discount_applies_to_contractor_ohp : true,
-        discount_applies_to_consultant_fees: noticeData.discount_applies_to_consultant_fees !== undefined ? noticeData.discount_applies_to_consultant_fees : true
+        discount_applies_to_consultant_fees: noticeData.discount_applies_to_consultant_fees !== undefined ? noticeData.discount_applies_to_consultant_fees : true,
+        custom_fees: noticeData.custom_fees ?? []
       });
 
       if (noticeData.omitted_items?.length > 0) {
@@ -406,7 +407,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         final_amount_after_discount: formData.final_amount_after_discount,
         discount_applies_to_variation: formData.discount_applies_to_variation,
         discount_applies_to_contractor_ohp: formData.discount_applies_to_contractor_ohp,
-        discount_applies_to_consultant_fees: formData.discount_applies_to_consultant_fees
+        discount_applies_to_consultant_fees: formData.discount_applies_to_consultant_fees,
+        custom_fees: formData.custom_fees ?? []
       };
 
       const MAX_VALUE = 999999999999.99;
@@ -747,6 +749,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             totalVariationAmount={calculations.totalVariationAmount}
             contractorEngineeringOHP={calculations.contractorOHP}
             consultantFees={calculations.consultantFees}
+            customFeesTotal={calculations.customFeesTotal}
             totalAmountBeforeDiscount={calculations.totalAmountBeforeDiscount}
             discountAmount={calculations.discountAmount}
             discountPercentage={calculations.discountPercentage}

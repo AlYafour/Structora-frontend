@@ -31,6 +31,7 @@ import ContractSignerSection from "../components/ContractSignerSection";
 import ContractAttachmentsSection from "../components/ContractAttachmentsSection";
 import OfficialCommunicationSection from "../components/OfficialCommunicationSection";
 import ContractDrawingsSection from "../components/ContractDrawingsSection";
+import ContractClausesSection from "../components/ContractClausesSection";
 import useContract from "../../../../hooks/useContract";
 import useStepSave from "../hooks/useStepSave";
 import { WIZARD_CONTRACT_TYPES, WIZARD_CONTRACT_CLASSIFICATIONS } from "../../../../utils/constants";
@@ -43,7 +44,7 @@ import { extractFileNameFromUrl, buildFileUrl } from "../../../../utils/helpers/
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 import UniqueFieldInput from "../../../../components/forms/UniqueFieldInput";
 
-export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false, onDocFilesChange, onFormSectionChange }) {
+export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { isArabic: isAR } = useLanguage();
@@ -641,6 +642,9 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         ? { consultant_data: form.consultant_data || {} }
         : {}),
       project_description: form.project_description || "",
+      general_clauses: Array.isArray(form.general_clauses) ? form.general_clauses : [],
+      definitions: Array.isArray(form.definitions) ? form.definitions : [],
+      contract_sections: Array.isArray(form.contract_sections) ? form.contract_sections : [],
       signer_type: form.signer_type || "owner",
       authorized_person: form.signer_type === "authorized_person" ? {
         name: form.authorized_person?.name || "",
@@ -858,6 +862,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
           isLoading={isSaving}
           showPrev={!!onPrev}
           isLastStep={!onNext}
+          disableNext={hasBlockingErrors}
         />
       )}
     >
@@ -1134,7 +1139,14 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         </FormSection>
       )}
 
-      {/* 6. Contract attachments */}
+      {/* 7. Contract Clauses — user enters Arabic clauses, definitions, and numbered sections */}
+      <ContractClausesSection
+        form={form}
+        setF={setF}
+        viewMode={viewMode}
+      />
+
+      {/* 8. Contract attachments */}
       <ContractAttachmentsSection
         form={form}
         setF={setF}
@@ -1170,10 +1182,10 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         projectId={projectId}
       />
 
-      {/* 9. General notes */}
+      {/* 10. General notes */}
       <div className="wizard-section">
         <div className="wizard-section__header">
-          <h4 className="wizard-section__title">{`9) ${t("contract.sections.general_notes")}`}</h4>
+          <h4 className="wizard-section__title">{`10) ${t("contract.sections.general_notes")}`}</h4>
         </div>
         {viewMode ? (
           <FormViewField value={form.general_notes} />

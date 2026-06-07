@@ -7,6 +7,7 @@ import AppTopBar from "./AppTopBar";
 import Breadcrumbs from "./Breadcrumbs";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import AiAssistantModal from "../../features/ai-assistant/AiAssistantModal";
+import ValidationPopup from "../../features/ai-assistant/ValidationPopup";
 import { ValidationProvider } from "../../contexts/ValidationContext";
 import PageSkeleton from "./PageSkeleton";
 
@@ -48,6 +49,7 @@ function LayoutContent() {
 
       {/* AI Assistant for company users */}
       {!isAdmin && <AiAssistantModal projectId={currentProjectId} />}
+      {!isAdmin && <ValidationPopup />}
     </div>
   );
 }
