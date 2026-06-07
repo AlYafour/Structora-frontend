@@ -234,6 +234,8 @@
   "awarding_no": "ترسية: لا",
   "add_start_order": "إضافة أمر المباشرة",
   "edit_start_order": "تعديل أمر المباشرة",
+  "delete_start_order": "حذف أمر المباشرة",
+  "confirm_delete_start_order": "هل أنت متأكد من حذف أمر المباشرة هذا؟ لا يمكن التراجع عن هذا الإجراء.",
   "add_awarding": "إضافة ترسية",
   "select_project_for_start_order": "اختر مشروع لإضافة أمر مباشرة",
   "select_project_for_start_order_desc": "اختر مشروعاً معتمداً نهائياً لإضافة أمر مباشرة",

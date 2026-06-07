@@ -234,6 +234,8 @@
   "awarding_no": "Awarding: No",
   "add_start_order": "Add Start Order",
   "edit_start_order": "Edit Start Order",
+  "delete_start_order": "Delete Start Order",
+  "confirm_delete_start_order": "Are you sure you want to delete this start order? This action cannot be undone.",
   "add_awarding": "Add Awarding",
   "select_project_for_start_order": "Select Project for Start Order",
   "select_project_for_start_order_desc": "Select a final approved project to add a start order",

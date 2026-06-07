@@ -17,18 +17,14 @@ function FeeCard({
 }) {
   return (
     <div className="nfs-custom-fee-card">
-      {/* Name row */}
+      {/* Name row — extras (checkboxes) sit inline with the label */}
       <div className="nfs-custom-fee-card__name">
         {nameInput || <span className="nfs-fee-row__name">{label}</span>}
+        {extras && extras.length > 0 && extras.map((extra, i) => (
+          <span key={i} className="nfs-custom-fee-card__inline-extra no-print">{extra}</span>
+        ))}
         {removeBtn}
       </div>
-
-      {/* Optional extras: checkboxes, toggles */}
-      {extras && extras.length > 0 && (
-        <div className="nfs-custom-fee-card__extras no-print">
-          {extras.map((extra, i) => <div key={i}>{extra}</div>)}
-        </div>
-      )}
 
       {/* Controls + computed amount */}
       <div className="nfs-custom-fee-card__bottom">

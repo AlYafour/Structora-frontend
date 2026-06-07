@@ -2651,7 +2651,8 @@
 .nfs-custom-fee-card__name {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
 }
 
 .nfs-custom-fee-card__name-input {
@@ -2659,10 +2660,9 @@
   min-width: 0;
 }
 
-.nfs-custom-fee-card__extras {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.nfs-custom-fee-card__inline-extra {
+  display: inline-flex;
+  align-items: center;
 }
 
 .nfs-custom-fee-card__bottom {

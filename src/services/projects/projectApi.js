@@ -817,6 +817,14 @@ class ProjectService extends BaseService {
     }
   }
 
+  async deleteStartOrder(projectId, startOrderId) {
+    try {
+      await api.delete(`${this.basePath}${projectId}/start-order/${startOrderId}/`);
+    } catch (error) {
+      throw handleError(error, 'ProjectService.deleteStartOrder');
+    }
+  }
+
   // ===== Awarding =====
 
   /**

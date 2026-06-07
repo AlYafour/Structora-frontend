@@ -114,7 +114,7 @@ const projectDisplayName = isAR
  <TabComponent projectId={projectId} awarding={awarding} />
  )}
  {activeTab === "start_order" && (
- <TabComponent projectId={projectId} startOrder={startOrder} />
+ <TabComponent projectId={projectId} startOrder={startOrder} onDeleted={reload} />
  )}
  {activeTab === "project_schedule" && (
  <TabComponent projectId={projectId} projectSchedule={projectSchedule} />

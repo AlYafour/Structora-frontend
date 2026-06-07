@@ -1,18 +1,43 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/common/Button";
 import Card from "../../../components/common/Card";
+import Dialog from "../../../components/common/Dialog";
 import { formatDate } from "../../../utils/formatters";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
 import { useAuth } from "../../../contexts/AuthContext";
+import { projectApi } from "../../../services/projects";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { logger } from "../../../utils/logger";
 
-const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
+const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, onDeleted }) {
   const { t } = useTranslation();
-  const { hasPermission, isAdmin } = useAuth();
+  const { hasPermission, isAdmin, isCompanyAdmin } = useAuth();
+  const { success, error: showError } = useNotifications();
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const hasData = !!startOrder;
   const canAddStartOrder = isAdmin || hasPermission("projects.add_start_order");
+  const canDelete = isCompanyAdmin || (isAdmin && !isCompanyAdmin);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await projectApi.deleteStartOrder(projectId, startOrder.id);
+      success(t("deleted_successfully"));
+      setConfirmOpen(false);
+      if (onDeleted) onDeleted();
+    } catch (err) {
+      logger.error("Error deleting start order", err);
+      showError(err.message || t("delete_error"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="prj-tab-panel">
@@ -26,6 +51,11 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
               <Button as={Link} to={`/projects/${projectId}/start-order/${startOrder.id}/edit`} variant="primary" size="md">
                 {t("edit")}
               </Button>
+              {canDelete && (
+                <Button variant="danger" size="md" onClick={() => setConfirmOpen(true)}>
+                  {t("delete")}
+                </Button>
+              )}
             </>
           ) : canAddStartOrder ? (
             <Button as={Link} to={`/projects/${projectId}/start-order/create`} variant="primary" size="md">
@@ -34,6 +64,7 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
           ) : null}
         </div>
       </div>
+
       {hasData ? (
         <>
           <div className="ds-grid-auto-240 ds-mt-4">
@@ -80,6 +111,18 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder }) {
           {t("start_order_not_added")}
         </div>
       )}
+
+      <Dialog
+        open={confirmOpen}
+        title={t("delete_start_order")}
+        desc={t("confirm_delete_start_order")}
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+        onClose={() => !deleting && setConfirmOpen(false)}
+        onConfirm={handleDelete}
+        busy={deleting}
+        danger
+      />
     </div>
   );
 });

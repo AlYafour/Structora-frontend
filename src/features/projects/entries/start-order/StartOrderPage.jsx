@@ -83,9 +83,7 @@ export default function StartOrderPage() {
     try {
       const fd = new FormData();
 
-      if (formData.start_order_date) {
-        fd.append("start_order_date", formData.start_order_date);
-      }
+      fd.append("start_order_date", formData.start_order_date || "");
 
       if (formData.start_order_notes) {
         fd.append("start_order_notes", formData.start_order_notes);
