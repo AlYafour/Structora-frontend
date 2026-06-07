@@ -737,177 +737,217 @@
 
 /* Header */
 .vpd-print-mode .vpd-top {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .vpd-print-mode .vpd-company,
 .vpd-print-mode .vpd-title-panel {
-  padding: 10px 14px;
+  padding: 5px 10px;
 }
 
 .vpd-print-mode .vpd-qr-panel {
-  padding: 10px 14px;
+  padding: 6px 10px;
 }
 
 .vpd-print-mode .vpd-qr-panel svg {
-  width: 54px !important;
-  height: 54px !important;
+  width: 40px !important;
+  height: 40px !important;
 }
 
 .vpd-print-mode .vpd-qr-panel span {
-  font-size: 6pt;
+  font-size: 5.5pt;
 }
 
 .vpd-print-mode .vpd-company__logo {
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
+}
+
+.vpd-print-mode .vpd-company {
+  gap: 10px;
 }
 
 .vpd-print-mode .vpd-company__name {
-  font-size: 14pt;
+  font-size: 11pt;
 }
 
 .vpd-print-mode .vpd-company__name .vpd-bilingual__en {
-  font-size: 11pt;
+  font-size: 8.5pt;
 }
 
 .vpd-print-mode .vpd-company__details {
-  font-size: 9.5pt;
-  margin-top: 5px;
+  font-size: 7.5pt;
+  margin-top: 2px;
+  gap: 2px 6px;
+}
+
+/* Title: show AR and EN on one line to save vertical space */
+.vpd-print-mode .vpd-title .vpd-bilingual {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .vpd-print-mode .vpd-title {
-  font-size: 18pt;
+  font-size: 13pt;
 }
 
 .vpd-print-mode .vpd-title .vpd-bilingual__en {
-  font-size: 11pt;
+  font-size: 8pt;
 }
 
 .vpd-print-mode .vpd-meta {
-  margin-top: 8px;
-  gap: 8px;
+  margin-top: 3px;
+  gap: 4px;
 }
 
 .vpd-print-mode .vpd-meta__label {
-  font-size: 9pt;
+  font-size: 7.5pt;
 }
 
 .vpd-print-mode .vpd-meta strong {
-  font-size: 11pt;
-  margin-top: 4px;
+  font-size: 9.5pt;
+  margin-top: 1px;
 }
 
-/* Info cards */
+/* Info cards — 6-column base:
+   row 1: Project Name (span 3) | Project No (span 3)
+   row 2: Description (span 6, full width)
+   row 3: Ref No (span 2) | Trade (span 2) | Additional Time (span 2) */
 .vpd-print-mode .vpd-cards {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+}
+
+.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(1),
+.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(2) {
+  grid-column: span 3;
+}
+
+.vpd-print-mode .vpd-info-card--desc {
+  grid-column: 1 / -1;
+}
+
+.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(n+4) {
+  grid-column: span 2;
 }
 
 .vpd-print-mode .vpd-info-card {
-  padding: 8px 10px;
+  padding: 5px 7px;
   min-height: auto;
 }
 
 .vpd-print-mode .vpd-info-card--sm {
-  padding: 5px 8px;
-  column-gap: 8px;
+  padding: 4px 7px;
+  column-gap: 7px;
 }
 
 .vpd-print-mode .vpd-info-card--sm .vpd-info-card__label {
-  font-size: 7.5pt;
+  font-size: 7pt;
+}
+
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__label {
+  font-size: 6.5pt;
 }
 
 .vpd-print-mode .vpd-info-card--sm .vpd-info-card__value,
 .vpd-print-mode .vpd-info-card--sm .vpd-info-card__value--plain {
-  font-size: 9.5pt;
+  font-size: 9pt;
 }
 
 .vpd-print-mode .vpd-info-card__line {
-  font-size: 8pt;
+  font-size: 7.5pt;
+}
+
+.vpd-print-mode .vpd-info-card--sm.vpd-info-card--desc {
+  padding: 3px 7px;
+  line-height: 1.3;
 }
 
 .vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-text {
-  font-size: 9pt;
-  margin-top: 4px;
+  font-size: 7.5pt;
+  margin-top: 2px;
+  line-height: 1.3;
 }
 
 .vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-cause {
-  font-size: 8.5pt;
-  margin-top: 3px;
+  font-size: 7pt;
+  margin-top: 1px;
+  line-height: 1.3;
 }
 
 /* Sections */
 .vpd-print-mode .vpd-section {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .vpd-print-mode .vpd-section__header {
-  padding: 7px 0 5px;
-  font-size: 9pt;
+  padding: 5px 0 4px;
+  font-size: 8.5pt;
 }
 
 .vpd-print-mode .vpd-desc-text {
-  padding: 0 0 8px;
-  font-size: 10.5pt;
-  line-height: 1.5;
+  padding: 0 0 6px;
+  font-size: 9.5pt;
+  line-height: 1.45;
 }
 
 .vpd-print-mode .vpd-desc-text--secondary {
-  font-size: 10pt;
+  font-size: 9pt;
 }
 
 /* Item tables */
 .vpd-print-mode .vpd-table {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .vpd-print-mode .vpd-table th {
-  padding: 6px 7px;
-  font-size: 9pt;
+  padding: 5px 6px;
+  font-size: 8.5pt;
 }
 
 .vpd-print-mode .vpd-table td {
-  padding: 7px 7px;
-  font-size: 10pt;
+  padding: 5px 6px;
+  font-size: 9.5pt;
 }
 
 .vpd-print-mode .vpd-td--remark {
-  font-size: 9.5pt !important;
-  padding: 4px 8px !important;
+  font-size: 8.5pt !important;
+  padding: 2px 6px !important;
 }
 
 .vpd-print-mode .vpd-remark-label {
-  font-size: 9pt;
+  font-size: 8pt;
 }
 
 /* Totals horizontal strip */
 .vpd-print-mode .vpd-bottom {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .vpd-print-mode .vpd-totals-cell {
-  flex: 1 1 120px;
-  padding: 10px 8px;
+  flex: 1 1 100px;
+  padding: 7px 6px;
 }
 
 .vpd-print-mode .vpd-totals-cell__label {
   font-size: 7pt;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .vpd-print-mode .vpd-totals-cell__value {
-  font-size: 10pt;
+  font-size: 9.5pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand {
-  flex: 2 1 220px;
-  padding: 12px 16px;
-  gap: 14px;
+  flex: 2 1 200px;
+  padding: 8px 12px;
+  gap: 12px;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label {
-  font-size: 9pt;
+  font-size: 8.5pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note {
@@ -915,56 +955,56 @@
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value {
-  font-size: 18pt;
+  font-size: 15pt;
 }
 
 /* Remarks + QR */
 .vpd-print-mode .vpd-remarks-qr-row {
-  margin-bottom: 6px;
-}
-
-.vpd-print-mode .vpd-verify {
-  padding: 10px 14px;
-  min-width: 100px;
-  gap: 7px;
-}
-
-.vpd-print-mode .vpd-verify h4 {
-  font-size: 8.5pt;
   margin-bottom: 5px;
 }
 
+.vpd-print-mode .vpd-verify {
+  padding: 8px 10px;
+  min-width: 90px;
+  gap: 5px;
+}
+
+.vpd-print-mode .vpd-verify h4 {
+  font-size: 7.5pt;
+  margin-bottom: 4px;
+}
+
 .vpd-print-mode .vpd-verify .vpd-bilingual {
-  font-size: 9pt;
+  font-size: 8pt;
 }
 
 .vpd-print-mode .vpd-notes {
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .vpd-print-mode .vpd-notes p {
-  font-size: 10.5pt;
-  gap: 10px;
+  font-size: 9.5pt;
+  gap: 8px;
 }
 
 /* Signatures */
 .vpd-print-mode .vpd-signatures {
-  margin-top: 6px;
+  margin-top: 5px;
   margin-bottom: 0;
 }
 
 .vpd-print-mode .vpd-sign-card {
-  min-height: 52px;
-  padding: 10px 14px;
+  min-height: 40px;
+  padding: 7px 10px;
 }
 
 .vpd-print-mode .vpd-sign-card strong {
-  font-size: 8.5pt;
+  font-size: 8pt;
 }
 
 .vpd-print-mode .vpd-sign-card--stamp div {
-  font-size: 8.5pt;
-  padding: 10px 0;
+  font-size: 8pt;
+  padding: 8px 0;
 }
 
 .vpd-print-mode .vpd-final-notice {
