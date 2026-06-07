@@ -781,33 +781,88 @@
   gap: 2px 6px;
 }
 
-/* Title: show AR and EN on one line to save vertical space */
-.vpd-print-mode .vpd-title .vpd-bilingual {
+/* Meta panel only holds VAR NO + DATE */
+.vpd-print-mode .vpd-title-panel {
+  display: flex;
   flex-direction: row;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
+/* Title sits as a flex sibling inside vpd-company, pushed to the right */
 .vpd-print-mode .vpd-title {
-  font-size: 13pt;
+  font-size: 11pt;
+  margin-left: auto;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.vpd-print-mode .vpd-title .vpd-bilingual {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.vpd-print-mode .vpd-title .vpd-bilingual__ar {
+  font-size: 11pt;
 }
 
 .vpd-print-mode .vpd-title .vpd-bilingual__en {
-  font-size: 8pt;
+  font-size: 7pt;
+  color: #7f7364;
 }
 
+.vpd-print-mode .vpd-title .vpd-bilingual {
+  flex-direction: column;
+  gap: 1px;
+}
+
+.vpd-print-mode .vpd-title .vpd-bilingual__ar {
+  font-size: 12pt;
+}
+
+.vpd-print-mode .vpd-title .vpd-bilingual__en {
+  font-size: 7pt;
+  color: #7f7364;
+}
+
+/* Meta: var no and date side by side */
 .vpd-print-mode .vpd-meta {
-  margin-top: 3px;
-  gap: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  flex-wrap: nowrap;
+  margin-right: 10px;
+}
+
+/* Each meta item: label and value on one line */
+.vpd-print-mode .vpd-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .vpd-print-mode .vpd-meta__label {
-  font-size: 7.5pt;
+  font-size: 6.5pt;
+}
+
+.vpd-print-mode .vpd-meta .vpd-bilingual {
+  flex-direction: row;
+  gap: 3px;
+  align-items: baseline;
+}
+
+.vpd-print-mode .vpd-meta .vpd-bilingual__ar,
+.vpd-print-mode .vpd-meta .vpd-bilingual__en {
+  font-size: 6.5pt;
 }
 
 .vpd-print-mode .vpd-meta strong {
-  font-size: 9.5pt;
-  margin-top: 1px;
+  font-size: 9pt;
+  margin-top: 0;
+  display: block;
 }
 
 /* Info cards — 6-column base:
@@ -879,46 +934,47 @@
 
 /* Sections */
 .vpd-print-mode .vpd-section {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .vpd-print-mode .vpd-section__header {
-  padding: 5px 0 4px;
-  font-size: 8.5pt;
+  padding: 4px 0 3px;
+  font-size: 7.5pt;
 }
 
 .vpd-print-mode .vpd-desc-text {
-  padding: 0 0 6px;
-  font-size: 9.5pt;
-  line-height: 1.45;
+  padding: 0 0 5px;
+  font-size: 8.5pt;
+  line-height: 1.4;
 }
 
 .vpd-print-mode .vpd-desc-text--secondary {
-  font-size: 9pt;
+  font-size: 8pt;
 }
 
 /* Item tables */
 .vpd-print-mode .vpd-table {
-  margin: 0 0 6px;
+  margin: 0 0 5px;
+  line-height: 1.3;
 }
 
 .vpd-print-mode .vpd-table th {
-  padding: 5px 6px;
-  font-size: 8.5pt;
+  padding: 4px 5px;
+  font-size: 7.5pt;
 }
 
 .vpd-print-mode .vpd-table td {
-  padding: 5px 6px;
-  font-size: 9.5pt;
+  padding: 4px 5px;
+  font-size: 8pt;
 }
 
 .vpd-print-mode .vpd-td--remark {
-  font-size: 8.5pt !important;
-  padding: 2px 6px !important;
+  font-size: 7.5pt !important;
+  padding: 2px 5px !important;
 }
 
 .vpd-print-mode .vpd-remark-label {
-  font-size: 8pt;
+  font-size: 7pt;
 }
 
 /* Totals horizontal strip */
@@ -927,35 +983,35 @@
 }
 
 .vpd-print-mode .vpd-totals-cell {
-  flex: 1 1 100px;
-  padding: 7px 6px;
+  flex: 1 1 90px;
+  padding: 6px 5px;
 }
 
 .vpd-print-mode .vpd-totals-cell__label {
-  font-size: 7pt;
-  margin-bottom: 4px;
+  font-size: 6.5pt;
+  margin-bottom: 3px;
 }
 
 .vpd-print-mode .vpd-totals-cell__value {
-  font-size: 9.5pt;
-}
-
-.vpd-print-mode .vpd-totals-cell--grand {
-  flex: 2 1 200px;
-  padding: 8px 12px;
-  gap: 12px;
-}
-
-.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label {
   font-size: 8.5pt;
 }
 
+.vpd-print-mode .vpd-totals-cell--grand {
+  flex: 2 1 180px;
+  padding: 7px 10px;
+  gap: 10px;
+}
+
+.vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label {
+  font-size: 7.5pt;
+}
+
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note {
-  font-size: 6pt;
+  font-size: 5.5pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value {
-  font-size: 15pt;
+  font-size: 13pt;
 }
 
 /* Remarks + QR */
@@ -979,11 +1035,11 @@
 }
 
 .vpd-print-mode .vpd-notes {
-  padding: 6px 0;
+  padding: 5px 0;
 }
 
 .vpd-print-mode .vpd-notes p {
-  font-size: 9.5pt;
+  font-size: 8.5pt;
   gap: 8px;
 }
 
@@ -994,17 +1050,17 @@
 }
 
 .vpd-print-mode .vpd-sign-card {
-  min-height: 40px;
-  padding: 7px 10px;
+  min-height: 34px;
+  padding: 5px 8px;
 }
 
 .vpd-print-mode .vpd-sign-card strong {
-  font-size: 8pt;
+  font-size: 7pt;
 }
 
 .vpd-print-mode .vpd-sign-card--stamp div {
-  font-size: 8pt;
-  padding: 8px 0;
+  font-size: 7pt;
+  padding: 6px 0;
 }
 
 .vpd-print-mode .vpd-final-notice {

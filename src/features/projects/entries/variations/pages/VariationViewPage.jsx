@@ -26,6 +26,8 @@ import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
+const PDF_CANVAS_SCALE = 1.15;
+const PDF_JPEG_QUALITY = 0.72;
 
 export default function VariationViewPage() {
   const { variationId } = useParams();
@@ -190,7 +192,7 @@ export default function VariationViewPage() {
       cleanupPrintLayout = await preparePrintDocumentLayout(el);
 
       const canvas = await html2canvas(el, {
-        scale: 2,
+        scale: PDF_CANVAS_SCALE,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -202,7 +204,7 @@ export default function VariationViewPage() {
         height: el.scrollHeight,
       });
 
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 0;
@@ -222,7 +224,7 @@ export default function VariationViewPage() {
         slice.width = canvas.width;
         slice.height = srcH;
         slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-        pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, margin, contentW, srcH * scale);
+        pdf.addImage(slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY), 'JPEG', margin, margin, contentW, srcH * scale);
       }
 
       // Merge variation_attachments (PDFs/images) using pdf-lib

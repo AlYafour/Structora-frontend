@@ -162,10 +162,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 {companyInfo?.email   && <span dir="ltr">{companyInfo.email}</span>}
               </div>
             </div>
+            <BilingualText ar="أمر التغيير" en="VARIATION ORDER" className="vpd-title" />
           </div>
 
           <div className="vpd-title-panel">
-            <BilingualText ar="أمر التغيير" en="VARIATION ORDER" className="vpd-title" />
             <div className="vpd-meta">
               <div>
                 <BilingualText ar="رقم التغيير" en="VAR. NO." className="vpd-meta__label" />
