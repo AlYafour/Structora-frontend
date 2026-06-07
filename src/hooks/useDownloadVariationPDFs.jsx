@@ -12,8 +12,8 @@ import { applyPrintPagePartBreaks } from "../features/projects/entries/variation
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
-const PDF_CANVAS_SCALE = 1.15;
-const PDF_JPEG_QUALITY = 0.72;
+const PDF_CANVAS_SCALE = 1.25;
+const PDF_JPEG_QUALITY = 0.78;
 
 async function runWithConcurrency(items, limit, worker) {
   let nextIndex = 0;
