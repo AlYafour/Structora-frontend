@@ -517,23 +517,23 @@
   align-items: center;
   gap: 20px;
   padding: 18px 24px;
-  background: #17202f;
+  background: #fff;
 }
 
 .vpd-totals-cell--grand .vpd-totals-cell__label {
-  color: rgba(255, 255, 255, 0.6);
+  color: #17202f;
   font-size: 11pt;
   margin-bottom: 0;
   text-align: center;
 }
 
 .vpd-totals-cell--grand .vpd-totals-cell__note {
-  color: #fff;
+  color: #17202f;
   font-size: 7pt;
 }
 
 .vpd-totals-cell--grand .vpd-totals-cell__value {
-  color: #fff;
+  color: #17202f;
   font-size: 26pt;
   font-weight: 900;
 }
@@ -762,7 +762,6 @@
   font-size: 11pt;
   line-height: 1.4;
   display: block;
-  /* removes flex so margin-top:auto on footer has no effect */
 }
 
 .vpd-print-mode .vpd-doc__footer {
@@ -1129,10 +1128,9 @@
 
 /* Page-break rules (effective during browser print) */
 .vpd-print-mode .vpd-top,
-.vpd-print-mode .vpd-doc__footer,
 .vpd-print-mode .vpd-sign-card,
 .vpd-print-mode .vpd-remarks-qr-row,
-.vpd-print-mode .vpd-bottom-group {
+.vpd-print-mode .vpd-pinned-bottom {
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -1149,15 +1147,15 @@
 @media print {
 
   .vpd-print-mode .vpd-doc {
-    display: table;
+    display: block;
   }
 
   .vpd-print-mode .vpd-page-header {
-    display: table-header-group;
+    display: block;
   }
 
   .vpd-print-mode .vpd-doc__body {
-    display: table-row-group;
+    display: block;
   }
 
   .vpd-print-mode .vpd-section,

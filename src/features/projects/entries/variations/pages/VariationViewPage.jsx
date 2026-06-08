@@ -20,7 +20,7 @@ import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandl
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
-import { applyPrintPagePartBreaks } from "../utils/printPagination";
+import { applyPrintPagePartBreaks, pinPrintBottomGroup } from "../utils/printPagination";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
@@ -28,9 +28,6 @@ const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_CANVAS_SCALE = 1.25;
 const PDF_JPEG_QUALITY = 0.78;
-const PRINT_REPEAT_HEADER_TOP_GAP_PX = 10;
-const PRINT_REPEAT_HEADER_BOTTOM_GAP_PX = 10;
-const PRINT_FOOTER_PAGE_TOP_GAP_PX = 12;
 
 export default function VariationViewPage() {
   const { variationId } = useParams();
@@ -111,36 +108,28 @@ export default function VariationViewPage() {
   const isRejected = checkRejected(variation);
 
   const preparePrintDocumentLayout = async (el) => {
-    const footer = el?.querySelector('.vpd-doc__footer');
     const prevWidth = el?.style.width || "";
-    const prevFooterMarginTop = footer?.style.marginTop || "";
     let cleanupPageBreaks = null;
+    let cleanupPinnedBottom = null;
 
     el.classList.add('vpd-print-mode');
     el.style.width = `${PRINT_A4_WIDTH_PX}px`;
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    if (footer) {
-      const PAGE = PRINT_A4_HEIGHT_PX;
-      const footerHeight = footer.scrollHeight;
-      const contentHeight = el.scrollHeight - footer.scrollHeight;
-
-      const posInPage = contentHeight % PAGE;
-      const remaining = posInPage === 0 ? PAGE : PAGE - posInPage;
-      footer.style.marginTop = footerHeight > remaining
-        ? `${remaining + PRINT_FOOTER_PAGE_TOP_GAP_PX}px`
-        : "0px";
-      await new Promise(resolve => requestAnimationFrame(resolve));
-    }
-
     cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
     await new Promise(resolve => requestAnimationFrame(resolve));
 
+    cleanupPinnedBottom = pinPrintBottomGroup(el, {
+      pageHeight: PRINT_A4_HEIGHT_PX,
+      continuationPageHeight: PRINT_A4_HEIGHT_PX,
+    });
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
     return () => {
+      cleanupPinnedBottom?.();
       cleanupPageBreaks?.();
       el.classList.remove('vpd-print-mode');
       el.style.width = prevWidth;
-      if (footer) footer.style.marginTop = prevFooterMarginTop;
     };
   };
 
@@ -217,37 +206,15 @@ export default function VariationViewPage() {
       const contentH = pageH;
       const scale = contentW / canvas.width;
       const pageCanvasH = Math.round(contentH / scale);
-      const headerEl = el.querySelector(".vpd-page-header");
-      const headerCanvasH = headerEl
-        ? Math.ceil(headerEl.getBoundingClientRect().height * (canvas.width / el.scrollWidth))
-        : 0;
-      const repeatHeaderGapH = PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX;
-      const bodyCanvasH = Math.max(1, pageCanvasH - headerCanvasH - repeatHeaderGapH);
-      const pages = canvas.height <= pageCanvasH
-        ? 1
-        : 1 + Math.ceil((canvas.height - pageCanvasH) / bodyCanvasH);
+      const pages = Math.ceil(canvas.height / pageCanvasH);
 
       for (let i = 0; i < pages; i++) {
         if (i > 0) pdf.addPage();
         pdf.setFillColor(251, 248, 242);
         pdf.rect(0, 0, pageW, pageH, 'F');
-        if (i > 0 && headerCanvasH > 0) {
-          const headerSlice = document.createElement('canvas');
-          headerSlice.width = canvas.width;
-          headerSlice.height = headerCanvasH;
-          headerSlice.getContext('2d').drawImage(canvas, 0, 0, canvas.width, headerCanvasH, 0, 0, canvas.width, headerCanvasH);
-          pdf.addImage(
-            headerSlice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
-            'JPEG',
-            margin,
-            PRINT_REPEAT_HEADER_TOP_GAP_PX * scale,
-            contentW,
-            headerCanvasH * scale
-          );
-        }
 
-        const srcY = i === 0 ? 0 : pageCanvasH + ((i - 1) * bodyCanvasH);
-        const srcH = Math.min(i === 0 ? pageCanvasH : bodyCanvasH, canvas.height - srcY);
+        const srcY = i * pageCanvasH;
+        const srcH = Math.min(pageCanvasH, canvas.height - srcY);
         if (srcH <= 0) continue;
         const slice = document.createElement('canvas');
         slice.width = canvas.width;
@@ -257,7 +224,7 @@ export default function VariationViewPage() {
           slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
           'JPEG',
           margin,
-          i === 0 ? margin : (headerCanvasH + PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX) * scale,
+          margin,
           contentW,
           srcH * scale
         );

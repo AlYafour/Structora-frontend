@@ -1,4 +1,5 @@
 const PAGE_PART_SELECTOR = "[data-vpd-page-part]";
+const PINNED_BOTTOM_SELECTOR = ".vpd-pinned-bottom";
 
 function getTopWithin(root, el) {
   return el.getBoundingClientRect().top - root.getBoundingClientRect().top;
@@ -20,6 +21,16 @@ function clearPreviousBreaks(root) {
       el.style.marginTop = el.dataset.vpdOriginalMarginTop || "";
       delete el.dataset.vpdOriginalMarginTop;
       delete el.dataset.vpdAutoMarginTop;
+    }
+  });
+}
+
+function clearPinnedBottom(root) {
+  root.querySelectorAll(PINNED_BOTTOM_SELECTOR).forEach((el) => {
+    if (el.dataset.vpdAutoPinMarginTop !== undefined) {
+      el.style.marginTop = el.dataset.vpdOriginalPinMarginTop || "";
+      delete el.dataset.vpdOriginalPinMarginTop;
+      delete el.dataset.vpdAutoPinMarginTop;
     }
   });
 }
@@ -49,4 +60,65 @@ export function applyPrintPagePartBreaks(root, pageHeight) {
   });
 
   return () => clearPreviousBreaks(root);
+}
+
+function normalizePageMetrics(pageMetrics) {
+  if (typeof pageMetrics === "number") {
+    return {
+      firstPageHeight: pageMetrics,
+      continuationPageHeight: pageMetrics,
+    };
+  }
+
+  const firstPageHeight = pageMetrics?.pageHeight || pageMetrics?.firstPageHeight || 0;
+  return {
+    firstPageHeight,
+    continuationPageHeight: pageMetrics?.continuationPageHeight || firstPageHeight,
+  };
+}
+
+function getTargetPageEnd(top, height, firstPageHeight, continuationPageHeight) {
+  if (top < firstPageHeight) {
+    const firstPageEnd = firstPageHeight;
+    return top + height <= firstPageEnd
+      ? firstPageEnd
+      : firstPageEnd + continuationPageHeight;
+  }
+
+  const continuationOffset = top - firstPageHeight;
+  const pageIndex = Math.floor(continuationOffset / continuationPageHeight);
+  const currentPageEnd = firstPageHeight + ((pageIndex + 1) * continuationPageHeight);
+
+  return top + height <= currentPageEnd
+    ? currentPageEnd
+    : currentPageEnd + continuationPageHeight;
+}
+
+export function pinPrintBottomGroup(root, pageMetrics) {
+  const { firstPageHeight, continuationPageHeight } = normalizePageMetrics(pageMetrics);
+  if (!root || !firstPageHeight || !continuationPageHeight) return () => {};
+
+  clearPinnedBottom(root);
+
+  const pinnedBottom = root.querySelector(PINNED_BOTTOM_SELECTOR);
+  const maxPageHeight = Math.max(firstPageHeight, continuationPageHeight);
+  const group = pinnedBottom;
+
+  if (!group) return () => clearPinnedBottom(root);
+
+  const height = group.getBoundingClientRect().height;
+  if (!height || height >= maxPageHeight) {
+    return () => clearPinnedBottom(root);
+  }
+
+  const top = getTopWithin(root, group);
+  const targetPageEnd = getTargetPageEnd(top, height, firstPageHeight, continuationPageHeight);
+  const computedMarginTop = parsePx(window.getComputedStyle(group).marginTop);
+  const pinMargin = computedMarginTop + Math.max(0, targetPageEnd - top - height);
+
+  group.dataset.vpdOriginalPinMarginTop = group.style.marginTop || "";
+  group.dataset.vpdAutoPinMarginTop = String(pinMargin);
+  group.style.marginTop = `${pinMargin}px`;
+
+  return () => clearPinnedBottom(root);
 }

@@ -139,6 +139,7 @@
   "price": "Price",
   "rate": "Rate",
   "unit": "Unit",
+  "reference": "Reference",
   "date": "Date",
   "note": "Note",
   "notes": "Notes",

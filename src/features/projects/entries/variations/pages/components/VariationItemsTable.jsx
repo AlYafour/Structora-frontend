@@ -63,8 +63,8 @@ const VariationItemsTable = memo(({
   const activeTotal = isOmitted ? totalOmitted : totalAdded;
 
   const colSpan = isOmitted
-    ? isEditMode ? 7 : 6
-    : isEditMode ? 6 : 5;
+    ? isEditMode ? 8 : 7
+    : isEditMode ? 7 : 6;
 
   return (
     <div className="nvt-wrapper nvc-section">
@@ -154,6 +154,7 @@ const VariationItemsTable = memo(({
             <col className="nvt-col-rate" />
             {isOmitted && <col className="nvt-col-ohp" />}
             <col className="nvt-col-amount" />
+            <col className="nvt-col-ref" />
             {isEditMode && <col className="nvt-col-action" />}
           </colgroup>
 
@@ -187,6 +188,10 @@ const VariationItemsTable = memo(({
 
               <th className="nvt-th nvt-th--amount">
                 {t('amount')}
+              </th>
+
+              <th className="nvt-th nvt-th--ref">
+                {t('reference')}
               </th>
 
               {isEditMode && (

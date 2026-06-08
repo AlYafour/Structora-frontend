@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { projectApi } from "../services";
 import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
-import { applyPrintPagePartBreaks } from "../features/projects/entries/variations/utils/printPagination";
+import { applyPrintPagePartBreaks, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
 import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
 
 const PRINT_A4_WIDTH_PX = 794;
@@ -15,9 +15,6 @@ const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
 const PDF_CANVAS_SCALE = 1.25;
 const PDF_JPEG_QUALITY = 0.78;
-const PRINT_REPEAT_HEADER_TOP_GAP_PX = 10;
-const PRINT_REPEAT_HEADER_BOTTOM_GAP_PX = 10;
-const PRINT_FOOTER_PAGE_TOP_GAP_PX = 12;
 
 async function runWithConcurrency(items, limit, worker) {
   let nextIndex = 0;
@@ -53,23 +50,13 @@ async function preparePrintDocumentLayout(el) {
   el.style.width = `${PRINT_A4_WIDTH_PX}px`;
   await waitForFrame(2);
 
-  const footer = el?.querySelector('.vpd-doc__footer');
-
-  if (footer) {
-    const PAGE = PRINT_A4_HEIGHT_PX;
-    const footerHeight = footer.scrollHeight;
-    const contentHeight = el.scrollHeight - footer.scrollHeight;
-
-    const posInPage = contentHeight % PAGE;
-    const remaining = posInPage === 0 ? PAGE : PAGE - posInPage;
-
-    footer.style.marginTop = footerHeight > remaining
-      ? `${remaining + PRINT_FOOTER_PAGE_TOP_GAP_PX}px`
-      : "0px";
-    await waitForFrame();
-  }
-
   applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+  await waitForFrame();
+
+  pinPrintBottomGroup(el, {
+    pageHeight: PRINT_A4_HEIGHT_PX,
+    continuationPageHeight: PRINT_A4_HEIGHT_PX,
+  });
   await waitForFrame();
 }
 
@@ -128,37 +115,15 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     const pageH = pdf.internal.pageSize.getHeight();
     const scale = pageW / canvas.width;
     const pageCanvasH = Math.round(pageH / scale);
-    const headerEl = el.querySelector(".vpd-page-header");
-    const headerCanvasH = headerEl
-      ? Math.ceil(headerEl.getBoundingClientRect().height * (canvas.width / el.scrollWidth))
-      : 0;
-    const repeatHeaderGapH = PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX;
-    const bodyCanvasH = Math.max(1, pageCanvasH - headerCanvasH - repeatHeaderGapH);
-    const pages = canvas.height <= pageCanvasH
-      ? 1
-      : 1 + Math.ceil((canvas.height - pageCanvasH) / bodyCanvasH);
+    const pages = Math.ceil(canvas.height / pageCanvasH);
 
     for (let i = 0; i < pages; i++) {
       if (i > 0) pdf.addPage();
       pdf.setFillColor(251, 248, 242);
       pdf.rect(0, 0, pageW, pageH, "F");
-      if (i > 0 && headerCanvasH > 0) {
-        const headerSlice = document.createElement("canvas");
-        headerSlice.width = canvas.width;
-        headerSlice.height = headerCanvasH;
-        headerSlice.getContext("2d").drawImage(canvas, 0, 0, canvas.width, headerCanvasH, 0, 0, canvas.width, headerCanvasH);
-        pdf.addImage(
-          headerSlice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
-          "JPEG",
-          0,
-          PRINT_REPEAT_HEADER_TOP_GAP_PX * scale,
-          pageW,
-          headerCanvasH * scale
-        );
-      }
 
-      const srcY = i === 0 ? 0 : pageCanvasH + ((i - 1) * bodyCanvasH);
-      const srcH = Math.min(i === 0 ? pageCanvasH : bodyCanvasH, canvas.height - srcY);
+      const srcY = i * pageCanvasH;
+      const srcH = Math.min(pageCanvasH, canvas.height - srcY);
       if (srcH <= 0) continue;
       const slice = document.createElement("canvas");
       slice.width = canvas.width;
@@ -168,7 +133,7 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
         slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
         "JPEG",
         0,
-        i === 0 ? 0 : (headerCanvasH + PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX) * scale,
+        0,
         pageW,
         srcH * scale
       );

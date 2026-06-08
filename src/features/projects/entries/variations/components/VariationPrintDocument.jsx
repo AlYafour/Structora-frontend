@@ -259,6 +259,55 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
         <div className="vpd-doc__body">
 
+        {/* ── ADDED ITEMS ── */}
+        {addedItems.length > 0 && (
+          <section className="vpd-section">
+            <div className="vpd-section__header">
+              <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
+              <span>{String(addedItems.length).padStart(2, "0")} lines</span>
+            </div>
+            <table className="vpd-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th><BilingualText ar="الوصف" en="Description" /></th>
+                  <th><BilingualText ar="الكمية" en="Qty" /></th>
+                  <th><BilingualText ar="الوحدة" en="Unit" /></th>
+                  <th><BilingualText ar="السعر" en="Rate" /></th>
+                  <th><BilingualText ar="المبلغ" en="Amount" /></th>
+                  <th><BilingualText ar="المرجع" en="Reference" /></th>
+                </tr>
+              </thead>
+              <tbody>
+                {addedItems.map((item, i) => (
+                  <Fragment key={`added-${item.id || i}`}>
+                    <tr>
+                      <td>{String(i + 1).padStart(2, "0")}</td>
+                      <td className="vpd-td--desc">{item.description || EMPTY}</td>
+                      <td>{item.qty || EMPTY}</td>
+                      <td>{item.unit || EMPTY}</td>
+                      <td><Amount value={item.rate || 0} /></td>
+                      <td><Amount value={item.amount || 0} /></td>
+                      <td>{item.reference || EMPTY}</td>
+                    </tr>
+                    {item.remarks?.trim() && (
+                      <tr className="vpd-item-remark-row">
+                        <td />
+                        <td colSpan={6} className="vpd-td--remark">
+                          <div className="vpd-remark-inner">
+                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
+                            <span>{item.remarks}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {/* ── OMITTED ITEMS ── */}
         {omittedItems.length > 0 && (
           <section className="vpd-section">
@@ -291,54 +340,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                     {item.remarks?.trim() && (
                       <tr className="vpd-item-remark-row">
                         <td />
-                        <td colSpan={5} className="vpd-td--remark">
-                          <div className="vpd-remark-inner">
-                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
-                            <span>{item.remarks}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-        {/* ── ADDED ITEMS ── */}
-        {addedItems.length > 0 && (
-          <section className="vpd-section">
-            <div className="vpd-section__header">
-              <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
-              <span>{String(addedItems.length).padStart(2, "0")} lines</span>
-            </div>
-            <table className="vpd-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th><BilingualText ar="الوصف" en="Description" /></th>
-                  <th><BilingualText ar="الكمية" en="Qty" /></th>
-                  <th><BilingualText ar="الوحدة" en="Unit" /></th>
-                  <th><BilingualText ar="السعر" en="Rate" /></th>
-                  <th><BilingualText ar="المبلغ" en="Amount" /></th>
-                </tr>
-              </thead>
-              <tbody>
-                {addedItems.map((item, i) => (
-                  <Fragment key={`added-${item.id || i}`}>
-                    <tr>
-                      <td>{String(i + 1).padStart(2, "0")}</td>
-                      <td className="vpd-td--desc">{item.description || EMPTY}</td>
-                      <td>{item.qty || EMPTY}</td>
-                      <td>{item.unit || EMPTY}</td>
-                      <td><Amount value={item.rate || 0} /></td>
-                      <td><Amount value={item.amount || 0} /></td>
-                    </tr>
-                    {item.remarks?.trim() && (
-                      <tr className="vpd-item-remark-row">
-                        <td />
-                        <td colSpan={5} className="vpd-td--remark">
+                        <td colSpan={6} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
                             <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
                             <span>{item.remarks}</span>
@@ -393,7 +395,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           </section>
 
-          {/* Remarks + signatures + creds — positioned by preparePrintDocumentLayout */}
+          {/* Signatures + creds are pinned by preparePrintDocumentLayout */}
           <div className="vpd-bottom-group">
             {data.remarks && (
               <section className="vpd-notes">
@@ -408,28 +410,30 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               </section>
             )}
 
-            <section className="vpd-signatures">
-              <div className="vpd-sign-card">
-                <span />
-                <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
-              </div>
-              <div className="vpd-sign-card vpd-sign-card--stamp">
-                <div><BilingualText ar="ختم الشركة" en="COMPANY STAMP" /></div>
-              </div>
-              <div className="vpd-sign-card">
-                <span />
-                <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
-              </div>
-            </section>
+            <div className="vpd-pinned-bottom">
+              <section className="vpd-signatures">
+                <div className="vpd-sign-card">
+                  <span />
+                  <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
+                </div>
+                <div className="vpd-sign-card vpd-sign-card--stamp">
+                  <div><BilingualText ar="ختم الشركة" en="COMPANY STAMP" /></div>
+                </div>
+                <div className="vpd-sign-card">
+                  <span />
+                  <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
+                </div>
+              </section>
 
-            <p className="vpd-final-notice">
-              <BilingualText
-                ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
-                en="This is an electronically generated document"
-              />
-            </p>
+              <p className="vpd-final-notice">
+                <BilingualText
+                  ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
+                  en="This is an electronically generated document"
+                />
+              </p>
 
-            <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
+              <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
+            </div>
           </div>
         </div>
         </div>

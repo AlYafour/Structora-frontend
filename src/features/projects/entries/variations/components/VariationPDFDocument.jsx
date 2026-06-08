@@ -119,12 +119,12 @@ const S = StyleSheet.create({
   totalsCellLabel: { fontFamily: "Cairo", fontSize: 7, fontWeight: 700, color: C.secondary, textTransform: "uppercase", textAlign: "center", marginBottom: 6 },
   totalsCellValue: { fontFamily: "Cairo", fontSize: 10, fontWeight: 700, color: C.primary, textAlign: "center" },
   grandCell: {
-    flex: "0 0 100%", flexDirection: "row", backgroundColor: C.grandBg,
+    flex: "0 0 100%", flexDirection: "row", backgroundColor: C.white,
     alignItems: "center", justifyContent: "center", gap: 16,
-    padding: "12 16", borderWidth: 1, borderColor: C.grandBg, borderStyle: "solid",
+    padding: "12 16", borderWidth: 1, borderColor: C.border, borderStyle: "solid",
   },
-  grandLabel: { fontFamily: "Cairo", fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", textAlign: "center" },
-  grandValue: { fontFamily: "Cairo", fontSize: 18, fontWeight: 700, color: "#ffffff" },
+  grandLabel: { fontFamily: "Cairo", fontSize: 9, fontWeight: 700, color: C.grandBg, textTransform: "uppercase", textAlign: "center" },
+  grandValue: { fontFamily: "Cairo", fontSize: 18, fontWeight: 700, color: C.grandBg },
 
   /* Signatures */
   sigRow: { flexDirection: "row", marginBottom: 8 },
@@ -155,6 +155,7 @@ const ITEM_COLS = [
   { label: "الوحدة / Unit",              width: 36,  align: "center" },
   { label: "السعر / Rate",               width: 74,  align: "right"  },
   { label: "المبلغ / Amount",            width: 80,  align: "right"  },
+  { label: "المرجع / Reference",         width: 64,  align: "center" },
 ];
 
 function colSize(col) { return col.width ? { width: col.width } : { flex: col.flex || 1 }; }
@@ -178,6 +179,7 @@ function ItemsTable({ items }) {
           { value: safe(item.unit || "LS"),          align: "center", width: 36  },
           { value: fmt(item.rate ?? item.unit_price ?? 0), align: "right", width: 74 },
           { value: fmt(item.amount ?? item.total ?? 0),    align: "right", width: 80 },
+          { value: safe(item.reference),             align: "center", width: 64  },
         ];
         return (
           <View key={ri} style={S.tableRow}>
