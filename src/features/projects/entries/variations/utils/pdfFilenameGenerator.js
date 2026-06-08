@@ -28,7 +28,7 @@ export const generatePDFFilename = (variation, noticeData) => {
     .trim()
     .substring(0, 50);
 
-  return `f_${referenceNo} - ${description}.pdf`;
+  return `${referenceNo} - ${description}.pdf`;
 };
 
 /**
@@ -55,5 +55,5 @@ export const generateDocumentTitle = (variation, noticeData) => {
     .trim()
     .substring(0, 50);
 
-  return `f_${referenceNo} - ${description}`;
+  return `${referenceNo} - ${description}`;
 };

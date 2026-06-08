@@ -44,14 +44,21 @@ const RemarksAttachmentsSection = memo(({
       </div>
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
-          <textarea
-            value={formData.remarks ?? ''}
-            onChange={(e) => onFormDataChange({ ...formData, remarks: e.target.value })}
-            disabled={!isEditMode}
-            className="nvc-input nvc-textarea"
-            rows={2}
-            placeholder={t('remarks')}
-          />
+          {isEditMode ? (
+            <textarea
+              value={formData.remarks ?? ''}
+              onChange={(e) => onFormDataChange({ ...formData, remarks: e.target.value })}
+              className="nvc-input nvc-textarea"
+              rows={3}
+              placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
+            />
+          ) : formData.remarks ? (
+            <ul className="nvc-remarks-bullets">
+              {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
+                <li key={i}>{line.trim()}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {/* Single variation document (existing) */}

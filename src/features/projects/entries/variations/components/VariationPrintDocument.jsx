@@ -139,6 +139,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     <div ref={ref} className="vpd-wrap">
       <article className="vpd-doc" dir="ltr">
 
+        <div className="vpd-page-header">
         {/* ── HEADER ── */}
         <header className="vpd-top">
           <div className="vpd-company">
@@ -254,6 +255,9 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           )}
         </section>
+        </div>
+
+        <div className="vpd-doc__body">
 
         {/* ── OMITTED ITEMS ── */}
         {omittedItems.length > 0 && (
@@ -389,39 +393,45 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           </section>
 
-          {/* Remarks */}
-          {data.remarks && (
-            <section className="vpd-notes" data-vpd-page-part>
-              <p>
-                <strong><BilingualText ar="ملاحظات" en="Remarks" /></strong>
-                <span>{data.remarks}</span>
-              </p>
+          {/* Remarks + signatures + creds — positioned by preparePrintDocumentLayout */}
+          <div className="vpd-bottom-group">
+            {data.remarks && (
+              <section className="vpd-notes">
+                <strong className="vpd-notes__label">
+                  <BilingualText ar="ملاحظات" en="Remarks" />
+                </strong>
+                <ul className="vpd-notes__bullets">
+                  {data.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
+                    <li key={i}>{line.trim()}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section className="vpd-signatures">
+              <div className="vpd-sign-card">
+                <span />
+                <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
+              </div>
+              <div className="vpd-sign-card vpd-sign-card--stamp">
+                <div><BilingualText ar="ختم الشركة" en="COMPANY STAMP" /></div>
+              </div>
+              <div className="vpd-sign-card">
+                <span />
+                <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
+              </div>
             </section>
-          )}
 
-          {/* Signatures */}
-          <section className="vpd-signatures" data-vpd-page-part>
-            <div className="vpd-sign-card">
-              <span />
-              <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
-            </div>
-            <div className="vpd-sign-card vpd-sign-card--stamp">
-              <div><BilingualText ar="ختم الشركة" en="COMPANY STAMP" /></div>
-            </div>
-            <div className="vpd-sign-card">
-              <span />
-              <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
-            </div>
-          </section>
+            <p className="vpd-final-notice">
+              <BilingualText
+                ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
+                en="This is an electronically generated document"
+              />
+            </p>
 
-          <p className="vpd-final-notice" data-vpd-page-part>
-            <BilingualText
-              ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
-              en="This is an electronically generated document"
-            />
-          </p>
-
-          <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" data-vpd-page-part />
+            <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
+          </div>
+        </div>
         </div>
 
       </article>

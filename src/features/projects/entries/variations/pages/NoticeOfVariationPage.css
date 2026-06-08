@@ -834,6 +834,19 @@
   word-wrap: break-word;
 }
 
+.nvc-remarks-bullets {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0;
+  font-size: 9.5pt;
+  color: var(--text-primary, #212529);
+  line-height: 1.7;
+}
+
+.nvc-remarks-bullets li {
+  padding: 1px 0;
+}
+
 .nvc-remarks-empty {
   color: var(--text-tertiary, #999);
   font-style: italic;

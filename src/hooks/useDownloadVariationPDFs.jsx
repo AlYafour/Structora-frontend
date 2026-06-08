@@ -8,12 +8,16 @@ import { projectApi } from "../services";
 import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
 import { applyPrintPagePartBreaks } from "../features/projects/entries/variations/utils/printPagination";
+import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
 const PDF_CANVAS_SCALE = 1.25;
 const PDF_JPEG_QUALITY = 0.78;
+const PRINT_REPEAT_HEADER_TOP_GAP_PX = 10;
+const PRINT_REPEAT_HEADER_BOTTOM_GAP_PX = 10;
+const PRINT_FOOTER_PAGE_TOP_GAP_PX = 12;
 
 async function runWithConcurrency(items, limit, worker) {
   let nextIndex = 0;
@@ -45,20 +49,23 @@ async function waitForImages(el) {
 }
 
 async function preparePrintDocumentLayout(el) {
-  const footer = el?.querySelector('.vpd-doc__footer');
-
   el.classList.add('vpd-print-mode');
   el.style.width = `${PRINT_A4_WIDTH_PX}px`;
   await waitForFrame(2);
 
+  const footer = el?.querySelector('.vpd-doc__footer');
+
   if (footer) {
+    const PAGE = PRINT_A4_HEIGHT_PX;
     const footerHeight = footer.scrollHeight;
-    const contentHeight = el.scrollHeight - footerHeight;
-    const remainingPageSpace = PRINT_A4_HEIGHT_PX - (contentHeight % PRINT_A4_HEIGHT_PX || PRINT_A4_HEIGHT_PX);
-    const footerOffset = footerHeight <= remainingPageSpace
-      ? remainingPageSpace - footerHeight
-      : 0;
-    footer.style.marginTop = `${footerOffset}px`;
+    const contentHeight = el.scrollHeight - footer.scrollHeight;
+
+    const posInPage = contentHeight % PAGE;
+    const remaining = posInPage === 0 ? PAGE : PAGE - posInPage;
+
+    footer.style.marginTop = footerHeight > remaining
+      ? `${remaining + PRINT_FOOTER_PAGE_TOP_GAP_PX}px`
+      : "0px";
     await waitForFrame();
   }
 
@@ -120,19 +127,51 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const scale = pageW / canvas.width;
-    const pages = Math.ceil((canvas.height * scale) / pageH);
+    const pageCanvasH = Math.round(pageH / scale);
+    const headerEl = el.querySelector(".vpd-page-header");
+    const headerCanvasH = headerEl
+      ? Math.ceil(headerEl.getBoundingClientRect().height * (canvas.width / el.scrollWidth))
+      : 0;
+    const repeatHeaderGapH = PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX;
+    const bodyCanvasH = Math.max(1, pageCanvasH - headerCanvasH - repeatHeaderGapH);
+    const pages = canvas.height <= pageCanvasH
+      ? 1
+      : 1 + Math.ceil((canvas.height - pageCanvasH) / bodyCanvasH);
 
     for (let i = 0; i < pages; i++) {
       if (i > 0) pdf.addPage();
       pdf.setFillColor(251, 248, 242);
       pdf.rect(0, 0, pageW, pageH, "F");
-      const srcY = Math.round((i * pageH) / scale);
-      const srcH = Math.min(Math.round(pageH / scale), canvas.height - srcY);
+      if (i > 0 && headerCanvasH > 0) {
+        const headerSlice = document.createElement("canvas");
+        headerSlice.width = canvas.width;
+        headerSlice.height = headerCanvasH;
+        headerSlice.getContext("2d").drawImage(canvas, 0, 0, canvas.width, headerCanvasH, 0, 0, canvas.width, headerCanvasH);
+        pdf.addImage(
+          headerSlice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
+          "JPEG",
+          0,
+          PRINT_REPEAT_HEADER_TOP_GAP_PX * scale,
+          pageW,
+          headerCanvasH * scale
+        );
+      }
+
+      const srcY = i === 0 ? 0 : pageCanvasH + ((i - 1) * bodyCanvasH);
+      const srcH = Math.min(i === 0 ? pageCanvasH : bodyCanvasH, canvas.height - srcY);
+      if (srcH <= 0) continue;
       const slice = document.createElement("canvas");
       slice.width = canvas.width;
       slice.height = srcH;
       slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-      pdf.addImage(slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY), "JPEG", 0, 0, pageW, srcH * scale);
+      pdf.addImage(
+        slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
+        "JPEG",
+        0,
+        i === 0 ? 0 : (headerCanvasH + PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX) * scale,
+        pageW,
+        srcH * scale
+      );
     }
 
     const attachments = variation?.variation_attachments || [];
@@ -233,9 +272,7 @@ export function useDownloadVariationPDFs(projectId) {
       });
 
       if (blob) {
-        const fileName = (variation.variation_number || `VAR-${variation.id}`)
-          .replace(/[\\/:*?"<>|]/g, "_");
-        downloadBlob(blob, `${fileName}.pdf`);
+        downloadBlob(blob, generatePDFFilename(variation, noticeData));
       }
 
       success(t("document_downloaded", "Document downloaded successfully"));
@@ -274,9 +311,7 @@ export function useDownloadVariationPDFs(projectId) {
             });
 
             if (blob) {
-              const fileName = (variation.variation_number || `VAR-${variation.id}`)
-                .replace(/[\\/:*?"<>|]/g, "_");
-              zip.file(`${fileName}.pdf`, blob);
+              zip.file(generatePDFFilename(variation, noticeData), blob);
             }
           } catch (err) {
             console.error("[useDownloadVariationPDFs] item failed:", variation?.id, err);

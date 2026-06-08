@@ -281,7 +281,7 @@ const ProjectTableRow = React.memo(({
 
           <td className="col-status">
             <div className="ds-table__cell-text">
-              {project.project_closure_status || '-'}
+              {project.project_closure_status ? t(`status_${project.project_closure_status}`) : '-'}
             </div>
           </td>
 

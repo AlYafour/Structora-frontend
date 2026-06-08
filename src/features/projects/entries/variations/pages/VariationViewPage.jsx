@@ -28,6 +28,9 @@ const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_CANVAS_SCALE = 1.25;
 const PDF_JPEG_QUALITY = 0.78;
+const PRINT_REPEAT_HEADER_TOP_GAP_PX = 10;
+const PRINT_REPEAT_HEADER_BOTTOM_GAP_PX = 10;
+const PRINT_FOOTER_PAGE_TOP_GAP_PX = 12;
 
 export default function VariationViewPage() {
   const { variationId } = useParams();
@@ -118,13 +121,15 @@ export default function VariationViewPage() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     if (footer) {
+      const PAGE = PRINT_A4_HEIGHT_PX;
       const footerHeight = footer.scrollHeight;
-      const contentHeight = el.scrollHeight - footerHeight;
-      const remainingPageSpace = PRINT_A4_HEIGHT_PX - (contentHeight % PRINT_A4_HEIGHT_PX || PRINT_A4_HEIGHT_PX);
-      const footerOffset = footerHeight <= remainingPageSpace
-        ? remainingPageSpace - footerHeight
-        : 0;
-      footer.style.marginTop = `${footerOffset}px`;
+      const contentHeight = el.scrollHeight - footer.scrollHeight;
+
+      const posInPage = contentHeight % PAGE;
+      const remaining = posInPage === 0 ? PAGE : PAGE - posInPage;
+      footer.style.marginTop = footerHeight > remaining
+        ? `${remaining + PRINT_FOOTER_PAGE_TOP_GAP_PX}px`
+        : "0px";
       await new Promise(resolve => requestAnimationFrame(resolve));
     }
 
@@ -211,20 +216,51 @@ export default function VariationViewPage() {
       const contentW = pageW;
       const contentH = pageH;
       const scale = contentW / canvas.width;
-      const totalH = canvas.height * scale;
-      const pages = Math.ceil(totalH / contentH);
+      const pageCanvasH = Math.round(contentH / scale);
+      const headerEl = el.querySelector(".vpd-page-header");
+      const headerCanvasH = headerEl
+        ? Math.ceil(headerEl.getBoundingClientRect().height * (canvas.width / el.scrollWidth))
+        : 0;
+      const repeatHeaderGapH = PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX;
+      const bodyCanvasH = Math.max(1, pageCanvasH - headerCanvasH - repeatHeaderGapH);
+      const pages = canvas.height <= pageCanvasH
+        ? 1
+        : 1 + Math.ceil((canvas.height - pageCanvasH) / bodyCanvasH);
 
       for (let i = 0; i < pages; i++) {
         if (i > 0) pdf.addPage();
         pdf.setFillColor(251, 248, 242);
         pdf.rect(0, 0, pageW, pageH, 'F');
-        const srcY = Math.round((i * contentH) / scale);
-        const srcH = Math.min(Math.round(contentH / scale), canvas.height - srcY);
+        if (i > 0 && headerCanvasH > 0) {
+          const headerSlice = document.createElement('canvas');
+          headerSlice.width = canvas.width;
+          headerSlice.height = headerCanvasH;
+          headerSlice.getContext('2d').drawImage(canvas, 0, 0, canvas.width, headerCanvasH, 0, 0, canvas.width, headerCanvasH);
+          pdf.addImage(
+            headerSlice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
+            'JPEG',
+            margin,
+            PRINT_REPEAT_HEADER_TOP_GAP_PX * scale,
+            contentW,
+            headerCanvasH * scale
+          );
+        }
+
+        const srcY = i === 0 ? 0 : pageCanvasH + ((i - 1) * bodyCanvasH);
+        const srcH = Math.min(i === 0 ? pageCanvasH : bodyCanvasH, canvas.height - srcY);
+        if (srcH <= 0) continue;
         const slice = document.createElement('canvas');
         slice.width = canvas.width;
         slice.height = srcH;
         slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-        pdf.addImage(slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY), 'JPEG', margin, margin, contentW, srcH * scale);
+        pdf.addImage(
+          slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
+          'JPEG',
+          margin,
+          i === 0 ? margin : (headerCanvasH + PRINT_REPEAT_HEADER_TOP_GAP_PX + PRINT_REPEAT_HEADER_BOTTOM_GAP_PX) * scale,
+          contentW,
+          srcH * scale
+        );
       }
 
       // Merge variation_attachments (PDFs/images) using pdf-lib
