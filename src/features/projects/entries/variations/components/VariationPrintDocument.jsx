@@ -324,6 +324,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   <th><BilingualText ar="الوحدة" en="Unit" /></th>
                   <th><BilingualText ar="السعر" en="Rate" /></th>
                   <th><BilingualText ar="المبلغ" en="Amount" /></th>
+                  <th><BilingualText ar="المرجع" en="Reference" /></th>
                 </tr>
               </thead>
               <tbody>
@@ -336,11 +337,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td>{item.unit || EMPTY}</td>
                       <td><Amount value={item.rate || 0} /></td>
                       <td><Amount value={item.amount || 0} /></td>
+                      <td>{item.reference || EMPTY}</td>
                     </tr>
                     {item.remarks?.trim() && (
                       <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
                         <td />
-                        <td colSpan={5} className="vpd-td--remark">
+                        <td colSpan={6} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
                             <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
                             <span>{item.remarks}</span>
