@@ -1,5 +1,7 @@
 const PAGE_PART_SELECTOR = "[data-vpd-page-part]";
 const PINNED_BOTTOM_SELECTOR = ".vpd-pinned-bottom";
+const TABLE_SECTION_SELECTOR = "[data-vpd-print-table-section]";
+const INSERTED_TABLE_BREAK_SELECTOR = "[data-vpd-inserted-table-break]";
 
 function getTopWithin(root, el) {
   return el.getBoundingClientRect().top - root.getBoundingClientRect().top;
@@ -25,6 +27,17 @@ function clearPreviousBreaks(root) {
   });
 }
 
+function clearTableBreaks(root) {
+  root.querySelectorAll(INSERTED_TABLE_BREAK_SELECTOR).forEach((el) => el.remove());
+  root.querySelectorAll(TABLE_SECTION_SELECTOR).forEach((el) => {
+    if (el.dataset.vpdAutoTableMarginTop !== undefined) {
+      el.style.marginTop = el.dataset.vpdOriginalTableMarginTop || "";
+      delete el.dataset.vpdOriginalTableMarginTop;
+      delete el.dataset.vpdAutoTableMarginTop;
+    }
+  });
+}
+
 function clearPinnedBottom(root) {
   root.querySelectorAll(PINNED_BOTTOM_SELECTOR).forEach((el) => {
     if (el.dataset.vpdAutoPinMarginTop !== undefined) {
@@ -33,6 +46,62 @@ function clearPinnedBottom(root) {
       delete el.dataset.vpdAutoPinMarginTop;
     }
   });
+}
+
+function getElementHeight(el) {
+  return el?.getBoundingClientRect().height || 0;
+}
+
+function getRowGroupHeight(startRow) {
+  let height = getElementHeight(startRow);
+  const nextRow = startRow.nextElementSibling;
+  if (nextRow?.matches("[data-vpd-item-remark-row]")) {
+    height += getElementHeight(nextRow);
+  }
+  return height;
+}
+
+function getTableColumnCount(table) {
+  return table?.querySelector("thead tr")?.children.length || 1;
+}
+
+function createSpacerRow(colSpan, height) {
+  const row = document.createElement("tr");
+  row.className = "vpd-table-page-spacer";
+  row.dataset.vpdInsertedTableBreak = "true";
+
+  const cell = document.createElement("td");
+  cell.colSpan = colSpan;
+  cell.style.height = `${Math.max(0, height)}px`;
+  row.appendChild(cell);
+
+  return row;
+}
+
+function createContinuationTitleRow(section, colSpan) {
+  const header = section.querySelector("[data-vpd-table-section-header]");
+  if (!header) return null;
+
+  const row = document.createElement("tr");
+  row.className = "vpd-table-continuation-title";
+  row.dataset.vpdInsertedTableBreak = "true";
+
+  const cell = document.createElement("td");
+  cell.colSpan = colSpan;
+  cell.appendChild(header.cloneNode(true));
+  row.appendChild(cell);
+
+  return row;
+}
+
+function createContinuationHeaderRow(table) {
+  const sourceRow = table.querySelector("thead tr");
+  if (!sourceRow) return null;
+
+  const row = sourceRow.cloneNode(true);
+  row.classList.add("vpd-table-continuation-head");
+  row.dataset.vpdInsertedTableBreak = "true";
+  return row;
 }
 
 export function applyPrintPagePartBreaks(root, pageHeight) {
@@ -60,6 +129,69 @@ export function applyPrintPagePartBreaks(root, pageHeight) {
   });
 
   return () => clearPreviousBreaks(root);
+}
+
+export function applyPrintTablePagination(root, pageHeight, { bottomGap = 10, continuationTopGap = 12 } = {}) {
+  if (!root || !pageHeight) return () => {};
+
+  clearTableBreaks(root);
+
+  const sections = Array.from(root.querySelectorAll(TABLE_SECTION_SELECTOR));
+
+  sections.forEach((section) => {
+    const table = section.querySelector("[data-vpd-print-table]");
+    const tbody = table?.querySelector("tbody");
+    const firstRow = tbody?.querySelector("[data-vpd-item-row]");
+    if (!table || !tbody || !firstRow) return;
+
+    const firstGroupHeight = getRowGroupHeight(firstRow);
+    const sectionIntroHeight = firstRow.getBoundingClientRect().top - section.getBoundingClientRect().top;
+    const firstBlockHeight = sectionIntroHeight + firstGroupHeight;
+
+    if (firstBlockHeight > 0 && firstBlockHeight < pageHeight) {
+      const sectionTop = getTopWithin(root, section);
+      const sectionPosition = getPageRemainder(sectionTop, pageHeight);
+      const sectionRemaining = pageHeight - sectionPosition;
+
+      if (firstBlockHeight > sectionRemaining - bottomGap) {
+        const computedMarginTop = parsePx(window.getComputedStyle(section).marginTop);
+        const pushToNextPage = sectionRemaining + continuationTopGap + computedMarginTop;
+        section.dataset.vpdOriginalTableMarginTop = section.style.marginTop || "";
+        section.dataset.vpdAutoTableMarginTop = String(pushToNextPage);
+        section.style.marginTop = `${pushToNextPage}px`;
+      }
+    }
+  });
+
+  sections.forEach((section) => {
+    const table = section.querySelector("[data-vpd-print-table]");
+    const tbody = table?.querySelector("tbody");
+    if (!table || !tbody) return;
+
+    const colSpan = getTableColumnCount(table);
+    const rows = Array.from(tbody.querySelectorAll("[data-vpd-item-row]"));
+
+    rows.forEach((row) => {
+      const groupHeight = getRowGroupHeight(row);
+      if (!groupHeight || groupHeight >= pageHeight) return;
+
+      const top = getTopWithin(root, row);
+      const positionInPage = getPageRemainder(top, pageHeight);
+      const remaining = pageHeight - positionInPage;
+
+      if (groupHeight <= remaining - bottomGap) return;
+
+      const spacer = createSpacerRow(colSpan, remaining + continuationTopGap);
+      const continuationTitle = createContinuationTitleRow(section, colSpan);
+      const continuationHeader = createContinuationHeaderRow(table);
+
+      tbody.insertBefore(spacer, row);
+      if (continuationTitle) tbody.insertBefore(continuationTitle, row);
+      if (continuationHeader) tbody.insertBefore(continuationHeader, row);
+    });
+  });
+
+  return () => clearTableBreaks(root);
 }
 
 function normalizePageMetrics(pageMetrics) {

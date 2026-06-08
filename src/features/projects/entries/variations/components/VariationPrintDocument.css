@@ -1144,6 +1144,30 @@
   page-break-inside: avoid;
 }
 
+.vpd-print-mode .vpd-table-page-spacer,
+.vpd-print-mode .vpd-table-page-spacer td {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.vpd-print-mode .vpd-table-continuation-title td {
+  padding: 0 !important;
+  border: 0 !important;
+  background: #fff !important;
+}
+
+.vpd-print-mode .vpd-table-continuation-title .vpd-section__header {
+  padding: 4px 0 3px;
+  border-top: 1px solid #d8c9b3;
+}
+
+.vpd-print-mode .vpd-table-continuation-head th {
+  background: #f0eadf;
+}
+
 @media print {
 
   .vpd-print-mode .vpd-doc {
@@ -1159,8 +1183,7 @@
   }
 
   .vpd-print-mode .vpd-section,
-  .vpd-print-mode .vpd-totals-box,
-  .vpd-print-mode .vpd-table tr {
+  .vpd-print-mode .vpd-totals-box {
     break-inside: auto;
     page-break-inside: auto;
   }

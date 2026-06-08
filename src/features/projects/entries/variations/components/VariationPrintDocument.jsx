@@ -261,12 +261,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
         {/* ── ADDED ITEMS ── */}
         {addedItems.length > 0 && (
-          <section className="vpd-section">
-            <div className="vpd-section__header">
+          <section className="vpd-section" data-vpd-print-table-section>
+            <div className="vpd-section__header" data-vpd-table-section-header>
               <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
               <span>{String(addedItems.length).padStart(2, "0")} lines</span>
             </div>
-            <table className="vpd-table">
+            <table className="vpd-table" data-vpd-print-table>
               <thead>
                 <tr>
                   <th>#</th>
@@ -281,7 +281,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               <tbody>
                 {addedItems.map((item, i) => (
                   <Fragment key={`added-${item.id || i}`}>
-                    <tr>
+                    <tr data-vpd-item-row>
                       <td>{String(i + 1).padStart(2, "0")}</td>
                       <td className="vpd-td--desc">{item.description || EMPTY}</td>
                       <td>{item.qty || EMPTY}</td>
@@ -291,7 +291,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td>{item.reference || EMPTY}</td>
                     </tr>
                     {item.remarks?.trim() && (
-                      <tr className="vpd-item-remark-row">
+                      <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
                         <td />
                         <td colSpan={6} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
@@ -310,12 +310,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
         {/* ── OMITTED ITEMS ── */}
         {omittedItems.length > 0 && (
-          <section className="vpd-section">
-            <div className="vpd-section__header">
+          <section className="vpd-section" data-vpd-print-table-section>
+            <div className="vpd-section__header" data-vpd-table-section-header>
               <BilingualText ar="البنود المحذوفة" en="OMITTED ITEMS" />
               <span>{String(omittedItems.length).padStart(2, "0")} lines</span>
             </div>
-            <table className="vpd-table">
+            <table className="vpd-table" data-vpd-print-table>
               <thead>
                 <tr>
                   <th>#</th>
@@ -329,7 +329,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               <tbody>
                 {omittedItems.map((item, i) => (
                   <Fragment key={`omitted-${item.id || i}`}>
-                    <tr>
+                    <tr data-vpd-item-row>
                       <td>{String(i + 1).padStart(2, "0")}</td>
                       <td className="vpd-td--desc">{item.description || EMPTY}</td>
                       <td>{item.qty || EMPTY}</td>
@@ -338,9 +338,9 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td><Amount value={item.amount || 0} /></td>
                     </tr>
                     {item.remarks?.trim() && (
-                      <tr className="vpd-item-remark-row">
+                      <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
                         <td />
-                        <td colSpan={6} className="vpd-td--remark">
+                        <td colSpan={5} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
                             <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
                             <span>{item.remarks}</span>

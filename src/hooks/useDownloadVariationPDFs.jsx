@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { projectApi } from "../services";
 import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
-import { applyPrintPagePartBreaks, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
 import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
 
 const PRINT_A4_WIDTH_PX = 794;
@@ -49,6 +49,9 @@ async function preparePrintDocumentLayout(el) {
   el.classList.add('vpd-print-mode');
   el.style.width = `${PRINT_A4_WIDTH_PX}px`;
   await waitForFrame(2);
+
+  applyPrintTablePagination(el, PRINT_A4_HEIGHT_PX);
+  await waitForFrame();
 
   applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
   await waitForFrame();
