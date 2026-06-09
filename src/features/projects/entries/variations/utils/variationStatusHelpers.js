@@ -82,7 +82,7 @@ export const isRejected = (variation) => {
  * @param {Object} user - Current user object
  * @returns {Object} Permission flags
  */
-export const calculatePermissions = (variation, user) => {
+export const calculatePermissions = (variation, user, alterationRequests = []) => {
   const status = variation?.status || variation?.workflow_status || 'draft';
   const isProjectManager = user?.role?.name === 'Manager';
   const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
@@ -92,10 +92,16 @@ export const calculatePermissions = (variation, user) => {
   const finallyApproved = isFinallyApproved(variation);
   const rejected = isRejected(variation);
   const isStaff = !isProjectManager && !isGeneralManager;
+  const hasAcceptedEditRequest = alterationRequests.some((request) =>
+    request?.request_type === 'edit' &&
+    request?.status === 'accepted' &&
+    (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
+  );
 
   // Staff can only edit draft/pending_project_manager; privileged users can edit anything not finally approved
   const canEdit = !finallyApproved &&
-    (!isStaff || status === 'draft' || status === 'pending_project_manager');
+    (!isStaff || status === 'draft' || status === 'pending_project_manager' ||
+      (status === 'pending_general_manager_initial' && hasAcceptedEditRequest));
 
   // Can approve/reject only if not rejected (must edit first if rejected)
   const canApproveOrReject = !rejected;

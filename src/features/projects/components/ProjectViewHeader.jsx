@@ -16,6 +16,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   activeTab,
   isManager,
   isSuperAdmin,
+  canDeleteProject,
   permissionsLoading,
   onDeleteClick,
   onSubmitClick,
@@ -269,7 +270,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
           </div>
 
           {/* Delete Action */}
-          {projectPermissions?.can_delete && (
+          {canDeleteProject && (
             <div className="prj-view-actions-group">
               <div className="prj-view-actions-group__label">{t("danger_zone")}</div>
               <div className="prj-view-actions-group__buttons">

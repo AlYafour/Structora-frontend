@@ -2654,11 +2654,13 @@
 
 .nfs-custom-fee-card {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   border: 1px solid var(--border-primary, #e2e8f0);
   border-radius: 8px;
   padding: 8px 10px;
+  min-width: 0;
 }
 
 .nfs-custom-fee-card__name {
@@ -2666,36 +2668,47 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 8px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .nfs-custom-fee-card__name-input {
-  flex: 1;
+  flex: 1 1 120px;
   min-width: 0;
 }
 
 .nfs-custom-fee-card__inline-extra {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .nfs-custom-fee-card__bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 6px;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 
 .nfs-custom-fee-card__controls {
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-shrink: 0;
 }
 
 .nfs-custom-fee-card__amount {
-  margin-left: auto;
   font-size: 13px !important;
   font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.nfs-custom-fee-card .nfs-fee-after {
+  flex-basis: 100%;
+  padding: 0;
 }
 
 .nfs-add-fee-btn {
@@ -2779,6 +2792,18 @@
 .nfs-check input[type="checkbox"] {
   width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;
   accent-color: var(--accent, #C8A84E);
+}
+
+@media (max-width: 1100px) {
+  .nfs-custom-fee-card {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .nfs-custom-fee-card__bottom {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* ── Right column: Total card ── */

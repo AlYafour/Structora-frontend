@@ -5,6 +5,22 @@ import Button from '../common/Button';
 import './ErrorBoundary.css';
 import useTenantNavigate from '../../hooks/useTenantNavigate';
 
+const UPDATE_RELOAD_KEY = 'structora_update_reload_attempted';
+const UPDATE_RELOAD_GUARD_MS = 30000;
+
+function isDeploymentUpdateError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+
+  return [
+    'failed to fetch dynamically imported module',
+    'error loading dynamically imported module',
+    'importing a module script failed',
+    'loading chunk',
+    'chunkloaderror',
+    'unable to preload css',
+  ].some((signature) => message.includes(signature));
+}
+
 /**
  * Error Boundary Component - Professional Error UI
  * Catches JavaScript errors anywhere in the child component tree
@@ -12,12 +28,12 @@ import useTenantNavigate from '../../hooks/useTenantNavigate';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, isDeploymentUpdate: false };
   }
 
   static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
-    return { hasError: true };
+    return { hasError: true, isDeploymentUpdate: isDeploymentUpdateError(error) };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -37,11 +53,15 @@ class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ hasError: false, error: null, errorInfo: null, isDeploymentUpdate: false });
   };
 
   render() {
     if (this.state.hasError) {
+      if (this.state.isDeploymentUpdate) {
+        return <UpdateRefreshFallback />;
+      }
+
       return <ErrorFallback 
         error={this.state.error} 
         errorInfo={this.state.errorInfo}
@@ -51,6 +71,48 @@ class ErrorBoundary extends React.Component {
 
     return this.props.children;
   }
+}
+
+function UpdateRefreshFallback() {
+  const [needsManualReload, setNeedsManualReload] = React.useState(false);
+
+  React.useEffect(() => {
+    const lastReloadAttempt = Number(sessionStorage.getItem(UPDATE_RELOAD_KEY) || 0);
+    const recentlyReloaded = Date.now() - lastReloadAttempt < UPDATE_RELOAD_GUARD_MS;
+
+    if (recentlyReloaded) {
+      setNeedsManualReload(true);
+      return undefined;
+    }
+
+    sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now()));
+    const timeoutId = window.setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <div className="update-refresh" role="status" aria-live="polite">
+      <div className="update-refresh__inner">
+        <div className="update-refresh__spinner" aria-hidden="true" />
+        <h1 className="update-refresh__title">Updating Structora</h1>
+        <p className="update-refresh__desc">
+          {needsManualReload
+            ? 'The update is ready. Please reload the page to continue.'
+            : 'A new version is ready. Refreshing automatically...'}
+        </p>
+        {needsManualReload && (
+          <div className="update-refresh__actions">
+            <Button variant="primary" onClick={() => window.location.reload()} size="md">
+              Reload Page
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /**

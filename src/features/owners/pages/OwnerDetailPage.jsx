@@ -1,28 +1,39 @@
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api } from "../../../services/api";
 import { projectApi } from "../../../services/projects";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PageLayout from "../../../components/layout/PageLayout";
 import Button from "../../../components/common/Button";
 import ViewRow from "../../../components/forms/ViewRow";
-import { FaUser, FaEdit } from "react-icons/fa";
+import {
+  ProfileIdentityCard,
+  ProfileLayout,
+  ProfilePageHeader,
+  ProfilePanel,
+} from "../../../components/profile/ProfileLayout";
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCamera,
+  FaEdit,
+  FaFolderOpen,
+  FaIdCard,
+  FaUser,
+} from "react-icons/fa";
 import { calculateAgeFromEmiratesId } from "../../../utils/formatters/id";
 import { logger } from "../../../utils/logger";
 import "./OwnerDetailPage.css";
 
 export default function OwnerDetailPage() {
-  const { ownerName } = useParams();
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const isAR = i18n.language === 'ar';
-  const [ownerData, setOwnerData] = useState(location.state?.ownerData || null);
+  const isAR = i18n.language === "ar";
+  const [ownerData] = useState(location.state?.ownerData || null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profileImage, setProfileImage] = useState("");
 
-  // Reusable translation helper
   const getTranslated = (value, arValue, enValue) => {
     if (!value && !arValue && !enValue) return t("empty_value");
     if (isAR && arValue) return arValue;
@@ -30,78 +41,36 @@ export default function OwnerDetailPage() {
     return value || t("empty_value");
   };
 
-  // Helper to get display name based on language
   const getDisplayName = () => {
     if (!ownerData) return "";
-    return getTranslated(
-      ownerData.name,
-      ownerData.nameAr,
-      ownerData.nameEn
-    );
+    return getTranslated(ownerData.name, ownerData.nameAr, ownerData.nameEn);
   };
 
-  // Helper to get project name based on language
   const getProjectName = (project) => {
     if (!project) return "";
-    
+
     const arabicName = project.display_name || project.name_ar || project.name;
     const englishName = project.display_name_en || project.name_en;
-    
-    return getTranslated(
-      project.name || project.display_name,
-      arabicName,
-      englishName
-    );
+
+    return getTranslated(project.name || project.display_name, arabicName, englishName);
   };
 
-  // Helper to get project type based on language
   const getProjectType = (project) => {
     if (!project) return "";
-    
-    return getTranslated(
-      project.project_type,
-      project.project_type_ar,
-      project.project_type_en
-    );
+    return getTranslated(project.project_type, project.project_type_ar, project.project_type_en);
   };
 
-  useEffect(() => {
-    if (ownerData) {
-      loadProjects();
-      const savedImage = localStorage.getItem(`owner_${ownerData.name}_image`);
-      if (savedImage) {
-        setProfileImage(savedImage);
-      }
-    } else {
-      setError(t("owner_data_not_found"));
-      setLoading(false);
-    }
-  }, [ownerData]);
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const url = reader.result;
-        setProfileImage(url);
-        localStorage.setItem(`owner_${ownerData.name}_image`, url);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     if (!ownerData) return;
     setLoading(true);
     try {
       const projectDetails = await Promise.all(
-        ownerData.projects.map(async (p) => {
+        ownerData.projects.map(async (project) => {
           try {
-            const data = await projectApi.getById(p.id);
-            return { ...p, ...data };
-          } catch (e) {
-            return p;
+            const data = await projectApi.getById(project.id);
+            return { ...project, ...data };
+          } catch {
+            return project;
           }
         })
       );
@@ -112,6 +81,30 @@ export default function OwnerDetailPage() {
     } finally {
       setLoading(false);
     }
+  }, [ownerData, t]);
+
+  useEffect(() => {
+    if (ownerData) {
+      loadProjects();
+      const savedImage = localStorage.getItem(`owner_${ownerData.name}_image`);
+      if (savedImage) setProfileImage(savedImage);
+    } else {
+      setError(t("owner_data_not_found"));
+      setLoading(false);
+    }
+  }, [ownerData, loadProjects, t]);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !ownerData) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const url = reader.result;
+      setProfileImage(url);
+      localStorage.setItem(`owner_${ownerData.name}_image`, url);
+    };
+    reader.readAsDataURL(file);
   };
 
   if (loading) {
@@ -136,92 +129,72 @@ export default function OwnerDetailPage() {
 
   const fullOwnerData = ownerData.fullData || {};
   const age = fullOwnerData.age ?? calculateAgeFromEmiratesId(fullOwnerData.id_number);
+  const displayName = getDisplayName();
+  const secondaryName = isAR ? ownerData.nameEn : ownerData.nameAr;
+  const secondaryLabel = isAR ? t("owner_name_en") : t("owner_name_ar");
+
+  const sidebar = (
+    <ProfileIdentityCard
+      avatar={
+        <label className="owner-detail__avatar-shell">
+          {profileImage ? (
+            <img src={profileImage} alt={displayName} className="owner-detail__avatar-img" />
+          ) : (
+            <FaUser className="owner-detail__avatar-icon" />
+          )}
+          <span className="owner-detail__avatar-edit" aria-hidden="true">
+            {profileImage ? <FaEdit /> : <FaCamera />}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="ds-hidden"
+          />
+        </label>
+      }
+      name={displayName}
+      role={t("owner_singular", "Owner")}
+      email={fullOwnerData.email}
+      actions={
+        <label className="owner-detail__upload-action">
+          <Button as="span" variant="secondary" size="sm" startIcon={<FaCamera />}>
+            {profileImage ? t("change_image", "Change Image") : t("upload_image")}
+          </Button>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="ds-hidden"
+          />
+        </label>
+      }
+    />
+  );
 
   return (
     <PageLayout>
-      <div className="container">
-        {/* Owner Profile */}
-        <div className="card ds-mb-6">
-          <div className="ds-flex ds-gap-8 ds-p-8 ds-items-start ds-flex-wrap">
-            {/* Profile Image */}
-            <div className="ds-relative ds-shrink-0">
-              {profileImage ? (
-                <div className="ds-relative">
-                  <img
-                    src={profileImage}
-                    alt={getDisplayName()}
-                    className="ds-rounded-lg owner-detail__profile-image"
-                  />
-                  <label className="ds-flex ds-flex-center owner-detail__edit-btn">
-                    <FaEdit className="ds-text-sm" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="ds-hidden"
-                    />
-                  </label>
-                </div>
-              ) : (
-                <label className="ds-flex ds-flex-col ds-flex-center ds-gap-3 owner-detail__upload-placeholder">
-                  <FaUser className="owner-detail__upload-icon" />
-                  <span className="ds-font-medium ds-text-sm ds-text-muted">
-                    {t("upload_image")}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="ds-hidden"
-                  />
-                </label>
-              )}
-            </div>
-
-            {/* Owner Information */}
-            <div className="ds-flex-1 ds-min-w-300">
-              <Button as={Link} to="/owners" variant="ghost" className="ds-mb-4">
-                ← {t("back_to_owners")}
-              </Button>
-              <h1 className="ds-font-bold owner-detail__name">
-                {getDisplayName()}
-              </h1>
-              {isAR && ownerData.nameEn && (
-                <p className="owner-detail__name-en">
-                  {ownerData.nameEn}
-                </p>
-              )}
-              {!isAR && ownerData.nameAr && (
-                <p className="owner-detail__name-ar">
-                  {ownerData.nameAr}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Owner Details */}
-        <div className="card">
-          <div className="card-body">
-            <h2 className="ds-mb-6">{t("owner_details")}</h2>
-
-            <div className="form-grid cols-2">
-              <ViewRow
-                label={t("owner_name")}
-                value={getDisplayName()}
-              />
-              {isAR && ownerData.nameEn && (
-                <ViewRow
-                  label={t("owner_name_en")}
-                  value={ownerData.nameEn}
-                />
-              )}
-              {!isAR && ownerData.nameAr && (
-                <ViewRow
-                  label={t("owner_name_ar")}
-                  value={ownerData.nameAr}
-                />
-              )}
+      <div className="owner-detail-page">
+        <ProfileLayout
+          dir={isAR ? "rtl" : "ltr"}
+          sidebar={sidebar}
+          header={
+            <ProfilePageHeader
+              title={displayName}
+              subtitle={t("owner_profile_subtitle", "Owner profile, identification details and related projects")}
+              backIcon={isAR ? <FaArrowRight /> : <FaArrowLeft />}
+              onBack={() => window.history.back()}
+            />
+          }
+        >
+          <ProfilePanel
+            icon={<FaIdCard />}
+            title={t("owner_details")}
+            subtitle={secondaryName ? `${secondaryLabel}: ${secondaryName}` : t("owner_profile_details_hint", "Identity and contact information")}
+          >
+            <div className="owner-detail__details-grid">
+              <ViewRow label={t("owner_name")} value={displayName} />
+              {secondaryName && <ViewRow label={secondaryLabel} value={secondaryName} />}
               {fullOwnerData.nationality && (
                 <ViewRow
                   label={t("nationality")}
@@ -233,34 +206,15 @@ export default function OwnerDetailPage() {
                 />
               )}
               {fullOwnerData.id_number && (
-                <ViewRow
-                  label={t("id_number")}
-                  value={fullOwnerData.id_number}
-                />
+                <ViewRow label={t("id_number")} value={fullOwnerData.id_number} />
               )}
               {age !== null && (
-                <ViewRow
-                  label={t("age")}
-                  value={`${age} ${isAR ? t("year") : t("years")}`}
-                />
+                <ViewRow label={t("age")} value={`${age} ${isAR ? t("year") : t("years")}`} />
               )}
-              {fullOwnerData.phone && (
-                <ViewRow
-                  label={t("phone")}
-                  value={fullOwnerData.phone}
-                />
-              )}
-              {fullOwnerData.email && (
-                <ViewRow
-                  label={t("email")}
-                  value={fullOwnerData.email}
-                />
-              )}
+              {fullOwnerData.phone && <ViewRow label={t("phone")} value={fullOwnerData.phone} />}
+              {fullOwnerData.email && <ViewRow label={t("email")} value={fullOwnerData.email} />}
               {fullOwnerData.share_percent && (
-                <ViewRow
-                  label={t("share_percent")}
-                  value={`${fullOwnerData.share_percent}%`}
-                />
+                <ViewRow label={t("share_percent")} value={`${fullOwnerData.share_percent}%`} />
               )}
               {fullOwnerData.right_hold_type && (
                 <ViewRow
@@ -273,16 +227,18 @@ export default function OwnerDetailPage() {
                 />
               )}
             </div>
-          </div>
+          </ProfilePanel>
 
-          {/* Projects */}
-          <div className="mt-16">
-            <h2>{t("projects")} ({projects.length})</h2>
+          <ProfilePanel
+            icon={<FaFolderOpen />}
+            title={`${t("projects")} (${projects.length})`}
+            subtitle={t("owner_projects_subtitle", "Projects connected to this owner")}
+          >
             {projects.length === 0 ? (
-              <p className="prj-muted mt-16">{t("no_projects_found")}</p>
+              <p className="owner-detail__empty">{t("no_projects_found")}</p>
             ) : (
-              <div className="prj-table__wrapper mt-16">
-                <table className="prj-table">
+              <div className="owner-detail__table-wrap">
+                <table className="prj-table owner-detail__table">
                   <thead>
                     <tr>
                       <th>{t("project_name")}</th>
@@ -292,18 +248,20 @@ export default function OwnerDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {projects.map((p) => (
-                      <tr key={p.id}>
-                        <td>{getProjectName(p)}</td>
-                        <td><code>{p.internal_code || `PRJ-${p.id}`}</code></td>
-                        <td>{getProjectType(p) || t("empty_value")}</td>
+                    {projects.map((project) => (
+                      <tr key={project.id}>
+                        <td>{getProjectName(project)}</td>
+                        <td><code>{project.internal_code || `PRJ-${project.id}`}</code></td>
+                        <td>{getProjectType(project) || t("empty_value")}</td>
                         <td>
-                          <Button as={Link} to={`/projects/${p.id}`} variant="primary" className="ds-me-2">
-                            {t("view")}
-                          </Button>
-                          <Button as={Link} to={`/projects/${p.id}/wizard`} variant="ghost">
-                            {t("edit")}
-                          </Button>
+                          <div className="owner-detail__table-actions">
+                            <Button as={Link} to={`/projects/${project.id}`} variant="primary" size="sm">
+                              {t("view")}
+                            </Button>
+                            <Button as={Link} to={`/projects/${project.id}/wizard`} variant="ghost" size="sm">
+                              {t("edit")}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -311,8 +269,8 @@ export default function OwnerDetailPage() {
                 </table>
               </div>
             )}
-          </div>
-        </div>
+          </ProfilePanel>
+        </ProfileLayout>
       </div>
     </PageLayout>
   );

@@ -36,6 +36,7 @@ export default function ProjectsPage() {
   // Role flags
   const isManager = user?.role?.name === 'Manager';
   const isSuperAdmin = user?.is_superuser || user?.role?.name === 'company_super_admin';
+  const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
   const canCreate = isAdmin || hasPermission('projects.create');
 
   // Approval status filter — visible to ALL users, default "all"
@@ -171,7 +172,10 @@ export default function ProjectsPage() {
     type === "success" ? success(msg) : showError(msg);
   }, [success, showError]);
 
-  const canDeleteProject = useCallback((project) => project?.can_delete === true, []);
+  const canDeleteProject = useCallback(
+    (project) => isCompanySuperAdmin && project?.can_delete === true,
+    [isCompanySuperAdmin]
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return t("empty_value");
@@ -454,14 +458,14 @@ export default function ProjectsPage() {
               <BulkActionsBar
                 selectedCount={selectedCount}
                 onClear={() => clearSelection()}
-                actions={[
+                actions={isCompanySuperAdmin ? [
                   {
                     label: t("delete_selected"),
                     onClick: askBulkDelete,
                     variant: "danger",
                     disabled: selectedHasBlockedDelete,
                   }
-                ]}
+                ] : []}
               />
             )}
 

@@ -56,14 +56,16 @@ export default function VariationViewPage() {
   useEffect(() => {
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
-      setSearchParams({}, { replace: true });
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("tab");
+      setSearchParams(nextParams, { replace: true });
     }
-  }, [tabFromUrl, setSearchParams]);
+  }, [tabFromUrl, searchParams, setSearchParams]);
 
   // Use custom hooks for data management
   const toast = (type, msg) => type === "success" ? success(msg) : showError(msg);
 
-  const { variation, project, loading, error: loadError, auditLogs, loadingAuditLogs, loadVariation } = useVariationData(
+  const { variation, project, loading, error: loadError, auditLogs, alterationRequests, loadingAuditLogs, loadVariation } = useVariationData(
     variationId,
     toast,
     t,
@@ -104,7 +106,7 @@ export default function VariationViewPage() {
 
   // Status and permissions
   const variationStatus = variation?.status || variation?.workflow_status || 'draft';
-  const permissions = calculatePermissions(variation, user);
+  const permissions = calculatePermissions(variation, user, alterationRequests);
   const isRejected = checkRejected(variation);
 
   const preparePrintDocumentLayout = async (el) => {
@@ -601,6 +603,37 @@ export default function VariationViewPage() {
 
                     <div className="var-attach-divider" />
 
+                    {variation?.revision_history?.length > 0 && (
+                      <>
+                        <div className="var-attach-row var-attach-row--revisions">
+                          <div className="var-attach-row__label">
+                            <span className="var-attach-dot var-attach-dot--blue" />
+                            {t("previous_revisions")}
+                          </div>
+                          <div className="var-attach-row__sub">{t("previous_revisions_desc")}</div>
+                          <div className="var-revision-list">
+                            {variation.revision_history.map((revision) => (
+                              <button
+                                type="button"
+                                key={revision.id}
+                                className="var-revision-link"
+                                onClick={() => navigate(`/variations/${revision.id}/view?project=${project.id}`)}
+                              >
+                                <span className="var-revision-link__number">
+                                  {revision.variation_number || `VAR-${revision.id}`}
+                                </span>
+                                <span className="var-revision-link__meta">
+                                  {revision.updated_at ? formatDate(revision.updated_at) : getStatusLabel(revision.status, t)}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="var-attach-divider" />
+                      </>
+                    )}
+
                     {/* الطباعة */}
                     <div className="var-attach-row">
                       <div className="var-attach-row__label">
@@ -710,7 +743,7 @@ export default function VariationViewPage() {
                   {t("back_to_view")}
                 </Button> */}
               </div>
-              <NoticeOfVariationPage variation={variation} project={project} viewMode={false} />
+              <NoticeOfVariationPage variation={variation} project={project} viewMode={false} allowRevisionEdit={permissions.canEdit} />
             </div>
           )}
 

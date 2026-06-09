@@ -216,5 +216,7 @@
   "variation_approval_revoked": "تم إلغاء الاعتماد، يمكن إعادة الاعتماد الآن.",
   "add_fee": "إضافة رسم",
   "fee_name": "اسم الرسم",
+  "previous_revisions": "الإصدارات السابقة",
+  "previous_revisions_desc": "فتح نسخة محفوظة سابقة من أمر التغيير",
   "custom_fee": "رسم مخصص"
 }

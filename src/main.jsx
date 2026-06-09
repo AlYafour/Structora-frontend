@@ -62,6 +62,39 @@ import './styles/ds/utilities.css';   // Utility classes
 // 🌐 Internationalization
 import './config/i18n';
 
+const UPDATE_RELOAD_KEY = 'structora_update_reload_attempted';
+const UPDATE_RELOAD_GUARD_MS = 30000;
+
+function showUpdateRefreshScreen() {
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f7f4ee;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#14213d;">
+      <div style="width:100%;max-width:420px;text-align:center;">
+        <div style="width:38px;height:38px;margin:0 auto 22px;border:3px solid #d9dee8;border-top-color:#c9a646;border-radius:50%;animation:structora-spin 0.8s linear infinite;"></div>
+        <h1 style="margin:0 0 10px;font-size:24px;font-weight:700;letter-spacing:0;">Updating Structora</h1>
+        <p style="margin:0;color:#5f6673;font-size:15px;line-height:1.55;">A new version is ready. Refreshing automatically...</p>
+      </div>
+      <style>@keyframes structora-spin{to{transform:rotate(360deg)}}</style>
+    </div>
+  `;
+}
+
+window.addEventListener('vite:preloadError', (event) => {
+  const lastReloadAttempt = Number(sessionStorage.getItem(UPDATE_RELOAD_KEY) || 0);
+  const recentlyReloaded = Date.now() - lastReloadAttempt < UPDATE_RELOAD_GUARD_MS;
+
+  if (recentlyReloaded) {
+    return;
+  }
+
+  event.preventDefault();
+  sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now()));
+  showUpdateRefreshScreen();
+
+  window.setTimeout(() => {
+    window.location.reload();
+  }, 2000);
+});
+
 // 📊 Performance monitoring (development only)
 if (import.meta.env.DEV) {
   // Log render timing

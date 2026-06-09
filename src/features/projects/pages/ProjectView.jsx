@@ -24,6 +24,8 @@ export default function ProjectView() {
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
  const isSuperAdmin = user?.is_superuser || user?.role?.name === 'company_super_admin';
+ const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
+ const canDeleteProject = isCompanySuperAdmin && projectPermissions?.can_delete === true;
 
  // Use custom hook for tabs
  const { activeTab, setActiveTab } = useProjectTabs("overview");
@@ -62,8 +64,9 @@ const projectDisplayName = isAR
  activeTab={activeTab}
  isManager={isManager}
  isSuperAdmin={isSuperAdmin}
+ canDeleteProject={canDeleteProject}
  permissionsLoading={permissionsLoading}
- onDeleteClick={() => setConfirmOpen(true)}
+ onDeleteClick={() => canDeleteProject && setConfirmOpen(true)}
  onSubmitClick={() => setSubmitDialogOpen(true)}
  onApproveClick={() => setApproveDialogOpen(true)}
  onRejectClick={() => setRejectDialogOpen(true)}
@@ -97,7 +100,7 @@ const projectDisplayName = isAR
  contract={contract}
  siteplan={siteplan}
  projectPermissions={projectPermissions}
- onDeleteClick={() => setConfirmOpen(true)}
+ onDeleteClick={() => canDeleteProject && setConfirmOpen(true)}
  onReload={reload}
  />
  )}

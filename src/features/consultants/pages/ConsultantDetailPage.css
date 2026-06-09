@@ -1,72 +1,118 @@
-/* ConsultantDetailPage – BEM styles */
-
-/* ── Header ── */
-.consultant-detail__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+.consultant-detail-page {
+  width: auto;
+  max-width: none;
+  min-height: calc(100vh - 72px);
+  margin: -16px -20px;
+  padding: 0;
+  background: var(--surface-secondary, #f9f7f3);
 }
 
-.consultant-detail__back-icon {
-  margin-inline: 0.5rem;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-.consultant-detail__header-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.consultant-detail__header-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
+.consultant-detail__avatar {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--interactive-primary, #c8a84e);
+  border-radius: 999px;
+  background:
+    linear-gradient(145deg, rgba(200, 168, 78, 0.14), rgba(255, 255, 255, 0.92)),
+    var(--surface-primary, #fff);
+  color: var(--interactive-primary, #c8a84e);
 }
 
-/* ── Main heading (consultant name) ── */
-.consultant-detail__name {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 8px 0 4px 0;
-  line-height: 1.3;
+.consultant-detail__avatar-building {
+  font-size: 48px;
 }
 
-/* ── Secondary name (English) ── */
-.consultant-detail__name-en {
-  font-size: 16px;
-  color: var(--muted);
-  margin: 0;
+.consultant-detail__avatar-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border: 2px solid var(--surface-primary, #fff);
+  border-radius: 999px;
+  background: var(--interactive-primary, #c8a84e);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
 }
 
-/* ── Signature ── */
+.consultant-detail__primary-action.ds-btn {
+  min-width: 100px;
+  height: 38px;
+  border-radius: 9px;
+  box-shadow: var(--shadow-gold-sm, 0 4px 12px rgba(200, 168, 78, 0.15));
+}
+
+.consultant-detail__details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 22px;
+}
+
+.consultant-detail__details-grid > .field,
+.consultant-detail__span-all > .field {
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface-primary, #fff);
+}
+
+.consultant-detail__span-all {
+  grid-column: 1 / -1;
+}
+
 .consultant-detail__signature-wrap {
   display: inline-flex;
+  max-width: 320px;
   padding: 16px 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
-  max-width: 280px;
+  background: var(--surface-primary, #fff);
 }
 
 .consultant-detail__signature-img {
   max-width: 100%;
-  max-height: 100px;
+  max-height: 110px;
   object-fit: contain;
 }
 
-/* ── Responsive ── */
-@media (max-width: 640px) {
-  .consultant-detail__header {
-    flex-direction: column;
+.consultant-detail__empty {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
+.consultant-detail__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.consultant-detail__table {
+  min-width: 820px;
+}
+
+.consultant-detail__roles,
+.consultant-detail__table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+html.theme-dark .consultant-detail-page {
+  background: var(--surface-secondary, #111827);
+}
+
+@media (max-width: 700px) {
+  .consultant-detail__details-grid {
+    grid-template-columns: 1fr;
   }
 
-  .consultant-detail__name {
-    font-size: 22px;
+  .consultant-detail__primary-action.ds-btn {
+    width: 100%;
   }
 }

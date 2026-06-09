@@ -216,5 +216,7 @@
   "variation_approval_revoked": "Approval revoked. You can approve it again now.",
   "add_fee": "Add Fee",
   "fee_name": "Fee name",
+  "previous_revisions": "Previous Revisions",
+  "previous_revisions_desc": "Open an older saved version of this variation",
   "custom_fee": "Custom Fee"
 }

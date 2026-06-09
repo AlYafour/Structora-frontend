@@ -1,75 +1,109 @@
-/* OwnerDetailPage — BEM */
+.owner-detail-page {
+  width: auto;
+  max-width: none;
+  min-height: calc(100vh - 72px);
+  margin: -16px -20px;
+  padding: 0;
+  background: var(--surface-secondary, #f9f7f3);
+}
 
-/* Profile image */
-.owner-detail__profile-image {
-  width: 160px;
-  height: 160px;
+.owner-detail__avatar-shell {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid var(--interactive-primary, #c8a84e);
+  border-radius: 999px;
+  background: var(--surface-primary, #fff);
+  cursor: pointer;
+}
+
+.owner-detail__avatar-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 3px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Edit-image overlay button */
-.owner-detail__edit-btn {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  background: var(--primary);
-  color: white;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-}
-
-.owner-detail__edit-btn:hover {
-  transform: scale(1.1);
-  background: var(--primary-600);
-}
-
-/* Upload placeholder (no image yet) */
-.owner-detail__upload-placeholder {
-  width: 160px;
-  height: 160px;
-  border-radius: 12px;
-  border: 3px dashed var(--border);
-  cursor: pointer;
-  background: var(--surface-2);
-  transition: all 0.2s ease;
-}
-
-.owner-detail__upload-placeholder:hover {
-  border-color: var(--primary);
-  background: var(--primary-50);
-}
-
-/* Placeholder icon */
-.owner-detail__upload-icon {
+.owner-detail__avatar-icon {
+  color: var(--text-tertiary, #94a3b8);
   font-size: 48px;
-  color: var(--muted);
 }
 
-/* Owner name heading */
-.owner-detail__name {
-  font-size: 32px;
-  color: var(--ink);
-  margin: 0 0 var(--space-2) 0;
+.owner-detail__avatar-edit {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface-primary, #fff);
+  border-radius: 999px;
+  background: var(--interactive-primary, #c8a84e);
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
 }
 
-/* Arabic name subtitle */
-.owner-detail__name-ar {
-  font-size: 16px;
-  color: var(--muted);
-  margin: 0 0 var(--space-2) 0;
+.owner-detail__upload-action {
+  display: inline-flex;
 }
 
-/* English name subtitle */
-.owner-detail__name-en {
-  font-size: 16px;
-  color: var(--muted);
+.owner-detail__upload-action .ds-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: var(--surface-primary, #fff);
+}
+
+.owner-detail__details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 22px;
+}
+
+.owner-detail__details-grid > .field {
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface-primary, #fff);
+}
+
+.owner-detail__empty {
   margin: 0;
-  direction: ltr;
-  text-align: left;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
+.owner-detail__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.owner-detail__table {
+  min-width: 720px;
+}
+
+.owner-detail__table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+html.theme-dark .owner-detail-page {
+  background: var(--surface-secondary, #111827);
+}
+
+@media (max-width: 700px) {
+  .owner-detail__details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-detail__upload-action,
+  .owner-detail__upload-action .ds-btn {
+    width: 100%;
+  }
 }

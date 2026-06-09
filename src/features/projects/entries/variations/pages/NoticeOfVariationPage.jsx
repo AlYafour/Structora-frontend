@@ -53,7 +53,7 @@ const computeNextVariationNumber = async (projectId) => {
   }
 };
 
-export default function NoticeOfVariationPage({ variation: variationProp, project: projectProp, viewMode: viewModeProp }) {
+export default function NoticeOfVariationPage({ variation: variationProp, project: projectProp, viewMode: viewModeProp, allowRevisionEdit = false }) {
   const { variationId, projectId } = useParams();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
@@ -113,7 +113,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     user?.role?.name !== 'Manager' &&
     user?.role?.name !== 'company_super_admin';
   const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
-  const isEditMode = viewModeProp !== true && !isFinalApproved && !(isStaffUser && isPMInitialApproved);
+  const isEditMode = viewModeProp !== true && !isFinalApproved && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 
 
   const { i18n } = useTranslation();
@@ -701,15 +701,6 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           </div>
         </FinancialActionBar>
       )}
-
-      {/* Embedded Save Button */}
-      {/* {isEmbeddedMode && isEditMode && (
-        <div className="nvc-embedded-save-bar no-print">
-          <Button type="submit" form="notice-variation-form" variant="primary" disabled={saving}>
-            {saving ? t('saving') : t('save')}
-          </Button>
-        </div>
-      )} */}
 
       {/* Main Document */}
       <form id="notice-variation-form" onSubmit={handleSubmit}>

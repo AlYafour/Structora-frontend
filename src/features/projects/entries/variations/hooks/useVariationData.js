@@ -19,6 +19,7 @@ export function useVariationData(variationId) {
   const [project, setProject] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [alterationRequests, setAlterationRequests] = useState([]);
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
 
   const loadCompanyInfo = useCallback(async () => {
@@ -111,6 +112,14 @@ export function useVariationData(variationId) {
         logger.error("Error loading project", e);
       }
 
+      try {
+        const requests = await projectApi.listAlterationRequests(projectId, variationId);
+        setAlterationRequests(Array.isArray(requests) ? requests : []);
+      } catch (e) {
+        logger.warn("Could not load variation alteration requests", e);
+        setAlterationRequests([]);
+      }
+
       loadAuditLogs(projectId, variationId);
     } catch (e) {
       logger.error("Error loading variation", e);
@@ -141,6 +150,7 @@ export function useVariationData(variationId) {
     project,
     companyInfo,
     auditLogs,
+    alterationRequests,
     loadingAuditLogs,
     loadVariation,
     getNoticeData,
