@@ -143,7 +143,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 <span>{t("project_view_internal_code")}:</span>
                 <span className="mono">
                   {formatInternalCode(project.internal_code)}
-                </span>ai 
+                </span>
               </div>
             )}
             {statusInfo && (

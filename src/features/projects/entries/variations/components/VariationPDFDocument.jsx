@@ -229,7 +229,7 @@ const VariationPDFDocument = ({ variation, project, companyInfo, qrDataUrl }) =>
     ...(totalOmitted !== 0 ? [{ label: `إجمالي البنود المحذوفة\nTotal Omitted`, value: fmt(totalOmitted) }] : []),
     ...(totalAdded   !== 0 ? [{ label: `إجمالي البنود المضافة\nTotal Added`,   value: fmt(totalAdded), highlight: true }] : []),
     { label: `صافي أمر التغيير\nNet Variation`, value: fmt(totalVar), highlight: true },
-    ...(contractorOHP  !== 0 ? [{ label: `مصاريف المقاول${nd.contractor_ohp_percentage ? ` (${nd.contractor_ohp_percentage}%)` : ""}\nContractor O&P`, value: fmt(contractorOHP) }] : []),
+    ...(contractorOHP  !== 0 ? [{ label: `مصاريف المقاول${nd.contractor_ohp_percentage ? ` (${nd.contractor_ohp_percentage}%)` : ""}\nContractor OH&P`, value: fmt(contractorOHP) }] : []),
     ...(consultantFees !== 0 ? [{ label: `رسوم الاستشاري${nd.consultant_fees_percentage ? ` (${nd.consultant_fees_percentage}%)` : ""}\nConsultant Fees`, value: fmt(consultantFees) }] : []),
     ...(nd.custom_fees || [])
       .map(f => {

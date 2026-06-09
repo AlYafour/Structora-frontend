@@ -93,7 +93,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     { ar: "صافي أمر التغيير",       en: "Net Variation", value: totalVar,     variant: "highlight" },
     ...(contractorOHP !== 0 ? [{
       ar: `مصاريف المقاول والهندسة${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
-      en: `Contractor O&P${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
+      en: `Contractor OH&P${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
       value: contractorOHP,
     }] : []),
     ...(consultantFees !== 0 ? [{
