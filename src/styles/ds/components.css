@@ -7677,15 +7677,75 @@ html.theme-dark .prj-toolbar__search-input {
 
 .progress-variations-table .col-checkbox {
   width: 48px;
+  min-width: 48px;
+  max-width: 48px;
 }
 
 .progress-variations-table .col-number {
   width: 52px;
+  min-width: 52px;
+  max-width: 52px;
   text-align: center;
 }
 
 .progress-variations-table .col-code {
   width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.progress-variations-table th.col-checkbox,
+.progress-variations-table td.col-checkbox,
+.progress-variations-table th.col-number,
+.progress-variations-table td.col-number,
+.progress-variations-table th.col-code,
+.progress-variations-table td.col-code {
+  position: sticky;
+  background: var(--color-surface, #ffffff);
+  z-index: 3;
+}
+
+.progress-variations-table thead th.col-checkbox,
+.progress-variations-table thead th.col-number,
+.progress-variations-table thead th.col-code {
+  background: var(--color-surface-2, #f8fafc);
+  z-index: 5;
+}
+
+.progress-variations-table th.col-checkbox,
+.progress-variations-table td.col-checkbox {
+  inset-inline-start: 0;
+}
+
+.progress-variations-table th.col-number,
+.progress-variations-table td.col-number {
+  inset-inline-start: 48px;
+}
+
+.progress-variations-table th.col-code,
+.progress-variations-table td.col-code {
+  inset-inline-start: 100px;
+}
+
+.progress-variations-table tr.is-selected td.col-checkbox,
+.progress-variations-table tr.is-selected td.col-number,
+.progress-variations-table tr.is-selected td.col-code {
+  background: var(--primary-50, #eff6ff);
+}
+
+html.theme-dark .progress-variations-table th.col-checkbox,
+html.theme-dark .progress-variations-table td.col-checkbox,
+html.theme-dark .progress-variations-table th.col-number,
+html.theme-dark .progress-variations-table td.col-number,
+html.theme-dark .progress-variations-table th.col-code,
+html.theme-dark .progress-variations-table td.col-code {
+  background: var(--color-surface);
+}
+
+html.theme-dark .progress-variations-table thead th.col-checkbox,
+html.theme-dark .progress-variations-table thead th.col-number,
+html.theme-dark .progress-variations-table thead th.col-code {
+  background: var(--color-surface-2);
 }
 
 .progress-variations-table .col-name {
