@@ -4,7 +4,7 @@ import Button from '../../../../../components/common/Button';
 import FileAttachmentView from '../../../../../components/file-upload/FileAttachmentView';
 import { extractFileNameFromUrl } from "../../../../../utils/helpers/file";
 
-export default function ProgressAttachmentUpload({ formData, setFormData, setError, projectId, editingId, isRTL, t }) {
+export default function ProgressAttachmentUpload({ formData, setFormData, setError, projectId, editingId, isRTL: _isRTL, t }) {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
@@ -106,8 +106,8 @@ export default function ProgressAttachmentUpload({ formData, setFormData, setErr
             className="ds-hidden"
             id="multiple-file-input"
           />
-          <label htmlFor="multiple-file-input" className="progress-file-upload-btn">
-            {t('progress_add_files')}
+          <label htmlFor="multiple-file-input" className="ds-btn ds-btn--primary ds-btn--sm progress-file-upload-btn">
+            <span className="ds-btn__text">{t('progress_add_files')}</span>
           </label>
           <div className="progress-field__hint">{t('progress_allowed_file_types')}</div>
         </div>

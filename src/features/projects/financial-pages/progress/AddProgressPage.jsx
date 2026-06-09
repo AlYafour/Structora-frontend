@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { FaCheckDouble } from 'react-icons/fa';
 import { invalidateProjectQueries } from '../../hooks/useProjectData';
 import { useNotifications } from '../../../../contexts/NotificationContext';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -156,13 +155,14 @@ export default function AddProgressPage() {
   });
   const isSuperAdmin = !!user?.is_superuser || user?.role?.name === 'company_super_admin';
 
-  const handleSetAllVariationsTo100 = () => {
+  const handleSetSelectedVariationsTo100 = (variationIds = []) => {
+    if (!variationIds.length) return;
+
     setError(null);
     setFormData((prev) => {
       const variationProgress = { ...prev.variation_progress };
 
-      approvedVariations.forEach((variation) => {
-        const variationId = String(variation.id);
+      variationIds.forEach((variationId) => {
         variationProgress[variationId] = {
           ...variationProgress[variationId],
           actual_current: '100',
@@ -248,17 +248,6 @@ export default function AddProgressPage() {
                     <span className="progress-panel__header-title">
                       {t('progress_variations_individual')}
                     </span>
-                    {isSuperAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="progress-panel__header-action"
-                        startIcon={<FaCheckDouble />}
-                        onClick={handleSetAllVariationsTo100}
-                      >
-                        {t('progress_set_all_variations_100')}
-                      </Button>
-                    )}
                   </div>
                   <div className="progress-panel__body progress-panel__body--spaced">
                     <VariationsIndividualSection
@@ -270,6 +259,8 @@ export default function AddProgressPage() {
                       error={error}
                       isRTL={isRTL}
                       t={t}
+                      canApplySelectedTo100={isSuperAdmin}
+                      onApplySelectedTo100={handleSetSelectedVariationsTo100}
                     />
 
                     <VariationsTotalSection
@@ -281,13 +272,37 @@ export default function AddProgressPage() {
                   </div>
                 </section>
               )}
+            </div>
+
+            <aside className="progress-entry-sidebar">
+              <section className="progress-panel progress-panel--sticky">
+                <div className="progress-panel__header">
+                  {t('project_details') || 'Project Details'}
+                </div>
+                <div className="progress-panel__body">
+                  <ProjectEntryInfo project={projectData} />
+                </div>
+              </section>
+
+              <section className="progress-panel progress-panel--sticky">
+                <div className="progress-panel__header">
+                  {t('progress_buckets_overall')}
+                </div>
+                <div className="progress-panel__body">
+                  <OverallProgressDisplay
+                    projectData={projectData}
+                    isRTL={isRTL}
+                    t={t}
+                  />
+                </div>
+              </section>
 
               <section className="progress-panel">
                 <div className="progress-panel__header">
                   {t('progress_additional_info')}
                 </div>
                 <div className="progress-panel__body progress-panel__body--spaced">
-                  <div className="progress-meta-grid">
+                  <div className="progress-meta-grid progress-meta-grid--sidebar">
                     <div className="progress-field">
                       <label className="progress-field__label">
                         {t('progress_entry_date_label')}
@@ -329,30 +344,6 @@ export default function AddProgressPage() {
                       placeholder={t('progress_notes_placeholder')}
                     />
                   </div>
-                </div>
-              </section>
-            </div>
-
-            <aside className="progress-entry-sidebar">
-              <section className="progress-panel progress-panel--sticky">
-                <div className="progress-panel__header">
-                  {t('project_details') || 'Project Details'}
-                </div>
-                <div className="progress-panel__body">
-                  <ProjectEntryInfo project={projectData} />
-                </div>
-              </section>
-
-              <section className="progress-panel progress-panel--sticky">
-                <div className="progress-panel__header">
-                  {t('progress_buckets_overall')}
-                </div>
-                <div className="progress-panel__body">
-                  <OverallProgressDisplay
-                    projectData={projectData}
-                    isRTL={isRTL}
-                    t={t}
-                  />
                 </div>
               </section>
             </aside>

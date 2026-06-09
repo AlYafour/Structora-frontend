@@ -6,6 +6,7 @@
 export { useDebounce } from './useDebounce';
 export { useTheme } from './useTheme';
 export { useLanguage } from './useLanguage';
+export { default as useTableActivity } from './useTableActivity';
 export { default as useBilingual } from './useBilingual';
 
 // Data Fetching Hooks
