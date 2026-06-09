@@ -7296,15 +7296,27 @@ html.theme-dark .filter-drawer__footer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .progress-buckets-grid__item {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   background: var(--gray-25, #FAFBFC);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 12px;
   padding: 16px;
+}
+
+.progress-buckets-grid__item .progress-section {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.progress-buckets-grid__item .progress-section__grid {
+  flex: 1 1 auto;
 }
 
 .progress-meta-grid {
@@ -7489,6 +7501,10 @@ html.theme-dark .progress-field__label {
   color: var(--color-text-tertiary);
   margin-top: 4px;
   font-style: italic;
+}
+
+.progress-field__hint--placeholder {
+  visibility: hidden;
 }
 
 .prj-input--error {

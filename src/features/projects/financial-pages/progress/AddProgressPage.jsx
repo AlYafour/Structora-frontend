@@ -25,7 +25,7 @@ import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
 export default function AddProgressPage() {
   const { projectId } = useParams();
-  const navigate = useTenantNavigate();
+  const navigate = useTenantNavigate();/*  */
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { t, i18n } = useTranslation();

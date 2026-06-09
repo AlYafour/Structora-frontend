@@ -51,11 +51,9 @@ export default function BucketProgressInput({ bucketType, formData, latestProgre
                 : t('progress_current_placeholder')}
             />
             <span className="progress-field__suffix">%</span>
-            {latestValue && (
-              <div className="progress-field__hint">
-                {t('progress_previous_value', { value: latestValue })}
-              </div>
-            )}
+            <div className={`progress-field__hint ${!latestValue ? 'progress-field__hint--placeholder' : ''}`}>
+              {latestValue ? t('progress_previous_value', { value: latestValue }) : '\u00a0'}
+            </div>
           </div>
         </div>
       </div>
