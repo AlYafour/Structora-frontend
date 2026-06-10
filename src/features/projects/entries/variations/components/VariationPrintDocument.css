@@ -990,6 +990,7 @@
 .vpd-print-mode .vpd-table {
   margin: 0 0 5px;
   line-height: 1.3;
+  table-layout: auto;
 }
 
 .vpd-print-mode .vpd-table th {
