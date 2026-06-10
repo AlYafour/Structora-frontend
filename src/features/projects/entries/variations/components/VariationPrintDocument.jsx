@@ -170,9 +170,15 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
           <div className="vpd-title-panel">
             <div className="vpd-meta">
-              <div>
-                <BilingualText ar="رقم التغيير" en="VAR. NO." className="vpd-meta__label" />
-                <strong>{variation?.variation_number || data.reference_no || EMPTY}</strong>
+              <div className="vpd-meta__varno-group">
+                <div>
+                  <BilingualText ar="رقم التغيير" en="VAR. NO." className="vpd-meta__label" />
+                  <strong>{variation?.variation_number || data.reference_no || EMPTY}</strong>
+                </div>
+                <div>
+                  <BilingualText ar="رقم المشروع" en="PROJECT NO." className="vpd-meta__label" />
+                  <strong>{getProjectNumber() || EMPTY}</strong>
+                </div>
               </div>
               <div>
                 <BilingualText ar="التاريخ" en="DATE" className="vpd-meta__label" />
@@ -198,13 +204,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 <span className="vpd-info-card__line">{getProjectLocation()}</span>
               </div>
             )}
-          </div>
-
-          <div className="vpd-info-card vpd-info-card--sm">
-            <BilingualText ar="رقم المشروع" en="PROJECT NO." className="vpd-info-card__label" />
-            <span className="vpd-info-card__value vpd-info-card__value--plain">
-              {getProjectNumber() || EMPTY}
-            </span>
           </div>
 
           <div className="vpd-info-card vpd-info-card--sm vpd-info-card--desc">

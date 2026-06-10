@@ -195,6 +195,12 @@
   min-width: 0;
 }
 
+.vpd-meta__varno-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .vpd-meta__label {
   color: #7f7364;
   font-size: 11pt;
@@ -871,22 +877,29 @@
   color: #7f7364;
 }
 
-/* Meta: var no and date side by side */
+/* Meta: varno-group stacked left, date on the right */
 .vpd-print-mode .vpd-meta {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   margin-top: 0;
   flex-wrap: nowrap;
   margin-right: 10px;
 }
 
-/* Each meta item: label and value on one line */
+/* Each meta item: label and value stacked */
 .vpd-print-mode .vpd-meta > div {
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+
+/* VAR NO + PROJECT NO stacked inside their group */
+.vpd-print-mode .vpd-meta__varno-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .vpd-print-mode .vpd-meta__label {
@@ -911,9 +924,8 @@
 }
 
 /* Info cards — 6-column base:
-   row 1: Project Name (span 3) | Project No (span 3)
-   row 2: Description (span 6, full width)
-   row 3: Ref No (span 2) | Trade (span 2) | Additional Time (span 2) */
+   row 1: Project Name (span 3) | Description (span 3)
+   row 2: Ref No (span 2) | Trade (span 2) | Additional Time (span 2) */
 .vpd-print-mode .vpd-cards {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0;
@@ -925,11 +937,7 @@
   grid-column: span 3;
 }
 
-.vpd-print-mode .vpd-info-card--desc {
-  grid-column: 1 / -1;
-}
-
-.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(n+4) {
+.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(n+3) {
   grid-column: span 2;
 }
 
