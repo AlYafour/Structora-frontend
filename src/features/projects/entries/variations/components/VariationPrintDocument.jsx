@@ -143,20 +143,22 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
         {/* ── HEADER ── */}
         <header className="vpd-top">
           <div className="vpd-company">
-            {logoUrl && (
-              <img
-                src={logoUrl}
-                alt=""
-                className="vpd-company__logo"
-                onError={e => { e.currentTarget.style.display = "none"; }}
-              />
-            )}
             <div className="vpd-company__body">
-              <BilingualText
-                ar={companyInfo?.name}
-                en={companyInfo?.name_en || companyInfo?.name}
-                className="vpd-company__name"
-              />
+              <div className="vpd-company__name-row">
+                {logoUrl && (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    className="vpd-company__logo"
+                    onError={e => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+                <BilingualText
+                  ar={companyInfo?.name}
+                  en={companyInfo?.name_en || companyInfo?.name}
+                  className="vpd-company__name"
+                />
+              </div>
               <div className="vpd-company__details">
                 {companyInfo?.address && <span>{companyInfo.address}</span>}
                 {companyInfo?.phone   && <span dir="ltr">{companyInfo.phone}</span>}

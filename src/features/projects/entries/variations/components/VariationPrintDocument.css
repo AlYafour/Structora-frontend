@@ -102,14 +102,23 @@
 }
 
 .vpd-company__logo {
-  width: 110px;
   align-self: stretch;
+  width: auto;
+  max-width: 110px;
   object-fit: contain;
   flex: 0 0 auto;
 }
 
 .vpd-company__body {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+}
+
+.vpd-company__name-row {
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
 }
 
 .vpd-company__name {
@@ -791,8 +800,13 @@
   font-size: 5.5pt;
 }
 
+.vpd-print-mode .vpd-company__name-row {
+  gap: 10px;
+}
+
 .vpd-print-mode .vpd-company__logo {
-  width: 52px;
+  width: auto;
+  max-width: 52px;
 }
 
 .vpd-print-mode .vpd-company {
