@@ -13,8 +13,7 @@ import { generatePDFFilename } from "../features/projects/entries/variations/uti
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
-const PDF_CANVAS_SCALE = 1.25;
-const PDF_JPEG_QUALITY = 0.78;
+const PDF_CANVAS_SCALE = 3;
 
 async function runWithConcurrency(items, limit, worker) {
   let nextIndex = 0;
@@ -133,7 +132,7 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
       slice.height = srcH;
       slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
       pdf.addImage(
-        slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
+        slice.toDataURL("image/jpeg", 0.97),
         "JPEG",
         0,
         0,
