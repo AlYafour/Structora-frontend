@@ -263,10 +263,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
         {/* ── ADDED ITEMS ── */}
         {addedItems.length > 0 && (
           <section className="vpd-section" data-vpd-print-table-section>
-            <div className="vpd-section__header" data-vpd-table-section-header>
-              <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
-              <span>{String(addedItems.length).padStart(2, "0")} lines</span>
-            </div>
             <table className="vpd-table" data-vpd-print-table>
               <thead>
                 <tr>
@@ -276,7 +272,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   <th><BilingualText ar="الوحدة" en="Unit" /></th>
                   <th><BilingualText ar="السعر" en="Rate" /></th>
                   <th><BilingualText ar="المبلغ" en="Amount" /></th>
-                  <th><BilingualText ar="المرجع" en="Reference" /></th>
+                  <th className="vpd-th--section-title vpd-th--added">
+                    <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
+                    <span className="vpd-th--section-count">{String(addedItems.length).padStart(2, "0")} lines</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -289,7 +288,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td>{item.unit || EMPTY}</td>
                       <td><Amount value={item.rate || 0} /></td>
                       <td><Amount value={item.amount || 0} /></td>
-                      <td>{item.reference || EMPTY}</td>
+                      <td />
                     </tr>
                     {item.remarks?.trim() && (
                       <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
@@ -312,10 +311,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
         {/* ── OMITTED ITEMS ── */}
         {omittedItems.length > 0 && (
           <section className="vpd-section" data-vpd-print-table-section>
-            <div className="vpd-section__header" data-vpd-table-section-header>
-              <BilingualText ar="البنود المحذوفة" en="OMITTED ITEMS" />
-              <span>{String(omittedItems.length).padStart(2, "0")} lines</span>
-            </div>
             <table className="vpd-table" data-vpd-print-table>
               <thead>
                 <tr>
@@ -325,7 +320,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   <th><BilingualText ar="الوحدة" en="Unit" /></th>
                   <th><BilingualText ar="السعر" en="Rate" /></th>
                   <th><BilingualText ar="المبلغ" en="Amount" /></th>
-                  <th><BilingualText ar="المرجع" en="Reference" /></th>
+                  <th className="vpd-th--section-title vpd-th--omitted">
+                    <BilingualText ar="البنود المحذوفة" en="OMITTED ITEMS" />
+                    <span className="vpd-th--section-count">{String(omittedItems.length).padStart(2, "0")} lines</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -338,7 +336,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <td>{item.unit || EMPTY}</td>
                       <td><Amount value={item.rate || 0} /></td>
                       <td><Amount value={item.amount || 0} /></td>
-                      <td>{item.reference || EMPTY}</td>
+                      <td />
                     </tr>
                     {item.remarks?.trim() && (
                       <tr className="vpd-item-remark-row" data-vpd-item-remark-row>

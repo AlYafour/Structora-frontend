@@ -155,7 +155,6 @@ const ITEM_COLS = [
   { label: "الوحدة / Unit",              width: 36,  align: "center" },
   { label: "السعر / Rate",               width: 74,  align: "right"  },
   { label: "المبلغ / Amount",            width: 80,  align: "right"  },
-  { label: "المرجع / Reference",         width: 64,  align: "center" },
 ];
 
 function colSize(col) { return col.width ? { width: col.width } : { flex: col.flex || 1 }; }
@@ -179,7 +178,6 @@ function ItemsTable({ items }) {
           { value: safe(item.unit || "LS"),          align: "center", width: 36  },
           { value: fmt(item.rate ?? item.unit_price ?? 0), align: "right", width: 74 },
           { value: fmt(item.amount ?? item.total ?? 0),    align: "right", width: 80 },
-          { value: safe(item.reference),             align: "center", width: 64  },
         ];
         return (
           <View key={ri} style={S.tableRow}>

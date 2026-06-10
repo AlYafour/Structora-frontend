@@ -196,21 +196,6 @@ const ItemRow = memo(
             </span>
           </td>
 
-          {/* Reference */}
-          <td className="nvi-td nvi-td--ref">
-            <input
-              type="text"
-              className="nvi-input nvi-input--ref"
-              value={item.reference ?? ''}
-              onChange={(e) =>
-                onUpdate?.(item.id, 'reference', e.target.value)
-              }
-              placeholder="—"
-              disabled={!isEditMode}
-              autoComplete="off"
-            />
-          </td>
-
           {/* Delete */}
           {isEditMode && (
             <td className="nvi-td nvi-td--action no-print">
@@ -270,7 +255,6 @@ const ItemRow = memo(
     p.item.rate === n.item.rate &&
     p.item.amount === n.item.amount &&
     p.item.remarks === n.item.remarks &&
-    p.item.reference === n.item.reference &&
     p.item.includesOverheadProfit === n.item.includesOverheadProfit &&
     p.isEditMode === n.isEditMode &&
     p.itemsCount === n.itemsCount &&

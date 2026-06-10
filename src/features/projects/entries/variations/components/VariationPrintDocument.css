@@ -360,6 +360,49 @@
   text-transform: uppercase;
 }
 
+.vpd-th--section-title {
+  text-align: center;
+  vertical-align: middle;
+  width: 90px;
+  font-size: 7.5pt;
+  line-height: 1.3;
+}
+
+.vpd-th--section-title .vpd-bilingual {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.vpd-th--section-title .vpd-bilingual__ar,
+.vpd-th--section-title .vpd-bilingual__en {
+  white-space: nowrap;
+  font-size: 7.5pt;
+  line-height: 1.3;
+}
+
+.vpd-th--section-title .vpd-th--section-count {
+  display: block;
+  font-size: 7pt;
+  font-weight: 400;
+  color: #7f7364;
+  margin-top: 2px;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.vpd-th--added {
+  background: #eaf4ed !important;
+  color: #1a5c2e !important;
+}
+
+.vpd-th--omitted {
+  background: #faeaea !important;
+  color: #7a1c1c !important;
+}
+
 .vpd-desc-text {
   margin: 0;
   padding: 0 0 14px;
@@ -994,6 +1037,14 @@
 .vpd-print-mode .vpd-section__header {
   padding: 4px 0 3px;
   font-size: 7.5pt;
+}
+
+.vpd-print-mode .vpd-th--section-title {
+  font-size: 7pt;
+}
+
+.vpd-print-mode .vpd-th--section-title .vpd-th--section-count {
+  font-size: 6.5pt;
 }
 
 .vpd-print-mode .vpd-desc-text {
