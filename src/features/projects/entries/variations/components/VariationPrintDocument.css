@@ -104,8 +104,7 @@
 .vpd-company__logo {
   align-self: stretch;
   width: auto;
-  max-width: 110px;
-  object-fit: contain;
+  max-width: 100px;
   flex: 0 0 auto;
 }
 
@@ -806,7 +805,7 @@
 
 .vpd-print-mode .vpd-company__logo {
   width: auto;
-  max-width: 52px;
+  max-width: 56px;
 }
 
 .vpd-print-mode .vpd-company {
