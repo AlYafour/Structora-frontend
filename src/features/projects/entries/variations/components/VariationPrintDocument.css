@@ -1013,40 +1013,40 @@
 
 /* Totals horizontal strip */
 .vpd-print-mode .vpd-bottom {
-  margin-top: 12px;
-  margin-bottom: 5px;
+  margin-top: 6px;
+  margin-bottom: 4px;
 }
 
 .vpd-print-mode .vpd-totals-cell {
   flex: 1 1 90px;
-  padding: 6px 5px;
+  padding: 3px 5px;
 }
 
 .vpd-print-mode .vpd-totals-cell__label {
-  font-size: 6.5pt;
-  margin-bottom: 3px;
+  font-size: 6pt;
+  margin-bottom: 2px;
 }
 
 .vpd-print-mode .vpd-totals-cell__value {
-  font-size: 8.5pt;
+  font-size: 8pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand {
   flex: 2 1 180px;
-  padding: 7px 10px;
-  gap: 10px;
+  padding: 4px 8px;
+  gap: 8px;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__label {
-  font-size: 7.5pt;
+  font-size: 7pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__note {
-  font-size: 5.5pt;
+  font-size: 5pt;
 }
 
 .vpd-print-mode .vpd-totals-cell--grand .vpd-totals-cell__value {
-  font-size: 13pt;
+  font-size: 11pt;
 }
 
 /* Remarks + QR */
