@@ -1002,6 +1002,26 @@
   font-size: 8pt;
 }
 
+/* Column widths in print mode */
+.vpd-print-mode .vpd-table th:nth-child(2),
+.vpd-print-mode .vpd-table td:nth-child(2) { width: 28%; }  /* Description */
+.vpd-print-mode .vpd-table th:nth-child(3),
+.vpd-print-mode .vpd-table td:nth-child(3) { width: 7%; }   /* Qty */
+.vpd-print-mode .vpd-table th:nth-child(4),
+.vpd-print-mode .vpd-table td:nth-child(4) { width: 7%; }   /* Unit */
+.vpd-print-mode .vpd-table th:nth-child(5),
+.vpd-print-mode .vpd-table td:nth-child(5) { width: 14%; }  /* Rate */
+.vpd-print-mode .vpd-table th:nth-child(6),
+.vpd-print-mode .vpd-table td:nth-child(6) { width: 14%; }  /* Amount */
+.vpd-print-mode .vpd-table th:nth-child(7),
+.vpd-print-mode .vpd-table td:nth-child(7) { width: 10%; }  /* Reference */
+
+/* Description: smaller font, fills leftover column width */
+.vpd-print-mode .vpd-td--desc {
+  font-size: 7pt;
+  word-break: break-word;
+}
+
 .vpd-print-mode .vpd-td--remark {
   font-size: 7.5pt !important;
   padding: 2px 5px !important;
