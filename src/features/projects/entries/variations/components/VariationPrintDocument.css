@@ -566,7 +566,7 @@
   background: #faf7f2;
 }
 
-/* Grand total — full-width accent row at the bottom */
+/* Grand total */
 .vpd-totals-cell--grand {
   flex: 2 1 260px;
   flex-direction: row;
@@ -574,7 +574,7 @@
   align-items: center;
   gap: 20px;
   padding: 18px 24px;
-  background: #fff;
+  background: #f0eadf;
 }
 
 .vpd-totals-cell--grand .vpd-totals-cell__label {
@@ -633,6 +633,9 @@
 
 .vpd-notes__bullets {
   list-style: disc;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
   padding-left: 20px;
   margin: 0;
   color: #17202f;

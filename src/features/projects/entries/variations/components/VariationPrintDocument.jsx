@@ -129,11 +129,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     },
   ];
 
-  const totalsRowGroups = totalsRows.reduce((groups, row) => {
-    if (row.startsSummaryRow || groups.length === 0) groups.push([]);
-    groups[groups.length - 1].push(row);
-    return groups;
-  }, []);
 
   return (
     <div ref={ref} className="vpd-wrap">
@@ -362,37 +357,35 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           {/* Totals */}
           <section className="vpd-bottom">
             <div className="vpd-totals-box">
-              {totalsRowGroups.map((group, groupIndex) => (
-                <div className="vpd-totals-row" data-vpd-page-part key={`totals-row-${groupIndex}`}>
-                  {group.map((row, i) => (
-                    <div
-                      key={`${groupIndex}-${i}`}
-                      className={[
-                        "vpd-totals-cell",
-                        row.variant === "grand"     ? "vpd-totals-cell--grand"     : "",
-                        row.variant === "highlight" ? "vpd-totals-cell--highlight" : "",
-                        row.variant === "subtotal"  ? "vpd-totals-cell--subtotal"  : "",
-                      ].filter(Boolean).join(" ")}
-                    >
-                      <span className="vpd-totals-cell__label">
-                        <BilingualText ar={row.ar} en={row.en} />
-                        {row.noteAr || row.noteEn ? (
-                          <span className="vpd-totals-cell__note">
-                            <BilingualText ar={row.noteAr} en={row.noteEn} />
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className={[
-                        "vpd-totals-cell__value",
-                        row.sign === "neg" ? "vpd-amt--neg" : "",
-                        row.sign === "pos" ? "vpd-amt--pos" : "",
-                      ].filter(Boolean).join(" ")}>
-                        <Amount value={row.value} />
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
+              <div className="vpd-totals-row" data-vpd-page-part>
+                {totalsRows.map((row, i) => (
+                  <div
+                    key={i}
+                    className={[
+                      "vpd-totals-cell",
+                      row.variant === "grand"     ? "vpd-totals-cell--grand"     : "",
+                      row.variant === "highlight" ? "vpd-totals-cell--highlight" : "",
+                      row.variant === "subtotal"  ? "vpd-totals-cell--subtotal"  : "",
+                    ].filter(Boolean).join(" ")}
+                  >
+                    <span className="vpd-totals-cell__label">
+                      <BilingualText ar={row.ar} en={row.en} />
+                      {row.noteAr || row.noteEn ? (
+                        <span className="vpd-totals-cell__note">
+                          <BilingualText ar={row.noteAr} en={row.noteEn} />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className={[
+                      "vpd-totals-cell__value",
+                      row.sign === "neg" ? "vpd-amt--neg" : "",
+                      row.sign === "pos" ? "vpd-amt--pos" : "",
+                    ].filter(Boolean).join(" ")}>
+                      <Amount value={row.value} />
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
