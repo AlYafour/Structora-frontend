@@ -157,23 +157,23 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
   let contractorOHPAfterDiscount = contractorOHP;
   let consultantFeesAfterDiscount = consultantFees;
 
-  if (hasSelectedComponents && discountBase > 0 && effectiveDiscountRatio >= 0 && !isNaN(effectiveDiscountRatio)) {
+  if (formData.discount_type !== 'none' && hasSelectedComponents && discountBase > 0 && effectiveDiscountRatio >= 0 && !isNaN(effectiveDiscountRatio)) {
     // Calculate discount on each component (only if selected)
     if (discountAppliesToVariation) {
-      discountOnVariation = round2(totalVariationAmount * effectiveDiscountRatio);
+      discountOnVariation = totalVariationAmount * effectiveDiscountRatio;
     }
 
     if (discountAppliesToContractorOHP) {
-      discountOnContractorOHP = round2(contractorOHP * effectiveDiscountRatio);
+      discountOnContractorOHP = contractorOHP * effectiveDiscountRatio;
     }
 
     if (discountAppliesToConsultantFees) {
-      discountOnConsultantFees = round2(consultantFees * effectiveDiscountRatio);
+      discountOnConsultantFees = consultantFees * effectiveDiscountRatio;
     }
 
     // Ensure sum of partial discounts equals total discount (handle rounding differences)
     const sumOfPartialDiscounts = discountOnVariation + discountOnContractorOHP + discountOnConsultantFees;
-    const roundingDifference = round2(discountAmount - sumOfPartialDiscounts);
+    const roundingDifference = discountAmount - sumOfPartialDiscounts;
 
     // Distribute rounding difference to largest discount component (from selected only)
     if (Math.abs(roundingDifference) > 0.01) {
@@ -194,27 +194,29 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
         );
 
         if (maxDiscount.key === 'variation') {
-          discountOnVariation = round2(discountOnVariation + roundingDifference);
+          discountOnVariation = discountOnVariation + roundingDifference;
         } else if (maxDiscount.key === 'ohp') {
-          discountOnContractorOHP = round2(discountOnContractorOHP + roundingDifference);
+          discountOnContractorOHP = discountOnContractorOHP + roundingDifference;
         } else if (maxDiscount.key === 'consultant') {
-          discountOnConsultantFees = round2(discountOnConsultantFees + roundingDifference);
+          discountOnConsultantFees = discountOnConsultantFees + roundingDifference;
         }
       }
     }
 
     // Calculate values after discount
-    variationAmountAfterDiscount = round2(totalVariationAmount - discountOnVariation);
-    contractorOHPAfterDiscount = round2(contractorOHP - discountOnContractorOHP);
-    consultantFeesAfterDiscount = round2(consultantFees - discountOnConsultantFees);
+    variationAmountAfterDiscount = totalVariationAmount - discountOnVariation;
+    contractorOHPAfterDiscount = contractorOHP - discountOnContractorOHP;
+    consultantFeesAfterDiscount = consultantFees - discountOnConsultantFees;
   }
 
   // Calculate final amount after discount
   if (formData.discount_type === 'final_amount' && hasSelectedComponents && discountBase > 0) {
     // For final_amount type, use the calculated value from above
-  } else {
+  } else if (hasSelectedComponents && formData.discount_type !== 'none') {
     // For other types, calculate from sum of all components
-    finalAmountAfterDiscount = round2(variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount);
+    finalAmountAfterDiscount = variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount;
+  } else {
+    finalAmountAfterDiscount = variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount;
   }
 
   return {
@@ -242,8 +244,8 @@ export function calculateCustomFeesWithAmounts(customFees, totalVariationAmount)
   if (!Array.isArray(customFees)) return [];
   return customFees.map(fee => {
     const computedAmount = fee.type === 'percentage'
-      ? round2((totalVariationAmount * parseFloat(fee.percentage || 0)) / 100)
-      : round2(parseFloat(fee.amount) || 0);
+      ? (totalVariationAmount * parseFloat(fee.percentage || 0)) / 100
+      : parseFloat(fee.amount) || 0;
     return { ...fee, computedAmount };
   });
 }
@@ -260,7 +262,7 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
   const contractorOHP = calculateContractorOHP(formData, totalAdded, totalOmittedForOverhead);
   const consultantFees = calculateConsultantFees(formData, totalVariationAmount, totalAdded);
   const customFeesWithAmounts = calculateCustomFeesWithAmounts(formData.custom_fees, totalVariationAmount);
-  const customFeesTotal = round2(customFeesWithAmounts.reduce((sum, f) => sum + f.computedAmount, 0));
+  const customFeesTotal = customFeesWithAmounts.reduce((sum, f) => sum + f.computedAmount, 0);
 
   const totalAmountBeforeDiscount = totalVariationAmount + contractorOHP + consultantFees + customFeesTotal;
 
@@ -273,7 +275,7 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
   );
 
   // Custom fees are not discounted — added on top of the discounted subtotal
-  const totalAmount = round2(discountResults.finalAmountAfterDiscount + customFeesTotal);
+  const totalAmount = discountResults.finalAmountAfterDiscount + customFeesTotal;
 
   return {
     totalOmitted,

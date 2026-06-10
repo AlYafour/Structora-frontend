@@ -11,6 +11,7 @@ const RemarksAttachmentsSection = memo(({
   setVariationAttachment,
   existingVariationAttachment,
   setExistingVariationAttachment,
+  setVariationFileCleared,
   // new multi-attachment props
   variationAttachments,
   setVariationAttachments,
@@ -67,7 +68,10 @@ const RemarksAttachmentsSection = memo(({
             <label>{t('variation_document')}</label>
             <FileUpload
               value={variationAttachment}
-              onChange={setVariationAttachment}
+              onChange={(file) => {
+                setVariationAttachment(file);
+                if (file) setVariationFileCleared(false);
+              }}
               accept=".pdf,.jpg,.jpeg,.png"
               maxSizeMB={30}
               showPreview={true}
@@ -76,6 +80,7 @@ const RemarksAttachmentsSection = memo(({
               onRemoveExisting={() => {
                 setExistingVariationAttachment(null);
                 setVariationAttachment(null);
+                setVariationFileCleared(true);
               }}
               disabled={!isEditMode}
             />

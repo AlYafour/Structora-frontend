@@ -12,7 +12,7 @@ import {
   FaBuilding, FaUser, FaInfoCircle, FaSave, FaUpload, FaTrash,
   FaPalette, FaFileContract, FaCheckCircle, FaCalendarAlt,
   FaUsers, FaProjectDiagram, FaPhone, FaEnvelope,
-  FaMapMarkerAlt, FaIdCard, FaGlobe, FaLock,
+  FaMapMarkerAlt, FaIdCard, FaGlobe, FaLock, FaStamp,
 } from 'react-icons/fa';
 import { useNotifications } from '../../../contexts/NotificationContext';
 import BrandLogo from '../../../components/common/BrandLogo';
@@ -101,6 +101,7 @@ export default function CompanySettingsPage() {
         company_logo: null,
         background_image: null,
         letter_head_template: null,
+        company_stamp: null,
         primary_color: settings.primary_color || BRAND.primaryColor,
         secondary_color: settings.secondary_color || BRAND.secondaryColor,
         contractor_name: settings.contractor_name || '',
@@ -166,7 +167,7 @@ export default function CompanySettingsPage() {
         'contractor_license_no','contractor_phone','contractor_email','contractor_address',
         'contractor_registration_number',
       ];
-      const fileFields = ['company_logo','background_image','contractor_signature','letter_head_template'];
+      const fileFields = ['company_logo','background_image','contractor_signature','letter_head_template','company_stamp'];
       const hasFiles = fileFields.some(f => companyData[f] instanceof File) || removedFields.size > 0;
 
       let payload;
@@ -492,6 +493,43 @@ export default function CompanySettingsPage() {
                           size="sm"
                           startIcon={<FaTrash />}
                           onClick={() => handleRemoveFile('letter_head_template')}
+                        >
+                          {t('remove', { defaultValue: 'Remove' })}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Stamp */}
+                <div className="cs-upload-card cs-upload-card--bg">
+                  <div className="cs-upload-card__preview cs-upload-card__preview--wide">
+                    {companyData.company_stamp ? (
+                      <img src={URL.createObjectURL(companyData.company_stamp)} alt="New stamp" className="cs-upload-card__img cs-upload-card__img--cover" />
+                    ) : settingsData?.company_stamp_url && !removedFields.has('company_stamp') ? (
+                      <img src={settingsData.company_stamp_url} alt="Company Stamp" className="cs-upload-card__img cs-upload-card__img--cover" />
+                    ) : (
+                      <div className="cs-upload-card__placeholder"><FaStamp /></div>
+                    )}
+                  </div>
+                  <div className="cs-upload-card__body">
+                    <p className="cs-upload-card__title">{t('company_stamp')}</p>
+                    <p className="cs-upload-card__hint">{t('company_stamp_hint')}</p>
+                    <input type="file" name="company_stamp" accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleCompanyChange} className="ds-hidden" id="company-stamp-upload" />
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <label htmlFor="company-stamp-upload">
+                        <Button type="button" variant="secondary" size="sm" as="span" startIcon={<FaUpload />}>
+                          {t('company_choose_stamp')}
+                        </Button>
+                      </label>
+                      {(companyData.company_stamp || (settingsData?.company_stamp_url && !removedFields.has('company_stamp'))) && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          startIcon={<FaTrash />}
+                          onClick={() => handleRemoveFile('company_stamp')}
                         >
                           {t('remove', { defaultValue: 'Remove' })}
                         </Button>

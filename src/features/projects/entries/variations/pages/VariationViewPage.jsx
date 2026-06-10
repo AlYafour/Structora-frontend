@@ -96,6 +96,7 @@ export default function VariationViewPage() {
           email: data.company_email || data.contractor_email || "",
           website: data.company_website || "",
           address: data.company_address || "",
+          company_stamp_url: data.company_stamp_url || null,
         });
       } catch (e) {
         logger.warn("Could not load company info", e);

@@ -1,5 +1,4 @@
 import { Fragment, forwardRef, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { formatMoney, formatDate } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
@@ -32,8 +31,6 @@ function Amount({ value }) {
 }
 
 const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData }, ref) => {
-  const { i18n } = useTranslation();
-
   const data = useMemo(() => {
     if (noticeData) return noticeData;
     if (!variation?.description) return {};
@@ -47,6 +44,8 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const totalVar       = parseFloat(data.total_variation_amount || (totalAdded - totalOmitted));
   const contractorOHP  = parseFloat(data.contractor_engineering_oh_p || 0);
   const consultantFees = parseFloat(data.consultant_fees || 0);
+  const contractorOHPValue = data.contractor_ohp_type === 'amount' ? data.contractor_ohp_amount : contractorOHP;
+  const consultantFeesValue = data.consultant_fees_type === 'amount' ? data.consultant_fees_amount : consultantFees;
   const beforeDiscount = parseFloat(data.total_amount_before_discount || (totalVar + contractorOHP + consultantFees));
   const discountAmt    = parseFloat(data.discount_amount || 0);
   const discountPct    = parseFloat(data.discount_percentage || 0);
@@ -74,6 +73,14 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     return url || null;
   }, [companyInfo?.logo]);
 
+  const stampUrl = useMemo(() => {
+    let url = companyInfo?.company_stamp_url;
+    if (url && !url.startsWith("http")) url = buildFileUrl(url);
+    return url || null;
+  }, [companyInfo?.company_stamp_url]);
+
+  const isFinallyApproved = variation?.status === "approved" || !!variation?.general_manager_final_approved_by;
+
   const projectNameAr = project?.display_name || project?.name || "";
   const projectNameEn = project?.display_name_en || project?.display_name || project?.name || "";
 
@@ -94,22 +101,22 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     ...(contractorOHP !== 0 ? [{
       ar: `مصاريف المقاول والهندسة${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
       en: `Contractor OH&P${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
-      value: contractorOHP,
+      value: contractorOHPValue,
     }] : []),
     ...(consultantFees !== 0 ? [{
       ar: `رسوم الاستشاري${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`,
       en: `Consultant Fees${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`,
-      value: consultantFees,
+      value: consultantFeesValue,
     }] : []),
     ...(data.custom_fees || [])
       .map(f => {
         const amt = f.type === 'percentage'
           ? (totalVar * parseFloat(f.percentage || 0)) / 100
-          : parseFloat(f.amount) || 0;
+          : f.amount;
         const pctLabel = f.type === 'percentage' && f.percentage ? ` (${f.percentage}%)` : '';
         return { ar: (f.name || 'رسوم إضافية') + pctLabel, en: (f.name || 'Additional Fee') + pctLabel, value: amt };
       })
-      .filter(f => f.value !== 0),
+      .filter(f => (parseFloat(f.value) || 0) !== 0),
     ...(discountAmt > 0 ? [
       { ar: "المجموع قبل الخصم", en: "Total Before Discount", value: beforeDiscount, variant: "subtotal", startsSummaryRow: true },
       {
@@ -411,7 +418,17 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
                 </div>
                 <div className="vpd-sign-card vpd-sign-card--stamp">
-                  <div><BilingualText ar="ختم الشركة" en="COMPANY STAMP" /></div>
+                  <div className="vpd-stamp-placeholder">
+                    <BilingualText ar="ختم الشركة" en="COMPANY STAMP" />
+                  </div>
+                  {isFinallyApproved && stampUrl && (
+                    <img
+                      src={stampUrl}
+                      alt="Company Stamp"
+                      className="vpd-stamp-img"
+                      onError={e => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
                 </div>
                 <div className="vpd-sign-card">
                   <span />
@@ -419,12 +436,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 </div>
               </section>
 
-              <p className="vpd-final-notice">
+              {/* <p className="vpd-final-notice">
                 <BilingualText
                   ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
                   en="This is an electronically generated document"
                 />
-              </p>
+              </p> */}
 
               <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
             </div>

@@ -215,7 +215,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 <Button variant="primary" onClick={onSubmitClick} size="md" fullWidth>
                   {t("submit_for_approval")}
                 </Button>
-              )}  
+              )}
 
               {/* Final Approve - Super Admin (from draft or pending) */}
               {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (
@@ -259,7 +259,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                   <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
                 </div>
               )}
-              
+
               {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
                 <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="md" fullWidth>
                   {t("revoke_final_approval")}

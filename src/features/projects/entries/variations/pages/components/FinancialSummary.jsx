@@ -44,7 +44,7 @@ function FeeCard({
             </span>
             <input
               type="number"
-              step="0.01"
+              step="any"
               min="0"
               className="nvc-input nvc-input--sm nfs-num-input"
               placeholder="0.00"
@@ -75,7 +75,6 @@ const FinancialSummary = memo(({
   contractorEngineeringOHP,
   consultantFees,
   customFeesWithAmounts,
-  customFeesTotal,
   totalAmountBeforeDiscount,
   discountAmount,
   discountPercentage,
@@ -101,6 +100,7 @@ const FinancialSummary = memo(({
   };
 
   const hasDiscount = discountAmount > 0;
+  const customFees = formData.custom_fees || [];
 
   const handleDiscountCheckbox = (field, newValue) => {
     if (!newValue) {
@@ -114,8 +114,6 @@ const FinancialSummary = memo(({
     }
     onFormDataChange({ ...formData, [field]: newValue });
   };
-
-  const customFees = formData.custom_fees || [];
 
   const addCustomFee = () => {
     const newFee = { id: Date.now(), name: '', type: 'amount', percentage: '', amount: '' };

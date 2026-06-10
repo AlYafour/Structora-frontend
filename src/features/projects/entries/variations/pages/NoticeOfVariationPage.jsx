@@ -74,6 +74,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const [itemToRemove, setItemToRemove] = useState({ id: null, isOmitted: false });
   const [variationAttachment, setVariationAttachment] = useState(null);
   const [existingVariationAttachment, setExistingVariationAttachment] = useState(null);
+  const [variationFileCleared, setVariationFileCleared] = useState(false);
   const [variationAttachments, setVariationAttachments] = useState([]);
   const navTimerRef = useRef(null);
 
@@ -455,6 +456,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         const fd = new FormData();
         Object.keys(base).forEach(key => fd.append(key, safeVal(base[key])));
         if (variationAttachment instanceof File) fd.append('variation_invoice_file', variationAttachment);
+        if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
         // Upload new attachment files (only once — never re-call buildFormData for these)
         newAttachmentFiles.forEach((a, i) => fd.append(`variation_attachments[${i}]`, a.newFile));
         // Tell backend which saved IDs to keep; it will delete the rest
@@ -482,6 +484,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const fd = new FormData();
           Object.keys(variationData).forEach(key => fd.append(key, safeVal(variationData[key])));
           fd.append('keep_attachment_ids', currentSavedIds.join(','));
+          if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
           await projectApi.updateVariation(project.id, variationId, fd);
         } else {
           const data = await projectApi.createVariation(project.id, variationData);
@@ -779,6 +782,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             setVariationAttachment={setVariationAttachment}
             existingVariationAttachment={existingVariationAttachment}
             setExistingVariationAttachment={setExistingVariationAttachment}
+            setVariationFileCleared={setVariationFileCleared}
             variationAttachments={variationAttachments}
             setVariationAttachments={setVariationAttachments}
             project={project}
