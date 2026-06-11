@@ -435,20 +435,11 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
                 </div>
               </section>
-
-              {/* <p className="vpd-final-notice">
-                <BilingualText
-                  ar="هذا المستند صادر إلكترونياً ولا يحتاج إلى توقيع يدوي"
-                  en="This is an electronically generated document"
-                />
-              </p> */}
-
               <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
             </div>
           </div>
         </div>
         </div>
-
       </article>
     </div>
   );

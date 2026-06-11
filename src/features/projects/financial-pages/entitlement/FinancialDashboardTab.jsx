@@ -12,6 +12,7 @@ import { advancePaymentApi } from "../../../../services/advancePayments";
 import { VatAmount } from "../../../../components/common/VatBreakdownPopover";
 import InfoTip from "../../../../components/common/InfoTip";
 import { api } from "../../../../services/api";
+import { getVariationTotalAmount } from "../../entries/variations/utils/variationAmount";
 import "./FinancialDashboardPrint.css";
 
 /**
@@ -120,8 +121,8 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       (v) => v.status !== "approved" && v.status !== "final_approved" && v.status !== "rejected"
     );
     // Variation amounts are WITHOUT VAT (net)
-    const totalVariationsValue = approvedVariations.reduce((sum, v) => {
-      const totalForVariation = parseFloat(v.total_amount || v.final_amount || 0);
+    const totalVariationsValue = approvedVariations.reduce((sum, variation) => {
+      const totalForVariation = parseFloat(getVariationTotalAmount(variation));
       return sum + (isNaN(totalForVariation) ? 0 : totalForVariation);
     }, 0);
     const activeProlongationFees = prolongationFees.filter(

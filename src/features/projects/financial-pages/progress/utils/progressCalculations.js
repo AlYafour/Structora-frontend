@@ -6,6 +6,7 @@
  * - Cumulative progress calculations
  * - Variation progress aggregations
  */
+import { getVariationTotalAmount } from '../../../entries/variations/utils/variationAmount';
 
 /**
  * Calculate weighted average from individual variation progress
@@ -31,7 +32,7 @@ export function calculateWeightedAverage(variationProgress, variations, fieldKey
     const variation = approvedVariations.find(v => String(v.id) === variationId);
 
     if (variation && progress[fieldKey]) {
-      const value = parseFloat(variation.final_amount || 0);
+      const value = parseFloat(getVariationTotalAmount(variation));
       const progressValue = parseFloat(progress[fieldKey]);
       totalValue += value;
       weightedSum += progressValue * value;

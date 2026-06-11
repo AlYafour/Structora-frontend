@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { n, round } from "../../../../../utils/formatters/number";
 import { computeContractSummary } from "../../../../../utils/calculations/financial";
+import { getVariationTotalAmount } from "../../../entries/variations/utils/variationAmount";
 
 /**
  * Hook for calculating all financial values
@@ -63,7 +64,7 @@ export default function useFinancialEntitlement({
       ====================================================== */
       // Use total_amount directly from variations (the final amount after discount)
       const totalVOWithFees = approvedVariationsList.reduce(
-        (sum, v) => sum + n(v.total_amount || 0),
+        (sum, variation) => sum + n(getVariationTotalAmount(variation)),
         0
       );
 
@@ -94,7 +95,7 @@ export default function useFinancialEntitlement({
         }
 
         // Fallback: if not present, use total_amount - actualVOValue
-        const totalAmount = n(v.total_amount || 0);
+        const totalAmount = n(getVariationTotalAmount(v));
         if (totalAmount > 0) {
           // Calculate actualVOValue from the same variation
           let noticeDataForVO = {};

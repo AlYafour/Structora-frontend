@@ -10,6 +10,7 @@ import ContractAmountCards from "./ContractAmountCards";
 import ContractBreakdownTables from "./ContractBreakdownTables";
 import ContractVATTable from "./ContractVATTable";
 import DirhamsIcon from "../../../../components/common/DirhamsIcon";
+import { getVariationTotalAmount } from "../../entries/variations/utils/variationAmount";
 import "../../wizard/components/wizard.css";
 
 /* ===== Row renderers (extracted from inline functions) ===== */
@@ -58,12 +59,8 @@ export default function ContractFinancialSummary({ projectId }) {
       const c = contract;
 
       const totalVariationsAmount = variations.reduce((sum, v) => {
-        const finalAmount = parseFloat(v.final_amount || 0);
-        const consultantFees = parseFloat(v.consultant_fees || 0);
-        const consultantFeesPercentage = parseFloat(v.consultant_fees_percentage || 0);
         const vat = parseFloat(v.vat || 0);
-        const consultantFeesForVariation = consultantFeesPercentage > 0 ? consultantFees : 0;
-        const variationTotal = finalAmount + consultantFeesForVariation + vat;
+        const variationTotal = (parseFloat(getVariationTotalAmount(v)) || 0) + (isNaN(vat) ? 0 : vat);
         return sum + variationTotal;
       }, 0);
       const totalProlongationFeesAmount = prolongationFees

@@ -10,6 +10,7 @@ import { formatMoney } from "../../../../utils/formatters";
 import { round } from "../../../../utils/formatters/number";
 import { sumPaymentsByPayer } from "../../../../utils/helpers/payments";
 import { VAT_RATE } from "../../../../utils/financialConstants";
+import { getVariationTotalAmount } from "../../entries/variations/utils/variationAmount";
 import "./financial-entitlement.css";
 
 export default function ProjectFinancialEntitlementPage() {
@@ -20,8 +21,8 @@ export default function ProjectFinancialEntitlementPage() {
   const { contract, variations, prolongationFees, payments, loading: dataLoading } = useProjectData(projectId);
 
   const approvedVariations = variations?.filter(v => v.status === 'approved' || v.status === 'final_approved') || [];
-  const totalVOFromVariations = approvedVariations.reduce((sum, v) => {
-    const finalAmount = parseFloat(v.total_amount || v.net_amount || 0);
+  const totalVOFromVariations = approvedVariations.reduce((sum, variation) => {
+    const finalAmount = parseFloat(getVariationTotalAmount(variation));
     return sum + finalAmount;
   }, 0);
 

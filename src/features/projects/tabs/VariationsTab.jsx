@@ -21,6 +21,7 @@ import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import useTenantNavigate from "../../../hooks/useTenantNavigate";
 import { useDownloadVariationPDFs } from "../../../hooks/useDownloadVariationPDFs";
 import DownloadAllButton from "../../../components/common/DownloadAllButton";
+import { getVariationTotalAmount } from "../entries/variations/utils/variationAmount";
 
 // Map status → prj-badge CSS class
 const getStatusBadgeClass = (status) => {
@@ -225,8 +226,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return status?.includes("pending") || status === "pending" || status === "draft";
         });
 
-        const totalAmount = approved.reduce((sum, v) => {
-            const totalForVariation = parseFloat(v.total_amount || v.final_amount || 0);
+        const totalAmount = approved.reduce((sum, variation) => {
+            const totalForVariation = parseFloat(getVariationTotalAmount(variation));
             return sum + (isNaN(totalForVariation) ? 0 : totalForVariation);
         }, 0);
 
@@ -1053,7 +1054,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             </td>
 
                                             <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-                                                {renderMoney(variation.total_amount || variation.final_amount || 0)}
+                                                {renderMoney(getVariationTotalAmount(variation))}
                                                 <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
                                                     {t('excluding_vat')} • {t('including_consultant_fees')}
                                                 </span>

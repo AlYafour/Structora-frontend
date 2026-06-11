@@ -5,6 +5,7 @@ import Checkbox from '../../../../../components/forms/Checkbox';
 import useTableActivity from '../../../../../hooks/useTableActivity';
 import { sanitizePercentageInput } from '../utils/progressFormHelpers';
 import { parseVariationProgress } from '../utils/progressCalculations';
+import { getVariationTotalAmount } from '../../../entries/variations/utils/variationAmount';
 
 function getVariationNumber(variation) {
   return variation.variation_number || variation.modification_number || `VAR-${variation.id}`;
@@ -24,13 +25,7 @@ function getVariationDescription(variation) {
 }
 
 function getVariationAmount(variation) {
-  return Number(
-    variation.final_amount ||
-      variation.total_amount ||
-      variation.amount ||
-      variation.net_amount ||
-      0
-  );
+  return Number(getVariationTotalAmount(variation));
 }
 
 function formatAmount(value) {
