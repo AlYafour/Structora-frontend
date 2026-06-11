@@ -81,6 +81,7 @@ const ViewAwardingPage = lazy(() => import("./features/projects/entries/awarding
 // ====== Payments Pages ======
 const CreatePaymentPage = lazy(() => import("./features/projects/entries/payments/pages/CreatePaymentPage"));
 const ViewPaymentPage = lazy(() => import("./features/projects/entries/payments/pages/ViewPaymentPage"));
+const PaymentDetailPage = lazy(() => import("./features/projects/entries/payments/pages/PaymentDetailPage"));
 const ViewReceiptVoucherPage = lazy(() => import("./features/projects/entries/receiptVouchers/ViewReceiptVoucherPage"));
 const ViewTaxInvoicePage = lazy(() => import("./features/projects/entries/taxInvoices/ViewTaxInvoicePage"));
 
@@ -186,6 +187,7 @@ function TenantRoutes() {
 
       {/* Payments */}
       <Route path="payments/create" element={<ProtectedRoute permission="payments.create"><CreatePaymentPage /></ProtectedRoute>} />
+      <Route path="payments/:paymentId/detail" element={<ProtectedRoute permission="payments.view"><PaymentDetailPage /></ProtectedRoute>} />
       <Route path="payments/:paymentId/view" element={<ProtectedRoute permission="payments.view"><ViewPaymentPage /></ProtectedRoute>} />
       <Route path="payments/:paymentId/edit" element={<ProtectedRoute permission="payments.edit"><CreatePaymentPage /></ProtectedRoute>} />
       <Route path="receipt-vouchers/:voucherId/view" element={<ProtectedRoute><ViewReceiptVoucherPage /></ProtectedRoute>} />
