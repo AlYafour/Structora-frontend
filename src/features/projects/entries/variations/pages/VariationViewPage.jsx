@@ -21,6 +21,7 @@ import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../utils/printPagination";
+import { fetchFileWithAuth } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
@@ -185,6 +186,7 @@ export default function VariationViewPage() {
     }
     setPdfLoading(true);
     let cleanupPrintLayout = null;
+    let _watermarkEl = null;
     try {
       success(t("generating_pdf"));
       const html2canvas = (await import('html2canvas')).default;
@@ -192,6 +194,11 @@ export default function VariationViewPage() {
 
       const el = printDocumentRef.current;
       cleanupPrintLayout = await preparePrintDocumentLayout(el);
+
+      // Hide the CSS watermark element — will be drawn onto canvas instead
+      _watermarkEl = el.querySelector('.vpd-watermark');
+      const _logoSrc = _watermarkEl?.src || null;
+      if (_watermarkEl) _watermarkEl.style.display = 'none';
 
       const canvas = await html2canvas(el, {
         scale: PDF_CANVAS_SCALE,
@@ -215,6 +222,37 @@ export default function VariationViewPage() {
       const scale = contentW / canvas.width;
       const pageCanvasH = Math.round(contentH / scale);
       const pages = Math.ceil(canvas.height / pageCanvasH);
+
+      // Draw logo watermark at the centre of every page slice
+      if (_logoSrc) {
+        try {
+          const logoBlob = await fetchFileWithAuth(_logoSrc);
+          const logoBlobUrl = URL.createObjectURL(logoBlob);
+          const wImg = await new Promise((res, rej) => {
+            const img = new Image();
+            img.onload = () => res(img);
+            img.onerror = () => rej(new Error('watermark img load failed'));
+            img.src = logoBlobUrl;
+          });
+          URL.revokeObjectURL(logoBlobUrl);
+          const maxW = canvas.width * 0.55;
+          const maxH = pageCanvasH * 0.55;
+          const ratio = Math.min(maxW / wImg.naturalWidth, maxH / wImg.naturalHeight);
+          const drawW = wImg.naturalWidth * ratio;
+          const drawH = wImg.naturalHeight * ratio;
+          const drawX = (canvas.width - drawW) / 2;
+          const ctx = canvas.getContext('2d');
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          for (let p = 0; p < pages; p++) {
+            const pageStart = p * pageCanvasH;
+            const pageSliceH = Math.min(pageCanvasH, canvas.height - pageStart);
+            const midY = pageStart + pageSliceH / 2;
+            ctx.drawImage(wImg, drawX, midY - drawH / 2, drawW, drawH);
+          }
+          ctx.restore();
+        } catch { /* logo unavailable — skip watermark */ }
+      }
 
       for (let i = 0; i < pages; i++) {
         if (i > 0) pdf.addPage();
@@ -300,6 +338,7 @@ export default function VariationViewPage() {
       logger.error("Error generating PDF", error);
       showError(t("pdf_export_error"));
     } finally {
+      if (_watermarkEl) _watermarkEl.style.display = '';
       cleanupPrintLayout?.();
       setPdfLoading(false);
     }
@@ -714,9 +753,9 @@ export default function VariationViewPage() {
                                 )}
                                 {log.changes?.old_status && log.changes?.new_status && (
                                   <div className="var-audit-entry__status-change">
-                                    <span className="var-audit-entry__status-old">{log.changes.old_status}</span>
+                                    <span className="var-audit-entry__status-old">{t(log.changes.old_status) || log.changes.old_status}</span>
                                     <FaExchangeAlt className="var-audit-entry__status-arrow" />
-                                    <span className="var-audit-entry__status-new">{log.changes.new_status}</span>
+                                    <span className="var-audit-entry__status-new">{t(log.changes.new_status) || log.changes.new_status}</span>
                                   </div>
                                 )}
                                 {log.changes?.new_rejection_reason && (

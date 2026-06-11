@@ -121,7 +121,7 @@ export default function AdminUsersPage() {
       }
 
       const roleName = getUserRole(u);
-      if (['company_super_admin', 'Admin'].includes(roleName)) {
+      if (roleName === 'company_super_admin') {
         tenantMap[tenantId].admins.push(u);
       } else {
         tenantMap[tenantId].staff.push(u);
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
   const stats = useMemo(() => {
     const admins = users.filter(u => {
       const r = getUserRole(u);
-      return ['company_super_admin', 'Admin'].includes(r);
+      return r === 'company_super_admin';
     });
     return {
       totalCompanies: totalTenantsCount,
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
     if (u.is_superuser) return t('admin_role_super_admin');
     const roleName = getUserRole(u);
     if (roleName === 'company_super_admin') return t('admin_role_company_admin');
-    if (roleName === 'Admin') return t('admin_role_admin');
+    if (roleName === 'Supervisor') return t('admin_role_supervisor', 'Supervisor');
     if (roleName === 'Manager') return t('admin_role_manager');
     if (roleName === 'staff_user') return t('admin_role_staff');
     return roleName || '—';
@@ -176,7 +176,8 @@ export default function AdminUsersPage() {
   const getRoleBadgeClass = (u) => {
     if (u.is_superuser) return 'admin-users__role-badge--super';
     const roleName = getUserRole(u);
-    if (['company_super_admin', 'Admin'].includes(roleName)) return 'admin-users__role-badge--admin';
+    if (roleName === 'company_super_admin') return 'admin-users__role-badge--admin';
+    if (roleName === 'Supervisor') return 'admin-users__role-badge--manager';
     if (roleName === 'Manager') return 'admin-users__role-badge--manager';
     return 'admin-users__role-badge--staff';
   };
@@ -184,7 +185,7 @@ export default function AdminUsersPage() {
   const getRoleIcon = (u) => {
     if (u.is_superuser) return <FaUserShield />;
     const roleName = getUserRole(u);
-    if (['company_super_admin', 'Admin'].includes(roleName)) return <FaUserTie />;
+    if (roleName === 'company_super_admin' || roleName === 'Supervisor') return <FaUserTie />;
     return <FaUser />;
   };
 

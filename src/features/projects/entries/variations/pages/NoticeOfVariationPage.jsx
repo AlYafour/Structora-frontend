@@ -112,6 +112,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     effectiveVariation?.workflow_status === 'approved';
   const isStaffUser = !user?.is_superuser &&
     user?.role?.name !== 'Manager' &&
+    user?.role?.name !== 'Supervisor' &&
     user?.role?.name !== 'company_super_admin';
   const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
   const isEditMode = viewModeProp !== true && !isFinalApproved && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);

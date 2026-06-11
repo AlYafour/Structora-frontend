@@ -99,6 +99,11 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     await waitForImages(el);
     await preparePrintDocumentLayout(el);
 
+    // Hide the CSS watermark element — will be drawn onto canvas instead
+    const watermarkEl = el.querySelector('.vpd-watermark');
+    const logoSrc = watermarkEl?.src || null;
+    if (watermarkEl) watermarkEl.style.display = 'none';
+
     const canvas = await html2canvas(el, {
       scale: PDF_CANVAS_SCALE,
       useCORS: true,
@@ -118,6 +123,39 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     const scale = pageW / canvas.width;
     const pageCanvasH = Math.round(pageH / scale);
     const pages = Math.ceil(canvas.height / pageCanvasH);
+
+    if (watermarkEl) watermarkEl.style.display = '';
+
+    // Draw logo watermark at the centre of every page slice
+    if (logoSrc) {
+      try {
+        const logoBlob = await fetchFileWithAuth(logoSrc);
+        const logoBlobUrl = URL.createObjectURL(logoBlob);
+        const wImg = await new Promise((res, rej) => {
+          const img = new Image();
+          img.onload = () => res(img);
+          img.onerror = () => rej(new Error('watermark img load failed'));
+          img.src = logoBlobUrl;
+        });
+        URL.revokeObjectURL(logoBlobUrl);
+        const maxW = canvas.width * 0.55;
+        const maxH = pageCanvasH * 0.55;
+        const ratio = Math.min(maxW / wImg.naturalWidth, maxH / wImg.naturalHeight);
+        const drawW = wImg.naturalWidth * ratio;
+        const drawH = wImg.naturalHeight * ratio;
+        const drawX = (canvas.width - drawW) / 2;
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        for (let p = 0; p < pages; p++) {
+          const pageStart = p * pageCanvasH;
+          const pageSliceH = Math.min(pageCanvasH, canvas.height - pageStart);
+          const midY = pageStart + pageSliceH / 2;
+          ctx.drawImage(wImg, drawX, midY - drawH / 2, drawW, drawH);
+        }
+        ctx.restore();
+      } catch { /* logo unavailable — skip watermark */ }
+    }
 
     for (let i = 0; i < pages; i++) {
       if (i > 0) pdf.addPage();

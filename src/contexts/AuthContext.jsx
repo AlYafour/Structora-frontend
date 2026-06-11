@@ -344,10 +344,10 @@ const hasAllPermissions = (permissionCodes) =>
 // ─── Role shortcut helpers ────────────────────────────────
 const roleName = user?.role?.name || null;
 
-/** True for company_super_admin and Admin (full company access) */
+/** True for company_super_admin (full company access) */
 const isCompanyAdmin = !!(
   user && !user.is_superuser &&
-  (roleName === 'company_super_admin' || roleName === 'Admin')
+  roleName === 'company_super_admin'
 );
 
 /** True for any admin-level user (super or company) */

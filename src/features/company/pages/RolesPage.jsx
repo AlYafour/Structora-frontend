@@ -13,7 +13,7 @@ import PageHeader from '../../../components/layout/PageHeader';
 import Button from '../../../components/common/Button';
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 
-const SYSTEM_ROLES = new Set(['company_super_admin', 'Manager', 'staff_user']);
+const SYSTEM_ROLES = new Set(['company_super_admin', 'Supervisor', 'Manager', 'staff_user']);
 
 function PermissionGroup({ label, permissions, selected, onToggle, onToggleAll, disabled = false }) {
   const [open, setOpen] = useState(true);

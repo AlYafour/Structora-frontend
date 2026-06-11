@@ -79,7 +79,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     return url || null;
   }, [companyInfo?.company_stamp_url]);
 
-  const isFinallyApproved = variation?.status === "approved" || !!variation?.general_manager_final_approved_by;
+  const isFinallyApproved = !!variation?.general_manager_initial_approved_by;
 
   const projectNameAr = project?.display_name || project?.name || "";
   const projectNameEn = project?.display_name_en || project?.display_name || project?.name || "";
@@ -140,6 +140,15 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   return (
     <div ref={ref} className="vpd-wrap">
       <article className="vpd-doc" dir="ltr">
+
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt=""
+            className="vpd-watermark"
+            onError={e => { e.currentTarget.style.display = "none"; }}
+          />
+        )}
 
         <div className="vpd-page-header">
         {/* ── HEADER ── */}
@@ -297,7 +306,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         <td />
                         <td colSpan={6} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
-                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
+                            <span className="vpd-remark-label">Remark (ملاحظة):</span>
                             <span>{item.remarks}</span>
                           </div>
                         </td>
@@ -345,7 +354,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         <td />
                         <td colSpan={6} className="vpd-td--remark">
                           <div className="vpd-remark-inner">
-                            <BilingualText ar="ملاحظة:" en="Remark:" className="vpd-remark-label" />
+                            <span className="vpd-remark-label">Remark (ملاحظة):</span>
                             <span>{item.remarks}</span>
                           </div>
                         </td>

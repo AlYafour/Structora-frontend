@@ -85,13 +85,14 @@ export const isRejected = (variation) => {
 export const calculatePermissions = (variation, user, alterationRequests = []) => {
   const status = variation?.status || variation?.workflow_status || 'draft';
   const isProjectManager = user?.role?.name === 'Manager';
+  const isSupervisor = user?.role?.name === 'Supervisor';
   const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
   const isSuperAdminUser = user?.is_superuser;
   const isGeneralManager = isCompanySuperAdmin || isSuperAdminUser;
 
   const finallyApproved = isFinallyApproved(variation);
   const rejected = isRejected(variation);
-  const isStaff = !isProjectManager && !isGeneralManager;
+  const isStaff = !isProjectManager && !isSupervisor && !isGeneralManager;
   const hasAcceptedEditRequest = alterationRequests.some((request) =>
     request?.request_type === 'edit' &&
     request?.status === 'accepted' &&
@@ -121,9 +122,9 @@ export const calculatePermissions = (variation, user, alterationRequests = []) =
     canConfirmConsultantApproval: canApproveOrReject && isProjectManager &&
       status === 'pending_owner_consultant' &&
       !variation?.consultant_approval_confirmed,
-    canApproveGeneralManagerInitial: canApproveOrReject && isGeneralManager &&
+    canApproveGeneralManagerInitial: canApproveOrReject && isSupervisor &&
       status === 'pending_general_manager_initial',
-    canRejectGeneralManager: canApproveOrReject && isGeneralManager &&
+    canRejectGeneralManager: canApproveOrReject && (isSupervisor || isGeneralManager) &&
       status === 'pending_general_manager_initial',
     canApproveGeneralManagerFinal: canApproveOrReject && isGeneralManager &&
       status !== 'approved' &&

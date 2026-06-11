@@ -74,13 +74,14 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const isProjectFinalApproved = project?.approval_status === "final_approved";
 
     const isProjectManager = user?.role?.name === "Manager";
+    const isSupervisor = user?.role?.name === "Supervisor";
     const isCompanySuperAdmin = user?.role?.name === "company_super_admin";
     const isSuperAdmin = user?.is_superuser;
     const isGeneralManager = isCompanySuperAdmin || isSuperAdmin;
-    const canApproveVariations = isGeneralManager || isProjectManager;
+    const canApproveVariations = isGeneralManager || isSupervisor || isProjectManager;
     const canRejectAnyStatus = isGeneralManager || isSuperAdmin;
     // Staff = not PM, not GM/admin, not superuser
-    const isStaff = !isProjectManager && !isGeneralManager;
+    const isStaff = !isProjectManager && !isSupervisor && !isGeneralManager;
 
     const [variationStatusFilter, setVariationStatusFilter] = useState("");
     const [approvingVariationId, setApprovingVariationId] = useState(null);
@@ -126,11 +127,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return projectApi.approveVariationProjectManager(projectId, variation.id);
         }
 
-        if (isGeneralManager) {
-            if (status === "pending_general_manager_initial") {
-                return projectApi.approveVariationGeneralManagerInitial(projectId, variation.id);
-            }
+        if (isSupervisor && status === "pending_general_manager_initial") {
+            return projectApi.approveVariationGeneralManagerInitial(projectId, variation.id);
+        }
 
+        if (isGeneralManager) {
             return projectApi.approveVariation(projectId, variation.id);
         }
 
@@ -331,7 +332,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         try {
             setRejectingVariationId(actionVariation.id);
-            await projectApi.rejectVariation(projectId, actionVariation.id, rejectionReason.trim());
+            if (isProjectManager) {
+                await projectApi.rejectVariationProjectManager(projectId, actionVariation.id, rejectionReason.trim());
+            } else {
+                await projectApi.rejectVariation(projectId, actionVariation.id, rejectionReason.trim());
+            }
             onReload();
             showToast("success", t("variation_rejected"));
             setRejectVariationConfirmOpen(false);
@@ -438,7 +443,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         for (const id of ids) {
             try {
-                await projectApi.rejectVariation(projectId, id, rejectionReason.trim());
+                if (isProjectManager) {
+                    await projectApi.rejectVariationProjectManager(projectId, id, rejectionReason.trim());
+                } else {
+                    await projectApi.rejectVariation(projectId, id, rejectionReason.trim());
+                }
                 ok += 1;
             } catch (e) {
                 fail += 1;
@@ -550,7 +559,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         continue;
                     }
 
-                    if (isGeneralManager) {
+                    if (isSupervisor) {
                         if (status === "pending_general_manager_initial") {
                             await projectApi.approveVariationGeneralManagerInitial(
                                 projectId,
@@ -566,6 +575,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                             continue;
                         }
 
+                        fail += 1;
+                        continue;
+                    }
+
+                    if (isGeneralManager) {
                         fail += 1;
                         continue;
                     }
@@ -586,7 +600,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     "error",
                     t(
                         "waiting_for_general_manager_initial_approval_bulk",
-                        "General Manager initial approval is pending. Project Manager cannot approve these variation(s) at this stage."
+                        "Supervisor initial approval is pending. Project Manager cannot approve these variation(s) at this stage."
                     )
                 );
             } else if (fail === 0) {
@@ -777,11 +791,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return false;
         }
 
+        if (isSupervisor) {
+            return status === "pending_general_manager_initial";
+        }
+
         if (isGeneralManager) {
-            return (
-                status === "pending_general_manager_initial" ||
-                status === "pending_general_manager_final"
-            );
+            return status === "pending_general_manager_final";
         }
 
         return false;
@@ -813,11 +828,15 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return false;
         }
 
-        if (workflowStatus === "pending_project_manager") {
-            return false;
+        if (isProjectManager) {
+            return workflowStatus === "draft" || workflowStatus === "pending_project_manager";
         }
 
-        return true;
+        if (isSupervisor) {
+            return workflowStatus === "pending_general_manager_initial";
+        }
+
+        return false;
     };
 
     return (

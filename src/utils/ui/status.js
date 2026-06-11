@@ -166,7 +166,7 @@ export const APPROVAL_STATUS_CONFIG = {
   rejected_by_general_manager: {
     label: {
       ar: "تم الرفض من قبل المدير العام",
-      en: "Rejected by General Manager",
+      en: "Rejected by Supervisor",
     },
     color: "#ef4444", // red
     bgColor: "#fee2e2",
@@ -193,7 +193,7 @@ export const APPROVAL_STATUS_CONFIG = {
   pending_general_manager_initial: {
     label: {
       ar: "في انتظار موافقة المدير العام (مبدئي)",
-      en: "Pending General Manager Initial Approval",
+      en: "Pending Supervisor Initial Approval",
     },
     color: "#f59e0b", // amber
     bgColor: "#fef3c7",

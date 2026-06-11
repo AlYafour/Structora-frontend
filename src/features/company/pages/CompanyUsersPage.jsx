@@ -82,7 +82,7 @@ export default function CompanyUsersPage() {
 
       setUsers(Array.isArray(usersData) ? usersData : (usersData?.results || usersData || []));
 
-      const ALLOWED_ROLE_NAMES = ['company_super_admin', 'Admin', 'Manager', 'staff_user'];
+      const ALLOWED_ROLE_NAMES = ['company_super_admin', 'Supervisor', 'Manager', 'staff_user'];
       const companyRoles = (Array.isArray(allRoles) ? allRoles : (allRoles?.results || []))
         .filter(r => r.is_active && ALLOWED_ROLE_NAMES.includes(r.name));
       setRoles(companyRoles);

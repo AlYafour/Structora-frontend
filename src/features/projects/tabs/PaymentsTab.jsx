@@ -19,6 +19,7 @@ import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useAuth } from '../../../contexts/AuthContext';
 import TabPrintWrapper from "../../../components/print/TabPrintWrapper";
 import DownloadAllButton from "../../../components/common/DownloadAllButton";
+import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
 import "./PaymentsTab.css";
 import useTableSelection from '../hooks/useTableSelection';
 import BulkActionsBar from '../../../components/common/BulkActionsBar';
@@ -536,6 +537,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                   <th className="ds-text-right">{t("bank_vat_amount")}</th>
                   <th>{t("receipt_voucher_title")}</th>
                   <th>{t("allocated_invoices_col")}</th>
+                  <th>{t("attachments")}</th>
                   <th className="ds-text-center">{t("status")}</th>
                   <th className="ds-w-60 ds-text-center">{t("action")}</th>
                 </tr>
@@ -584,6 +586,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                             ) : '-';
                           })()}
                         </td>
+                        <td>-</td>
                         <td>-</td>
                         <td className="ds-text-center">-</td>
                         <td className="col-actions"></td>
@@ -707,6 +710,24 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                                 >
                                   {inv.invoice_number}: <span className="payment-invoice-chip__amount">{renderAmount(inv.allocated_amount)}</span>
                                 </a>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()} style={{ minWidth: '180px' }}>
+                        {(() => {
+                          const files = [
+                            { url: payment.deposit_slip, name: payment.deposit_slip_name },
+                            { url: payment.invoice_file, name: payment.invoice_file_name },
+                            { url: payment.receipt_voucher, name: payment.receipt_voucher_name },
+                            { url: payment.bank_payment_attachments, name: payment.bank_payment_attachments_name },
+                          ].filter(f => f.url);
+                          if (files.length === 0) return <span className="ds-text-muted">-</span>;
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {files.map((f, idx) => (
+                                <FileAttachmentView key={idx} fileUrl={f.url} fileName={f.name} />
                               ))}
                             </div>
                           );

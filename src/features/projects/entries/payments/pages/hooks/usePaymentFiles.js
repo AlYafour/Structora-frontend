@@ -22,6 +22,13 @@ export function usePaymentFiles() {
   const [existingReceiptVoucher, setExistingReceiptVoucher] = useState(null);
   const [existingBankPaymentAttachments, setExistingBankPaymentAttachments] = useState(null);
 
+  // Backend field names explicitly removed by the user
+  const [deletedFiles, setDeletedFiles] = useState(new Set());
+
+  const markFileDeleted = useCallback((backendFieldName) => {
+    setDeletedFiles(prev => new Set([...prev, backendFieldName]));
+  }, []);
+
   /**
    * Load existing files from payment data
    */
@@ -45,6 +52,7 @@ export function usePaymentFiles() {
     setExistingInvoiceFile(null);
     setExistingReceiptVoucher(null);
     setExistingBankPaymentAttachments(null);
+    setDeletedFiles(new Set());
   }, []);
 
   /**
@@ -55,9 +63,10 @@ export function usePaymentFiles() {
       depositSlip,
       invoiceFile,
       receiptVoucher,
-      bankPaymentAttachments
+      bankPaymentAttachments,
+      deletedFiles,
     };
-  }, [depositSlip, invoiceFile, receiptVoucher, bankPaymentAttachments]);
+  }, [depositSlip, invoiceFile, receiptVoucher, bankPaymentAttachments, deletedFiles]);
 
   return {
     // New files
@@ -81,6 +90,7 @@ export function usePaymentFiles() {
     // Helper functions
     loadExistingFiles,
     clearAllFiles,
-    getFilesForSubmission
+    getFilesForSubmission,
+    markFileDeleted,
   };
 }

@@ -105,183 +105,160 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 
   return (
     <div className="prj-view-header">
-      {/* Top Bar with image, info, and actions */}
       <div className="prj-view-header__top">
-        {/* Project Image */}
-        {imageUrl && (
-          <div className="prj-view-header__image">
-            <img src={imageUrl} alt={t("project_image")} />
-          </div>
-        )}
 
-        <div className="prj-view-header__top-content">
-          {/* Owner Names */}
-          {/* Owner Names */}
-          {(nameAr || nameEn) ? (
-            <div className="prj-view-header__owner-names">
-
-              {/* Top (based on language) */}
-              <div className="prj-view-header__owner-name">
-                {(isAR ? (nameAr || nameEn) : (nameEn || nameAr))}
-              </div>
-
-              {/* Bottom (if both exist and different) */}
-              {nameAr && nameEn && nameAr !== nameEn && (
-                <div className="prj-view-header__owner-name prj-view-header__owner-name--en">
-                  {isAR ? nameEn : nameAr}
-                </div>
-              )}
+        {/* Row 1: image + project info + nav buttons */}
+        <div className="prj-view-header__row1">
+          {imageUrl && (
+            <div className="prj-view-header__image">
+              <img src={imageUrl} alt={t("project_image")} />
             </div>
-          ) : (
-            <h1 className="prj-view-header__top-title">{titleText}</h1>
           )}
 
-          {/* Meta row: code + status */}
-          <div className="prj-view-header__meta">
-            {project?.internal_code && (
-              <div className="prj-view-header__top-code">
-                <span>{t("project_view_internal_code")}:</span>
-                <span className="mono">
-                  {formatInternalCode(project.internal_code)}
-                </span>
-              </div>
-            )}
-            {statusInfo && (
-              <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
-                {statusInfo.label}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="prj-view-header__top-back">
-          <Button
-            variant="secondary"
-            size="md"
-            className="prj-view-header__btn--light"
-            onClick={handleDownloadAll}
-            loading={downloading}
-            startIcon={<FiDownload />}
-          >
-            {downloading ? t("downloading") : t("download_all_attachments")}
-          </Button>
-          {projectPermissions?.can_edit && (
-            <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="secondary" size="md" className="prj-view-header__btn--light">
-              {t("edit")}
-            </Button>
-          )}
-          <Button as={Link} variant="secondary" to="/projects" size="md" className="prj-view-header__btn--light">
-            {t("back_projects")}
-          </Button>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div
-        className="prj-view-header__body"
-        style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : {}}
-      >
-        <div className="prj-view-header__content">
-          {/* Status Banner */}
-          {project?.approval_status && project.approval_status !== 'final_approved' && (
-            <div className="prj-status-banner" data-status={project.approval_status}>
-              <span className={`prj-status-banner__dot prj-status-banner__dot--${project.approval_status}`} />
-              <div className="prj-status-banner__content">
-                <div className="prj-status-banner__title">
-                  {project.approval_status === 'pending' ? t("pending_approval_banner") :
-                    project.approval_status === 'approved' ? t("pending_final_approval_banner") :
-                      project.approval_status === 'draft' ? t("draft_banner") :
-                        t("rejected_banner")}
+          <div className="prj-view-header__top-content">
+            {(nameAr || nameEn) ? (
+              <div className="prj-view-header__owner-names">
+                <div className="prj-view-header__owner-name">
+                  {(isAR ? (nameAr || nameEn) : (nameEn || nameAr))}
                 </div>
-                {project.approval_status === 'pending' && project.last_approved_by && (
-                  <div className="prj-status-banner__subtitle">
-                    {t("submitted_by")}: {project.last_approved_by.full_name || project.last_approved_by.email}
+                {nameAr && nameEn && nameAr !== nameEn && (
+                  <div className="prj-view-header__owner-name prj-view-header__owner-name--en">
+                    {isAR ? nameEn : nameAr}
                   </div>
                 )}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="prj-view-header__actions">
-
-          {/* Approval Actions Group */}
-          <div className="prj-view-actions-group">
-            <div className="prj-view-actions-group__label">{t("approval_actions")}</div>
-            <div className="prj-view-actions-group__buttons">
-              {/* Submit for Approval */}
-              {!permissionsLoading && projectPermissions?.can_submit && project?.approval_status === "draft" && !isSuperAdmin && (
-                <Button variant="primary" onClick={onSubmitClick} size="md" fullWidth>
-                  {t("submit_for_approval")}
-                </Button>
-              )}
-
-              {/* Final Approve - Super Admin (from draft or pending) */}
-              {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (
-                <Button variant="primary" onClick={onFinalApproveClick} size="md" fullWidth>
-                  {t("final_approve")}
-                </Button>
-              )}
-
-              {/* Final Approve - Other users with permission (from draft) */}
-              {project?.approval_status === "draft" && !isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve && (
-                <Button variant="primary" onClick={onFinalApproveClick} size="md" fullWidth>
-                  {t("final_approve")}
-                </Button>
-              )}
-
-              {/* Approve/Reject Actions - Manager */}
-              {project?.approval_status === "pending" && !isSuperAdmin && (isManager || (!isManager && !permissionsLoading && projectPermissions?.can_approve)) && (
-                <div className="prj-view-actions-row">
-                  <Button variant="primary" onClick={onApproveClick} size="md" className="flex-1">
-                    {t("approve_stage")}
-                  </Button>
-                  {(isManager || projectPermissions?.can_reject) && (
-                    <Button variant="danger" onClick={onRejectClick} size="md" className="flex-1">
-                      {t("reject")}
-                    </Button>
-                  )}
+            ) : (
+              <h1 className="prj-view-header__top-title">{titleText}</h1>
+            )}
+            <div className="prj-view-header__meta">
+              {project?.internal_code && (
+                <div className="prj-view-header__top-code">
+                  <span>{t("project_view_internal_code")}:</span>
+                  <span className="mono">{formatInternalCode(project.internal_code)}</span>
                 </div>
               )}
-
-              {/* Final Approve - from approved status */}
-              {project?.approval_status === "approved" && (isSuperAdmin || (!isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve)) && (
-                <Button variant="primary" onClick={onFinalApproveClick} size="md" fullWidth>
-                  {t("final_approve")}
-                </Button>
+              {statusInfo && (
+                <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
+                  {statusInfo.label}
+                </span>
               )}
-
-              {/* Final Approved Status Badge */}
-              {project?.approval_status === "final_approved" && (
-                <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
-                  <span className="prj-approval-status-badge__icon">✓</span>
-                  <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
-                </div>
-              )}
-
-              {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
-                <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="md" fullWidth>
-                  {t("revoke_final_approval")}
-                </Button>
-              )}
-
             </div>
           </div>
 
-          {/* Delete Action */}
-          {canDeleteProject && (
-            <div className="prj-view-actions-group">
-              <div className="prj-view-actions-group__label">{t("danger_zone")}</div>
-              <div className="prj-view-actions-group__buttons">
-                <Button variant="danger" onClick={onDeleteClick} size="md" fullWidth>
-                  {t("delete_project")}
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="prj-view-header__nav">
+            <Button
+              variant="secondary"
+              size="md"
+              className="prj-view-header__btn--light"
+              onClick={handleDownloadAll}
+              loading={downloading}
+              startIcon={<FiDownload />}
+            >
+              {downloading ? t("downloading") : t("download_all_attachments")}
+            </Button>
+            {projectPermissions?.can_edit && (
+              <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="secondary" size="md" className="prj-view-header__btn--light">
+                {t("edit")}
+              </Button>
+            )}
+            <Button as={Link} variant="secondary" to="/projects" size="md" className="prj-view-header__btn--light">
+              {t("back_projects")}
+            </Button>
+          </div>
         </div>
+
+        {/* Row 2: status banner (left) + action buttons (right) */}
+        <div className="prj-view-header__row2">
+          <div className="prj-view-header__row2-status">
+            {project?.approval_status && project.approval_status !== 'final_approved' && (
+              <div className="prj-status-banner" data-status={project.approval_status}>
+                <span className={`prj-status-banner__dot prj-status-banner__dot--${project.approval_status}`} />
+                <div className="prj-status-banner__content">
+                  <div className="prj-status-banner__title">
+                    {project.approval_status === 'pending' ? t("pending_approval_banner") :
+                      project.approval_status === 'approved' ? t("pending_final_approval_banner") :
+                        project.approval_status === 'draft' ? t("draft_banner") :
+                          t("rejected_banner")}
+                  </div>
+                  {project.approval_status === 'pending' && project.last_approved_by && (
+                    <div className="prj-status-banner__subtitle">
+                      {t("submitted_by")}: {project.last_approved_by.full_name || project.last_approved_by.email}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="prj-view-header__row2-actions">
+            {!permissionsLoading && projectPermissions?.can_submit && project?.approval_status === "draft" && !isSuperAdmin && (
+              <Button variant="primary" onClick={onSubmitClick} size="md">
+                {t("submit_for_approval")}
+              </Button>
+            )}
+
+            {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (
+              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+                {t("final_approve")}
+              </Button>
+            )}
+
+            {project?.approval_status === "draft" && !isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve && (
+              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+                {t("final_approve")}
+              </Button>
+            )}
+
+            {project?.approval_status === "pending" && !isSuperAdmin && (isManager || (!isManager && !permissionsLoading && projectPermissions?.can_approve)) && (
+              <>
+                <Button variant="primary" onClick={onApproveClick} size="md">
+                  {t("approve_stage")}
+                </Button>
+                {(isManager || projectPermissions?.can_reject) && (
+                  <Button variant="danger" onClick={onRejectClick} size="md">
+                    {t("reject")}
+                  </Button>
+                )}
+              </>
+            )}
+
+            {project?.approval_status === "approved" && (isSuperAdmin || (!isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve)) && (
+              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+                {t("final_approve")}
+              </Button>
+            )}
+
+            {project?.approval_status === "final_approved" && (
+              <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
+                <span className="prj-approval-status-badge__icon">✓</span>
+                <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
+              </div>
+            )}
+
+            {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
+              <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="md">
+                {t("revoke_final_approval")}
+              </Button>
+            )}
+
+            {canDeleteProject && <div className="prj-view-header__action-sep" />}
+
+            {canDeleteProject && (
+              <Button variant="danger" onClick={onDeleteClick} size="md">
+                {t("delete_project")}
+              </Button>
+            )}
+          </div>
+        </div>
+
       </div>
+
+      {imageUrl && (
+        <div
+          className="prj-view-header__body"
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+      )}
     </div>
   );
 });

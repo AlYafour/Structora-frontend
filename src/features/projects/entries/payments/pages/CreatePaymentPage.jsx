@@ -98,7 +98,8 @@ export default function CreatePaymentPage() {
     existingBankPaymentAttachments,
     setExistingBankPaymentAttachments,
     loadExistingFiles,
-    getFilesForSubmission
+    getFilesForSubmission,
+    markFileDeleted,
   } = usePaymentFiles();
 
   // Calculate payment amount and credit balance
@@ -304,6 +305,15 @@ export default function CreatePaymentPage() {
       existingBankPaymentAttachments: setBankPaymentAttachments
     };
     fileSetters[field]?.(null);
+
+    // Tell the backend to delete the existing file
+    const backendNames = {
+      existingDepositSlip: 'deposit_slip',
+      existingInvoiceFile: 'invoice_file',
+      existingReceiptVoucher: 'receipt_voucher',
+      existingBankPaymentAttachments: 'bank_payment_attachments',
+    };
+    if (backendNames[field]) markFileDeleted(backendNames[field]);
   };
 
   /**

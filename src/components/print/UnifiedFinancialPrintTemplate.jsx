@@ -454,10 +454,6 @@ export default function UnifiedFinancialPrintTemplate({
       if (data.payer === "bank" && data.completion_percentage) detailRows.push({ label: label("payment_print_completion_percentage"), value: `${data.completion_percentage}%` });
 
       const attachments = [];
-      if (hasFile(data.deposit_slip)) attachments.push({ label: label("payment_print_deposit_slip"), url: data.deposit_slip, name: data.deposit_slip_name || extractFileNameFromUrl(data.deposit_slip) });
-      if (hasFile(data.invoice_file)) attachments.push({ label: label("payment_print_invoice_file"), url: data.invoice_file, name: data.invoice_file_name || extractFileNameFromUrl(data.invoice_file) });
-      if (hasFile(data.receipt_voucher)) attachments.push({ label: label("payment_print_receipt_voucher"), url: data.receipt_voucher, name: data.receipt_voucher_name || extractFileNameFromUrl(data.receipt_voucher) });
-      if (hasFile(data.bank_payment_attachments)) attachments.push({ label: label("payment_print_bank_payment_attachments"), url: data.bank_payment_attachments, name: data.bank_payment_attachments_name || extractFileNameFromUrl(data.bank_payment_attachments) });
 
       return {
         ...base,

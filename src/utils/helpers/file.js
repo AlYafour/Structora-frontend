@@ -155,8 +155,15 @@ export function buildFileUrl(fileUrl) {
     return null;
   }
 
-  // If this is an absolute URL without `/media/` in path, return as-is
-  if (fileUrl.startsWith("http") && !fileUrl.includes("/media/")) {
+  // If the URL already points to our /api/files/ endpoint (backend built an
+  // absolute URL), strip the origin so the request goes through the same-origin
+  // Vite proxy in dev — otherwise auth cookies aren't sent cross-port.
+  if (fileUrl.startsWith("http") && fileUrl.includes("/api/files/")) {
+    const idx = fileUrl.indexOf("/api/files/");
+    fileUrl = fileUrl.substring(idx + "/api/files/".length);
+    // fall through to normal path-building below
+  } else if (fileUrl.startsWith("http") && !fileUrl.includes("/media/")) {
+    // Absolute URL to an external resource (e.g. Cloudinary) — keep as-is
     return fileUrl;
   }
 
@@ -356,50 +363,29 @@ export async function openFileInNewWindow(fileUrl, fileName = null, options = {}
   }
 
   try {
-    // Fetch file with authentication
     const blob = await fetchFileWithAuth(fileUrl);
 
-    // Derive file name if not explicitly provided
     if (!fileName) {
       fileName = extractFileNameFromUrl(fileUrl) || 'File';
     }
 
-    // Detect file MIME type
-    const mimeType = blob.type || 'application/octet-stream';
+    // Open the blob directly — browser natively renders PDFs, images, etc.
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.target = options.target || '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    // Create HTML page that will display the file
-    const htmlContent = createFileViewerHTML(blob, fileName, mimeType);
-    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-    const htmlBlobUrl = URL.createObjectURL(htmlBlob);
-
-    // Open HTML page in a new window
-    const {
-      target = "_blank",
-      features = "noopener,noreferrer"
-    } = options;
-
-    const newWindow = window.open(htmlBlobUrl, target, features);
-
-    if (!newWindow) {
-      // Fallback: use an `<a>` tag when `window.open` is blocked
-      const link = document.createElement('a');
-      link.href = htmlBlobUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Clean up blob URLs after opening the window
-    setTimeout(() => {
-      URL.revokeObjectURL(htmlBlobUrl);
-    }, 1000);
+    // Revoke after a generous delay so the browser has time to load the content
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   } catch (error) {
-    // Fallback: Try opening file directly (for public files)
+    logger.error('Error opening file:', error);
     const fullUrl = buildFileUrl(fileUrl);
     if (fullUrl) {
-      window.open(fullUrl, options.target || "_blank", options.features || "noopener,noreferrer");
+      window.open(fullUrl, options.target || '_blank', options.features || 'noopener,noreferrer');
     }
   }
 }

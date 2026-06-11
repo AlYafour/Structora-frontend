@@ -141,7 +141,7 @@ export function buildPaymentFormData(formData, allocations, allocationMode, file
     }
   }
 
-  // File attachments
+  // File attachments — new uploads
   if (files.depositSlip instanceof File) {
     formDataToSend.append('deposit_slip', files.depositSlip);
   }
@@ -153,6 +153,13 @@ export function buildPaymentFormData(formData, allocations, allocationMode, file
   }
   if (files.bankPaymentAttachments instanceof File) {
     formDataToSend.append('bank_payment_attachments', files.bankPaymentAttachments);
+  }
+
+  // Delete flags for explicitly removed existing files
+  if (files.deletedFiles instanceof Set) {
+    files.deletedFiles.forEach(fieldName => {
+      formDataToSend.append(`${fieldName}_delete`, 'true');
+    });
   }
 
   return formDataToSend;

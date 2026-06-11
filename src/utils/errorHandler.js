@@ -132,6 +132,7 @@ function translateBackendMessage(message) {
 function formatValidationMessage(message) {
   const translated = translateBackendMessage(message);
   if (translated) return translated;
+  if (message && !isTechnicalMessage(message)) return String(message).trim();
   return i18n.t("errors.invalid_field_value");
 }
 
