@@ -26,7 +26,7 @@
 }
 
 .app-topbar__hamburger {
-  display: none;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -43,10 +43,6 @@
 .app-topbar__hamburger:hover {
   background: var(--hover, #f3f4f6);
   color: var(--ink, #111827);
-}
-
-@media (max-width: 1024px) {
-  .app-topbar__hamburger { display: flex; }
 }
 
 /* ---------- Center: Search ---------- */
