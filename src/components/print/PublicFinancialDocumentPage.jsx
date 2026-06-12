@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../services/api";
 import UnifiedFinancialPrintTemplate from "./UnifiedFinancialPrintTemplate";
 
 const PRINT_A4_WIDTH_PX = 794;
@@ -11,7 +12,7 @@ export default function PublicFinancialDocumentPage() {
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
-    fetch(`/api/public/financial-documents/${documentType}/${token}/`)
+    fetch(`${API_BASE_URL}public/financial-documents/${documentType}/${token}/`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => setState({ loading: false, error: null, data }))
       .catch(() => setState({ loading: false, error: "Document not found.", data: null }));

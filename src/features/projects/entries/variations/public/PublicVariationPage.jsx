@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../../../../services/api";
 import VariationPrintDocument from "../components/VariationPrintDocument";
 import {
   applyPrintPagePartBreaks,
@@ -54,7 +55,7 @@ export default function PublicVariationPage() {
   const ref = useRef();
 
   useEffect(() => {
-    fetch(`/api/public/variations/${token}/`)
+    fetch(`${API_BASE_URL}public/variations/${token}/`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => setState({ loading: false, error: null, data }))
       .catch(() => setState({ loading: false, error: "Document not found.", data: null }));
