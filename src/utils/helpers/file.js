@@ -162,6 +162,10 @@ export function buildFileUrl(fileUrl) {
     const idx = fileUrl.indexOf("/api/files/");
     fileUrl = fileUrl.substring(idx + "/api/files/".length);
     // fall through to normal path-building below
+  } else if (fileUrl.startsWith("/api/files/")) {
+    fileUrl = fileUrl.substring("/api/files/".length);
+  } else if (fileUrl.startsWith("api/files/")) {
+    fileUrl = fileUrl.substring("api/files/".length);
   } else if (fileUrl.startsWith("http") && !fileUrl.includes("/media/")) {
     // Absolute URL to an external resource (e.g. Cloudinary) — keep as-is
     return fileUrl;

@@ -912,7 +912,7 @@
   padding: 6px 10px;
 }
 
-.vpd-print-mode .vpd-qr-panel svg {
+.vpd-print-mode .vpd-qr-panel canvas {
   width: 40px !important;
   height: 40px !important;
 }

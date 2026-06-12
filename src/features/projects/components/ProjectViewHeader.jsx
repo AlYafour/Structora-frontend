@@ -105,71 +105,19 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 
   return (
     <div className="prj-view-header">
-      <div className="prj-view-header__top">
+      <div className="prj-view-header__split">
 
-        {/* Row 1: image + project info + nav buttons */}
-        <div className="prj-view-header__row1">
-          {imageUrl && (
-            <div className="prj-view-header__image">
-              <img src={imageUrl} alt={t("project_image")} />
-            </div>
-          )}
+        {/* Left panel: all info + actions */}
+        <div className="prj-view-header__left">
 
-          <div className="prj-view-header__top-content">
-            {(nameAr || nameEn) ? (
-              <div className="prj-view-header__owner-names">
-                <div className="prj-view-header__owner-name">
-                  {(isAR ? (nameAr || nameEn) : (nameEn || nameAr))}
-                </div>
-                {nameAr && nameEn && nameAr !== nameEn && (
-                  <div className="prj-view-header__owner-name prj-view-header__owner-name--en">
-                    {isAR ? nameEn : nameAr}
-                  </div>
-                )}
+          {/* Status row: approval badge or banner */}
+          <div className="prj-view-header__status-row">
+            {project?.approval_status === 'final_approved' && (
+              <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
+                <span className="prj-approval-status-badge__icon">✓</span>
+                <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
               </div>
-            ) : (
-              <h1 className="prj-view-header__top-title">{titleText}</h1>
             )}
-            <div className="prj-view-header__meta">
-              {project?.internal_code && (
-                <div className="prj-view-header__top-code">
-                  <span>{t("project_view_internal_code")}:</span>
-                  <span className="mono">{formatInternalCode(project.internal_code)}</span>
-                </div>
-              )}
-              {statusInfo && (
-                <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
-                  {statusInfo.label}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="prj-view-header__nav">
-            <Button
-              variant="secondary"
-              size="md"
-              className="prj-view-header__btn--light"
-              onClick={handleDownloadAll}
-              loading={downloading}
-              startIcon={<FiDownload />}
-            >
-              {downloading ? t("downloading") : t("download_all_attachments")}
-            </Button>
-            {projectPermissions?.can_edit && (
-              <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="secondary" size="md" className="prj-view-header__btn--light">
-                {t("edit")}
-              </Button>
-            )}
-            <Button as={Link} variant="secondary" to="/projects" size="md" className="prj-view-header__btn--light">
-              {t("back_projects")}
-            </Button>
-          </div>
-        </div>
-
-        {/* Row 2: status banner (left) + action buttons (right) */}
-        <div className="prj-view-header__row2">
-          <div className="prj-view-header__row2-status">
             {project?.approval_status && project.approval_status !== 'final_approved' && (
               <div className="prj-status-banner" data-status={project.approval_status}>
                 <span className={`prj-status-banner__dot prj-status-banner__dot--${project.approval_status}`} />
@@ -190,32 +138,90 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
             )}
           </div>
 
-          <div className="prj-view-header__row2-actions">
+          {/* Identity: name */}
+          <div className="prj-view-header__identity">
+            {(nameAr || nameEn) ? (
+              <>
+                <h1 className="prj-view-header__name-primary">
+                  {isAR ? (nameAr || nameEn) : (nameEn || nameAr)}
+                </h1>
+                {nameAr && nameEn && nameAr !== nameEn && (
+                  <p className="prj-view-header__name-secondary">
+                    {isAR ? nameEn : nameAr}
+                  </p>
+                )}
+              </>
+            ) : (
+              <h1 className="prj-view-header__name-primary">{titleText}</h1>
+            )}
+          </div>
+
+          {/* Meta: internal code + execution status */}
+          <div className="prj-view-header__meta">
+            {project?.internal_code && (
+              <div className="prj-view-header__top-code">
+                <span className="mono">{formatInternalCode(project.internal_code)}</span>
+              </div>
+            )}
+            {statusInfo && (
+              <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
+                {statusInfo.label}
+              </span>
+            )}
+          </div>
+
+          {/* Spacer: pushes buttons to bottom */}
+          <div className="prj-view-header__spacer" />
+
+          {/* Nav buttons */}
+          <div className="prj-view-header__nav">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="prj-view-header__btn--light"
+              onClick={handleDownloadAll}
+              loading={downloading}
+              startIcon={<FiDownload />}
+            >
+              {downloading ? t("downloading") : t("download_all_attachments")}
+            </Button>
+            {projectPermissions?.can_edit && (
+              <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="secondary" size="sm" className="prj-view-header__btn--light">
+                {t("edit")}
+              </Button>
+            )}
+            <Button as={Link} variant="secondary" to="/projects" size="sm" className="prj-view-header__btn--light">
+              {t("back_projects")}
+            </Button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="prj-view-header__actions-row">
             {!permissionsLoading && projectPermissions?.can_submit && project?.approval_status === "draft" && !isSuperAdmin && (
-              <Button variant="primary" onClick={onSubmitClick} size="md">
+              <Button variant="primary" onClick={onSubmitClick} size="sm">
                 {t("submit_for_approval")}
               </Button>
             )}
 
             {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
                 {t("final_approve")}
               </Button>
             )}
 
             {project?.approval_status === "draft" && !isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
                 {t("final_approve")}
               </Button>
             )}
 
             {project?.approval_status === "pending" && !isSuperAdmin && (isManager || (!isManager && !permissionsLoading && projectPermissions?.can_approve)) && (
               <>
-                <Button variant="primary" onClick={onApproveClick} size="md">
+                <Button variant="primary" onClick={onApproveClick} size="sm">
                   {t("approve_stage")}
                 </Button>
                 {(isManager || projectPermissions?.can_reject) && (
-                  <Button variant="danger" onClick={onRejectClick} size="md">
+                  <Button variant="danger" onClick={onRejectClick} size="sm">
                     {t("reject")}
                   </Button>
                 )}
@@ -223,20 +229,13 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
             )}
 
             {project?.approval_status === "approved" && (isSuperAdmin || (!isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve)) && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="md">
+              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
                 {t("final_approve")}
               </Button>
             )}
 
-            {project?.approval_status === "final_approved" && (
-              <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
-                <span className="prj-approval-status-badge__icon">✓</span>
-                <span className="prj-approval-status-badge__text">{t("final_approved")}</span>
-              </div>
-            )}
-
             {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
-              <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="md">
+              <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="sm">
                 {t("revoke_final_approval")}
               </Button>
             )}
@@ -244,21 +243,23 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
             {canDeleteProject && <div className="prj-view-header__action-sep" />}
 
             {canDeleteProject && (
-              <Button variant="danger" onClick={onDeleteClick} size="md">
+              <Button variant="danger" onClick={onDeleteClick} size="sm">
                 {t("delete_project")}
               </Button>
             )}
           </div>
+
+        </div>
+
+        {/* Right panel: project image or neutral placeholder */}
+        <div className="prj-view-header__right">
+          {imageUrl
+            ? <img src={imageUrl} alt={t("project_image")} className="prj-view-header__right-img" />
+            : <div className="prj-view-header__right-placeholder" />
+          }
         </div>
 
       </div>
-
-      {imageUrl && (
-        <div
-          className="prj-view-header__body"
-          style={{ backgroundImage: `url(${imageUrl})` }}
-        />
-      )}
     </div>
   );
 });

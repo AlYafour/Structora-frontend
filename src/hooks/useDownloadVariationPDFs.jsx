@@ -15,6 +15,33 @@ const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
 const PDF_CANVAS_SCALE = 3;
 
+async function createPdfWatermarkImage(src) {
+  const blob = await fetchFileWithAuth(src);
+  const blobUrl = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("watermark img load failed"));
+      image.src = blobUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 0.12;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return {
+      dataUrl: canvas.toDataURL("image/png"),
+      width: canvas.width,
+      height: canvas.height,
+    };
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
 async function runWithConcurrency(items, limit, worker) {
   let nextIndex = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -126,8 +153,18 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
 
     if (watermarkEl) watermarkEl.style.display = '';
 
-    // Draw logo watermark at the centre of every page slice
+    let watermarkImage = null;
     if (logoSrc) {
+      try {
+        watermarkImage = await createPdfWatermarkImage(logoSrc);
+      } catch (watermarkErr) {
+        console.warn("[useDownloadVariationPDFs] Could not prepare PDF watermark", logoSrc, watermarkErr);
+      }
+    }
+
+    // Draw a canvas-safe logo watermark. Do not draw the DOM <img> directly:
+    // cross-origin images can taint the canvas and make toDataURL() fail.
+    if (logoSrc && !watermarkImage && window.__STRUCTORA_ENABLE_CANVAS_WATERMARK_FALLBACK__) {
       try {
         const logoBlob = await fetchFileWithAuth(logoSrc);
         const logoBlobUrl = URL.createObjectURL(logoBlob);
@@ -177,6 +214,21 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
         pageW,
         srcH * scale
       );
+      if (watermarkImage) {
+        const maxW = pageW * 0.55;
+        const maxH = pageH * 0.55;
+        const ratio = Math.min(maxW / watermarkImage.width, maxH / watermarkImage.height);
+        const drawW = watermarkImage.width * ratio;
+        const drawH = watermarkImage.height * ratio;
+        pdf.addImage(
+          watermarkImage.dataUrl,
+          "PNG",
+          (pageW - drawW) / 2,
+          (pageH - drawH) / 2,
+          drawW,
+          drawH
+        );
+      }
     }
 
     const attachments = variation?.variation_attachments || [];

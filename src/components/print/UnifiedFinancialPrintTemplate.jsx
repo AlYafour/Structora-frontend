@@ -47,6 +47,13 @@ function BilingualText({ value, className = "" }) {
   return <span className={className}>{value ?? EMPTY}</span>;
 }
 
+const PUBLIC_DOCUMENT_SLUGS = {
+  invoice: "invoice",
+  payment: "payment",
+  receiptVoucher: "receipt-voucher",
+  taxInvoice: "tax-invoice",
+};
+
 export default function UnifiedFinancialPrintTemplate({
   documentType,
   data,
@@ -55,6 +62,10 @@ export default function UnifiedFinancialPrintTemplate({
   onClose,
   hideControls = false,
   printMode: printModeProp,
+  invoiceAttachments: invoiceAttachmentsProp,
+  variations: variationsProp,
+  linkedInvoiceItems: linkedInvoiceItemsProp,
+  sheetPreview = false,
 }) {
   const { t, i18n } = useTranslation();
   const tAr = useMemo(() => i18n.getFixedT("ar"), [i18n]);
@@ -64,6 +75,9 @@ export default function UnifiedFinancialPrintTemplate({
   const [linkedInvoiceItems, setLinkedInvoiceItems] = useState([]);
   const [printModeInternal, setPrintMode] = useState("detailed"); // "detailed" | "summary"
   const printMode = printModeProp ?? printModeInternal;
+  const hasInvoiceAttachmentsProp = Array.isArray(invoiceAttachmentsProp);
+  const hasVariationsProp = Array.isArray(variationsProp);
+  const hasLinkedInvoiceItemsProp = Array.isArray(linkedInvoiceItemsProp);
 
   const label = useCallback(
     (key, fallback) => ({
@@ -85,6 +99,17 @@ export default function UnifiedFinancialPrintTemplate({
 
   const renderDate = (value) => formatDate(value, "en");
 
+  const buildQrData = useCallback(
+    (fallback) => {
+      const slug = PUBLIC_DOCUMENT_SLUGS[documentType];
+      if (slug && data?.public_token) {
+        return `${window.location.origin}/public/financial-documents/${slug}/${data.public_token}`;
+      }
+      return JSON.stringify(fallback);
+    },
+    [data?.public_token, documentType]
+  );
+
   const logoUrl = useMemo(() => {
     let url = company?.logo;
     if (url && !url.startsWith("http")) url = buildFileUrl(url);
@@ -92,6 +117,11 @@ export default function UnifiedFinancialPrintTemplate({
   }, [company?.logo]);
 
   useEffect(() => {
+    if (hasInvoiceAttachmentsProp) {
+      setInvoiceAttachments(invoiceAttachmentsProp);
+      return;
+    }
+
     if (documentType !== "invoice" || !data?.id || !data?.project) {
       setInvoiceAttachments([]);
       return;
@@ -116,9 +146,14 @@ export default function UnifiedFinancialPrintTemplate({
     return () => {
       isActive = false;
     };
-  }, [documentType, data?.id, data?.project]);
+  }, [documentType, data?.id, data?.project, hasInvoiceAttachmentsProp, invoiceAttachmentsProp]);
 
   useEffect(() => {
+    if (hasVariationsProp) {
+      setVariations(variationsProp);
+      return;
+    }
+
     if (documentType !== "invoice" || !data?.project) {
       setVariations([]);
       return;
@@ -140,9 +175,14 @@ export default function UnifiedFinancialPrintTemplate({
     return () => {
       isActive = false;
     };
-  }, [documentType, data?.project]);
+  }, [documentType, data?.project, hasVariationsProp, variationsProp]);
 
   useEffect(() => {
+    if (hasLinkedInvoiceItemsProp) {
+      setLinkedInvoiceItems(linkedInvoiceItemsProp);
+      return;
+    }
+
     if (documentType !== "taxInvoice") {
       setLinkedInvoiceItems([]);
       return;
@@ -191,7 +231,7 @@ export default function UnifiedFinancialPrintTemplate({
     return () => {
       isActive = false;
     };
-  }, [documentType, data?.invoice, data?.invoice_number, data?.project]);
+  }, [documentType, data?.invoice, data?.invoice_number, data?.project, hasLinkedInvoiceItemsProp, linkedInvoiceItemsProp]);
 
   const projectName = useMemo(
     () =>
@@ -239,10 +279,11 @@ export default function UnifiedFinancialPrintTemplate({
       rows: [],
       totals: [],
       notes: [],
-      extraFields: [],
-      attachments: [],
-      qrData: "{}",
-    };
+        extraFields: [],
+        attachments: [],
+        qrData: "{}",
+        isVoided: data.status === "voided",
+      };
 
     const _authOwner = (project?.owners || []).find(o => o.is_authorized) || (project?.owners || [])[0];
     const billToOwner = _authOwner
@@ -423,7 +464,7 @@ export default function UnifiedFinancialPrintTemplate({
           url: attachment.file_url || attachment.file_path,
           name: attachment.file_name,
         })),
-        qrData: JSON.stringify({
+        qrData: buildQrData({
           type: "INVOICE",
           id: data.id,
           number: data.invoice_number || data.id,
@@ -502,7 +543,7 @@ export default function UnifiedFinancialPrintTemplate({
         ],
         totals: [{ label: label("payment_print_amount"), value: renderAmount(amount), grand: true }],
         attachments,
-        qrData: JSON.stringify({
+        qrData: buildQrData({
           type: "PAYMENT_RECEIPT",
           id: data.id,
           amount: data.amount,
@@ -570,7 +611,7 @@ export default function UnifiedFinancialPrintTemplate({
           { label: label("rv_print_amount"), value: renderAmount(amount), grand: true },
         ],
         notes: data.notes ? [{ label: label("rv_print_notes"), value: data.notes }] : [],
-        qrData: JSON.stringify({
+        qrData: buildQrData({
           type: "RECEIPT_VOUCHER",
           voucher_number: data.voucher_number,
           amount: data.amount,
@@ -665,7 +706,7 @@ export default function UnifiedFinancialPrintTemplate({
           { label: { ar: `${tAr("ti_print_vat_amount")} (${vatRate}%)`, en: `${tEn("ti_print_vat_amount")} (${vatRate}%)` }, value: renderAmount(vatAmount) },
           { label: label("ti_print_gross_amount"), value: renderAmount(grossAmount), grand: true },
         ],
-        qrData: JSON.stringify({
+        qrData: buildQrData({
           type: "TAX_INVOICE",
           invoice_number: data.tax_invoice_number,
           net_amount: netAmount,
@@ -683,6 +724,7 @@ export default function UnifiedFinancialPrintTemplate({
     company,
     data,
     documentType,
+    buildQrData,
     invoiceAttachments,
     label,
     linkedInvoiceItems,
@@ -697,7 +739,13 @@ export default function UnifiedFinancialPrintTemplate({
   if (!document) return null;
 
   return (
-    <div className={`ufp-container${hideControls ? " ufp-container--embedded" : ""}`}>
+    <div
+      className={[
+        "ufp-container",
+        hideControls ? "ufp-container--embedded" : "",
+        sheetPreview ? "ufp-container--sheet-preview" : "",
+      ].filter(Boolean).join(" ")}
+    >
       {!hideControls && (
         <div className="ufp-controls no-print">
           <Button variant="secondary" onClick={onClose}>{t("back")}</Button>
@@ -722,6 +770,12 @@ export default function UnifiedFinancialPrintTemplate({
       )}
 
       <article className="ufp-doc" dir="ltr">
+        {document.isVoided && (
+          <div className="ufp-voided-banner">
+            VOIDED
+          </div>
+        )}
+
         <header className="ufp-top">
           <div className="ufp-company">
             {logoUrl && (

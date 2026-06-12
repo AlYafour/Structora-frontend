@@ -1,0 +1,254 @@
+/* ==============================
+   Payment Detail Page — View
+   ============================== */
+
+/* Hero bar — amount / date / status KPIs */
+.pmt-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border-radius: var(--radius-lg, 10px);
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-primary, #fff);
+  margin-block-end: var(--space-4, 16px);
+}
+
+.pmt-hero__cell {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pmt-hero__cell + .pmt-hero__cell {
+  border-inline-start: 1px solid var(--color-border, #e5e7eb);
+}
+
+.pmt-hero__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.pmt-hero__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  line-height: 1.2;
+}
+
+.pmt-hero__value--amount {
+  color: var(--theme-secondary, #0B1629);
+}
+
+.pmt-hero__value--date {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #374151);
+}
+
+/* Status badge */
+.pmt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.pmt-status-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.pmt-status-badge--voided {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.pmt-status-badge--advance {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+/* Method badge */
+.pmt-method-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent-50, #FDF8ED);
+  color: var(--accent-700, #A8893A);
+  border: 1px solid var(--accent-200, #F0DC9E);
+}
+
+/* Detail rows */
+.pmt-detail-section {
+  margin-block-end: var(--space-5, 20px);
+}
+
+.pmt-detail-section:last-child {
+  margin-block-end: 0;
+}
+
+.pmt-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-tertiary, #9ca3af);
+  margin-block-end: var(--space-3, 12px);
+  padding-block-end: var(--space-2, 8px);
+  border-block-end: 1px solid var(--color-border, #e5e7eb);
+}
+
+.pmt-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pmt-detail-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: start;
+  padding: 10px 0;
+  border-block-end: 1px solid var(--surface-secondary, #f3f4f6);
+}
+
+.pmt-detail-row:last-child {
+  border-block-end: none;
+}
+
+.pmt-detail-row__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary, #6b7280);
+  padding-inline-end: 12px;
+  padding-top: 1px;
+}
+
+.pmt-detail-row__value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #111827);
+}
+
+.pmt-detail-row__value--empty {
+  color: var(--text-tertiary, #9ca3af);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Sub-details box (bank transfer, cheque, etc.) */
+.pmt-sub-details {
+  margin-block-start: var(--space-3, 12px);
+  padding: 14px 16px;
+  background: var(--gray-25, #FAFBFC);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+}
+
+.pmt-sub-details__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-tertiary, #9ca3af);
+  margin-block-end: var(--space-3, 12px);
+}
+
+.pmt-sub-details .pmt-detail-row {
+  grid-template-columns: 160px 1fr;
+  padding: 8px 0;
+}
+
+/* Promissory note status */
+.pmt-note-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pmt-note-status--pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.pmt-note-status--honored {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.pmt-note-status--dishonored {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Attachments grid */
+.pmt-attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4, 16px);
+}
+
+.pmt-attachment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pmt-attachment-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.pmt-empty-attachment {
+  font-size: 13px;
+  color: var(--text-tertiary, #9ca3af);
+  font-style: italic;
+  padding: 10px 12px;
+  background: var(--surface-secondary, #f9fafb);
+  border: 1px dashed var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .pmt-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .pmt-hero__cell + .pmt-hero__cell {
+    border-inline-start: none;
+    border-block-start: 1px solid var(--color-border, #e5e7eb);
+  }
+
+  .pmt-detail-row {
+    grid-template-columns: 140px 1fr;
+  }
+}

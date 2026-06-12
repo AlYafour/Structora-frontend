@@ -24,6 +24,8 @@ const LoadingFallback = () => (
 );
 
 // ====== Public Pages ======
+const PublicVariationPage = lazy(() => import("./features/projects/entries/variations/public/PublicVariationPage"));
+const PublicFinancialDocumentPage = lazy(() => import("./components/print/PublicFinancialDocumentPage"));
 const LandingPage = lazy(() => import("./pages/public/LandingPage"));
 const PricingPage = lazy(() => import("./pages/public/PricingPage"));
 const CompanyRegistrationPage = lazy(() => import("./features/auth/pages/CompanyRegistrationPage"));
@@ -247,6 +249,8 @@ export default function App() {
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* ══════ Public pages ══════ */}
+        <Route path="/public/variations/:token" element={<PublicVariationPage />} />
+        <Route path="/public/financial-documents/:documentType/:token" element={<PublicFinancialDocumentPage />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/pricing" element={<PricingPage />} />

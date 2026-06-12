@@ -1,5 +1,5 @@
 import { Fragment, forwardRef, useMemo } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import { formatMoney, formatDate } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
@@ -79,19 +79,17 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     return url || null;
   }, [companyInfo?.company_stamp_url]);
 
-  const isFinallyApproved = !!variation?.general_manager_initial_approved_by;
+  const isFinallyApproved = !!(
+    variation?.general_manager_initial_approved_by ||
+    variation?.general_manager_initial_approved_by_id
+  );
 
   const projectNameAr = project?.display_name || project?.name || "";
   const projectNameEn = project?.display_name_en || project?.display_name || project?.name || "";
 
-  const qrData = JSON.stringify({
-    type: "VARIATION_ORDER",
-    id: variation?.id,
-    number: variation?.variation_number,
-    amount: finalAmount,
-    date: data.document_date,
-    company: companyInfo?.name,
-  });
+  const qrData = variation?.public_token
+    ? `${window.location.origin}/public/variations/${variation.public_token}`
+    : window.location.origin;
 
   // Build totals rows
   const totalsRows = [
@@ -199,7 +197,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           </div>
 
           <div className="vpd-qr-panel">
-            <QRCodeSVG value={qrData} size={72} level="M" includeMargin={false} />
+            <QRCodeCanvas value={qrData} size={72} level="M" includeMargin={false} />
             <span>SCAN TO VERIFY</span>
           </div>
         </header>

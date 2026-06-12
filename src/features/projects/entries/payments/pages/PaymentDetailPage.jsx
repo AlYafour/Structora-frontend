@@ -10,21 +10,32 @@ import PageLayout from '../../../../../components/layout/PageLayout';
 import PageHeader from '../../../../../components/layout/PageHeader';
 import ProjectEntryInfo from '../../../../../components/common/ProjectEntryInfo';
 import Button from '../../../../../components/common/Button';
-import FormViewField from '../../../../../components/forms/FormViewField';
 import FileAttachmentView from '../../../../../components/file-upload/FileAttachmentView';
 import InvoiceAllocationTable from './components/InvoiceAllocationTable';
 import PaymentSummaryPanel from './components/PaymentSummaryPanel';
 import { shouldShowDepositSlip, getPaymentMethodOptions } from './utils/paymentFormatters';
 import { FaEdit, FaFileAlt } from 'react-icons/fa';
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
-import './components/PaymentFormFields.css';
-import './components/PaymentAttachmentsSection.css';
+import './PaymentDetailPage.css';
+
+function DetailRow({ label, value, children, empty }) {
+  const hasContent = children != null || (value != null && value !== '' && value !== '—');
+  return (
+    <div className="pmt-detail-row">
+      <span className="pmt-detail-row__label">{label}</span>
+      <span className={`pmt-detail-row__value${!hasContent ? ' pmt-detail-row__value--empty' : ''}`}>
+        {children ?? (hasContent ? value : '—')}
+      </span>
+    </div>
+  );
+}
 
 export default function PaymentDetailPage() {
   const { paymentId } = useParams();
   const [searchParams] = useSearchParams();
   const projectIdFromQuery = searchParams.get('project');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const navigate = useTenantNavigate();
   const [loading, setLoading] = useState(true);
   const [payment, setPayment] = useState(null);
@@ -98,6 +109,34 @@ export default function PaymentDetailPage() {
   const totalAllocated = allocations.reduce((sum, a) => sum + (parseFloat(a.allocated_amount) || 0), 0);
   const paymentAmount = parseFloat(payment.amount || 0);
 
+  const formattedAmount = new Intl.NumberFormat(isRTL ? 'ar-AE' : 'en-AE', {
+    style: 'currency',
+    currency: 'AED',
+    minimumFractionDigits: 2,
+  }).format(paymentAmount);
+
+  const formattedDate = payment.date
+    ? new Intl.DateTimeFormat(isRTL ? 'ar-AE' : 'en-AE', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(payment.date))
+    : '—';
+
+  const isVoided = payment.status === 'voided';
+  const statusBadgeClass = isVoided
+    ? 'pmt-status-badge pmt-status-badge--voided'
+    : payment.is_advance_payment
+    ? 'pmt-status-badge pmt-status-badge--advance'
+    : 'pmt-status-badge pmt-status-badge--active';
+
+  const statusLabel = isVoided
+    ? t('voided')
+    : payment.is_advance_payment
+    ? t('advance_payment', 'Advance Payment')
+    : t('confirmed', 'Confirmed');
+
+  const noteStatusClass =
+    payment.promissory_note_status === 'honored' ? 'pmt-note-status pmt-note-status--honored'
+    : payment.promissory_note_status === 'dishonored' ? 'pmt-note-status pmt-note-status--dishonored'
+    : 'pmt-note-status pmt-note-status--pending';
+
   return (
     <PageLayout>
       <div className="entry-form entry-form--wide payment-page">
@@ -127,172 +166,170 @@ export default function PaymentDetailPage() {
           <ProjectEntryInfo project={project} />
         </PageHeader>
 
+        {/* Hero KPI Bar */}
+        <div className="pmt-hero">
+          <div className="pmt-hero__cell">
+            <span className="pmt-hero__label">{t('amount')}</span>
+            <span className="pmt-hero__value pmt-hero__value--amount">{formattedAmount}</span>
+          </div>
+          <div className="pmt-hero__cell">
+            <span className="pmt-hero__label">{t('payment_date')}</span>
+            <span className="pmt-hero__value pmt-hero__value--date">{formattedDate}</span>
+          </div>
+          <div className="pmt-hero__cell">
+            <span className="pmt-hero__label">{t('status')}</span>
+            <span className={statusBadgeClass}>{statusLabel}</span>
+          </div>
+        </div>
+
         {/* Payment Details Card */}
         <div className="card">
-          <div className="card__header">
-            {t('payment_details')}
-            {payment.status === 'voided' && (
-              <span style={{
-                marginInlineStart: '12px',
-                display: 'inline-flex', alignItems: 'center',
-                padding: '2px 10px', borderRadius: '9999px',
-                fontSize: '12px', fontWeight: 600,
-                background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5',
-              }}>
-                {t('voided')}
-              </span>
-            )}
-          </div>
+          <div className="card__header">{t('payment_details')}</div>
           <div className="card__body">
 
-            {/* Amount & Date */}
-            <div className="payment-form-fields__section">
-              <div className="payment-form-fields__section-title">{t('payment_details')}</div>
-              <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                <FormViewField label={t('amount')} value={paymentAmount} type="currency" />
-                <FormViewField label={t('payment_date')} value={payment.date} type="date" />
+            {/* Core info */}
+            <div className="pmt-detail-section">
+              <div className="pmt-section-title">{t('payer_and_method')}</div>
+              <div className="pmt-detail-rows">
+                <DetailRow label={t('payer')} value={payerLabel} />
+                <DetailRow label={t('payment_method')}>
+                  <span className="pmt-method-badge">{methodLabel}</span>
+                </DetailRow>
+                {payment.description && (
+                  <DetailRow label={t('description')} value={payment.description} />
+                )}
               </div>
             </div>
 
-            {/* Payer & Method */}
-            <div className="payment-form-fields__section">
-              <div className="payment-form-fields__section-title">{t('payer_and_method')}</div>
-              <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                <FormViewField label={t('payer')} value={payerLabel} />
-                <FormViewField label={t('payment_method')} value={methodLabel} />
+            {/* Bank Transfer details */}
+            {isBankTransfer && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">{t('bank_transfer_details')}</div>
+                  <div className="pmt-detail-rows">
+                    <DetailRow label={t('sender_account_number')} value={payment.sender_account_number} />
+                    <DetailRow label={t('recipient_account_number')} value={payment.recipient_account_number} />
+                    <DetailRow label={t('transferor_name')} value={payment.transferor_name} />
+                  </div>
+                </div>
               </div>
+            )}
 
-              {isBankTransfer && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">{t('bank_transfer_details')}</div>
-                  <div className="ds-grid ds-grid-cols-3 ds-gap-4">
-                    <FormViewField label={t('sender_account_number')} value={payment.sender_account_number} />
-                    <FormViewField label={t('recipient_account_number')} value={payment.recipient_account_number} />
-                    <FormViewField label={t('transferor_name')} value={payment.transferor_name} />
+            {/* Cash Deposit details */}
+            {isCashDeposit && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">{t('cash_deposit_details')}</div>
+                  <div className="pmt-detail-rows">
+                    <DetailRow label={t('sender_name')} value={payment.sender_account_number} />
+                    <DetailRow label={t('recipient_account_number')} value={payment.recipient_account_number} />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {isCashDeposit && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">{t('cash_deposit_details')}</div>
-                  <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                    <FormViewField label={t('sender_name')} value={payment.sender_account_number} />
-                    <FormViewField label={t('recipient_account_number')} value={payment.recipient_account_number} />
+            {/* Cheque details */}
+            {isCheque && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">{t('bank_cheque_details')}</div>
+                  <div className="pmt-detail-rows">
+                    <DetailRow label={t('cheque_holder_name')} value={payment.cheque_holder_name} />
+                    <DetailRow label={t('cheque_account_number')} value={payment.cheque_account_number} />
+                    <DetailRow label={t('cheque_date')} value={payment.cheque_date ? formatDate(payment.cheque_date) : null} />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {isCheque && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">{t('bank_cheque_details')}</div>
-                  <div className="ds-grid ds-grid-cols-3 ds-gap-4">
-                    <FormViewField label={t('cheque_holder_name')} value={payment.cheque_holder_name} />
-                    <FormViewField label={t('cheque_account_number')} value={payment.cheque_account_number} />
-                    <FormViewField label={t('cheque_date')} value={payment.cheque_date} type="date" />
+            {/* Promissory Note details */}
+            {isPromissoryNote && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">
+                    {t('promissory_note_details', 'Promissory Note Details')}
                   </div>
-                </div>
-              )}
-
-              {isPromissoryNote && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">
-                    {t('promissory_note_details', 'Promissory Note Details — تفاصيل السند الأذني')}
-                  </div>
-                  <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                    <FormViewField
-                      label={t('promissory_note_number', 'Note Number / رقم السند')}
+                  <div className="pmt-detail-rows">
+                    <DetailRow
+                      label={t('promissory_note_number', 'Note Number')}
                       value={payment.promissory_note_number}
                     />
-                    <FormViewField
-                      label={t('promissory_note_due_date', 'Maturity Date / تاريخ الاستحقاق')}
-                      value={payment.promissory_note_due_date}
-                      type="date"
+                    <DetailRow
+                      label={t('promissory_note_due_date', 'Maturity Date')}
+                      value={payment.promissory_note_due_date ? formatDate(payment.promissory_note_due_date) : null}
                     />
-                  </div>
-                  {payment.promissory_note_status && (
-                    <div style={{ marginTop: '10px' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        padding: '4px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 600,
-                        ...(payment.promissory_note_status === 'pending'
-                          ? { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }
-                          : payment.promissory_note_status === 'honored'
-                          ? { background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7' }
-                          : { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' })
-                      }}>
-                        {payment.promissory_note_status === 'pending' && '⏳ '}
-                        {payment.promissory_note_status === 'honored' && '✓ '}
-                        {payment.promissory_note_status === 'dishonored' && '✗ '}
-                        {payment.promissory_note_status === 'pending'
-                          ? t('promissory_note_status_pending', 'Pending — Awaiting Honor')
-                          : payment.promissory_note_status === 'honored'
-                          ? t('promissory_note_status_honored', 'Honored ✓')
-                          : t('promissory_note_status_dishonored', 'Dishonored ✗')
-                        }
-                      </span>
-                      {payment.promissory_note_honored_date && (
-                        <span style={{ marginInlineStart: '8px', fontSize: '12px', color: '#6b7280' }}>
-                          {t('honored_on', 'Honored on')}: {formatDate(payment.promissory_note_honored_date)}
+                    {payment.promissory_note_status && (
+                      <DetailRow label={t('status')}>
+                        <span className={noteStatusClass}>
+                          {payment.promissory_note_status === 'pending' && '⏳ '}
+                          {payment.promissory_note_status === 'honored' && '✓ '}
+                          {payment.promissory_note_status === 'dishonored' && '✗ '}
+                          {payment.promissory_note_status === 'pending'
+                            ? t('promissory_note_status_pending', 'Pending')
+                            : payment.promissory_note_status === 'honored'
+                            ? t('promissory_note_status_honored', 'Honored')
+                            : t('promissory_note_status_dishonored', 'Dishonored')}
                         </span>
-                      )}
-                    </div>
-                  )}
+                        {payment.promissory_note_honored_date && (
+                          <span style={{ marginInlineStart: '10px', fontSize: '12px', color: '#6b7280' }}>
+                            {t('honored_on', 'Honored on')}: {formatDate(payment.promissory_note_honored_date)}
+                          </span>
+                        )}
+                      </DetailRow>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {payment.is_advance_payment && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">{t('advance_payment', 'دفعة مقدمة')}</div>
-                  <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                    <FormViewField
-                      label={t('advance_payment_percentage', 'نسبة الدفعة المقدمة (%)')}
-                      value={payment.advance_percentage ? `${payment.advance_percentage}%` : null}
-                    />
-                    <FormViewField
-                      label={t('advance_payment_amount', 'مبلغ الدفعة المقدمة')}
-                      value={paymentAmount}
-                      type="currency"
+            {/* Advance payment */}
+            {payment.is_advance_payment && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">{t('advance_payment', 'Advance Payment')}</div>
+                  <div className="pmt-detail-rows">
+                    {payment.advance_percentage && (
+                      <DetailRow
+                        label={t('advance_payment_percentage', 'Percentage')}
+                        value={`${payment.advance_percentage}%`}
+                      />
+                    )}
+                    <DetailRow
+                      label={t('advance_payment_amount', 'Amount')}
+                      value={formattedAmount}
                     />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {payment.use_credit && payment.credit_amount && (
-                <div className="payment-form-fields__sub-section">
-                  <div className="payment-form-fields__sub-title">{t('use_credit')}</div>
-                  <div className="ds-grid ds-grid-cols-2 ds-gap-4">
-                    <FormViewField
+            {/* Credit used */}
+            {payment.use_credit && payment.credit_amount && (
+              <div className="pmt-detail-section">
+                <div className="pmt-sub-details">
+                  <div className="pmt-sub-details__title">{t('use_credit')}</div>
+                  <div className="pmt-detail-rows">
+                    <DetailRow
                       label={t('credit_amount_to_use')}
-                      value={parseFloat(payment.credit_amount)}
-                      type="currency"
+                      value={new Intl.NumberFormat(isRTL ? 'ar-AE' : 'en-AE', {
+                        style: 'currency', currency: 'AED', minimumFractionDigits: 2,
+                      }).format(parseFloat(payment.credit_amount))}
                     />
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Description */}
-            <div className="payment-form-fields__section">
-              <FormViewField label={t('description')} value={payment.description} />
-            </div>
-
-            {/* Additional Info */}
+            {/* Additional info */}
             {(payment.completion_percentage || payment.project_financial_account) && (
-              <div className="payment-form-fields__section payment-form-fields__section--last">
-                <div className="payment-form-fields__section-title">{t('additional_info')}</div>
-                <div className="ds-grid ds-grid-cols-2 ds-gap-4">
+              <div className="pmt-detail-section">
+                <div className="pmt-section-title">{t('additional_info')}</div>
+                <div className="pmt-detail-rows">
                   {payment.project_financial_account && (
-                    <FormViewField
-                      label={t('project_financial_account')}
-                      value={payment.project_financial_account}
-                    />
+                    <DetailRow label={t('project_financial_account')} value={payment.project_financial_account} />
                   )}
                   {payment.completion_percentage && (
-                    <FormViewField
-                      label={t('completion_percentage')}
-                      value={`${payment.completion_percentage}%`}
-                    />
+                    <DetailRow label={t('completion_percentage')} value={`${payment.completion_percentage}%`} />
                   )}
                 </div>
               </div>
@@ -326,57 +363,57 @@ export default function PaymentDetailPage() {
         )}
 
         {/* File Attachments Card */}
-        <div className="card payment-attachments">
+        <div className="card">
           <div className="card__header">{t('file_attachments')}</div>
           <div className="card__body">
-            <div className="payment-attachments__grid">
-              <div className="payment-attachments__item">
-                <label className="payment-attachments__label">{t('invoice_file')}</label>
+            <div className="pmt-attachments-grid">
+              <div className="pmt-attachment-item">
+                <span className="pmt-attachment-label">{t('invoice_file')}</span>
                 {payment.invoice_file ? (
                   <FileAttachmentView
                     fileUrl={payment.invoice_file}
                     fileName={extractFileNameFromUrl(payment.invoice_file)}
                   />
                 ) : (
-                  <div className="prj-empty-inline">{t('no_attachment')}</div>
+                  <div className="pmt-empty-attachment">{t('no_attachment')}</div>
                 )}
               </div>
 
-              <div className="payment-attachments__item">
-                <label className="payment-attachments__label">{t('receipt_voucher')}</label>
+              <div className="pmt-attachment-item">
+                <span className="pmt-attachment-label">{t('receipt_voucher')}</span>
                 {payment.receipt_voucher ? (
                   <FileAttachmentView
                     fileUrl={payment.receipt_voucher}
                     fileName={extractFileNameFromUrl(payment.receipt_voucher)}
                   />
                 ) : (
-                  <div className="prj-empty-inline">{t('no_attachment')}</div>
+                  <div className="pmt-empty-attachment">{t('no_attachment')}</div>
                 )}
               </div>
 
               {showDepositSlip && (
-                <div className="payment-attachments__item">
-                  <label className="payment-attachments__label">{t('deposit_slip')}</label>
+                <div className="pmt-attachment-item">
+                  <span className="pmt-attachment-label">{t('deposit_slip')}</span>
                   {payment.deposit_slip ? (
                     <FileAttachmentView
                       fileUrl={payment.deposit_slip}
                       fileName={extractFileNameFromUrl(payment.deposit_slip)}
                     />
                   ) : (
-                    <div className="prj-empty-inline">{t('no_attachment')}</div>
+                    <div className="pmt-empty-attachment">{t('no_attachment')}</div>
                   )}
                 </div>
               )}
 
-              <div className="payment-attachments__item">
-                <label className="payment-attachments__label">{t('bank_payment_attachments')}</label>
+              <div className="pmt-attachment-item">
+                <span className="pmt-attachment-label">{t('bank_payment_attachments')}</span>
                 {payment.bank_payment_attachments ? (
                   <FileAttachmentView
                     fileUrl={payment.bank_payment_attachments}
                     fileName={extractFileNameFromUrl(payment.bank_payment_attachments)}
                   />
                 ) : (
-                  <div className="prj-empty-inline">{t('no_attachment')}</div>
+                  <div className="pmt-empty-attachment">{t('no_attachment')}</div>
                 )}
               </div>
             </div>

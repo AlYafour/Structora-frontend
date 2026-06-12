@@ -12,6 +12,151 @@
   padding: 0;
 }
 
+.ufp-container--sheet-preview {
+  padding: 0;
+  background: #fff;
+  min-height: auto;
+}
+
+.ufp-container--sheet-preview .ufp-doc {
+  width: 100%;
+  min-height: 285mm;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  font-size: 8.5pt;
+}
+
+.ufp-container--sheet-preview .ufp-top {
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-company,
+.ufp-container--sheet-preview .ufp-title-panel {
+  padding: 10px 14px;
+}
+
+.ufp-container--sheet-preview .ufp-company__logo {
+  width: 52px;
+  height: 52px;
+}
+
+.ufp-container--sheet-preview .ufp-company__name {
+  font-size: 13pt;
+}
+
+.ufp-container--sheet-preview .ufp-title {
+  font-size: 15pt;
+}
+
+.ufp-container--sheet-preview .ufp-meta {
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.ufp-container--sheet-preview .ufp-cards {
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-info-card {
+  padding: 7px 10px;
+  min-height: auto;
+}
+
+.ufp-container--sheet-preview .ufp-section {
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-section--details {
+  min-height: auto;
+}
+
+.ufp-container--sheet-preview .ufp-section__header {
+  padding: 6px 14px 5px;
+}
+
+.ufp-container--sheet-preview .ufp-table {
+  margin: 0 8px 7px;
+}
+
+.ufp-container--sheet-preview .ufp-table th {
+  padding: 5px 6px;
+  font-size: 6.5pt;
+}
+
+.ufp-container--sheet-preview .ufp-table td {
+  padding: 6px 6px;
+  font-size: 8pt;
+}
+
+.ufp-container--sheet-preview .ufp-bottom {
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-bank-qr-row {
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-verify {
+  padding: 10px 12px;
+  gap: 8px;
+  min-width: 88px;
+}
+
+.ufp-container--sheet-preview .ufp-totals td {
+  padding: 6px 12px;
+  font-size: 8.5pt;
+}
+
+.ufp-container--sheet-preview .ufp-totals__grand td:last-child {
+  font-size: 14pt;
+}
+
+.ufp-container--sheet-preview .ufp-bank-details {
+  padding: 7px 12px;
+  margin-bottom: 0;
+}
+
+.ufp-container--sheet-preview .ufp-bank-details__title {
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.ufp-container--sheet-preview .ufp-bank-details__rows {
+  gap: 2px;
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-notes {
+  padding: 7px 12px;
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-extra-grid {
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.ufp-container--sheet-preview .ufp-field {
+  padding: 6px 10px;
+}
+
+.ufp-container--sheet-preview .ufp-signatures {
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.ufp-container--sheet-preview .ufp-sign-card {
+  min-height: 48px;
+  padding: 8px 14px;
+}
+
+.ufp-container--sheet-preview .ufp-final-notice {
+  margin: 6px 0 0;
+}
+
 .ufp-controls {
   display: flex;
   justify-content: space-between;
@@ -91,6 +236,19 @@
 .ufp-bilingual__en {
   text-align: left;
   line-height: 1.25;
+}
+
+.ufp-voided-banner {
+  border: 2px solid #991b1b;
+  color: #991b1b;
+  font-size: 18pt;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(153, 27, 27, 0.06);
 }
 
 .ufp-top {

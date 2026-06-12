@@ -325,7 +325,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return;
         }
 
-        if (!canRejectAnyStatus && workflowStatus === "pending_project_manager") {
+        if (!canRejectAnyStatus && !isProjectManager && workflowStatus === "pending_project_manager") {
             showToast("error", t("cannot_reject_pending_project_manager"));
             return;
         }
