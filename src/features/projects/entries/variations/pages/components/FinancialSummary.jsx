@@ -131,6 +131,38 @@ const FinancialSummary = memo(({
     });
   };
 
+  const handleContractorOHPTypeChange = (type) => {
+    if (formData.contractor_ohp_type === type) return;
+    onFormDataChange({
+      ...formData,
+      contractor_ohp_type: type,
+      contractor_ohp_percentage: '',
+      contractor_ohp_amount: '',
+    });
+  };
+
+  const handleConsultantFeesTypeChange = (type) => {
+    if (formData.consultant_fees_type === type) return;
+    onFormDataChange({
+      ...formData,
+      consultant_fees_type: type,
+      consultant_fees_percentage: '',
+      consultant_fees_amount: '',
+    });
+  };
+
+  const handleCustomFeeTypeChange = (id, type) => {
+    onFormDataChange({
+      ...formData,
+      custom_fees: customFees.map(f => f.id === id && f.type !== type ? {
+        ...f,
+        type,
+        percentage: '',
+        amount: '',
+      } : f)
+    });
+  };
+
   const isPositive = totalVariationAmount >= 0;
 
   return (
@@ -215,7 +247,7 @@ const FinancialSummary = memo(({
                 </>}
                 typeValue={formData.contractor_ohp_type}
                 inputValue={formData.contractor_ohp_type === 'percentage' ? (formData.contractor_ohp_percentage ?? '') : (formData.contractor_ohp_amount ?? '')}
-                onTypeChange={type => onFormDataChange({ ...formData, contractor_ohp_type: type })}
+                onTypeChange={handleContractorOHPTypeChange}
                 onInputChange={val => onFormDataChange({ ...formData, [formData.contractor_ohp_type === 'percentage' ? 'contractor_ohp_percentage' : 'contractor_ohp_amount']: val })}
                 displayAmount={contractorEngineeringOHP}
                 afterDiscountAmount={hasDiscount ? contractorOHPAfterDiscount : null}
@@ -243,7 +275,7 @@ const FinancialSummary = memo(({
                 </>}
                 typeValue={formData.consultant_fees_type}
                 inputValue={formData.consultant_fees_type === 'percentage' ? (formData.consultant_fees_percentage ?? '') : (formData.consultant_fees_amount ?? '')}
-                onTypeChange={type => onFormDataChange({ ...formData, consultant_fees_type: type })}
+                onTypeChange={handleConsultantFeesTypeChange}
                 onInputChange={val => onFormDataChange({ ...formData, [formData.consultant_fees_type === 'percentage' ? 'consultant_fees_percentage' : 'consultant_fees_amount']: val })}
                 displayAmount={consultantFees}
                 afterDiscountAmount={hasDiscount ? consultantFeesAfterDiscount : null}
@@ -296,7 +328,7 @@ const FinancialSummary = memo(({
                     )}
                     typeValue={feeType}
                     inputValue={feeType === 'percentage' ? (fee.percentage ?? '') : (fee.amount ?? '')}
-                    onTypeChange={type => updateCustomFee(fee.id, 'type', type)}
+                    onTypeChange={type => handleCustomFeeTypeChange(fee.id, type)}
                     onInputChange={val => updateCustomFee(fee.id, feeType === 'percentage' ? 'percentage' : 'amount', val)}
                     displayAmount={computed ? computed.computedAmount : 0}
                     extras={[]}

@@ -44,8 +44,20 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const totalVar       = parseFloat(data.total_variation_amount || (totalAdded - totalOmitted));
   const contractorOHP  = parseFloat(data.contractor_engineering_oh_p || 0);
   const consultantFees = parseFloat(data.consultant_fees || 0);
-  const contractorOHPValue = data.contractor_ohp_type === 'amount' ? data.contractor_ohp_amount : contractorOHP;
-  const consultantFeesValue = data.consultant_fees_type === 'amount' ? data.consultant_fees_amount : consultantFees;
+  const contractorOHPValue = data.contractor_ohp_type === 'amount'
+    ? parseFloat(data.contractor_ohp_amount || 0)
+    : contractorOHP;
+  const consultantFeesValue = data.consultant_fees_type === 'amount'
+    ? parseFloat(data.consultant_fees_amount || 0)
+    : consultantFees;
+  const contractorOHPPercentLabel =
+    data.contractor_ohp_type === 'percentage' && data.contractor_ohp_percentage
+      ? ` (${data.contractor_ohp_percentage}%)`
+      : "";
+  const consultantFeesPercentLabel =
+    data.consultant_fees_type === 'percentage' && data.consultant_fees_percentage
+      ? ` (${data.consultant_fees_percentage}%)`
+      : "";
   const beforeDiscount = parseFloat(data.total_amount_before_discount || (totalVar + contractorOHP + consultantFees));
   const discountAmt    = parseFloat(data.discount_amount || 0);
   const discountPct    = parseFloat(data.discount_percentage || 0);
@@ -96,14 +108,14 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     { ar: "إجمالي البنود المحذوفة", en: "Total Omitted", value: totalOmitted, sign: "neg" },
     { ar: "إجمالي البنود المضافة",  en: "Total Added",   value: totalAdded,   sign: "pos" },
     { ar: "صافي أمر التغيير",       en: "Net Variation", value: totalVar,     variant: "highlight" },
-    ...(contractorOHP !== 0 ? [{
-      ar: `مصاريف المقاول والهندسة${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
-      en: `Contractor OH&P${data.contractor_ohp_percentage ? ` (${data.contractor_ohp_percentage}%)` : ""}`,
+    ...(contractorOHPValue !== 0 ? [{
+      ar: `مصاريف المقاول والهندسة${contractorOHPPercentLabel}`,
+      en: `Contractor OH&P${contractorOHPPercentLabel}`,
       value: contractorOHPValue,
     }] : []),
-    ...(consultantFees !== 0 ? [{
-      ar: `رسوم الاستشاري${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`,
-      en: `Consultant Fees${data.consultant_fees_percentage ? ` (${data.consultant_fees_percentage}%)` : ""}`,
+    ...(consultantFeesValue !== 0 ? [{
+      ar: `رسوم الاستشاري${consultantFeesPercentLabel}`,
+      en: `Consultant Fees${consultantFeesPercentLabel}`,
       value: consultantFeesValue,
     }] : []),
     ...(data.custom_fees || [])

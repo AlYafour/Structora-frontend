@@ -54,7 +54,7 @@ export function calculateContractorOHP(formData, totalAdded, totalOmittedForOver
   if (formData.contractor_ohp_type === 'amount') {
     return parseFloat(formData.contractor_ohp_amount || 0);
   }
-  return (overheadProfitBase * parseFloat(formData.contractor_ohp_percentage || 15)) / 100;
+  return (overheadProfitBase * parseFloat(formData.contractor_ohp_percentage || 0)) / 100;
 }
 
 /**
@@ -66,7 +66,7 @@ export function calculateConsultantFees(formData, totalVariationAmount, totalAdd
   if (formData.consultant_fees_type === 'amount') {
     return parseFloat(formData.consultant_fees_amount || 0);
   }
-  return (consultantFeesBase * parseFloat(formData.consultant_fees_percentage || 4)) / 100;
+  return (consultantFeesBase * parseFloat(formData.consultant_fees_percentage || 0)) / 100;
 }
 
 /**

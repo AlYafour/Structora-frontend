@@ -144,6 +144,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         }
       }
 
+      const consultantFeesType = noticeData.consultant_fees_type ?? 'percentage';
+      const contractorOHPType = noticeData.contractor_ohp_type ?? 'percentage';
+      const customFeesForForm = (noticeData.custom_fees ?? []).map(fee => ({
+        ...fee,
+        percentage: fee.type === 'percentage' ? fee.percentage : '',
+        amount: fee.type === 'amount' ? fee.amount : '',
+      }));
+
       setFormData({
         document_date: noticeData.document_date || variationData.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
         variation_number: variationData.variation_number ?? '',
@@ -157,13 +165,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         project_description: noticeData.project_description ?? '',
         remarks: noticeData.remarks ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',
-        consultant_fees_type: noticeData.consultant_fees_type ?? 'percentage',
-        consultant_fees_percentage: noticeData.consultant_fees_percentage ?? '4',
-        consultant_fees_amount: noticeData.consultant_fees_amount ?? '',
+        consultant_fees_type: consultantFeesType,
+        consultant_fees_percentage: consultantFeesType === 'percentage' ? (noticeData.consultant_fees_percentage ?? '4') : '',
+        consultant_fees_amount: consultantFeesType === 'amount' ? (noticeData.consultant_fees_amount ?? '') : '',
         consultant_fee_on_total_added: noticeData.consultant_fee_on_total_added !== undefined ? noticeData.consultant_fee_on_total_added : false,
-        contractor_ohp_type: noticeData.contractor_ohp_type ?? 'percentage',
-        contractor_ohp_percentage: noticeData.contractor_ohp_percentage ?? '15',
-        contractor_ohp_amount: noticeData.contractor_ohp_amount ?? '',
+        contractor_ohp_type: contractorOHPType,
+        contractor_ohp_percentage: contractorOHPType === 'percentage' ? (noticeData.contractor_ohp_percentage ?? '15') : '',
+        contractor_ohp_amount: contractorOHPType === 'amount' ? (noticeData.contractor_ohp_amount ?? '') : '',
         discount_type: noticeData.discount_type ?? 'none',
         discount_percentage: noticeData.discount_percentage_input ?? '',
         discount_amount: noticeData.discount_amount_input ?? '',
@@ -171,7 +179,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         discount_applies_to_variation: noticeData.discount_applies_to_variation !== undefined ? noticeData.discount_applies_to_variation : true,
         discount_applies_to_contractor_ohp: noticeData.discount_applies_to_contractor_ohp !== undefined ? noticeData.discount_applies_to_contractor_ohp : true,
         discount_applies_to_consultant_fees: noticeData.discount_applies_to_consultant_fees !== undefined ? noticeData.discount_applies_to_consultant_fees : true,
-        custom_fees: noticeData.custom_fees ?? []
+        custom_fees: customFeesForForm
       });
 
       if (noticeData.omitted_items?.length > 0) {
@@ -367,6 +375,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
     setSaving(true);
     try {
+      const customFeesForSave = (formData.custom_fees ?? []).map(fee => ({
+        ...fee,
+        percentage: fee.type === 'percentage' ? fee.percentage : '',
+        amount: fee.type === 'amount' ? fee.amount : '',
+      }));
+
       const noticeData = {
         document_date: formData.document_date,
         reference_no: formData.reference_no || '',
@@ -397,12 +411,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         contractor_ohp_after_discount: calculations.contractorOHPAfterDiscount,
         consultant_fees_after_discount: calculations.consultantFeesAfterDiscount,
         consultant_fees_type: formData.consultant_fees_type,
-        consultant_fees_percentage: formData.consultant_fees_percentage,
-        consultant_fees_amount: formData.consultant_fees_amount,
+        consultant_fees_percentage: formData.consultant_fees_type === 'percentage' ? formData.consultant_fees_percentage : '',
+        consultant_fees_amount: formData.consultant_fees_type === 'amount' ? formData.consultant_fees_amount : '',
         consultant_fee_on_total_added: formData.consultant_fee_on_total_added,
         contractor_ohp_type: formData.contractor_ohp_type,
-        contractor_ohp_percentage: formData.contractor_ohp_percentage,
-        contractor_ohp_amount: formData.contractor_ohp_amount,
+        contractor_ohp_percentage: formData.contractor_ohp_type === 'percentage' ? formData.contractor_ohp_percentage : '',
+        contractor_ohp_amount: formData.contractor_ohp_type === 'amount' ? formData.contractor_ohp_amount : '',
         discount_type: formData.discount_type,
         discount_percentage_input: formData.discount_percentage,
         discount_amount_input: formData.discount_amount,
@@ -410,7 +424,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         discount_applies_to_variation: formData.discount_applies_to_variation,
         discount_applies_to_contractor_ohp: formData.discount_applies_to_contractor_ohp,
         discount_applies_to_consultant_fees: formData.discount_applies_to_consultant_fees,
-        custom_fees: formData.custom_fees ?? []
+        custom_fees: customFeesForSave
       };
 
       const MAX_VALUE = 999999999999.99;
