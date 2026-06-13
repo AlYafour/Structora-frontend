@@ -80,36 +80,18 @@ export default function InvoiceViewPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      // Load actual invoices only
-      let invoiceData = null;
-      let projectId = null;
+      // Single API call replaces getAll() + N×getInvoices() loop
+      const result = await projectApi.findInvoiceById(invoiceId);
+      const invoiceData = result?.invoice || result;
+      const foundProjectId = result?.project_id || invoiceData?.project;
 
-      const projectsData = await projectApi.getAll();
-      const projects = Array.isArray(projectsData) ? projectsData : (projectsData?.results || projectsData?.items || projectsData?.data || []);
-
-      // Search for invoice in all projects
-      for (const proj of projects) {
-        try {
-          const invoices = await projectApi.getInvoices(proj.id);
-          const invoicesList = Array.isArray(invoices) ? invoices : (invoices?.results || invoices?.items || []);
-          const found = invoicesList.find(inv => inv.id === parseInt(invoiceId));
-          if (found) {
-            invoiceData = found;
-            const foundProjectId = proj.id;
-            setProjectId(foundProjectId);
-            projectId = foundProjectId;
-            break;
-          }
-        } catch (e) {
-          // Continue searching in other projects
-          continue;
-        }
-      }
-
-      if (!invoiceData || !projectId) {
+      if (!invoiceData || !foundProjectId) {
         setLoadError("invoice_not_found");
         return;
       }
+
+      setProjectId(foundProjectId);
+      const projectId = foundProjectId;
 
       // Load full project data with owners, consultant, contract
       await loadFullProjectData(projectId);

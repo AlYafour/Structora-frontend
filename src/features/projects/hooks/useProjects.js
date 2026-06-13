@@ -22,6 +22,7 @@ export const useProjects = (approvalStatusFilter = 'all') => {
 
       if (approvalStatusFilter === "final_approved") {
         params.approval_status = 'final_approved';
+        params.detailed = 'true'; // enable heavy financial calculations — only this tab shows them
       } else if (approvalStatusFilter === "approved") {
         params.approval_status = 'approved';
       } else if (approvalStatusFilter === "pending_approvals") {
