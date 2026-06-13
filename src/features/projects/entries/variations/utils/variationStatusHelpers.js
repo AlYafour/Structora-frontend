@@ -99,9 +99,10 @@ export const calculatePermissions = (variation, user, alterationRequests = []) =
     (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
   );
 
-  // Staff can only edit draft/pending_project_manager; privileged users can edit anything not finally approved
+  // Staff can edit draft, pending PM review, or rejected variations (so they can fix and resubmit)
   const canEdit = !finallyApproved &&
     (!isStaff || status === 'draft' || status === 'pending_project_manager' ||
+      status === 'rejected_by_project_manager' || status === 'rejected_by_general_manager' ||
       (status === 'pending_general_manager_initial' && hasAcceptedEditRequest));
 
   // Can approve/reject only if not rejected (must edit first if rejected)

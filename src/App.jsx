@@ -176,7 +176,8 @@ function TenantRoutes() {
       <Route path="projects/:projectId/excavation-notice/view" element={<ProtectedRoute><ViewExcavationNoticePage /></ProtectedRoute>} />
 
       {/* Extensions */}
-      <Route path="projects/:projectId/extensions/edit" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/extensions/new" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/extensions/:extensionIdx/edit" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/extensions/view" element={<ProtectedRoute><ViewExtensionsPage /></ProtectedRoute>} />
 
       {/* Awarding */}

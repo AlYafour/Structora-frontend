@@ -141,13 +141,14 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
     return { count: selectedIdxs.size, totalDays, totalMonths };
   }, [selectedIdxs, extensions]);
 
-  const editUrl = `/projects/${projectId}/extensions/edit`;
+  const newUrl = `/projects/${projectId}/extensions/new`;
+  const editUrlFor = (i) => `/projects/${projectId}/extensions/${i}/edit`;
 
   return (
     <div className="prj-tab-panel">
       <div className="prj-tab-header">
         <div className="prj-tab-actions">
-          <Button as={Link} to={editUrl} variant="primary" size="md">
+          <Button as={Link} to={newUrl} variant="primary" size="md">
             {t("add_extension")}
           </Button>
         </div>
@@ -201,7 +202,7 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
                     <tr
                       key={ext.id || i}
                       className={isSelected ? "is-selected" : ""}
-                      onClick={() => navigate(editUrl)}
+                      onClick={() => navigate(editUrlFor(i))}
                     >
                       <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -245,7 +246,7 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
                       </td>
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <ActionMenu items={[
-                          { label: t("edit"), to: editUrl, type: "link" },
+                          { label: t("edit"), to: editUrlFor(i), type: "link" },
                           {
                             label: downloadingIdx === i ? t("downloading") : t("download_extension_letter"),
                             onClick: () => handleDownloadLetter(i),

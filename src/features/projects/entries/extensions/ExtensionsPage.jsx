@@ -9,7 +9,6 @@ import PageLayout from "../../../../components/layout/PageLayout";
 import FinancialActionBar from "../../../../components/common/FinancialActionBar";
 import ProjectEntryInfo from "../../../../components/common/ProjectEntryInfo";
 import ContractExtension from "../../wizard/components/ContractExtension";
-import Button from "../../../../components/common/Button";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
 const FORM_ID = "extensions-form";
@@ -30,17 +29,20 @@ const EMPTY_EXTENSION = {
 };
 
 export default function ExtensionsPage() {
-  const { projectId } = useParams();
+  const { projectId, extensionIdx } = useParams();
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
+
+  const isNew = extensionIdx === undefined;
+  const idx = isNew ? null : parseInt(extensionIdx, 10);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [startOrderId, setStartOrderId] = useState(null);
-  const [extensions, setExtensions] = useState([]);
+  const [allExtensions, setAllExtensions] = useState([]);
+  const [extension, setExtension] = useState({ ...EMPTY_EXTENSION });
   const [project, setProject] = useState(null);
   const { success, error: showError } = useNotifications();
-  const showToast = (type, msg) => type === "success" ? success(msg) : showError(msg);
   const navTimerRef = useRef(null);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function ExtensionsPage() {
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [projectId, extensionIdx]);
 
   const loadData = async () => {
     try {
@@ -57,11 +59,10 @@ export default function ExtensionsPage() {
         logger.debug("Failed to load project", err);
       });
       const raw = await projectApi.getStartOrder(projectId);
-      // API returns array for list endpoint; extract first item
       const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
       if (data && data.id) {
         setStartOrderId(data.id);
-        const currentExtensions = data.extensions
+        const existing = Array.isArray(data.extensions)
           ? data.extensions.map((ext) => ({
               reason: ext.reason || "",
               days: ext.days || 0,
@@ -82,8 +83,12 @@ export default function ExtensionsPage() {
               _isExisting: true,
             }))
           : [];
-        // If no extensions yet, start with one empty
-        setExtensions(currentExtensions.length > 0 ? currentExtensions : [{ ...EMPTY_EXTENSION }]);
+        setAllExtensions(existing);
+        if (!isNew && idx !== null && existing[idx]) {
+          setExtension(existing[idx]);
+        } else {
+          setExtension({ ...EMPTY_EXTENSION });
+        }
       }
     } catch (err) {
       logger.debug("ExtensionsPage: load failed", err);
@@ -92,36 +97,28 @@ export default function ExtensionsPage() {
     }
   };
 
-  const handleAddExtension = () => {
-    setExtensions((prev) => [...prev, { ...EMPTY_EXTENSION }]);
-  };
-
-  const handleUpdateExtension = (extIndex, field, value) => {
-    setExtensions((prev) => {
-      const updated = [...prev];
-      updated[extIndex] = { ...updated[extIndex], [field]: value };
-      return updated;
-    });
-  };
-
-  const handleRemoveExtension = (extIndex) => {
-    setExtensions((prev) => prev.filter((_, i) => i !== extIndex));
+  const handleUpdate = (_, field, value) => {
+    setExtension((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!startOrderId) {
-      showToast("error", t("start_order_required_for_extensions"));
+      showError(t("start_order_required_for_extensions"));
       return;
     }
 
     setSaving(true);
     try {
-      const formData = new FormData();
+      const updated = [...allExtensions];
+      if (isNew) {
+        updated.push(extension);
+      } else {
+        updated[idx] = extension;
+      }
 
-      // Clean extensions before sending (remove empty ones)
-      const cleanExtensions = extensions
+      const cleanExtensions = updated
         .filter((ext) => {
           if (!ext || typeof ext !== "object") return false;
           const hasReason = ext.reason && String(ext.reason).trim() !== "";
@@ -152,7 +149,8 @@ export default function ExtensionsPage() {
           _file: ext.file instanceof File ? ext.file : null,
         }));
 
-      // Convert extensions to JSON (without _file fields)
+      const formData = new FormData();
+
       const extensionsForJson = cleanExtensions.map((ext) => ({
         reason: ext.reason,
         days: ext.days,
@@ -169,16 +167,14 @@ export default function ExtensionsPage() {
 
       formData.append("extensions", JSON.stringify(extensionsForJson));
 
-      // Add extension files
-      cleanExtensions.forEach((ext, idx) => {
+      cleanExtensions.forEach((ext, i) => {
         if (ext._file instanceof File) {
-          formData.append(`extensions[${idx}][file]`, ext._file);
+          formData.append(`extensions[${i}][file]`, ext._file);
         }
-        // Send new attachment files with consecutive keys (no gaps)
         let newAttCounter = 0;
         (ext._letter_attachment_files || []).forEach((f) => {
           if (f instanceof File) {
-            formData.append(`extensions[${idx}][letter_attachment_new][${newAttCounter}]`, f);
+            formData.append(`extensions[${i}][letter_attachment_new][${newAttCounter}]`, f);
             newAttCounter++;
           }
         });
@@ -186,12 +182,12 @@ export default function ExtensionsPage() {
 
       await projectApi.updateStartOrder(projectId, startOrderId, formData);
 
-      showToast("success", t("save_success"));
+      success(t("save_success"));
       navTimerRef.current = setTimeout(() => navigate(`/projects/${projectId}?tab=extensions`), 1200);
     } catch (error) {
       const handledError = handleError(error, "ExtensionsPage.handleSubmit");
       logger.error("Error saving extensions", handledError);
-      showToast("error", handledError.message || t("save_error"));
+      showError(handledError.message || t("save_error"));
     } finally {
       setSaving(false);
     }
@@ -228,29 +224,19 @@ export default function ExtensionsPage() {
         <form id={FORM_ID} onSubmit={handleSubmit}>
           <div className="card">
             <div className="card__header">
-              <span>{t("extensions")}</span>
-              <Button type="button" variant="secondary" size="sm" onClick={handleAddExtension}>
-                + {t("add_extension")}
-              </Button>
+              <span>{isNew ? t("add_extension") : t("edit_extension")}</span>
             </div>
             <div className="card__body">
-              {extensions.length > 0 ? (
-                extensions.map((ext, idx) => (
-                  <ContractExtension
-                    key={ext.id || idx}
-                    extension={ext}
-                    index={idx}
-                    extensionIndex={idx}
-                    isView={false}
-                    onUpdate={handleUpdateExtension}
-                    onRemove={handleRemoveExtension}
-                    canRemove={extensions.length > 1}
-                    projectId={projectId}
-                  />
-                ))
-              ) : (
-                <div className="prj-empty-state">{t("no_extensions")}</div>
-              )}
+              <ContractExtension
+                extension={extension}
+                index={isNew ? allExtensions.length : idx}
+                extensionIndex={isNew ? allExtensions.length : idx}
+                isView={false}
+                onUpdate={handleUpdate}
+                onRemove={null}
+                canRemove={false}
+                projectId={projectId}
+              />
             </div>
           </div>
         </form>

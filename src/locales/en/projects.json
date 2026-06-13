@@ -260,6 +260,7 @@
   "project_operations": "Project Operations",
   "extensions": "Extensions",
   "add_extension": "Add Extension",
+  "edit_extension": "Edit Extension",
   "no_extensions": "No extensions. Click 'Add Extension' to add a new extension.",
   "extensions_description": "Add extensions for the project. Project end date will be calculated automatically based on extensions.",
   "start_order_required_for_extensions": "Start order must be added first before adding extensions.",

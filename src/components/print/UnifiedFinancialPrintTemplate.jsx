@@ -70,9 +70,15 @@ export default function UnifiedFinancialPrintTemplate({
   const { t, i18n } = useTranslation();
   const tAr = useMemo(() => i18n.getFixedT("ar"), [i18n]);
   const tEn = useMemo(() => i18n.getFixedT("en"), [i18n]);
-  const [invoiceAttachments, setInvoiceAttachments] = useState([]);
-  const [variations, setVariations] = useState([]);
-  const [linkedInvoiceItems, setLinkedInvoiceItems] = useState([]);
+  const [asyncData, setAsyncData] = useState({
+    invoiceAttachments: [],
+    variations: [],
+    linkedInvoiceItems: [],
+  });
+  const invoiceAttachments = asyncData.invoiceAttachments;
+  const variations = asyncData.variations;
+  const linkedInvoiceItems = asyncData.linkedInvoiceItems;
+
   const [printModeInternal, setPrintMode] = useState("detailed"); // "detailed" | "summary"
   const printMode = printModeProp ?? printModeInternal;
   const hasInvoiceAttachmentsProp = Array.isArray(invoiceAttachmentsProp);
@@ -116,101 +122,60 @@ export default function UnifiedFinancialPrintTemplate({
     return url || null;
   }, [company?.logo]);
 
+  // Single combined effect: all async fetches run in parallel and update state once,
+  // preventing 3 separate re-renders + 3 expensive document recomputations on load.
   useEffect(() => {
-    if (hasInvoiceAttachmentsProp) {
-      setInvoiceAttachments(invoiceAttachmentsProp);
-      return;
-    }
-
-    if (documentType !== "invoice" || !data?.id || !data?.project) {
-      setInvoiceAttachments([]);
+    // If all data is provided via props, apply immediately with no fetch
+    if (hasInvoiceAttachmentsProp && hasVariationsProp && hasLinkedInvoiceItemsProp) {
+      setAsyncData({
+        invoiceAttachments: invoiceAttachmentsProp,
+        variations: variationsProp,
+        linkedInvoiceItems: linkedInvoiceItemsProp,
+      });
       return;
     }
 
     let isActive = true;
-    (async () => {
+
+    const fetchAttachments = async () => {
+      if (hasInvoiceAttachmentsProp) return invoiceAttachmentsProp;
+      if (documentType !== "invoice" || !data?.id || !data?.project) return [];
       try {
         const response = await projectApi.getAttachments({
           model: "actualinvoice",
           object_id: data.id.toString(),
         });
-        const list = Array.isArray(response)
-          ? response
-          : response?.results || response?.items || [];
-        if (isActive) setInvoiceAttachments(list);
+        return Array.isArray(response) ? response : response?.results || response?.items || [];
       } catch {
-        if (isActive) setInvoiceAttachments([]);
+        return [];
       }
-    })();
-
-    return () => {
-      isActive = false;
     };
-  }, [documentType, data?.id, data?.project, hasInvoiceAttachmentsProp, invoiceAttachmentsProp]);
 
-  useEffect(() => {
-    if (hasVariationsProp) {
-      setVariations(variationsProp);
-      return;
-    }
-
-    if (documentType !== "invoice" || !data?.project) {
-      setVariations([]);
-      return;
-    }
-
-    let isActive = true;
-    (async () => {
+    const fetchVariations = async () => {
+      if (hasVariationsProp) return variationsProp;
+      if (documentType !== "invoice" || !data?.project) return [];
       try {
         const response = await projectApi.getVariations(data.project);
-        const list = Array.isArray(response)
-          ? response
-          : response?.results || response?.items || [];
-        if (isActive) setVariations(list);
+        return Array.isArray(response) ? response : response?.results || response?.items || [];
       } catch {
-        if (isActive) setVariations([]);
+        return [];
       }
-    })();
-
-    return () => {
-      isActive = false;
     };
-  }, [documentType, data?.project, hasVariationsProp, variationsProp]);
 
-  useEffect(() => {
-    if (hasLinkedInvoiceItemsProp) {
-      setLinkedInvoiceItems(linkedInvoiceItemsProp);
-      return;
-    }
-
-    if (documentType !== "taxInvoice") {
-      setLinkedInvoiceItems([]);
-      return;
-    }
-
-    let isActive = true;
-    (async () => {
+    const fetchLinkedInvoiceItems = async () => {
+      if (hasLinkedInvoiceItemsProp) return linkedInvoiceItemsProp;
+      if (documentType !== "taxInvoice") return [];
       try {
-        // Case 1: single linked invoice FK
         if (data?.invoice) {
           const response = await projectApi.findInvoiceById(data.invoice);
           const invoice = response?.invoice || response;
-          const items = Array.isArray(invoice?.items) ? invoice.items : [];
-          if (isActive) setLinkedInvoiceItems(items);
-          return;
+          return Array.isArray(invoice?.items) ? invoice.items : [];
         }
-
-        // Case 2: quarterly tax invoice — match by invoice_number
         if (data?.invoice_number && data?.project) {
           const invoiceNumbers = data.invoice_number.split(",").map((n) => n.trim()).filter(Boolean);
           const allInvoices = await projectApi.getInvoices(data.project);
           const matched = allInvoices.filter((inv) => invoiceNumbers.includes(String(inv.invoice_number)));
-
-          if (matched.length === 0) {
-            if (isActive) setLinkedInvoiceItems([]);
-            return;
-          }
-
+          if (matched.length === 0) return [];
           const itemArrays = await Promise.all(
             matched.map(async (inv) => {
               if (Array.isArray(inv.items) && inv.items.length > 0) return inv.items;
@@ -219,19 +184,42 @@ export default function UnifiedFinancialPrintTemplate({
               return Array.isArray(fullInvoice?.items) ? fullInvoice.items : [];
             })
           );
-
-          if (isActive) setLinkedInvoiceItems(itemArrays.flat());
+          return itemArrays.flat();
         }
       } catch (err) {
         console.error("[TaxInvoice] failed to load linked invoice items:", err);
-        if (isActive) setLinkedInvoiceItems([]);
       }
-    })();
+      return [];
+    };
+
+    Promise.all([fetchAttachments(), fetchVariations(), fetchLinkedInvoiceItems()]).then(
+      ([invoiceAttachmentsResult, variationsResult, linkedInvoiceItemsResult]) => {
+        if (isActive) {
+          setAsyncData({
+            invoiceAttachments: invoiceAttachmentsResult,
+            variations: variationsResult,
+            linkedInvoiceItems: linkedInvoiceItemsResult,
+          });
+        }
+      }
+    );
 
     return () => {
       isActive = false;
     };
-  }, [documentType, data?.invoice, data?.invoice_number, data?.project, hasLinkedInvoiceItemsProp, linkedInvoiceItemsProp]);
+  }, [
+    documentType,
+    data?.id,
+    data?.project,
+    data?.invoice,
+    data?.invoice_number,
+    hasInvoiceAttachmentsProp,
+    invoiceAttachmentsProp,
+    hasVariationsProp,
+    variationsProp,
+    hasLinkedInvoiceItemsProp,
+    linkedInvoiceItemsProp,
+  ]);
 
   const projectName = useMemo(
     () =>
