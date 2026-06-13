@@ -72,7 +72,7 @@ export function calculateConsultantFees(formData, totalVariationAmount, totalAdd
 /**
  * Calculate discount based on type with component selection
  */
-export function calculateDiscountAdvanced(formData, totalVariationAmount, contractorOHP, consultantFees, totalAmountBeforeDiscount) {
+export function calculateDiscountAdvanced(formData, totalVariationAmount, contractorOHP, consultantFees, totalAmountBeforeDiscount, customFeesTotal = 0) {
   const discountAppliesToVariation = formData.discount_applies_to_variation !== undefined
     ? formData.discount_applies_to_variation
     : true;
@@ -119,8 +119,10 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
     let adjustedFinalAmount = targetFinalAmount;
     if (adjustedFinalAmount < 0) adjustedFinalAmount = 0;
 
-    // Calculate final amount for non-selected components (no discount)
+    // Custom fees are never discountable — treat them like non-selected components
+    // so the user's entered target is the true grand total (subtotal + custom fees)
     const nonSelectedAmount =
+      customFeesTotal +
       (discountAppliesToVariation ? 0 : totalVariationAmount) +
       (discountAppliesToContractorOHP ? 0 : contractorOHP) +
       (discountAppliesToConsultantFees ? 0 : consultantFees);
@@ -145,7 +147,9 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
       discountPercentage = 0;
     }
 
-    finalAmountAfterDiscount = adjustedFinalAmount;
+    // finalAmountAfterDiscount is the discounted subtotal (without custom fees),
+    // so that totalAmount = finalAmountAfterDiscount + customFeesTotal = user's target
+    finalAmountAfterDiscount = Math.max(0, adjustedFinalAmount - customFeesTotal);
   }
 
   // Apply effective discount ratio to selected components only
@@ -271,7 +275,8 @@ export function calculateAllFinancials(formData, omittedItems, addedItems) {
     totalVariationAmount,
     contractorOHP,
     consultantFees,
-    totalAmountBeforeDiscount
+    totalAmountBeforeDiscount,
+    customFeesTotal
   );
 
   // Custom fees are not discounted — added on top of the discounted subtotal
