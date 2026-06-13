@@ -79,7 +79,7 @@ export function validatePaymentSubmission(formData, allocations, actualInvoices,
     if ((!formData.amount || parseFloat((formData.amount || '').replace(/,/g, '')) <= 0) || !formData.date) {
       errors.push(t('fill_required_fields') || 'يرجى ملء جميع الحقول المطلوبة');
     }
-    if (!formData.advance_percentage) {
+    if (!isEditMode && !formData.advance_percentage) {
       errors.push(t('advance_percentage_required') || 'يرجى تحديد نسبة الدفعة المقدمة');
     }
     if (formData.payer !== 'owner') {
