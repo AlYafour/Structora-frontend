@@ -3837,13 +3837,136 @@ html.theme-dark .project-entry-info__code {
 .prj-view-header__right-placeholder {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
   background: var(--color-surface-2, var(--gray-100, #f3f4f6));
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .dark .prj-view-header__right-placeholder {
+  background: var(--gray-800, #1f2937);
+}
+
+/* Editable: dashed border zone inset */
+.prj-view-header__right-placeholder--editable {
+  cursor: pointer;
+}
+
+.prj-view-header__right-placeholder--editable::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 2px dashed var(--color-border, var(--gray-300, #d1d5db));
+  border-radius: var(--radius-lg, 10px);
+  pointer-events: none;
+  transition: border-color 0.2s ease;
+}
+
+.dark .prj-view-header__right-placeholder--editable::after {
+  border-color: var(--gray-600, #4b5563);
+}
+
+.prj-view-header__right-placeholder--editable:hover {
+  background: var(--gray-200, #e5e7eb);
+}
+
+.dark .prj-view-header__right-placeholder--editable:hover {
   background: var(--gray-700, #374151);
+}
+
+.prj-view-header__right-placeholder--editable:hover::after,
+.prj-view-header__right-placeholder--dragover::after {
+  border-color: var(--primary-400, #60a5fa);
+}
+
+.prj-view-header__right-placeholder--dragover {
+  background: var(--primary-50, #eff6ff);
+}
+
+.dark .prj-view-header__right-placeholder--dragover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Upload icon container */
+.prj-view-header__upload-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-xl, 12px);
+  background: var(--color-surface, white);
+  border: 1px solid var(--color-border, var(--gray-200, #e5e7eb));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, var(--muted));
+  font-size: 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .prj-view-header__upload-icon {
+  background: var(--gray-900, #111827);
+  border-color: var(--gray-700, #374151);
+  color: var(--gray-400, #9ca3af);
+}
+
+.prj-view-header__right-placeholder--editable:hover .prj-view-header__upload-icon {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Upload text */
+.prj-view-header__upload-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+.prj-view-header__upload-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary, var(--ink));
+  margin: 0;
+  line-height: 1.4;
+}
+
+.prj-view-header__upload-hint {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary, var(--muted));
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Upload overlay during active upload */
+.prj-view-header__upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.prj-view-header__upload-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: prj-spin 0.7s linear infinite;
+}
+
+@keyframes prj-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes prj-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Status row: approval badge or banner */

@@ -101,6 +101,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   const setSetupField = (k, v) => onSetupChange?.((prev) => ({ ...prev, [k]: v }));
   const [projectImage, setProjectImage] = useState(null);
   const [projectImagePreview, setProjectImagePreview] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const imageInputRef = useRef(null);
 
   const handleImageSelect = useCallback((e) => {
@@ -110,12 +111,14 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
     if (file.size > 5 * 1024 * 1024) return;
     setProjectImage(file);
     setProjectImagePreview(URL.createObjectURL(file));
+    setImageRemoved(false);
     setSetupField("_projectImageFile", file);
   }, [onSetupChange]);
 
   const handleImageRemove = useCallback(() => {
     setProjectImage(null);
     setProjectImagePreview(null);
+    setImageRemoved(true);
     if (imageInputRef.current) imageInputRef.current.value = "";
     setSetupField("_projectImageFile", null);
   }, [onSetupChange]);
@@ -776,7 +779,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
       // Save legacy code if provided
       await api.patch(`projects/${projectId}/`, { legacy_code: legacyCode || "" });
 
-      // Upload project image if changed
+      // Upload new image or clear removed image
       if (projectImage && projectImage.size > 0) {
         const { getCsrfToken } = await import("../../../../utils/cookies");
         const imgForm = new FormData();
@@ -787,6 +790,17 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
         await fetch(`${API_BASE_URL}projects/${projectId}/`, {
           method: "PATCH", credentials: "include", headers, body: imgForm,
         });
+      } else if (imageRemoved) {
+        const { getCsrfToken } = await import("../../../../utils/cookies");
+        const imgForm = new FormData();
+        imgForm.append("project_image", "");
+        const headers = {};
+        const csrf = getCsrfToken();
+        if (csrf) headers["X-CSRFToken"] = csrf;
+        await fetch(`${API_BASE_URL}projects/${projectId}/`, {
+          method: "PATCH", credentials: "include", headers, body: imgForm,
+        });
+        setImageRemoved(false);
       }
 
       if (existingId) {

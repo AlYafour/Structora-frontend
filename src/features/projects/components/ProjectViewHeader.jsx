@@ -1,11 +1,11 @@
-import { memo, useState } from "react";
+import { memo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FiDownload } from "react-icons/fi";
+import { FiDownload, FiUpload } from "react-icons/fi";
 import Button from "../../../components/common/Button";
 import { formatInternalCode } from "../../../utils/formatters/id";
 import { buildFileUrl } from "../../../utils/helpers/file";
-import { api } from "../../../services/api";
+import { api, updateFile } from "../../../services/api";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { useLanguage } from "../../../hooks";
 
@@ -28,6 +28,10 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 }) {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [localImageUrl, setLocalImageUrl] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
   const { error: showError } = useNotifications();
   const { isArabic: isAR } = useLanguage();
 
@@ -56,6 +60,38 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
     }
   };
 
+  const handleImageUpload = async (file) => {
+    if (!file.type.startsWith("image/")) {
+      showError(t("invalid_file_type"));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError(t("file_too_large"));
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setLocalImageUrl(previewUrl);
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("project_image", file, file.name);
+      await updateFile(`projects/${projectId}/`, formData);
+    } catch {
+      setLocalImageUrl(null);
+      URL.revokeObjectURL(previewUrl);
+      showError(t("upload_error"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  };
+
   // Use internal code or project ID as title
   const titleText = project?.internal_code
     ? `${t("project_view_internal_code")}: ${formatInternalCode(project.internal_code)}`
@@ -80,9 +116,10 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 
   // Project image URL
   const rawImageUrl = project?.project_image || null;
-  const imageUrl = rawImageUrl
+  const remoteImageUrl = rawImageUrl
     ? (rawImageUrl.startsWith("http") ? rawImageUrl : buildFileUrl(rawImageUrl))
     : null;
+  const displayImageUrl = localImageUrl || remoteImageUrl;
 
   // Status display
   const getStatusInfo = () => {
@@ -251,12 +288,41 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
 
         </div>
 
-        {/* Right panel: project image or neutral placeholder */}
+        {/* Right panel: project image or upload zone */}
         <div className="prj-view-header__right">
-          {imageUrl
-            ? <img src={imageUrl} alt={t("project_image")} className="prj-view-header__right-img" />
-            : <div className="prj-view-header__right-placeholder" />
-          }
+          {displayImageUrl ? (
+            <>
+              <img src={displayImageUrl} alt={t("project_image")} className="prj-view-header__right-img" />
+              {uploading && <div className="prj-view-header__upload-overlay"><div className="prj-view-header__upload-spinner" /></div>}
+            </>
+          ) : (
+            <div
+              className={`prj-view-header__right-placeholder${isDragOver ? " prj-view-header__right-placeholder--dragover" : ""}${projectPermissions?.can_edit ? " prj-view-header__right-placeholder--editable" : ""}`}
+              onClick={() => projectPermissions?.can_edit && fileInputRef.current?.click()}
+              onDragOver={(e) => { if (projectPermissions?.can_edit) { e.preventDefault(); setIsDragOver(true); } }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={projectPermissions?.can_edit ? handleDrop : undefined}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0])}
+              />
+              <div className="prj-view-header__upload-icon">
+                <FiUpload />
+              </div>
+              <div className="prj-view-header__upload-body">
+                <p className="prj-view-header__upload-label">
+                  {projectPermissions?.can_edit ? t("no_render_uploaded_yet") : t("no_image")}
+                </p>
+                {projectPermissions?.can_edit && (
+                  <p className="prj-view-header__upload-hint">{t("drag_or_click_upload")}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

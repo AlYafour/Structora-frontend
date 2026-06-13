@@ -87,8 +87,8 @@ const ProgressTab = memo(function ProgressTab({ projectId, onReload }) {
     }
   };
 
-  const canEditEntry = (entry) => {
-    return canAddProgress && (user?.id === entry.created_by || user?.is_staff || isAdmin);
+  const canEditEntry = () => {
+    return isAdmin;
   };
 
   const canDeleteEntry = () => {
