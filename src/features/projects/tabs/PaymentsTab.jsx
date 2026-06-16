@@ -207,6 +207,11 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
 
   const [payerFilter, setPayerFilter] = useState("");
 
+  // Unvoid state
+  const [unvoidConfirmOpen, setUnvoidConfirmOpen] = useState(false);
+  const [unvoidingPaymentId, setUnvoidingPaymentId] = useState(null);
+  const [unvoidLoading, setUnvoidLoading] = useState(false);
+
   // Bulk void state
   const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
   const [bulkVoidReason, setBulkVoidReason] = useState('');
@@ -359,6 +364,23 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
     reloadAllPayments();
   };
 
+  const handleUnvoidPayment = async () => {
+    if (!unvoidingPaymentId) return;
+    setUnvoidLoading(true);
+    try {
+      await paymentApi.unvoid(unvoidingPaymentId);
+      success(t("unvoid_success", "Payment restored successfully"));
+      onReload();
+      reloadAllPayments();
+    } catch (err) {
+      const apiDetail = err?.response?.data?.detail || err?.response?.data?.error;
+      showError(apiDetail || t("unvoid_error", "Failed to restore payment"));
+    } finally {
+      setUnvoidConfirmOpen(false);
+      setUnvoidingPaymentId(null);
+      setUnvoidLoading(false);
+    }
+  };
 
   return (
     <div className="prj-tab-panel">
@@ -720,7 +742,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                         )}
                       </td>
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                        {!isVoided && (
+                        {!isVoided ? (
                           <ActionMenu items={[
                             ...(canEditPayment ? [{ label: t("edit"), type: "button", onClick: () => handleEditPayment(payment) }] : []),
                             ...(payment.payment_method === 'promissory_note' && payment.promissory_note_status === 'pending' && canEditPayment ? [
@@ -729,6 +751,12 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                             ] : []),
                             ...(canVoidPayment ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingPaymentId(payment.id); setVoidConfirmOpen(true); } }] : []),
                           ]} />
+                        ) : (
+                          isAdmin && (
+                            <ActionMenu items={[
+                              { label: t("unvoid", "Unvoid"), type: "button", variant: "warning", onClick: () => { setUnvoidingPaymentId(payment.id); setUnvoidConfirmOpen(true); } },
+                            ]} />
+                          )
                         )}
                       </td>
                     </tr>
@@ -945,6 +973,18 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
         onConfirm={handleDishonorNote}
         danger
         busy={dishonorLoading}
+      />
+
+      {/* Unvoid Payment Confirm Dialog */}
+      <Dialog
+        open={unvoidConfirmOpen}
+        title={t("unvoid_payment", "Restore Payment")}
+        desc={<p>{t("confirm_unvoid_payment", "This will restore the payment to active status. Previously voided allocations will not be restored automatically.")}</p>}
+        confirmLabel={unvoidLoading ? t("restoring", "Restoring...") : t("unvoid", "Unvoid")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!unvoidLoading) { setUnvoidConfirmOpen(false); setUnvoidingPaymentId(null); } }}
+        onConfirm={handleUnvoidPayment}
+        busy={unvoidLoading}
       />
 
     </div>

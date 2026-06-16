@@ -73,6 +73,15 @@ class PaymentService extends BaseService {
     }
   }
 
+  async unvoid(id) {
+    try {
+      const { data } = await api.post(`${this.basePath}${id}/unvoid/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'PaymentService.unvoid');
+    }
+  }
+
   /**
    * Honor a pending promissory note — marks it as cashed, creates receipt voucher,
    * and the note's amount now reduces the invoice's remaining balance.

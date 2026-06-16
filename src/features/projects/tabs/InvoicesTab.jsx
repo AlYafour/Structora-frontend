@@ -9,6 +9,7 @@ import { projectApi } from "../../../services";
 import { handleError } from "../../../utils/errorHandler";
 
 import Button from "../../../components/common/Button";
+import "./PaymentsTab.css";
 import ActionMenu from "../../../components/common/ActionMenu";
 import Dialog from "../../../components/common/Dialog";
 import { formatMoney, formatDate } from "../../../utils/formatters";
@@ -46,6 +47,13 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
   const [showVat, setShowVat] = useState(false);
   const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
   const vg = (val) => showVat ? val : val / 1.05;
+
+  const [payerFilter, setPayerFilter] = useState("");
+
+  // Unvoid state
+  const [unvoidConfirmOpen, setUnvoidConfirmOpen] = useState(false);
+  const [unvoidingInvoiceId, setUnvoidingInvoiceId] = useState(null);
+  const [unvoidLoading, setUnvoidLoading] = useState(false);
 
   // Bulk void state
   const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
@@ -210,10 +218,33 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
     }
   };
 
+  const handleUnvoidInvoice = async () => {
+    if (!unvoidingInvoiceId) return;
+    setUnvoidLoading(true);
+    try {
+      await projectApi.unvoidInvoice(projectId, unvoidingInvoiceId);
+      success(t("unvoid_success", "Invoice restored successfully"));
+      onReload();
+      reloadAllInvoices();
+    } catch (err) {
+      const apiDetail = err?.response?.data?.detail || err?.response?.data?.error;
+      showError(apiDetail || t("unvoid_error", "Failed to restore invoice"));
+    } finally {
+      setUnvoidConfirmOpen(false);
+      setUnvoidingInvoiceId(null);
+      setUnvoidLoading(false);
+    }
+  };
+
+  const filteredInvoices = useMemo(() => {
+    if (!payerFilter) return displayedInvoices;
+    return displayedInvoices.filter(inv => (inv.payer || 'owner') === payerFilter);
+  }, [displayedInvoices, payerFilter]);
+
   // Selectable invoices for bulk void: non-voided only
   const selectableInvoices = useMemo(() =>
-    displayedInvoices.filter(inv => inv.status !== 'voided'),
-    [displayedInvoices]
+    filteredInvoices.filter(inv => inv.status !== 'voided'),
+    [filteredInvoices]
   );
 
   const {
@@ -249,7 +280,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
   };
 
   // Count total columns for expand row colspan
-  const totalColumns = 11; // checkbox + expand + # + invoice_number + payer + date + amount + paid + remaining + status + action
+  const totalColumns = 12; // checkbox + expand + # + invoice_number + description + payer + date + amount + paid + remaining + status + action
 
   return (
     <div className="prj-tab-panel">
@@ -365,6 +396,31 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
             </span>
           </div>
 
+          {/* Filter bar */}
+          <div className="payments-tab__filter-bar">
+            <span className="payments-tab__filter-label">{t("filter_by", "Filter by")}:</span>
+            <div className="payments-tab__filter-chips">
+              {[
+                { value: "", label: t("all", "All") },
+                { value: "owner", label: t("payer_owner", "Owner") },
+                { value: "bank", label: t("payer_bank", "Bank") },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPayerFilter(opt.value)}
+                  className={`payments-tab__chip${payerFilter === opt.value ? " payments-tab__chip--active" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {payerFilter && (
+              <span className="payments-tab__filter-count">
+                {filteredInvoices.length} {t("results", "results")}
+              </span>
+            )}
+          </div>
+
           {/* Invoice table */}
           {canVoidInvoice && (
             <BulkActionsBar
@@ -395,6 +451,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                   <th style={{ width: '36px' }}></th>
                   <th className="ds-text-center ds-w-60">#</th>
                   <th>{t("invoice_number")}</th>
+                  <th>{t("description", "Description")}</th>
                   <th>{t("payer")}</th>
                   <th>{t("invoice_date")}</th>
                   <th className="ds-text-right">{t("total_amount")}</th>
@@ -405,7 +462,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                 </tr>
               </thead>
               <tbody>
-                {displayedInvoices.map((invoice, i) => {
+                {filteredInvoices.map((invoice, i) => {
                   const paidAmount = parseFloat(invoice.paid_amount) || 0;
                   const remainingAmount = invoice.remaining_amount != null ? parseFloat(invoice.remaining_amount) : (parseFloat(invoice.amount) || 0);
                   const totalAmount = parseFloat(invoice.amount) || 0;
@@ -456,6 +513,9 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                             {invoice.invoice_number || `#${invoice.id}`}
                           </span>
                         </td>
+                        <td onClick={() => navigate(`/invoices/${invoice.id}/view`)} style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary, #6b7280)', fontSize: '0.85rem' }} title={invoice.description || ''}>
+                          {invoice.description || '—'}
+                        </td>
                         <td onClick={() => navigate(`/invoices/${invoice.id}/view`)}>
                           <span className={`prj-badge ${(invoice.payer || 'owner') === 'bank' ? 'prj-badge--info' : 'prj-badge--success'}`}>
                             {(invoice.payer || 'owner') === 'bank' ? t('payer_bank') : t('payer_owner')}
@@ -497,11 +557,17 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                           </div>
                         </td>
                         <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                          {!isVoided && (
+                          {!isVoided ? (
                             <ActionMenu items={[
                               ...(canEditInvoice ? [{ label: t("edit"), to: `/invoices/${invoice.id}/edit`, type: "link" }] : []),
                               ...(canVoidInvoice ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingInvoiceId(invoice.id); setVoidConfirmOpen(true); } }] : []),
                             ]} />
+                          ) : (
+                            isAdmin && (
+                              <ActionMenu items={[
+                                { label: t("unvoid", "Unvoid"), type: "button", variant: "warning", onClick: () => { setUnvoidingInvoiceId(invoice.id); setUnvoidConfirmOpen(true); } },
+                              ]} />
+                            )
                           )}
                         </td>
                       </tr>
@@ -695,6 +761,18 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
         onConfirm={handleBulkVoidInvoices}
         danger
         busy={bulkVoiding}
+      />
+
+      {/* Unvoid Invoice Confirm Dialog */}
+      <Dialog
+        open={unvoidConfirmOpen}
+        title={t("unvoid_invoice", "Restore Invoice")}
+        desc={<p>{t("confirm_unvoid_invoice", "This will restore the invoice to active (unpaid) status. Previously voided payment allocations will not be restored automatically.")}</p>}
+        confirmLabel={unvoidLoading ? t("restoring", "Restoring...") : t("unvoid", "Unvoid")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!unvoidLoading) { setUnvoidConfirmOpen(false); setUnvoidingInvoiceId(null); } }}
+        onConfirm={handleUnvoidInvoice}
+        busy={unvoidLoading}
       />
 
     </div>

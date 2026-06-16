@@ -663,6 +663,13 @@ class ProjectService extends BaseService {
     return data;
   }
 
+  async unvoidInvoice(projectId, invoiceId) {
+    const { data } = await api.post(
+      `${this.basePath}${projectId}/actual-invoices/${invoiceId}/unvoid/`
+    );
+    return data;
+  }
+
   // ===== Project Schedule =====
 
   /**
