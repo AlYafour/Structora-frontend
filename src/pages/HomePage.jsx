@@ -18,6 +18,7 @@ export default function HomePage() {
   const { t, i18n } = useTranslation();
   const { user, tenantTheme } = useAuth();
   const [stats, setStats] = useState(null);
+  const [projectFinancials, setProjectFinancials] = useState([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
 
@@ -29,11 +30,22 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const fetchProjectFinancials = useCallback(() => {
+    api
+      .get("dashboard/project-financials/")
+      .then(({ data }) => setProjectFinancials(data))
+      .catch(() => setProjectFinancials([]));
+  }, []);
+
   useEffect(() => {
     fetchStats();
-    intervalRef.current = setInterval(fetchStats, REFRESH_INTERVAL);
+    fetchProjectFinancials();
+    intervalRef.current = setInterval(() => {
+      fetchStats();
+      fetchProjectFinancials();
+    }, REFRESH_INTERVAL);
     return () => clearInterval(intervalRef.current);
-  }, [fetchStats]);
+  }, [fetchStats, fetchProjectFinancials]);
 
   const fmt = (n) =>
     typeof n === "number"
@@ -109,7 +121,7 @@ export default function HomePage() {
             </div>
 
             {/* ── Financial Analytics ── */}
-            <DashboardFinancials stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} />
+            <DashboardFinancials stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} projectFinancials={projectFinancials} />
 
             {/* ── Bottom Row ── */}
             <div className="dash__bottom">

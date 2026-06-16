@@ -543,6 +543,106 @@ button.dash-kpi { cursor: pointer; }
   flex-shrink: 0;
 }
 
+/* ── Per-project Financial Table ── */
+.dash-fin-table-section {
+  margin-top: 20px;
+  border-top: 1px solid var(--border, #e5e7eb);
+  padding-top: 16px;
+}
+
+.dash-fin-table-section__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #111827);
+  margin: 0 0 12px 0;
+  border-inline-start: 4px solid #14213D;
+  padding-inline-start: 10px;
+}
+
+.dash-fin-table {
+  min-width: 700px;
+}
+
+.dash-fin-table td {
+  vertical-align: top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* ── Column accent colours via CSS custom props ── */
+.dash-fin-col--owner      { --col-accent: #16a34a; --col-tint: #f0fdf4; }
+.dash-fin-col--bank       { --col-accent: #2563eb; --col-tint: #eff6ff; }
+.dash-fin-col--next-owner { --col-accent: #d97706; --col-tint: #fffbeb; }
+.dash-fin-col--next-bank  { --col-accent: #ea580c; --col-tint: #fff7ed; }
+.dash-fin-col--vat        { --col-accent: #7c3aed; --col-tint: #faf5ff; }
+
+/* ── Amount row (dot + number + currency) ── */
+.dash-fin-table__amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dash-fin-table__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--col-accent, #6b7280);
+  flex-shrink: 0;
+}
+
+.dash-fin-table__amount {
+  font-weight: 600;
+  color: var(--col-accent, var(--ink, #111827));
+  font-size: 13px;
+}
+
+.dash-fin-table__currency {
+  font-size: 11px;
+  color: var(--col-accent, #6b7280);
+  opacity: 0.7;
+}
+
+/* ── Date & invoice number badges ── */
+.dash-fin-table__date-badge,
+.dash-fin-table__inv-badge {
+  display: inline-block;
+  margin-top: 4px;
+  background: var(--col-tint, #f3f4f6);
+  color: var(--col-accent, #6b7280);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dash-fin-table__inv-badge {
+  margin-inline-start: 4px;
+}
+
+/* ── Nil / empty cell ── */
+.dash-fin-table__nil {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--col-tint, #f3f4f6);
+  color: var(--col-accent, #9ca3af);
+  opacity: 0.6;
+  font-size: 13px;
+}
+
+/* ── Header colored dot ── */
+.dash-fin-th-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* ── Top Projects Table ── */
 .dash-table-wrap {
   overflow-x: auto;
@@ -773,6 +873,17 @@ html.theme-dark .dash-activity__connector {
 html.theme-dark .dash-fin-split {
   border-color: var(--border, #374151);
 }
+
+html.theme-dark .dash-fin-col--owner      { --col-tint: rgba(22, 163, 74, 0.12); }
+html.theme-dark .dash-fin-col--bank       { --col-tint: rgba(37, 99, 235, 0.12); }
+html.theme-dark .dash-fin-col--next-owner { --col-tint: rgba(217, 119, 6, 0.12); }
+html.theme-dark .dash-fin-col--next-bank  { --col-tint: rgba(234, 88, 12, 0.12); }
+html.theme-dark .dash-fin-col--vat        { --col-tint: rgba(124, 58, 237, 0.12); }
+
+html.theme-dark .dash-fin-table-section__title {
+  border-inline-start-color: rgba(255, 255, 255, 0.2);
+}
+
 
 /* ============================================================
    Responsive
