@@ -236,6 +236,7 @@ export default function VariationViewPage() {
     setPdfLoading(true);
     let cleanupPrintLayout = null;
     let _watermarkEl = null;
+    const _authImages = [];
     try {
       success(t("generating_pdf"));
       const html2canvas = (await import('html2canvas')).default;
@@ -248,6 +249,23 @@ export default function VariationViewPage() {
       _watermarkEl = el.querySelector('.vpd-watermark');
       const _logoSrc = _watermarkEl?.src || null;
       if (_watermarkEl) _watermarkEl.style.display = 'none';
+
+      // Pre-fetch all auth-protected images and swap to blob URLs so html2canvas
+      // can load them without needing the auth token in its own requests.
+      const authImgEls = el.querySelectorAll('img[src*="/api/files/"]');
+      await Promise.all(Array.from(authImgEls).map(async (imgEl) => {
+        const originalSrc = imgEl.src;
+        try {
+          const blob = await fetchFileWithAuth(originalSrc);
+          const blobUrl = URL.createObjectURL(blob);
+          imgEl.src = blobUrl;
+          _authImages.push({ imgEl, originalSrc, blobUrl });
+        } catch (e) {
+          logger.warn('Could not pre-fetch auth image for PDF', originalSrc, e);
+        }
+      }));
+      // Wait one frame so the browser renders the new blob src values
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       const canvas = await html2canvas(el, {
         scale: PDF_CANVAS_SCALE,
@@ -415,6 +433,11 @@ export default function VariationViewPage() {
       showError(t("pdf_export_error"));
     } finally {
       if (_watermarkEl) _watermarkEl.style.display = '';
+      // Restore original image src values and free blob URLs
+      _authImages.forEach(({ imgEl, originalSrc, blobUrl }) => {
+        imgEl.src = originalSrc;
+        URL.revokeObjectURL(blobUrl);
+      });
       cleanupPrintLayout?.();
       setPdfLoading(false);
     }

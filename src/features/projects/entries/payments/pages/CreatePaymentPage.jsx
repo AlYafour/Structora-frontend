@@ -122,13 +122,11 @@ export default function CreatePaymentPage() {
         const netTotal = parseFloat(inv.net_amount || 0) || parseFloat(inv.amount || 0);
 
         if (formData.payer === 'bank') {
-          // Bank pays NET portion.
-          // When remaining <= vatTotal, bank has fully paid their net share.
-          // Use min(netTotal, remaining) so that if owner paid VAT early (reducing remaining),
-          // the bank still sees the correct net amount outstanding.
-          const bankRemaining = remaining <= vatTotal
-            ? 0
-            : Math.min(netTotal, remaining);
+          // Use backend-computed bank_remaining (net only, no VAT).
+          // Falls back to legacy formula only when field is absent (old cached responses).
+          const bankRemaining = inv.bank_remaining != null
+            ? parseFloat(inv.bank_remaining || 0)
+            : (remaining <= vatTotal ? 0 : Math.max(0, remaining - vatTotal));
           if (bankRemaining <= 0.001) return null;
           return { ...inv, amount: netTotal, remaining_amount: bankRemaining };
         }
@@ -136,9 +134,12 @@ export default function CreatePaymentPage() {
         if (formData.payer === 'owner') {
           // Owner pays VAT on bank's invoice — only for new invoices that store vat
           if (vatTotal <= 0) return null;
-          const ownerRemaining = Math.min(vatTotal, remaining);
-          if (ownerRemaining <= 0.001) return null;
-          return { ...inv, amount: vatTotal, remaining_amount: ownerRemaining };
+          // Use backend-computed vat_remaining so concurrent partial payments stay accurate.
+          const vatRemaining = inv.vat_remaining != null
+            ? parseFloat(inv.vat_remaining || 0)
+            : Math.min(vatTotal, remaining);
+          if (vatRemaining <= 0.001) return null;
+          return { ...inv, amount: vatTotal, remaining_amount: vatRemaining };
         }
 
         return null;
