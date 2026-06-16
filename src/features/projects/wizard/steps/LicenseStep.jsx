@@ -692,7 +692,7 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
         <div className="wizard-section__header">
           <h4 className="wizard-section__title">{t("consultant_stamp")}</h4>
         </div>
-        <div className="wizard-section-card">
+        <div className="wizard-section-card" style={{ maxWidth: 480 }}>
           {viewMode ? (
             existingConsultantStampUrl ? (
               <img
