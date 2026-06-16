@@ -732,6 +732,22 @@
   font-size: 10.5pt;
 }
 
+
+/* ── PM Signature (floating above company stamp column) ── */
+.vpd-pm-signature-row {
+  display: flex;
+  justify-content: center;
+  width: 33.33%;
+  margin-left: 24%;
+  padding: 0 0 70px 0;
+}
+
+.vpd-pm-signature-img {
+  max-height: 80px;
+  max-width: 180px;
+  object-fit: contain;
+}
+
 /* ── Signatures ── */
 .vpd-signatures {
   display: grid;
@@ -812,6 +828,24 @@
   object-fit: contain;
   pointer-events: none;
   opacity: 0.88;
+}
+
+.vpd-sign-card--gm .vpd-stamp-img {
+  top: -30%;
+}
+
+.vpd-sign-date-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vpd-sign-date {
+  display: block;
+  font-size: 7pt;
+  color: #7f7364;
+  text-align: center;
+  margin-top: 6px;
 }
 
 /* ── Final notice ── */

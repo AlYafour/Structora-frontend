@@ -74,6 +74,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const [itemToRemove, setItemToRemove] = useState({ id: null, isOmitted: false });
   const [variationAttachment, setVariationAttachment] = useState(null);
   const [existingVariationAttachment, setExistingVariationAttachment] = useState(null);
+  const [existingVariationAttachmentName, setExistingVariationAttachmentName] = useState(null);
   const [variationFileCleared, setVariationFileCleared] = useState(false);
   const [variationAttachments, setVariationAttachments] = useState([]);
   const navTimerRef = useRef(null);
@@ -253,6 +254,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
       if (foundVariation?.variation_invoice_file) {
         setExistingVariationAttachment(foundVariation.variation_invoice_file);
+        setExistingVariationAttachmentName(foundVariation.variation_invoice_file_name || null);
       }
       if (foundVariation?.variation_attachments?.length) {
         setVariationAttachments(foundVariation.variation_attachments.map(a => ({
@@ -280,6 +282,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         loadVariationData(variationProp);
         if (variationProp.variation_invoice_file) {
           setExistingVariationAttachment(variationProp.variation_invoice_file);
+          setExistingVariationAttachmentName(variationProp.variation_invoice_file_name || null);
         }
         if (variationProp.variation_attachments?.length) {
           setVariationAttachments(variationProp.variation_attachments.map(a => ({
@@ -796,6 +799,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             variationAttachment={variationAttachment}
             setVariationAttachment={setVariationAttachment}
             existingVariationAttachment={existingVariationAttachment}
+            existingVariationAttachmentName={existingVariationAttachmentName}
             setExistingVariationAttachment={setExistingVariationAttachment}
             setVariationFileCleared={setVariationFileCleared}
             variationAttachments={variationAttachments}

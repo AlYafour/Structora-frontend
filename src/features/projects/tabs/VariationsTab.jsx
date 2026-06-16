@@ -124,6 +124,15 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         const status = getVariationStatus(variation);
 
         if (isProjectManager) {
+            if (status === "pending_owner_consultant") {
+                if (!variation.owner_approval_confirmed) {
+                    await projectApi.confirmOwnerApproval(projectId, variation.id);
+                }
+                if (!variation.consultant_approval_confirmed) {
+                    await projectApi.confirmConsultantApproval(projectId, variation.id);
+                }
+                return;
+            }
             return projectApi.approveVariationProjectManager(projectId, variation.id);
         }
 

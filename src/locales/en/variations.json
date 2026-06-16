@@ -63,7 +63,7 @@
   "select_at_least_one_component": "Select at least one component",
   "discount_exceeds_base": "Discount exceeds discountable amount",
   "final_amount_invalid": "Final amount is invalid",
-  "variation_document": "Variation Document",
+  "variation_document": "Approved Variation (Official Stamp)",
   "pdf_attachments": "PDF Attachments",
   "pdf_attachments_hint": "will be appended to the exported PDF",
   "add_attachment": "Add Attachment",

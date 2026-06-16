@@ -15,13 +15,14 @@ import { useAuth } from "../../../../../contexts/AuthContext";
 import { useLanguage } from "../../../../../hooks";
 import { useNotifications } from "../../../../../contexts/NotificationContext";
 import { FaPrint, FaFilePdf, FaCheckCircle, FaTimesCircle, FaClock, FaEdit, FaFileAlt, FaFilePdf as FaFilePdfIcon, FaPaperclip, FaExchangeAlt } from "react-icons/fa";
+import { FiFile, FiDownload } from "react-icons/fi";
 import { useVariationData } from "../hooks/useVariationData";
 import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandlers";
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../utils/printPagination";
-import { fetchFileWithAuth } from "../../../../../utils/helpers/file";
+import { fetchFileWithAuth, buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
@@ -65,6 +66,7 @@ export default function VariationViewPage() {
   const { user, tenantTheme } = useAuth();
   const { isArabic: isAR } = useLanguage();
   const printDocumentRef = useRef(null);
+  const printDocumentCleanRef = useRef(null);
   const { success, error: showError } = useNotifications();
 
   // Tab management
@@ -73,6 +75,7 @@ export default function VariationViewPage() {
   const [isPrintPreview, setIsPrintPreview] = useState(false);
   const [blockEditDialogOpen, setBlockEditDialogOpen] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [consultantStampUrl, setConsultantStampUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const printPreviewTimerRef = useRef(null);
   const printLayoutCleanupRef = useRef(null);
@@ -132,6 +135,25 @@ export default function VariationViewPage() {
     };
     loadCompanyInfo();
   }, [tenantTheme]);
+
+  // Load consultant stamp from project license for print document
+  useEffect(() => {
+    if (!project?.id) return;
+    const loadConsultantStamp = async () => {
+      try {
+        const { api } = await import("../../../../../services/api");
+        const { data } = await api.get(`projects/${project.id}/license/`, { _skipAuthRedirect: true });
+        const licenseData = Array.isArray(data) ? data[0] : data;
+        if (licenseData?.consultant_stamp) {
+          const url = licenseData.consultant_stamp;
+          setConsultantStampUrl(url.startsWith("http") ? url : buildFileUrl(url));
+        }
+      } catch (e) {
+        logger.warn("Could not load consultant stamp", e);
+      }
+    };
+    loadConsultantStamp();
+  }, [project?.id]);
 
   // Status and permissions
   const variationStatus = variation?.status || variation?.workflow_status || 'draft';
@@ -206,8 +228,8 @@ export default function VariationViewPage() {
   };
 
   // PDF Export — client-side using html2canvas + jsPDF, then pdf-lib to append attachments
-  const handleExportPDF = async () => {
-    if (!variation || !project || !printDocumentRef.current) {
+  const exportPDF = async (ref, filenameSuffix = '') => {
+    if (!variation || !project || !ref.current) {
       showError(t("pdf_export_error"));
       return;
     }
@@ -219,7 +241,7 @@ export default function VariationViewPage() {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
-      const el = printDocumentRef.current;
+      const el = ref.current;
       cleanupPrintLayout = await preparePrintDocumentLayout(el);
 
       // Hide the CSS watermark element — will be drawn onto canvas instead
@@ -378,11 +400,13 @@ export default function VariationViewPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = generatePDFFilename(variation, noticeData);
+        const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
+        a.download = fname;
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        pdf.save(generatePDFFilename(variation, noticeData));
+        const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
+        pdf.save(fname);
       }
 
       success(t("pdf_exported_successfully"));
@@ -395,6 +419,9 @@ export default function VariationViewPage() {
       setPdfLoading(false);
     }
   };
+
+  const handleExportPDF = () => exportPDF(printDocumentRef);
+  const handleExportPDFClean = () => exportPDF(printDocumentCleanRef, '_unsigned');
 
   if (loading) {
     return (
@@ -461,6 +488,8 @@ export default function VariationViewPage() {
                 project={project}
                 companyInfo={companyInfo}
                 noticeData={noticeData}
+                consultantStampUrl={consultantStampUrl}
+                gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
               />
             </div>
           </div>
@@ -478,6 +507,25 @@ export default function VariationViewPage() {
               project={project}
               companyInfo={companyInfo}
               noticeData={noticeData}
+              consultantStampUrl={consultantStampUrl}
+              gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+            />
+          </div>
+        )}
+        {variation && project && (
+          <div
+            id="variation-print-document-wrapper-clean"
+            className="var-print-document-wrapper"
+          >
+            <VariationPrintDocument
+              ref={printDocumentCleanRef}
+              variation={variation}
+              project={project}
+              companyInfo={companyInfo}
+              noticeData={noticeData}
+              consultantStampUrl={consultantStampUrl}
+              gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+              hideSignatures={true}
             />
           </div>
         )}
@@ -517,12 +565,12 @@ export default function VariationViewPage() {
             </div>
 
             <div className="var-unified-header__actions">
-              <Button variant="ghost" size="sm" onClick={handlePrint} title={t("print")}>
-                <FaPrint />
-              </Button>
               <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={pdfLoading} title={t("export_pdf")}>
-                <FaFilePdf />
+                <FaFilePdf style={{ fontSize: '15px' }} />
               </Button>
+              <Button variant="ghost" size="sm" onClick={handlePrint} title={t("print")}>
+                <FaPrint style={{ fontSize: '15px' }} />
+              </Button>             
             </div>
           </div>
 
@@ -670,7 +718,12 @@ export default function VariationViewPage() {
                       {variation?.variation_invoice_file ? (
                         <FileAttachmentView
                           fileUrl={variation.variation_invoice_file}
-                          fileName={variation.variation_invoice_file.split('/').pop()}
+                          fileName={(() => {
+                            const raw = variation.variation_invoice_file_name || variation.variation_invoice_file.split('/').pop();
+                            const ext = raw.includes('.') ? '.' + raw.split('.').pop().toLowerCase() : '';
+                            const varSuffix = variation.variation_number ? ` - VAR${variation.variation_number}` : '';
+                            return `Approved Variation${varSuffix}${ext}`;
+                          })()}
                           projectId={project?.id}
                           endpoint={project?.id ? `projects/${project.id}/variations/${variation.id}/` : undefined}
                         />
@@ -679,18 +732,62 @@ export default function VariationViewPage() {
                       )}
                     </div>
 
-                    <div className="var-attach-divider" />
-
-                    {/* PDF إلكتروني */}
                     <div className="var-attach-row">
                       <div className="var-attach-row__label">
-                        <span className="var-attach-dot var-attach-dot--red" />
-                        {t("export_pdf")}
+                        <span className="var-attach-dot var-attach-dot--gold" />
+                        {t("download_pdf_clean")}
                       </div>
-                      <div className="var-attach-row__sub">{t("pdf_export_desc")}</div>
-                      <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={pdfLoading}>
-                        <FaFilePdf /> {pdfLoading ? t("generating_pdf") : t("export_pdf")}
-                      </Button>
+                      <div className="var-attach-row__sub">{t("download_pdf_clean_desc")}</div>
+                      <div className="file-attachment-view__container">
+                        <div className="file-attachment-view__icon"><FiFile /></div>
+                        <div className="file-attachment-view__info">
+                          <span className="file-attachment-view__filename">
+                            {generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, '_unsigned.pdf')}
+                          </span>
+                        </div>
+                        <div className="file-attachment-view__actions">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="file-attachment-view__btn"
+                            onClick={handleExportPDFClean}
+                            disabled={pdfLoading}
+                            title={t("download_pdf_clean")}
+                          >
+                            <FiDownload />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="var-attach-row">
+                      <div className="var-attach-row__label">
+                        <span className="var-attach-dot var-attach-dot--gold" />
+                        {t("download_pdf_signed")}
+                      </div>
+                      <div className="var-attach-row__sub">{t("download_pdf_signed_desc")}</div>
+                      <div className="file-attachment-view__container">
+                        <div className="file-attachment-view__icon"><FiFile /></div>
+                        <div className="file-attachment-view__info">
+                          <span className="file-attachment-view__filename">
+                            {generatePDFFilename(variation, noticeData)}
+                          </span>
+                        </div>
+                        <div className="file-attachment-view__actions">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="file-attachment-view__btn"
+                            onClick={handleExportPDF}
+                            disabled={pdfLoading}
+                            title={t("download_pdf_signed")}
+                          >
+                            <FiDownload />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="var-attach-divider" />
@@ -725,18 +822,6 @@ export default function VariationViewPage() {
                         <div className="var-attach-divider" />
                       </>
                     )}
-
-                    {/* الطباعة */}
-                    <div className="var-attach-row">
-                      <div className="var-attach-row__label">
-                        <span className="var-attach-dot var-attach-dot--blue" />
-                        {t("print_document")}
-                      </div>
-                      <div className="var-attach-row__sub">{t("print_document_desc")}</div>
-                      <Button variant="secondary" size="sm" onClick={handlePrint}>
-                        <FaPrint /> {t("print")}
-                      </Button>
-                    </div>
 
                   </div>
                 </div>

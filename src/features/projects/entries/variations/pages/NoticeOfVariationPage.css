@@ -231,9 +231,13 @@
   margin-left: 4px;
 }
 .nvc-attachment-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  align-items: start;
+}
+.nvc-attachment-list > .nvc-attachment-add-btn {
+  grid-column: 1 / -1;
 }
 .nvc-attachment-row {
   display: flex;
@@ -1190,6 +1194,7 @@
 /* ==================== REMARKS SECTION ==================== */
 .nvc-remarks-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 

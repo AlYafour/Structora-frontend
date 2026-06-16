@@ -38,6 +38,7 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
   const [changingLanguage, setChangingLanguage] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -186,6 +187,55 @@ export default function ProfilePage() {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSignatureUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: t('profile_file_must_be_image') });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: t('profile_image_size_limit') });
+      return;
+    }
+    setUploadingSignature(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const uploadData = new FormData();
+      uploadData.append('signature', file);
+      await apiClient.post('auth/users/upload_signature/', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setMessage({ type: 'success', text: t('profile_signature_uploaded', 'Signature uploaded successfully') });
+      await refreshUser();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.response?.data?.detail || t('profile_upload_failed'),
+      });
+    } finally {
+      setUploadingSignature(false);
+    }
+  };
+
+  const handleDeleteSignature = async () => {
+    if (!window.confirm(t('profile_confirm_delete_signature', 'Delete your signature?'))) return;
+    setUploadingSignature(true);
+    setMessage({ type: '', text: '' });
+    try {
+      await apiClient.delete('auth/users/delete_signature/');
+      setMessage({ type: 'success', text: t('profile_signature_deleted', 'Signature deleted') });
+      await refreshUser();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.response?.data?.detail || t('profile_upload_failed'),
+      });
+    } finally {
+      setUploadingSignature(false);
     }
   };
 
@@ -541,6 +591,57 @@ export default function ProfilePage() {
             </div>
           </ProfilePanel>
         </form>
+
+        <ProfilePanel
+          icon={<FaCamera />}
+          title={t('profile_signature_title', 'Signature')}
+          subtitle={t('profile_signature_description', 'Your signature image will appear on approved documents')}
+        >
+          {user?.signature_url ? (
+            <div style={{ marginBottom: 12 }}>
+              <img
+                src={buildFileUrl(user.signature_url)}
+                alt={t('profile_signature_title', 'Signature')}
+                style={{ maxHeight: 80, maxWidth: 240, objectFit: 'contain', display: 'block', border: '1px solid var(--border-color, #e2e8f0)', borderRadius: 4, padding: 8, background: '#fff' }}
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+            </div>
+          ) : null}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              accept="image/*"
+              className="ds-hidden"
+              id="signature-upload"
+              type="file"
+              onChange={handleSignatureUpload}
+              disabled={uploadingSignature}
+            />
+            <label htmlFor="signature-upload">
+              <Button
+                variant="secondary"
+                size="sm"
+                startIcon={<FaCamera />}
+                disabled={uploadingSignature}
+                as="span"
+                className="profile-page__identity-action"
+              >
+                {uploadingSignature ? t('profile_processing') : t('profile_upload_signature', 'Upload Signature')}
+              </Button>
+            </label>
+            {user?.signature_url && (
+              <Button
+                variant="secondary"
+                size="sm"
+                startIcon={<FaTrash />}
+                onClick={handleDeleteSignature}
+                disabled={uploadingSignature}
+                className="profile-page__identity-action profile-page__identity-action--danger"
+              >
+                {t('profile_delete')}
+              </Button>
+            )}
+          </div>
+        </ProfilePanel>
 
         {isWebAuthnSupported() && (
           <ProfilePanel

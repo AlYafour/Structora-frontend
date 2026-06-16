@@ -10,6 +10,7 @@ const RemarksAttachmentsSection = memo(({
   variationAttachment,
   setVariationAttachment,
   existingVariationAttachment,
+  existingVariationAttachmentName,
   setExistingVariationAttachment,
   setVariationFileCleared,
   // new multi-attachment props
@@ -40,9 +41,11 @@ const RemarksAttachmentsSection = memo(({
 
   return (
     <div className="nvc-section nvc-section--remarks">
-      <div className="nvc-section-header">
-        <h3>{t('remarks')}</h3>
-      </div>
+      {(isEditMode || formData.remarks) && (
+        <div className="nvc-section-header">
+          <h3>{t('remarks')}</h3>
+        </div>
+      )}
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
           {isEditMode ? (
@@ -63,47 +66,46 @@ const RemarksAttachmentsSection = memo(({
         </div>
 
         {/* Single variation document (existing) */}
-        {isEditMode ? (
-          <div className="nvc-field no-print">
-            <label>{t('variation_document')}</label>
-            <FileUpload
-              value={variationAttachment}
-              onChange={(file) => {
-                setVariationAttachment(file);
-                if (file) setVariationFileCleared(false);
-              }}
-              accept=".pdf,.jpg,.jpeg,.png"
-              maxSizeMB={30}
-              showPreview={true}
-              existingFileUrl={existingVariationAttachment}
-              existingFileName={existingVariationAttachment ? existingVariationAttachment.split('/').pop() : ''}
-              onRemoveExisting={() => {
-                setExistingVariationAttachment(null);
-                setVariationAttachment(null);
-                setVariationFileCleared(true);
-              }}
-              disabled={!isEditMode}
-            />
-          </div>
-        ) : existingVariationAttachment ? (
-          <div className="nvc-field">
-            <label>{t('variation_document')}</label>
-            <FileAttachmentView
-              fileUrl={existingVariationAttachment}
-              fileName={existingVariationAttachment ? existingVariationAttachment.split('/').pop() : ''}
-              projectId={project?.id}
-              endpoint={project?.id ? `projects/${project.id}/variations/${variationId || variation?.id}/` : undefined}
-            />
-          </div>
-        ) : null}
+        {(() => {
+          const rawName = existingVariationAttachmentName || (existingVariationAttachment ? existingVariationAttachment.split('/').pop() : '');
+          const ext = rawName.includes('.') ? '.' + rawName.split('.').pop().toLowerCase() : '';
+          const varNum = variation?.variation_number || formData?.variation_number;
+          const varSuffix = varNum ? ` - VAR${varNum}` : '';
+          const displayName = `Approved Variation${varSuffix}${ext}`;
+          return isEditMode ? (
+            <div className="nvc-field no-print">
+              <label>{t('variation_document')}</label>
+              <FileUpload
+                value={variationAttachment}
+                onChange={(file) => {
+                  setVariationAttachment(file);
+                  if (file) setVariationFileCleared(false);
+                }}
+                accept=".pdf,.jpg,.jpeg,.png"
+                maxSizeMB={30}
+                showPreview={true}
+                existingFileUrl={existingVariationAttachment}
+                existingFileName={existingVariationAttachment ? displayName : ''}
+                onRemoveExisting={() => {
+                  setExistingVariationAttachment(null);
+                  setVariationAttachment(null);
+                  setVariationFileCleared(true);
+                }}
+                disabled={!isEditMode}
+              />
+            </div>
+          ) : null;
+        })()}
 
         {/* Multi-file PDF attachments */}
         <div className="nvc-field nvc-field--full no-print">
-          <label className="nvc-attachments-label">
-            <FaPaperclip style={{ marginRight: 6 }} />
-            {t('pdf_attachments')}
-            <span className="nvc-attachments-hint"> — {t('pdf_attachments_hint')}</span>
-          </label>
+          {(isEditMode || variationAttachments?.length > 0) && (
+            <label className="nvc-attachments-label">
+              <FaPaperclip style={{ marginRight: 6 }} />
+              {t('pdf_attachments')}
+              <span className="nvc-attachments-hint"> — {t('pdf_attachments_hint')}</span>
+            </label>
+          )}
 
           {/* Existing saved attachments (view mode) */}
           {!isEditMode && variationAttachments?.length > 0 && (

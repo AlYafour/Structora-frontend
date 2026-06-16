@@ -30,7 +30,7 @@ function Amount({ value }) {
   );
 }
 
-const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData }, ref) => {
+const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }, ref) => {
   const data = useMemo(() => {
     if (noticeData) return noticeData;
     if (!variation?.description) return {};
@@ -66,6 +66,11 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const omittedItems = data.omitted_items || [];
   const addedItems   = data.added_items   || [];
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   const getProjectNumber = () => {
     if (!project) return "";
     return project.contract_data?.tender_no || project.awarding_data?.project_number ||
@@ -90,6 +95,38 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     if (url && !url.startsWith("http")) url = buildFileUrl(url);
     return url || null;
   }, [companyInfo?.company_stamp_url]);
+
+  const consultantStampResolved = useMemo(() => {
+    let url = consultantStampUrl;
+    if (url && !url.startsWith("http")) url = buildFileUrl(url);
+    return url || null;
+  }, [consultantStampUrl]);
+
+  const gmFinallyApproved = !!variation?.general_manager_final_approved_by;
+  const consultantApproved = !!variation?.consultant_approval_confirmed || gmFinallyApproved;
+  const ownerApproved = !!variation?.owner_approval_confirmed || gmFinallyApproved;
+  const pmInitialApproved = !!variation?.project_manager_initial_approved_by;
+
+  const pmSignatureResolved = useMemo(() => {
+    let url = variation?.project_manager_initial_approved_by?.signature_url || null;
+    if (url && !url.startsWith("http")) url = buildFileUrl(url);
+    return url || null;
+  }, [variation?.project_manager_initial_approved_by?.signature_url]);
+
+  const gmSignatureResolved = useMemo(() => {
+    let url = gmSignatureUrl;
+    if (url && !url.startsWith("http")) url = buildFileUrl(url);
+    return url || null;
+  }, [gmSignatureUrl]);
+
+  const ownerSignatureResolved = useMemo(() => {
+    const sp = project?.siteplan_data || project?.siteplan;
+    const owners = sp?.owners || [];
+    const authorized = owners.find(o => o.is_authorized) || owners[0];
+    let url = authorized?.signature_url || null;
+    if (url && !url.startsWith("http")) url = buildFileUrl(url);
+    return url || null;
+  }, [project?.siteplan_data, project?.siteplan]);
 
   const isFinallyApproved = !!(
     variation?.general_manager_initial_approved_by ||
@@ -431,27 +468,79 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             )}
 
             <div className="vpd-pinned-bottom">
-              <section className="vpd-signatures">
-                <div className="vpd-sign-card">
-                  <span />
-                  <strong><BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" /></strong>
+              {!hideSignatures && pmInitialApproved && pmSignatureResolved && (
+                <div className="vpd-pm-signature-row">
+                  <div className="vpd-sign-date-group">
+                    <img
+                      src={pmSignatureResolved}
+                      alt="PM Signature"
+                      className="vpd-pm-signature-img"
+                      onError={e => { e.currentTarget.style.display = "none"; }}
+                    />
+                    <span className="vpd-sign-date">{formatDate(variation?.project_manager_initial_approved_at)}</span>
+                  </div>
                 </div>
+              )}
+              <section className="vpd-signatures">
                 <div className="vpd-sign-card vpd-sign-card--stamp">
                   <div className="vpd-stamp-placeholder">
-                    <BilingualText ar="ختم الشركة" en="COMPANY STAMP" />
+                    <BilingualText ar="توقيع الاستشاري" en="CONSULTANT SIGNATURE" />
                   </div>
-                  {isFinallyApproved && stampUrl && (
+                  {!hideSignatures && consultantApproved && consultantStampResolved && (
                     <img
-                      src={stampUrl}
-                      alt="Company Stamp"
+                      src={consultantStampResolved}
+                      alt="Consultant Stamp"
                       className="vpd-stamp-img"
                       onError={e => { e.currentTarget.style.display = "none"; }}
                     />
                   )}
+                  {!hideSignatures && consultantApproved && <span className="vpd-sign-date">{formatDate(variation?.consultant_approval_confirmed_at)}</span>}
                 </div>
-                <div className="vpd-sign-card">
-                  <span />
-                  <strong><BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" /></strong>
+                <div className={`vpd-sign-card vpd-sign-card--stamp${gmFinallyApproved ? ' vpd-sign-card--gm' : ''}`}>
+                  {gmFinallyApproved ? (
+                    <>
+                      <div className="vpd-stamp-placeholder">
+                        <BilingualText ar="توقيع المدير العام" en="GENERAL MANAGER" />
+                      </div>
+                      {!hideSignatures && gmSignatureResolved && (
+                        <img
+                          src={gmSignatureResolved}
+                          alt="GM Signature"
+                          className="vpd-stamp-img"
+                          onError={e => { e.currentTarget.style.display = "none"; }}
+                        />
+                      )}
+                      {!hideSignatures && <span className="vpd-sign-date">{formatDate(variation?.general_manager_final_approved_at)}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <div className="vpd-stamp-placeholder">
+                        <BilingualText ar="ختم الشركة" en="COMPANY STAMP" />
+                      </div>
+                      {!hideSignatures && isFinallyApproved && stampUrl && (
+                        <img
+                          src={stampUrl}
+                          alt="Company Stamp"
+                          className="vpd-stamp-img"
+                          onError={e => { e.currentTarget.style.display = "none"; }}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="vpd-sign-card vpd-sign-card--stamp">
+                  <div className="vpd-stamp-placeholder">
+                    <BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" />
+                  </div>
+                  {!hideSignatures && ownerApproved && ownerSignatureResolved && (
+                    <img
+                      src={ownerSignatureResolved}
+                      alt="Owner Signature"
+                      className="vpd-stamp-img"
+                      onError={e => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                  {!hideSignatures && ownerApproved && <span className="vpd-sign-date">{formatDate(variation?.owner_approval_confirmed_at)}</span>}
                 </div>
               </section>
               <img src="/credsnewfix.png" alt="Credentials" className="vpd-creds-banner" />
