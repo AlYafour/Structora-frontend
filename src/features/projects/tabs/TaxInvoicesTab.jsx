@@ -6,7 +6,6 @@ import { logger } from "../../../utils/logger";
 import { formatMoney, formatDate } from "../../../utils/formatters";
 import Button from "../../../components/common/Button";
 import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
-import { VatAmount } from "../../../components/common/VatBreakdownPopover";
 import DirhamsIcon from "../../../components/common/DirhamsIcon";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import { useReactToPrint } from "react-to-print";
@@ -233,12 +232,7 @@ const TaxInvoicesTab = memo(function TaxInvoicesTab({ projectId }) {
             {renderAmount(inv.vat_amount)}
            </td>
            <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-            <VatAmount
-             net={parseFloat(inv.net_amount) || 0}
-             withVat={parseFloat(inv.gross_amount) || 0}
-             format={renderAmount}
-             showBtn={false}
-            />
+            {renderAmount(inv.gross_amount)}
            </td>
            <td className="ds-text-center">
             {isVoided ? (
