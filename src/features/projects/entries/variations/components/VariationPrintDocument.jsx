@@ -528,7 +528,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                     </>
                   )}
                 </div>
-                <div className="vpd-sign-card vpd-sign-card--stamp">
+                <div className="vpd-sign-card vpd-sign-card--stamp vpd-sign-card--owner">
                   <div className="vpd-stamp-placeholder">
                     <BilingualText ar="توقيع العميل" en="CLIENT SIGNATURE" />
                   </div>

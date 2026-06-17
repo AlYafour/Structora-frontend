@@ -834,6 +834,10 @@
   top: -30%;
 }
 
+.vpd-sign-card--owner .vpd-stamp-img {
+  width: 60%;
+}
+
 .vpd-sign-date-group {
   display: flex;
   flex-direction: column;
@@ -1306,6 +1310,10 @@
 .vpd-print-mode .vpd-stamp-img {
   width: 90%;
   height: auto;
+}
+
+.vpd-print-mode .vpd-sign-card--owner .vpd-stamp-img {
+  width: 60%;
 }
 
 .vpd-print-mode .vpd-final-notice {
