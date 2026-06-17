@@ -212,6 +212,11 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   const [unvoidingPaymentId, setUnvoidingPaymentId] = useState(null);
   const [unvoidLoading, setUnvoidLoading] = useState(false);
 
+  // Delete state
+  const [deletePaymentOpen, setDeletePaymentOpen] = useState(false);
+  const [deletingPaymentId, setDeletingPaymentId] = useState(null);
+  const [deletePaymentLoading, setDeletePaymentLoading] = useState(false);
+
   // Bulk void state
   const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
   const [bulkVoidReason, setBulkVoidReason] = useState('');
@@ -379,6 +384,24 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       setUnvoidConfirmOpen(false);
       setUnvoidingPaymentId(null);
       setUnvoidLoading(false);
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletingPaymentId) return;
+    setDeletePaymentLoading(true);
+    try {
+      await api.delete(`payments/${deletingPaymentId}/?include_voided=true`);
+      success(t("delete_success", "Payment deleted permanently"));
+      onReload();
+      reloadAllPayments();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      showError(detail || t("delete_error", "Failed to delete payment"));
+    } finally {
+      setDeletePaymentOpen(false);
+      setDeletingPaymentId(null);
+      setDeletePaymentLoading(false);
     }
   };
 
@@ -750,11 +773,13 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                               { label: `✗ ${t('dishonor_note', 'Dishonor Note')}`, type: "button", variant: "danger", onClick: () => { setDishonorPaymentId(payment.id); setDishonorOpen(true); } },
                             ] : []),
                             ...(canVoidPayment ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingPaymentId(payment.id); setVoidConfirmOpen(true); } }] : []),
+                            ...(isAdmin ? [{ label: t("delete", "Delete"), type: "button", variant: "danger", onClick: () => { setDeletingPaymentId(payment.id); setDeletePaymentOpen(true); } }] : []),
                           ]} />
                         ) : (
                           isAdmin && (
                             <ActionMenu items={[
                               { label: t("unvoid", "Unvoid"), type: "button", variant: "warning", onClick: () => { setUnvoidingPaymentId(payment.id); setUnvoidConfirmOpen(true); } },
+                              { label: t("delete", "Delete"), type: "button", variant: "danger", onClick: () => { setDeletingPaymentId(payment.id); setDeletePaymentOpen(true); } },
                             ]} />
                           )
                         )}
@@ -985,6 +1010,19 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
         onClose={() => { if (!unvoidLoading) { setUnvoidConfirmOpen(false); setUnvoidingPaymentId(null); } }}
         onConfirm={handleUnvoidPayment}
         busy={unvoidLoading}
+      />
+
+      {/* Delete Payment Confirm Dialog */}
+      <Dialog
+        open={deletePaymentOpen}
+        title={t("delete_payment", "Delete Payment")}
+        desc={<p>{t("confirm_delete_payment", "This will permanently delete the payment. This action cannot be undone.")}</p>}
+        confirmLabel={deletePaymentLoading ? t("deleting", "Deleting...") : t("delete", "Delete")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!deletePaymentLoading) { setDeletePaymentOpen(false); setDeletingPaymentId(null); } }}
+        onConfirm={handleDeletePayment}
+        danger
+        busy={deletePaymentLoading}
       />
 
     </div>

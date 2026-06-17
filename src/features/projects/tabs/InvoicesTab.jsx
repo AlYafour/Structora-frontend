@@ -55,6 +55,11 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
   const [unvoidingInvoiceId, setUnvoidingInvoiceId] = useState(null);
   const [unvoidLoading, setUnvoidLoading] = useState(false);
 
+  // Delete state
+  const [deleteInvoiceOpen, setDeleteInvoiceOpen] = useState(false);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState(null);
+  const [deleteInvoiceLoading, setDeleteInvoiceLoading] = useState(false);
+
   // Bulk void state
   const [bulkVoidOpen, setBulkVoidOpen] = useState(false);
   const [bulkVoidReason, setBulkVoidReason] = useState('');
@@ -233,6 +238,24 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
       setUnvoidConfirmOpen(false);
       setUnvoidingInvoiceId(null);
       setUnvoidLoading(false);
+    }
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!deletingInvoiceId) return;
+    setDeleteInvoiceLoading(true);
+    try {
+      await api.delete(`projects/${projectId}/actual-invoices/${deletingInvoiceId}/?include_voided=true`);
+      success(t("delete_success", "Invoice deleted permanently"));
+      onReload();
+      reloadAllInvoices();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      showError(detail || t("delete_error", "Failed to delete invoice"));
+    } finally {
+      setDeleteInvoiceOpen(false);
+      setDeletingInvoiceId(null);
+      setDeleteInvoiceLoading(false);
     }
   };
 
@@ -561,11 +584,13 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
                             <ActionMenu items={[
                               ...(canEditInvoice ? [{ label: t("edit"), to: `/invoices/${invoice.id}/edit`, type: "link" }] : []),
                               ...(canVoidInvoice ? [{ label: t("void"), type: "button", variant: "danger", onClick: () => { setVoidingInvoiceId(invoice.id); setVoidConfirmOpen(true); } }] : []),
+                              ...(isAdmin ? [{ label: t("delete", "Delete"), type: "button", variant: "danger", onClick: () => { setDeletingInvoiceId(invoice.id); setDeleteInvoiceOpen(true); } }] : []),
                             ]} />
                           ) : (
                             isAdmin && (
                               <ActionMenu items={[
                                 { label: t("unvoid", "Unvoid"), type: "button", variant: "warning", onClick: () => { setUnvoidingInvoiceId(invoice.id); setUnvoidConfirmOpen(true); } },
+                                { label: t("delete", "Delete"), type: "button", variant: "danger", onClick: () => { setDeletingInvoiceId(invoice.id); setDeleteInvoiceOpen(true); } },
                               ]} />
                             )
                           )}
@@ -773,6 +798,19 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
         onClose={() => { if (!unvoidLoading) { setUnvoidConfirmOpen(false); setUnvoidingInvoiceId(null); } }}
         onConfirm={handleUnvoidInvoice}
         busy={unvoidLoading}
+      />
+
+      {/* Delete Invoice Confirm Dialog */}
+      <Dialog
+        open={deleteInvoiceOpen}
+        title={t("delete_invoice", "Delete Invoice")}
+        desc={<p>{t("confirm_delete_invoice", "This will permanently delete the invoice. This action cannot be undone.")}</p>}
+        confirmLabel={deleteInvoiceLoading ? t("deleting", "Deleting...") : t("delete", "Delete")}
+        cancelLabel={t("cancel")}
+        onClose={() => { if (!deleteInvoiceLoading) { setDeleteInvoiceOpen(false); setDeletingInvoiceId(null); } }}
+        onConfirm={handleDeleteInvoice}
+        danger
+        busy={deleteInvoiceLoading}
       />
 
     </div>

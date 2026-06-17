@@ -212,7 +212,7 @@ export default function CreatePaymentPage() {
     const validation = validatePaymentSubmission(
       formData,
       allocations,
-      actualInvoices,
+      filteredInvoices,
       paymentAmount,
       creditBalance,
       isEditMode,
