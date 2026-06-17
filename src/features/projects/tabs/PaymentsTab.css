@@ -47,6 +47,49 @@
   color: #9ca3af;
 }
 
+.payments-tab__filter-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.payments-tab__filter-banner--owner {
+  background: #ecfdf5;
+  border: 1.5px solid #a7f3d0;
+  color: #065f46;
+}
+
+.payments-tab__filter-banner--bank {
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.payments-tab__filter-banner-clear {
+  margin-inline-start: auto;
+  padding: 3px 11px;
+  border-radius: 20px;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.payments-tab__filter-banner-clear:hover {
+  opacity: 1;
+}
+
 .payments-tab__btn-outline {
   padding: 6px 14px;
   border-radius: 6px;

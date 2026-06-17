@@ -21,6 +21,7 @@ import {
   FaFolderOpen,
   FaPen,
   FaPhone,
+  FaStamp,
 } from "react-icons/fa";
 import "./ConsultantDetailPage.css";
 import useTenantNavigate from "../../../hooks/useTenantNavigate";
@@ -208,6 +209,22 @@ export default function ConsultantDetailPage() {
                 <img
                   src={consultantData.signature_url}
                   alt={t("signature")}
+                  className="consultant-detail__signature-img"
+                />
+              </div>
+            </ProfilePanel>
+          )}
+
+          {consultantData.stamp_url && (
+            <ProfilePanel
+              icon={<FaStamp />}
+              title={t("consultant_stamp")}
+              subtitle={t("consultant_stamp_subtitle", "Official consultant stamp used in project documents")}
+            >
+              <div className="consultant-detail__signature-wrap">
+                <img
+                  src={consultantData.stamp_url}
+                  alt={t("consultant_stamp")}
                   className="consultant-detail__signature-img"
                 />
               </div>

@@ -5295,12 +5295,12 @@ html.theme-dark .prj-tab--accent.active {
 }
 
 /* Invoice Status/Progress */
-.invoices-status-summary {
+/* .invoices-status-summary {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
-}
+} */
 
 .invoice-progress-bar {
   width: 80px;
@@ -9009,4 +9009,5 @@ html.theme-dark .navbar-search-input::placeholder {
   gap: 8px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+  margin-top: 10px;
 }

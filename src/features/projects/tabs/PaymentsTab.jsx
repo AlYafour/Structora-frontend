@@ -33,6 +33,8 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   const [showVat, setShowVat] = useState(false);
   const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
   const vg = (val) => showVat ? val : val / 1.05;
+  // breakdown values from the API are already NET (VAT excluded); gross-up when showing with VAT
+  const vg_from_net = (val) => showVat ? val * 1.05 : val;
 
   const renderAmount = (value) => {
     const str = formatMoney(value, { lang: i18n.language });
@@ -206,6 +208,41 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   }, [activePayments]);
 
   const [payerFilter, setPayerFilter] = useState("");
+
+  // Active payments scoped to the active payer filter (for metric cards)
+  const filteredActivePayments = useMemo(() =>
+    payerFilter ? activePayments.filter(p => (p.payer || "owner") === payerFilter) : activePayments,
+    [activePayments, payerFilter]
+  );
+
+  // Stats shown on metric cards — respects the active filter
+  const displayPaymentStats = useMemo(() => {
+    const payments = filteredActivePayments;
+    if (payments.length === 0) {
+      return { total: 0, ownerCount: 0, bankCount: 0, ownerTotal: 0, bankTotal: 0, overallTotal: 0, baseContractTotal: 0, variationsTotal: 0, bankVatTotal: 0, promissoryNoteTotal: 0, promissoryNoteCount: 0 };
+    }
+    const ownerPayments = payments.filter(p => (p.payer || "owner") === "owner");
+    const bankPayments = payments.filter(p => (p.payer || "owner") === "bank");
+    const isNonHonoredNote = p => p.payment_method === 'promissory_note' && p.promissory_note_status !== 'honored';
+    const ownerCashPayments = ownerPayments.filter(p => !isNonHonoredNote(p));
+    const ownerPendingNotes = ownerPayments.filter(p => p.payment_method === 'promissory_note' && p.promissory_note_status === 'pending');
+    const ownerTotal = ownerCashPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const bankTotal = bankPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const cashPayments = payments.filter(p => !isNonHonoredNote(p));
+    return {
+      total: payments.length,
+      ownerCount: ownerCashPayments.length,
+      bankCount: bankPayments.length,
+      ownerTotal,
+      bankTotal,
+      overallTotal: ownerTotal + bankTotal,
+      promissoryNoteTotal: ownerPendingNotes.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
+      promissoryNoteCount: ownerPendingNotes.length,
+      baseContractTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.base_contract) || 0), 0),
+      variationsTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.variations) || 0), 0),
+      bankVatTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.bank_vat) || 0), 0),
+    };
+  }, [filteredActivePayments]);
 
   // Unvoid state
   const [unvoidConfirmOpen, setUnvoidConfirmOpen] = useState(false);
@@ -463,60 +500,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
 
       {allRows.length > 0 ? (
         <>
-          {/* Summary Section */}
-          <div className="prj-tab-section">
-            <div className="prj-tab-section__title">{t("payments_summary")}</div>
-            <MetricGrid>
-              <MetricCard
-                tip={t(
-                  "invoices_total_amount_tooltip",
-                  "Includes VAT and excludes consultant fees."
-                )}
-                variant="blue" icon="dollar" label={t("overall_total")} value={renderAmount(vg(paymentStats.overallTotal))} sub={vatLabel} />
-              <MetricCard
-                tip={t(
-                  "invoices_total_amount_tooltip",
-                  "Includes VAT and excludes consultant fees."
-                )}
-                variant="emerald" icon="wallet" label={t("owner_total")} value={renderAmount(vg(paymentStats.ownerTotal))} sub={vatLabel} />
-              <MetricCard variant="emerald" icon="hash" label={t("owner_payments_count")} value={paymentStats.ownerCount} />
-              <MetricCard
-                tip={t(
-                  "invoices_total_amount_tooltip",
-                  "Includes VAT and excludes consultant fees."
-                )}
-                variant="blue" icon="building" label={t("bank_total")} value={renderAmount(vg(paymentStats.bankTotal))} sub={vatLabel} />
-              <MetricCard variant="blue" icon="hash" label={t("bank_payments_count")} value={paymentStats.bankCount} />
-              {paymentStats.promissoryNoteTotal > 0 && (
-                <MetricCard
-                  variant="amber"
-                  icon="file"
-                  label={t("promissory_notes_pending", "Promissory Notes (Pending)")}
-                  value={renderAmount(vg(paymentStats.promissoryNoteTotal))}
-                  sub={`${paymentStats.promissoryNoteCount} ${t("notes", "note(s)")} — ${t("not_yet_honored", "not yet honored / لم تُصرف بعد")}`}
-                />
-              )}
-              {totalCredit > 0 && (
-                <MetricCard variant="violet" icon="creditCard" label={t("available_credit")} value={renderAmount(totalCredit)} />
-              )}
-            </MetricGrid>
-          </div>
-          {/* Breakdown Summary */}
-          {(paymentStats.baseContractTotal > 0 || paymentStats.variationsTotal > 0 || paymentStats.bankVatTotal > 0) && (
-            <div className="prj-tab-section">
-              <div className="prj-tab-section__title">{t("payment_breakdown_title")}</div>
-              <MetricGrid>
-                <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={renderAmount(vg(paymentStats.baseContractTotal))} sub={vatLabel} />
-                {paymentStats.variationsTotal > 0 && (
-                  <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={renderAmount(vg(paymentStats.variationsTotal))} sub={vatLabel} />
-                )}
-                {paymentStats.bankVatTotal > 0 && (
-                  <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={renderAmount(vg(paymentStats.bankVatTotal))} sub={vatLabel} />
-                )}
-              </MetricGrid>
-            </div>
-          )}
-
+          {/* Filter bar — placed above metrics so selection drives the numbers below */}
           <div className="payments-tab__filter-bar">
             <span className="payments-tab__filter-label">{t("filter_by", "Filter by")}:</span>
             <div className="payments-tab__filter-chips">
@@ -536,10 +520,83 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             </div>
             {payerFilter && (
               <span className="payments-tab__filter-count">
-                {filteredRows.length} {t("results", "results")}
+                {filteredRows.filter(r => r._type === 'payment').length} {t("payments", "payments").toLowerCase()}
               </span>
             )}
           </div>
+
+          {/* Filter context banner */}
+          {payerFilter && (
+            <div className={`payments-tab__filter-banner payments-tab__filter-banner--${payerFilter}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              <span>
+                {payerFilter === "bank"
+                  ? t("filter_showing_bank_payments", "Showing bank payments only")
+                  : t("filter_showing_owner_payments", "Showing owner payments only")}
+                {" · "}{displayPaymentStats.total} {t("payments", "payments").toLowerCase()}
+              </span>
+              <button onClick={() => setPayerFilter("")} className="payments-tab__filter-banner-clear">
+                {t("view_all", "View all")} ×
+              </button>
+            </div>
+          )}
+
+          {/* Summary Section — reflects active filter */}
+          <div className="prj-tab-section">
+            <div className="prj-tab-section__title">{t("payments_summary")}</div>
+            <MetricGrid>
+              <MetricCard
+                tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+                variant="blue" icon="dollar"
+                label={payerFilter === "owner" ? t("owner_total") : payerFilter === "bank" ? t("bank_total") : t("overall_total")}
+                value={renderAmount(vg(displayPaymentStats.overallTotal))} sub={vatLabel} />
+              {!payerFilter && (
+                <MetricCard
+                  tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+                  variant="emerald" icon="wallet" label={t("owner_total")} value={renderAmount(vg(displayPaymentStats.ownerTotal))} sub={vatLabel} />
+              )}
+              {(!payerFilter || payerFilter === "owner") && (
+                <MetricCard variant="emerald" icon="hash" label={t("owner_payments_count")} value={displayPaymentStats.ownerCount} />
+              )}
+              {!payerFilter && (
+                <MetricCard
+                  tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+                  variant="blue" icon="building" label={t("bank_total")} value={renderAmount(vg(displayPaymentStats.bankTotal))} sub={vatLabel} />
+              )}
+              {(!payerFilter || payerFilter === "bank") && (
+                <MetricCard variant="blue" icon="hash" label={t("bank_payments_count")} value={displayPaymentStats.bankCount} />
+              )}
+              {displayPaymentStats.promissoryNoteTotal > 0 && (!payerFilter || payerFilter === "owner") && (
+                <MetricCard
+                  variant="amber"
+                  icon="file"
+                  label={t("promissory_notes_pending", "Promissory Notes (Pending)")}
+                  value={renderAmount(vg(displayPaymentStats.promissoryNoteTotal))}
+                  sub={`${displayPaymentStats.promissoryNoteCount} ${t("notes", "note(s)")} — ${t("not_yet_honored", "not yet honored / لم تُصرف بعد")}`}
+                />
+              )}
+              {totalCredit > 0 && !payerFilter && (
+                <MetricCard variant="violet" icon="creditCard" label={t("available_credit")} value={renderAmount(totalCredit)} />
+              )}
+            </MetricGrid>
+          </div>
+          {/* Breakdown Summary — reflects active filter */}
+          {(displayPaymentStats.baseContractTotal > 0 || displayPaymentStats.variationsTotal > 0 || displayPaymentStats.bankVatTotal > 0) && (
+            <div className="prj-tab-section">
+              <div className="prj-tab-section__title">{t("payment_breakdown_title")}</div>
+              <MetricGrid>
+                <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={renderAmount(vg_from_net(displayPaymentStats.baseContractTotal))} sub={vatLabel} />
+                {displayPaymentStats.variationsTotal > 0 && (
+                  <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={renderAmount(vg_from_net(displayPaymentStats.variationsTotal))} sub={vatLabel} />
+                )}
+                {displayPaymentStats.bankVatTotal > 0 && (
+                  <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={renderAmount(vg_from_net(displayPaymentStats.bankVatTotal))} sub={vatLabel} />
+                )}
+              </MetricGrid>
+            </div>
+          )}
 
           {canVoidPayment && (
             <BulkActionsBar
@@ -855,9 +912,9 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                     </div>
                     <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                       {[
-                        { dot: '#10b981', label: t("base_contract_total"), value: renderAmount(vg(paymentStats.baseContractTotal)), show: paymentStats.baseContractTotal > 0 },
-                        { dot: '#f59e0b', label: t("variations_total"), value: renderAmount(vg(paymentStats.variationsTotal)), show: paymentStats.variationsTotal > 0 },
-                        { dot: '#3b82f6', label: t("bank_vat_total"), value: renderAmount(vg(paymentStats.bankVatTotal)), show: paymentStats.bankVatTotal > 0 },
+                        { dot: '#10b981', label: t("base_contract_total"), value: renderAmount(vg_from_net(paymentStats.baseContractTotal)), show: paymentStats.baseContractTotal > 0 },
+                        { dot: '#f59e0b', label: t("variations_total"), value: renderAmount(vg_from_net(paymentStats.variationsTotal)), show: paymentStats.variationsTotal > 0 },
+                        { dot: '#3b82f6', label: t("bank_vat_total"), value: renderAmount(vg_from_net(paymentStats.bankVatTotal)), show: paymentStats.bankVatTotal > 0 },
                       ].filter(i => i.show).map(({ dot, label, value }) => (
                         <div key={label}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>

@@ -41,7 +41,9 @@ export default function EditConsultantPage() {
   name: "", name_en: "", license_no: "", registration_number: "",
   phone: "", office_phone: "", email: "", address: "", notes: "",
   image: null, image_url: null, signature: null, signature_url: null,
+  stamp: null, stamp_url: null,
  });
+ const [stampCleared, setStampCleared] = useState(false);
 
  useEffect(() => { loadConsultant(); }, [consultantId]);
 
@@ -59,6 +61,7 @@ export default function EditConsultantPage() {
     address: data.address || "", notes: data.notes || "",
     image: null, image_url: data.image_url || null,
     signature: null, signature_url: data.signature_url || null,
+    stamp: null, stamp_url: data.stamp_url || null,
    });
   } catch (e) {
    logger.error("Error loading consultant", e);
@@ -76,7 +79,7 @@ export default function EditConsultantPage() {
   setSaving(true);
   try {
    let payload;
-   const hasFiles = form.signature instanceof File || form.image instanceof File;
+   const hasFiles = form.signature instanceof File || form.image instanceof File || form.stamp instanceof File || stampCleared;
    if (hasFiles) {
     payload = new FormData();
     payload.append("name", form.name.trim());
@@ -90,6 +93,8 @@ export default function EditConsultantPage() {
     payload.append("notes", form.notes.trim() || "");
     if (form.image instanceof File) payload.append("image", form.image);
     if (form.signature instanceof File) payload.append("signature", form.signature);
+    if (form.stamp instanceof File) payload.append("stamp", form.stamp);
+    if (stampCleared && !(form.stamp instanceof File)) payload.append("clear_stamp", "true");
    } else {
     payload = {
      name: form.name.trim(), name_en: form.name_en.trim() || "",
@@ -106,6 +111,7 @@ export default function EditConsultantPage() {
    } else {
     const data = await consultantApi.update(consultantId, payload);
     setConsultantData(data);
+    setStampCleared(false);
     toastSuccess(t("consultant_updated_success"));
     navTimerRef.current = setTimeout(() => navigate(`/consultants/${consultantId}`), 1200);
    }
@@ -246,6 +252,15 @@ export default function EditConsultantPage() {
          existingFileName={t("signature")}
          onRemoveExisting={() => setForm((prev) => ({ ...prev, signature: null, signature_url: null }))}
          disabled={saving} fileType="signature" />
+       </Field>
+       <Field label={t("consultant_stamp")}>
+        <FileUpload value={form.stamp}
+         onChange={(file) => { if (file) handleChange("stamp", file); }}
+         accept="image/png,image/jpeg,image/jpg,image/webp" maxSizeMB={5}
+         showPreview={true} existingFileUrl={form.stamp_url}
+         existingFileName={t("consultant_stamp")}
+         onRemoveExisting={() => { setForm((prev) => ({ ...prev, stamp: null, stamp_url: null })); setStampCleared(true); }}
+         disabled={saving} fileType="stamp" />
        </Field>
       </FormGrid>
      </FormSection>

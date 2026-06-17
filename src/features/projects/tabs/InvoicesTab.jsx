@@ -169,6 +169,33 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
     return { total, totalNet, paid, remaining: totalRemaining, count: activeInvoices.length, fullyPaid, partiallyPaid, unpaid, advanceDeduction, netDue };
   }, [activeInvoices]);
 
+  // Active invoices scoped to the active payer filter (for metric cards)
+  const filteredActiveInvoices = useMemo(() =>
+    payerFilter ? activeInvoices.filter(inv => (inv.payer || 'owner') === payerFilter) : activeInvoices,
+    [activeInvoices, payerFilter]
+  );
+
+  // Stats shown on metric cards — respects the active filter
+  const displayStats = useMemo(() => {
+    const invoices = filteredActiveInvoices;
+    if (invoices.length === 0) {
+      return { total: 0, totalNet: 0, paid: 0, remaining: 0, count: 0, fullyPaid: 0, partiallyPaid: 0, unpaid: 0, advanceDeduction: 0, netDue: 0 };
+    }
+    let total = 0, totalNet = 0, paid = 0, totalRemaining = 0, fullyPaid = 0, partiallyPaid = 0, unpaid = 0, advanceDeduction = 0;
+    invoices.forEach((inv) => {
+      const amount = parseFloat(inv.amount) || 0;
+      const netAmount = parseFloat(inv.net_amount) || (amount / 1.05);
+      const paidAmount = parseFloat(inv.paid_amount) || 0;
+      const remainingAmount = inv.remaining_amount != null ? parseFloat(inv.remaining_amount) : amount;
+      const deduction = parseFloat(inv.advance_deduction_amount) || 0;
+      total += amount; totalNet += netAmount; paid += paidAmount; totalRemaining += remainingAmount; advanceDeduction += deduction;
+      if (remainingAmount <= 0.01) fullyPaid++;
+      else if (paidAmount > 0.01) partiallyPaid++;
+      else unpaid++;
+    });
+    return { total, totalNet, paid, remaining: totalRemaining, count: invoices.length, fullyPaid, partiallyPaid, unpaid, advanceDeduction, netDue: total - advanceDeduction };
+  }, [filteredActiveInvoices]);
+
   // Function to determine invoice status
   const getInvoiceStatus = (invoice) => {
     if (invoice.status === 'voided') {
@@ -348,78 +375,7 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
 
       {displayedInvoices.length > 0 ? (
         <>
-          {/* Statistics (active only) */}
-          <MetricGrid columns={stats.advanceDeduction > 0 ? 5 : 4}>
-            <MetricCard variant="blue" icon="hash" label={t("invoices_count")} value={stats.count} />
-            <MetricCard variant="emerald" icon="dollar" label={t("total_amount")}
-              value={renderAmount(showVat ? stats.total : stats.totalNet)}
-              tip={t(
-                "invoices_total_amount_tooltip",
-                "Includes VAT and excludes consultant fees."
-              )}
-              sub={vatLabel}
-            />
-            {stats.advanceDeduction > 0 && (
-              <MetricCard variant="amber" icon="minus" label={t("advance_deduction_total")} value={renderAmount(vg(stats.advanceDeduction))} sub={vatLabel} />
-            )}
-            <MetricCard
-              tip={t(
-                "invoices_total_amount_tooltip",
-                "Includes VAT and excludes consultant fees."
-              )}
-              variant="emerald" icon="check" label={t("paid_amount")} value={renderAmount(vg(stats.paid))} sub={vatLabel} />
-            <MetricCard
-              tip={t(
-                "invoices_total_amount_tooltip",
-                "Includes VAT and excludes consultant fees."
-              )}
-              variant="amber" icon="alert" label={t("remaining_amount")} value={renderAmount(vg(stats.remaining))} sub={vatLabel} />
-          </MetricGrid>
-
-          {/* Math flow bar — shows calculation breakdown when advance deduction exists */}
-          {stats.advanceDeduction > 0 && (
-            <div className="invoices-math-flow">
-              <span className="invoices-math-flow__item">
-                <span className="invoices-math-flow__label">{t("invoices_total_label")}:</span>
-                <span className="invoices-math-flow__value">{renderAmount(stats.total)}</span>
-              </span>
-              <span className="invoices-math-flow__op">{t("minus_sign")}</span>
-              <span className="invoices-math-flow__item">
-                <span className="invoices-math-flow__label">{t("advance_deduction_total")}:</span>
-                <span className="invoices-math-flow__value invoices-math-flow__value--warning">{renderAmount(stats.advanceDeduction)}</span>
-              </span>
-              <span className="invoices-math-flow__op">{t("equals_sign")}</span>
-              <span className="invoices-math-flow__item">
-                <span className="invoices-math-flow__label">{t("net_due_label")}:</span>
-                <span className="invoices-math-flow__value">{renderAmount(stats.netDue)}</span>
-              </span>
-              <span className="invoices-math-flow__op">{t("minus_sign")}</span>
-              <span className="invoices-math-flow__item">
-                <span className="invoices-math-flow__label">{t("paid_label")}:</span>
-                <span className="invoices-math-flow__value invoices-math-flow__value--success">{renderAmount(stats.paid)}</span>
-              </span>
-              <span className="invoices-math-flow__op">{t("equals_sign")}</span>
-              <span className="invoices-math-flow__item">
-                <span className="invoices-math-flow__label">{t("remaining_label")}:</span>
-                <span className="invoices-math-flow__value">{renderAmount(stats.remaining)}</span>
-              </span>
-            </div>
-          )}
-
-          {/* Invoice status badges */}
-          <div className="invoices-status-summary">
-            <span className="prj-badge prj-badge--success">
-              ✓ {t("fully_paid")}: {stats.fullyPaid}
-            </span>
-            <span className="prj-badge prj-badge--warning">
-              ◐ {t("partially_paid")}: {stats.partiallyPaid}
-            </span>
-            <span className="prj-badge prj-badge--danger">
-              ○ {t("unpaid")}: {stats.unpaid}
-            </span>
-          </div>
-
-          {/* Filter bar */}
+          {/* Filter bar — placed above metrics so selection drives the numbers below */}
           <div className="payments-tab__filter-bar">
             <span className="payments-tab__filter-label">{t("filter_by", "Filter by")}:</span>
             <div className="payments-tab__filter-chips">
@@ -439,9 +395,89 @@ const InvoicesTab = memo(function InvoicesTab({ projectId, invoices, onReload })
             </div>
             {payerFilter && (
               <span className="payments-tab__filter-count">
-                {filteredInvoices.length} {t("results", "results")}
+                {filteredInvoices.length} {t("invoices_count", "invoices").toLowerCase()}
               </span>
             )}
+          </div>
+
+          {/* Filter context banner */}
+          {payerFilter && (
+            <div className={`payments-tab__filter-banner payments-tab__filter-banner--${payerFilter}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              <span>
+                {payerFilter === "bank"
+                  ? t("filter_showing_bank_invoices", "Showing bank invoices only")
+                  : t("filter_showing_owner_invoices", "Showing owner invoices only")}
+                {" · "}{displayStats.count} {t("invoices_count", "invoices").toLowerCase()}
+              </span>
+              <button onClick={() => setPayerFilter("")} className="payments-tab__filter-banner-clear">
+                {t("view_all", "View all")} ×
+              </button>
+            </div>
+          )}
+
+          {/* Statistics — reflects active filter */}
+          <MetricGrid columns={displayStats.advanceDeduction > 0 ? 5 : 4}>
+            <MetricCard variant="blue" icon="hash" label={t("invoices_count")} value={displayStats.count} />
+            <MetricCard variant="emerald" icon="dollar" label={t("total_amount")}
+              value={renderAmount(showVat ? displayStats.total : displayStats.totalNet)}
+              tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+              sub={vatLabel}
+            />
+            {displayStats.advanceDeduction > 0 && (
+              <MetricCard variant="amber" icon="minus" label={t("advance_deduction_total")} value={renderAmount(vg(displayStats.advanceDeduction))} sub={vatLabel} />
+            )}
+            <MetricCard
+              tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+              variant="emerald" icon="check" label={t("paid_amount")} value={renderAmount(vg(displayStats.paid))} sub={vatLabel} />
+            <MetricCard
+              tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
+              variant="amber" icon="alert" label={t("remaining_amount")} value={renderAmount(vg(displayStats.remaining))} sub={vatLabel} />
+          </MetricGrid>
+
+          {/* Math flow bar — shows calculation breakdown when advance deduction exists */}
+          {displayStats.advanceDeduction > 0 && (
+            <div className="invoices-math-flow">
+              <span className="invoices-math-flow__item">
+                <span className="invoices-math-flow__label">{t("invoices_total_label")}:</span>
+                <span className="invoices-math-flow__value">{renderAmount(displayStats.total)}</span>
+              </span>
+              <span className="invoices-math-flow__op">{t("minus_sign")}</span>
+              <span className="invoices-math-flow__item">
+                <span className="invoices-math-flow__label">{t("advance_deduction_total")}:</span>
+                <span className="invoices-math-flow__value invoices-math-flow__value--warning">{renderAmount(displayStats.advanceDeduction)}</span>
+              </span>
+              <span className="invoices-math-flow__op">{t("equals_sign")}</span>
+              <span className="invoices-math-flow__item">
+                <span className="invoices-math-flow__label">{t("net_due_label")}:</span>
+                <span className="invoices-math-flow__value">{renderAmount(displayStats.netDue)}</span>
+              </span>
+              <span className="invoices-math-flow__op">{t("minus_sign")}</span>
+              <span className="invoices-math-flow__item">
+                <span className="invoices-math-flow__label">{t("paid_label")}:</span>
+                <span className="invoices-math-flow__value invoices-math-flow__value--success">{renderAmount(displayStats.paid)}</span>
+              </span>
+              <span className="invoices-math-flow__op">{t("equals_sign")}</span>
+              <span className="invoices-math-flow__item">
+                <span className="invoices-math-flow__label">{t("remaining_label")}:</span>
+                <span className="invoices-math-flow__value">{renderAmount(displayStats.remaining)}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Invoice status badges */}
+          <div className="invoices-status-summary">
+            <span className="prj-badge prj-badge--success">
+              ✓ {t("fully_paid")}: {displayStats.fullyPaid}
+            </span>
+            <span className="prj-badge prj-badge--warning">
+              ◐ {t("partially_paid")}: {displayStats.partiallyPaid}
+            </span>
+            <span className="prj-badge prj-badge--danger">
+              ○ {t("unpaid")}: {displayStats.unpaid}
+            </span>
           </div>
 
           {/* Invoice table */}

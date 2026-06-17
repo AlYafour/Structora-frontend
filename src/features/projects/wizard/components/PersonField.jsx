@@ -107,6 +107,7 @@ export default function PersonField({
  name_en: c.name_en || "",
  license: c.license_no || "",
  registration_number: c.registration_number || "",
+ stamp_url: c.stamp_url || null,
  }))
  .sort((a, b) => {
  return (a.name || "").localeCompare(b.name || "", isAR ? "ar" : "en");
