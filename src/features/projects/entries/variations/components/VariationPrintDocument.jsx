@@ -1,6 +1,6 @@
 import { Fragment, forwardRef, useMemo } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { formatMoney, formatDate } from "../../../../../utils/formatters";
+import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationPrintDocument.css";
@@ -74,7 +74,8 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const getProjectNumber = () => {
     if (!project) return "";
     return project.contract_data?.tender_no || project.awarding_data?.project_number ||
-           project.siteplan?.project_no || project.internal_code || `PRJ-${project.id}`;
+           project.siteplan?.project_no || project.siteplan_data?.project_no ||
+           project.internal_code || `PRJ-${project.id}`;
   };
 
   const getProjectLocation = () => {

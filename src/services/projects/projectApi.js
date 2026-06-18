@@ -29,6 +29,15 @@ class ProjectService extends BaseService {
     }
   }
 
+  async getVariationContext(id) {
+    try {
+      const { data } = await api.get(`${this.basePath}${id}/variation-context/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getVariationContext');
+    }
+  }
+
   /**
    * Get lightweight project list for dropdowns/selectors.
    * Returns only id, name, display_name, internal_code — no heavy calculations.

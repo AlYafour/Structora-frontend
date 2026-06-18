@@ -565,7 +565,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
    */
   const getProjectNumber = () => {
     if (!project) return '';
-    return project.contract_data?.tender_no || project.awarding_data?.project_number || project.siteplan?.project_no || project.internal_code || `PRJ-${project.id}`;
+    return project.contract_data?.tender_no || project.awarding_data?.project_number || project.siteplan?.project_no || project.siteplan_data?.project_no || project.internal_code || `PRJ-${project.id}`;
   };
 
   const getProjectTitle = () => {

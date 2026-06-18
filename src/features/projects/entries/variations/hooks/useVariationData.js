@@ -1,43 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from 'react-router-dom';
-import { projectApi, companyApi } from "../../../../../services";
+import { projectApi } from "../../../../../services";
 import { logger } from "../../../../../utils/logger";
-import { useAuth } from "../../../../../contexts/AuthContext";
-import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
 
 /**
  * Custom hook to manage variation data loading and state
  */
 export function useVariationData(variationId) {
-  const navigate = useTenantNavigate();
   const [searchParams] = useSearchParams();
   const projectIdFromUrl = searchParams.get("project");
-  const { tenantTheme } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [variation, setVariation] = useState(null);
   const [project, setProject] = useState(null);
-  const [companyInfo, setCompanyInfo] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [alterationRequests, setAlterationRequests] = useState([]);
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
-
-  const loadCompanyInfo = useCallback(async () => {
-    try {
-      const data = await companyApi.getCurrentSettings();
-      setCompanyInfo({
-        logo: data.company_logo || tenantTheme?.logo || null,
-        name: data.contractor_name || data.company_name || "",
-        name_en: data.contractor_name_en || data.company_name || "",
-        phone: data.company_phone || data.contractor_phone || "",
-        email: data.company_email || data.contractor_email || "",
-        website: data.company_website || "",
-        address: data.company_address || "",
-      });
-    } catch (e) {
-      logger.warn("Could not load company info", e);
-    }
-  }, [tenantTheme]);
 
   const loadAuditLogs = useCallback(async (projectId, varId) => {
     if (!projectId || !varId) return;
@@ -87,7 +65,7 @@ export function useVariationData(variationId) {
               projectId = proj.id;
               break;
             }
-          } catch (e) {
+          } catch (_e) {
             continue;
           }
         }
@@ -100,13 +78,13 @@ export function useVariationData(variationId) {
         try {
           const fullVariation = await projectApi.getVariationById(projectId, variationId);
           setVariation(fullVariation);
-        } catch (e) {
+        } catch (_e) {
           setVariation(foundVariation);
         }
       }
 
       try {
-        const projectData = await projectApi.getWithIncludes(projectId, ['siteplan', 'contract']);
+        const projectData = await projectApi.getVariationContext(projectId);
         setProject(projectData);
       } catch (e) {
         logger.error("Error loading project", e);
@@ -131,14 +109,13 @@ export function useVariationData(variationId) {
 
   useEffect(() => {
     loadVariation();
-    loadCompanyInfo();
-  }, [loadVariation, loadCompanyInfo]);
+  }, [loadVariation]);
 
   const getNoticeData = useCallback(() => {
     if (!variation?.description) return {};
     try {
       return JSON.parse(variation.description);
-    } catch (e) {
+    } catch (_e) {
       return {};
     }
   }, [variation]);
@@ -148,7 +125,6 @@ export function useVariationData(variationId) {
     error,
     variation,
     project,
-    companyInfo,
     auditLogs,
     alterationRequests,
     loadingAuditLogs,
