@@ -145,6 +145,15 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
     const ownerPayments = sumPaymentsByPayer(payments, 'owner');
     const bankPayments = sumPaymentsByPayer(payments, 'bank');
     const totalPayments = ownerPayments + bankPayments;
+    const ownerBankVatPayments = (payments || [])
+      .filter(p =>
+        p.payer === 'owner' &&
+        !(p.payment_method === 'promissory_note' && p.promissory_note_status !== 'honored')
+      )
+      .reduce((sum, p) => sum + (parseFloat(p.breakdown?.bank_vat) || 0), 0);
+    const ownerNormalPayments = Math.max(ownerPayments - ownerBankVatPayments, 0);
+    const ownerNormalPaymentsNet = ownerNormalPayments / VAT_MULTIPLIER;
+    const ownerNormalPaymentsVAT = ownerNormalPayments - ownerNormalPaymentsNet;
 
     // Resolve consultant-fee-excluded values before computing totals
     const hasFinancialData = financialCalculations?.data && !financialCalculations?.error;
@@ -163,8 +172,8 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       ((contractValueExcludingConsultantFees + totalVariationsValue) * VAT_MULTIPLIER) +
       totalProlongationFeesValueWithVAT;
 
-    const totalPaymentsNet = totalPayments / VAT_MULTIPLIER;
-    const totalPaymentsVAT = totalPayments - totalPaymentsNet;
+    const totalPaymentsNet = ownerNormalPaymentsNet + ownerBankVatPayments + bankPayments;
+    const totalPaymentsVAT = ownerNormalPaymentsVAT;
 
     const remainingWithVAT = totalContractWithVariationsWithVAT - totalPayments;
     const remainingWithoutVAT = totalContractWithVariations - totalPaymentsNet;
@@ -194,6 +203,8 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       approvedVariationsCount: approvedVariations.length,
       pendingVariationsCount: pendingVariations.length,
       ownerPayments,
+      ownerNormalPayments,
+      ownerBankVatPayments,
       bankPayments,
       totalPayments,
       totalPaymentsNet,
@@ -215,8 +226,14 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
 
   // VAT toggle helpers
   const v = (val) => showVat ? val * 1.05 : val;           // excl → incl when toggled
-  const vg = (val) => showVat ? val : val / 1.05;           // incl → excl when toggled
   const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
+  const ownerPaymentsForView = () => (
+    showVat
+      ? financialStats.ownerNormalPayments + financialStats.ownerBankVatPayments
+      : (financialStats.ownerNormalPayments / 1.05) + financialStats.ownerBankVatPayments
+  );
+  const bankPaymentsForView = () => financialStats.bankPayments;
+  const totalPaymentsForView = () => ownerPaymentsForView() + bankPaymentsForView();
 
   return (
     <div className="prj-tab-panel">
@@ -368,7 +385,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                   <InfoTip text={t("total_payments_tooltip")} />
                 </span>
               }
-              value={renderAmount(vg(financialStats.totalPayments))}
+              value={renderAmount(totalPaymentsForView())}
               sub={showVat
                 ? <>{vatLabel} · {t("vat_amount")}: {renderAmount(financialStats.totalPaymentsVAT)}</>
                 : vatLabel
@@ -412,7 +429,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
             </div>
             <div className="financial-progress__footer">
               <span>
-                {t("paid")}: {renderAmount(vg(financialStats.totalPayments))}
+                {t("paid")}: {renderAmount(totalPaymentsForView())}
               </span>
               <span>
                 {t("invoices_total_label")}:{" "}
@@ -531,7 +548,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         <InfoTip text={t("bank_payments_tooltip")} />
                       </span>
                       <span className="financial-breakdown__value">
-                        {renderAmount(vg(financialStats.bankPayments))}
+                        {renderAmount(bankPaymentsForView())}
                       </span>
                     </div>
 
@@ -542,7 +559,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                         <InfoTip text={t("owner_payments_tooltip")} />
                       </span>
                       <span className="financial-breakdown__value">
-                        {renderAmount(vg(financialStats.ownerPayments))}
+                        {renderAmount(ownerPaymentsForView())}
                       </span>
                     </div>
                     <div className="financial-breakdown__divider" />
@@ -554,7 +571,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                     <span className="financial-breakdown__vat-tag">{vatLabel}</span>
                   </span>
                   <span className="financial-breakdown__value financial-breakdown__value--success">
-                    {renderAmount(vg(financialStats.totalPayments))}
+                    {renderAmount(totalPaymentsForView())}
                   </span>
                 </div>
                 {showVat && (
@@ -766,11 +783,11 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
                   <>
                     <tr>
                       <td>{t("bank_payments")}</td>
-                      <td>{printAmount(financialStats.bankPayments / 1.05)}</td>
+                      <td>{printAmount(financialStats.bankPayments)}</td>
                     </tr>
                     <tr>
                       <td>{t("owner_payments")}</td>
-                      <td>{printAmount(financialStats.ownerPayments / 1.05)}</td>
+                      <td>{printAmount((financialStats.ownerNormalPayments / 1.05) + financialStats.ownerBankVatPayments)}</td>
                     </tr>
                     <tr className="fin-print__tr-sep"><td colSpan="2" /></tr>
                   </>

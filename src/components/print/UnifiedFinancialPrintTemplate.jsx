@@ -34,6 +34,24 @@ function buildBilingualValue(ar, en) {
   return { ar: arValue, en: enValue };
 }
 
+function getItemNetTotal(item) {
+  return numberOrZero(item?.total) || numberOrZero(item?.quantity) * numberOrZero(item?.unit_price) || 0;
+}
+
+function scaleTaxInvoiceItems(items, targetNetAmount) {
+  const displayItems = Array.isArray(items) ? items.filter(item => item.source !== "bank_vat") : [];
+  const sourceNetTotal = displayItems.reduce((sum, item) => sum + getItemNetTotal(item), 0);
+  if (displayItems.length === 0 || sourceNetTotal <= 0 || targetNetAmount <= 0) return displayItems;
+
+  const ratio = targetNetAmount / sourceNetTotal;
+  if (Math.abs(ratio - 1) < 0.000001) return displayItems;
+
+  return displayItems.map(item => ({
+    ...item,
+    total: Math.round(getItemNetTotal(item) * ratio * 100) / 100,
+  }));
+}
+
 function BilingualText({ value, className = "" }) {
   if (value && typeof value === "object" && ("ar" in value || "en" in value)) {
     return (
@@ -617,7 +635,7 @@ export default function UnifiedFinancialPrintTemplate({
       const vatAmount = numberOrZero(data.vat_amount || (netAmount * vatRate) / 100);
       const grossAmount = numberOrZero(data.gross_amount || netAmount + vatAmount);
 
-      const tiDisplayItems = linkedInvoiceItems.filter(item => item.source !== "bank_vat");
+      const tiDisplayItems = scaleTaxInvoiceItems(linkedInvoiceItems, netAmount);
 
       const buildTaxSummaryRows = () => {
         if (tiDisplayItems.length === 0) {
@@ -631,7 +649,7 @@ export default function UnifiedFinancialPrintTemplate({
         const consolidatedItems = tiDisplayItems.filter(item => consolidatedSources.includes(item.source));
 
         const baseRows = baseItems.map((item, index) => {
-          const itemNet = item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0;
+          const itemNet = getItemNetTotal(item);
           const itemVat = Math.round(itemNet * (vatRate / 100) * 100) / 100;
           return {
             cells: [
@@ -646,7 +664,7 @@ export default function UnifiedFinancialPrintTemplate({
         if (consolidatedItems.length === 0) return baseRows;
 
         const consolidatedNet = consolidatedItems.reduce((sum, item) => {
-          return sum + (item.total || numberOrZero(item.quantity) * numberOrZero(item.unit_price) || 0);
+          return sum + getItemNetTotal(item);
         }, 0);
         const consolidatedVat = Math.round(consolidatedNet * (vatRate / 100) * 100) / 100;
 

@@ -33,9 +33,13 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   const [showVat, setShowVat] = useState(false);
   const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
   const vg = (val) => showVat ? val : val / 1.05;
-  // breakdown values from the API are already NET (VAT excluded); gross-up when showing with VAT
-  const vg_from_net = (val) => showVat ? val * 1.05 : val;
-
+  const ownerPaymentTotalForView = (val, ownerBankVatVal = 0) => {
+    const ownerNormal = Math.max(val - ownerBankVatVal, 0);
+    return (showVat ? ownerNormal : ownerNormal / 1.05) + ownerBankVatVal;
+  };
+  const bankPaymentTotalForView = (val) => val;
+  const combinedPaymentTotalForView = (ownerVal, bankVal, ownerBankVatVal = 0) =>
+    ownerPaymentTotalForView(ownerVal, ownerBankVatVal) + bankPaymentTotalForView(bankVal);
   const renderAmount = (value) => {
     const str = formatMoney(value, { lang: i18n.language });
     if (i18n.language === 'en') {
@@ -157,7 +161,12 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   // Payment Statistics (active payments only — voided not counted)
   const paymentStats = useMemo(() => {
     if (activePayments.length === 0) {
-      return { total: 0, ownerCount: 0, bankCount: 0, ownerTotal: 0, bankTotal: 0, overallTotal: 0, baseContractTotal: 0, variationsTotal: 0, bankVatTotal: 0 };
+      return {
+        total: 0, ownerCount: 0, bankCount: 0, ownerTotal: 0, bankTotal: 0, overallTotal: 0,
+        baseContractTotal: 0, ownerBaseContractTotal: 0, bankBaseContractTotal: 0,
+        variationsTotal: 0, ownerVariationsTotal: 0, bankVariationsTotal: 0,
+        bankVatTotal: 0, ownerBankVatTotal: 0, bankBankVatTotal: 0
+      };
     }
 
     const ownerPayments = activePayments.filter(p => (p.payer || "owner") === "owner");
@@ -182,15 +191,14 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
 
     // Breakdown totals exclude all non-honored promissory notes
     const cashPayments = activePayments.filter(p => !isNonHonoredNote(p));
-    const baseContractTotal = cashPayments.reduce(
-      (sum, p) => sum + (parseFloat(p.breakdown?.base_contract) || 0), 0
+    const ownerCashBreakdownPayments = cashPayments.filter(p => (p.payer || "owner") === "owner");
+    const bankCashBreakdownPayments = cashPayments.filter(p => (p.payer || "owner") === "bank");
+    const sumBreakdown = (items, key) => items.reduce(
+      (sum, p) => sum + (parseFloat(p.breakdown?.[key]) || 0), 0
     );
-    const variationsTotal = cashPayments.reduce(
-      (sum, p) => sum + (parseFloat(p.breakdown?.variations) || 0), 0
-    );
-    const bankVatTotal = cashPayments.reduce(
-      (sum, p) => sum + (parseFloat(p.breakdown?.bank_vat) || 0), 0
-    );
+    const baseContractTotal = sumBreakdown(cashPayments, 'base_contract');
+    const variationsTotal = sumBreakdown(cashPayments, 'variations');
+    const bankVatTotal = sumBreakdown(cashPayments, 'bank_vat');
 
     return {
       total: activePayments.length,
@@ -202,12 +210,23 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       promissoryNoteTotal,
       promissoryNoteCount,
       baseContractTotal,
+      ownerBaseContractTotal: sumBreakdown(ownerCashBreakdownPayments, 'base_contract'),
+      bankBaseContractTotal: sumBreakdown(bankCashBreakdownPayments, 'base_contract'),
       variationsTotal,
-      bankVatTotal
+      ownerVariationsTotal: sumBreakdown(ownerCashBreakdownPayments, 'variations'),
+      bankVariationsTotal: sumBreakdown(bankCashBreakdownPayments, 'variations'),
+      bankVatTotal,
+      ownerBankVatTotal: sumBreakdown(ownerCashBreakdownPayments, 'bank_vat'),
+      bankBankVatTotal: sumBreakdown(bankCashBreakdownPayments, 'bank_vat')
     };
   }, [activePayments]);
 
   const [payerFilter, setPayerFilter] = useState("");
+  const isBankFilter = payerFilter === "bank";
+  const effectiveVatLabel = isBankFilter ? t("excluding_vat") : vatLabel;
+  // breakdown values from the API are already NET; bank payments stay net because VAT is owner-paid.
+  const breakdownTotalForView = (ownerVal, bankVal = 0) =>
+    (showVat && !isBankFilter ? ownerVal * 1.05 : ownerVal) + bankVal;
 
   // Active payments scoped to the active payer filter (for metric cards)
   const filteredActivePayments = useMemo(() =>
@@ -219,7 +238,13 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
   const displayPaymentStats = useMemo(() => {
     const payments = filteredActivePayments;
     if (payments.length === 0) {
-      return { total: 0, ownerCount: 0, bankCount: 0, ownerTotal: 0, bankTotal: 0, overallTotal: 0, baseContractTotal: 0, variationsTotal: 0, bankVatTotal: 0, promissoryNoteTotal: 0, promissoryNoteCount: 0 };
+      return {
+        total: 0, ownerCount: 0, bankCount: 0, ownerTotal: 0, bankTotal: 0, overallTotal: 0,
+        baseContractTotal: 0, ownerBaseContractTotal: 0, bankBaseContractTotal: 0,
+        variationsTotal: 0, ownerVariationsTotal: 0, bankVariationsTotal: 0,
+        bankVatTotal: 0, ownerBankVatTotal: 0, bankBankVatTotal: 0,
+        promissoryNoteTotal: 0, promissoryNoteCount: 0
+      };
     }
     const ownerPayments = payments.filter(p => (p.payer || "owner") === "owner");
     const bankPayments = payments.filter(p => (p.payer || "owner") === "bank");
@@ -229,6 +254,9 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
     const ownerTotal = ownerCashPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const bankTotal = bankPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const cashPayments = payments.filter(p => !isNonHonoredNote(p));
+    const ownerCashBreakdownPayments = cashPayments.filter(p => (p.payer || "owner") === "owner");
+    const bankCashBreakdownPayments = cashPayments.filter(p => (p.payer || "owner") === "bank");
+    const sumBreakdown = (items, key) => items.reduce((sum, p) => sum + (parseFloat(p.breakdown?.[key]) || 0), 0);
     return {
       total: payments.length,
       ownerCount: ownerCashPayments.length,
@@ -238,9 +266,15 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
       overallTotal: ownerTotal + bankTotal,
       promissoryNoteTotal: ownerPendingNotes.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
       promissoryNoteCount: ownerPendingNotes.length,
-      baseContractTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.base_contract) || 0), 0),
-      variationsTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.variations) || 0), 0),
-      bankVatTotal: cashPayments.reduce((sum, p) => sum + (parseFloat(p.breakdown?.bank_vat) || 0), 0),
+      baseContractTotal: sumBreakdown(cashPayments, 'base_contract'),
+      ownerBaseContractTotal: sumBreakdown(ownerCashBreakdownPayments, 'base_contract'),
+      bankBaseContractTotal: sumBreakdown(bankCashBreakdownPayments, 'base_contract'),
+      variationsTotal: sumBreakdown(cashPayments, 'variations'),
+      ownerVariationsTotal: sumBreakdown(ownerCashBreakdownPayments, 'variations'),
+      bankVariationsTotal: sumBreakdown(bankCashBreakdownPayments, 'variations'),
+      bankVatTotal: sumBreakdown(cashPayments, 'bank_vat'),
+      ownerBankVatTotal: sumBreakdown(ownerCashBreakdownPayments, 'bank_vat'),
+      bankBankVatTotal: sumBreakdown(bankCashBreakdownPayments, 'bank_vat'),
     };
   }, [filteredActivePayments]);
 
@@ -455,16 +489,20 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             {showVoided ? t("hide_voided") : t("show_voided")}
           </Button>
           <button
-            onClick={() => setShowVat(s => !s)}
+            onClick={() => {
+              if (!isBankFilter) setShowVat(s => !s);
+            }}
+            disabled={isBankFilter}
+            aria-disabled={isBankFilter}
             style={{
               padding: '6px 14px',
               borderRadius: '6px',
-              border: showVat ? '2px solid #3b82f6' : '1.5px solid #d1d5db',
-              background: showVat ? '#eff6ff' : 'transparent',
-              color: showVat ? '#1d4ed8' : '#6b7280',
+              border: !isBankFilter && showVat ? '2px solid #3b82f6' : '1.5px solid #d1d5db',
+              background: isBankFilter ? '#f3f4f6' : showVat ? '#eff6ff' : 'transparent',
+              color: isBankFilter ? '#9ca3af' : showVat ? '#1d4ed8' : '#6b7280',
               fontWeight: 600,
               fontSize: '0.82rem',
-              cursor: 'pointer',
+              cursor: isBankFilter ? 'not-allowed' : 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
@@ -474,7 +512,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
-            {showVat ? t("including_vat") : t("excluding_vat")}
+            {effectiveVatLabel}
           </button>
           {allRows.length > 0 && (
             <button
@@ -551,11 +589,12 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                 tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
                 variant="blue" icon="dollar"
                 label={payerFilter === "owner" ? t("owner_total") : payerFilter === "bank" ? t("bank_total") : t("overall_total")}
-                value={renderAmount(vg(displayPaymentStats.overallTotal))} sub={vatLabel} />
+                value={renderAmount(combinedPaymentTotalForView(displayPaymentStats.ownerTotal, displayPaymentStats.bankTotal, displayPaymentStats.ownerBankVatTotal))}
+                sub={effectiveVatLabel} />
               {!payerFilter && (
                 <MetricCard
                   tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
-                  variant="emerald" icon="wallet" label={t("owner_total")} value={renderAmount(vg(displayPaymentStats.ownerTotal))} sub={vatLabel} />
+                  variant="emerald" icon="wallet" label={t("owner_total")} value={renderAmount(ownerPaymentTotalForView(displayPaymentStats.ownerTotal, displayPaymentStats.ownerBankVatTotal))} sub={vatLabel} />
               )}
               {(!payerFilter || payerFilter === "owner") && (
                 <MetricCard variant="emerald" icon="hash" label={t("owner_payments_count")} value={displayPaymentStats.ownerCount} />
@@ -563,7 +602,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
               {!payerFilter && (
                 <MetricCard
                   tip={t("invoices_total_amount_tooltip", "Includes VAT and excludes consultant fees.")}
-                  variant="blue" icon="building" label={t("bank_total")} value={renderAmount(vg(displayPaymentStats.bankTotal))} sub={vatLabel} />
+                  variant="blue" icon="building" label={t("bank_total")} value={renderAmount(bankPaymentTotalForView(displayPaymentStats.bankTotal))} sub={t("excluding_vat")} />
               )}
               {(!payerFilter || payerFilter === "bank") && (
                 <MetricCard variant="blue" icon="hash" label={t("bank_payments_count")} value={displayPaymentStats.bankCount} />
@@ -587,12 +626,12 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
             <div className="prj-tab-section">
               <div className="prj-tab-section__title">{t("payment_breakdown_title")}</div>
               <MetricGrid>
-                <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={renderAmount(vg_from_net(displayPaymentStats.baseContractTotal))} sub={vatLabel} />
+                <MetricCard variant="emerald" icon="file" label={t("base_contract_total")} value={renderAmount(breakdownTotalForView(displayPaymentStats.ownerBaseContractTotal, displayPaymentStats.bankBaseContractTotal))} sub={effectiveVatLabel} />
                 {displayPaymentStats.variationsTotal > 0 && (
-                  <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={renderAmount(vg_from_net(displayPaymentStats.variationsTotal))} sub={vatLabel} />
+                  <MetricCard variant="amber" icon="layers" label={t("variations_total")} value={renderAmount(breakdownTotalForView(displayPaymentStats.ownerVariationsTotal, displayPaymentStats.bankVariationsTotal))} sub={effectiveVatLabel} />
                 )}
                 {displayPaymentStats.bankVatTotal > 0 && (
-                  <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={renderAmount(vg_from_net(displayPaymentStats.bankVatTotal))} sub={vatLabel} />
+                  <MetricCard variant="blue" icon="percent" label={t("bank_vat_total")} value={renderAmount(displayPaymentStats.bankVatTotal)} sub={t("excluding_vat")} />
                 )}
               </MetricGrid>
             </div>
@@ -859,7 +898,7 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                 <div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginTop: '8px' }}>
                     <span style={{ fontSize: '26pt', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                      {parseFloat(vg(paymentStats.overallTotal) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {parseFloat(combinedPaymentTotalForView(paymentStats.ownerTotal, paymentStats.bankTotal, paymentStats.ownerBankVatTotal) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <span style={{ fontSize: '12pt', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>AED</span>
                   </div>
@@ -891,8 +930,8 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                 </div>
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                   {[
-                    { dot: '#10b981', label: t("payer_owner"), value: renderAmount(vg(paymentStats.ownerTotal)), sub: `${paymentStats.ownerCount} ${t("payments").toLowerCase()}` },
-                    { dot: '#3b82f6', label: t("payer_bank"), value: renderAmount(vg(paymentStats.bankTotal)), sub: `${paymentStats.bankCount} ${t("payments").toLowerCase()}` },
+                    { dot: '#10b981', label: t("payer_owner"), value: renderAmount(ownerPaymentTotalForView(paymentStats.ownerTotal, paymentStats.ownerBankVatTotal)), sub: `${paymentStats.ownerCount} ${t("payments").toLowerCase()}` },
+                    { dot: '#3b82f6', label: t("payer_bank"), value: renderAmount(bankPaymentTotalForView(paymentStats.bankTotal)), sub: `${paymentStats.bankCount} ${t("payments").toLowerCase()} - ${t("excluding_vat")}` },
                     ...(totalCredit > 0 ? [{ dot: '#8b5cf6', label: t("available_credit"), value: renderAmount(totalCredit), sub: null }] : []),
                   ].map(({ dot, label, value, sub }) => (
                     <div key={label}>
@@ -912,9 +951,9 @@ const PaymentsTab = memo(function PaymentsTab({ projectId, payments, onReload })
                     </div>
                     <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                       {[
-                        { dot: '#10b981', label: t("base_contract_total"), value: renderAmount(vg_from_net(paymentStats.baseContractTotal)), show: paymentStats.baseContractTotal > 0 },
-                        { dot: '#f59e0b', label: t("variations_total"), value: renderAmount(vg_from_net(paymentStats.variationsTotal)), show: paymentStats.variationsTotal > 0 },
-                        { dot: '#3b82f6', label: t("bank_vat_total"), value: renderAmount(vg_from_net(paymentStats.bankVatTotal)), show: paymentStats.bankVatTotal > 0 },
+                        { dot: '#10b981', label: t("base_contract_total"), value: renderAmount(breakdownTotalForView(paymentStats.ownerBaseContractTotal, paymentStats.bankBaseContractTotal)), show: paymentStats.baseContractTotal > 0 },
+                        { dot: '#f59e0b', label: t("variations_total"), value: renderAmount(breakdownTotalForView(paymentStats.ownerVariationsTotal, paymentStats.bankVariationsTotal)), show: paymentStats.variationsTotal > 0 },
+                        { dot: '#3b82f6', label: t("bank_vat_total"), value: renderAmount(paymentStats.bankVatTotal), show: paymentStats.bankVatTotal > 0 },
                       ].filter(i => i.show).map(({ dot, label, value }) => (
                         <div key={label}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '6.5pt', fontWeight: 700, color: dot, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
