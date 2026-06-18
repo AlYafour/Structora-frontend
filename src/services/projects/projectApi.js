@@ -38,6 +38,15 @@ class ProjectService extends BaseService {
     }
   }
 
+  async getViewContext(id, config = {}) {
+    try {
+      const { data } = await api.get(`${this.basePath}${id}/view-context/`, config);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getViewContext');
+    }
+  }
+
   /**
    * Get lightweight project list for dropdowns/selectors.
    * Returns only id, name, display_name, internal_code — no heavy calculations.

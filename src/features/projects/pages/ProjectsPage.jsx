@@ -313,7 +313,7 @@ export default function ProjectsPage() {
     enabled: useVirtual,
   });
   return (
-    <PageLayout loading={loading} loadingText={t("loading_projects")}>
+    <PageLayout>
       <div className="projects-page-modern">
         {/* Page Header Bar - Title + Search + Actions all in one bar */}
         <PageHeader

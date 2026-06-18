@@ -12,23 +12,21 @@ import { useProjectTabs } from "../hooks/useProjectTabs.js";
 import useProjectWorkflow from "../hooks/useProjectWorkflow";
 import ProjectViewHeader from "../components/ProjectViewHeader";
 import ProjectTabsNavigation from "../components/ProjectTabsNavigation";
-import { getProjectName } from "../utils/projectHelpers.js";
 import { useLanguage } from "../../../hooks";
 
 export default function ProjectView() {
  const { projectId } = useParams();
  const { t } = useTranslation();
  const { user } = useAuth();
- const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, loading, reload } = useProjectData(projectId);
+ // Use custom hook for tabs
+ const { activeTab, setActiveTab } = useProjectTabs("overview");
+ const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, loading, tabLoading, reload } = useProjectData(projectId, activeTab);
  const { permissions: projectPermissions, loading: permissionsLoading } = useProjectPermissions(projectId);
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
  const isSuperAdmin = user?.is_superuser || user?.role?.name === 'company_super_admin';
  const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
  const canDeleteProject = isCompanySuperAdmin && projectPermissions?.can_delete === true;
-
- // Use custom hook for tabs
- const { activeTab, setActiveTab } = useProjectTabs("overview");
 
  const { isArabic: isAR } = useLanguage();
 
@@ -91,10 +89,14 @@ const projectDisplayName = isAR
  const TabComponent = getTabComponent(activeTab);
  if (!TabComponent) return null;
 
- return (
- <Suspense fallback={<div className="prj-tab-panel project-view__tab-loading">{t("loading")}</div>}>
- {activeTab === "overview" && (
- <TabComponent
+  return (
+  <Suspense fallback={<div className="prj-tab-panel project-view__tab-loading">{t("loading")}</div>}>
+  {tabLoading ? (
+  <div className="prj-tab-panel project-view__tab-loading">{t("loading")}</div>
+  ) : (
+  <>
+  {activeTab === "overview" && (
+  <TabComponent
  projectId={projectId}
  project={project}
  contract={contract}
@@ -159,11 +161,13 @@ const projectDisplayName = isAR
  {activeTab === "progress" && (
  <TabComponent projectId={projectId} onReload={reload} />
  )}
- {activeTab === "prolongation_fees" && (
- <TabComponent projectId={projectId} onReload={reload} />
- )}
- </Suspense>
- );
+  {activeTab === "prolongation_fees" && (
+  <TabComponent projectId={projectId} onReload={reload} />
+  )}
+  </>
+  )}
+  </Suspense>
+  );
  })()}
  </div>
  </Card>

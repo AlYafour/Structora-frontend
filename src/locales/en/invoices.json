@@ -207,5 +207,9 @@
   "invoice_contract_value": "Contract Value (Excl. VAT)",
   "select_variations": "Select Variations",
   "no_variations_available": "No variations available",
-  "apply": "Apply"
+  "apply": "Apply",
+  "filter_by": "Filter by",
+  "filter_showing_owner_invoices": "Showing owner invoices only",
+  "filter_showing_bank_invoices": "Showing bank invoices only",
+  "view_all": "View all"
 }

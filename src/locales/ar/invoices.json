@@ -207,5 +207,9 @@
   "invoice_contract_value": "قيمة العقد (غير شامل الضريبة)",
   "select_variations": "اختر أوامر التغيير",
   "no_variations_available": "لا توجد أوامر تغيير متاحة",
-  "apply": "تطبيق"
+  "apply": "تطبيق",
+  "filter_by": "تصفية حسب",
+  "filter_showing_owner_invoices": "عرض فواتير المالك فقط",
+  "filter_showing_bank_invoices": "عرض فواتير البنك فقط",
+  "view_all": "عرض الكل"
 }
