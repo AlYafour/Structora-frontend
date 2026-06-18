@@ -713,6 +713,8 @@ export default function SitePlanStep({
       // Handle owner signature file
       if (o.signature instanceof File) {
         fd.append(`owners[${idx}][signature]`, o.signature, o.signature.name);
+      } else if (o.signature_delete && o.id) {
+        fd.append(`owners[${idx}][signature_delete]`, "true");
       }
     });
 

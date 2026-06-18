@@ -298,13 +298,20 @@ export default function OwnerForm({ owner, index, isView, onUpdate, onRemove, ca
  <Field label={t("signature")}>
    <FileUpload
      value={owner.signature instanceof File ? owner.signature : null}
-     onChange={(file) => onUpdate(index, "signature", file)}
+     onChange={(file) => {
+       onUpdate(index, "signature", file);
+       onUpdate(index, "signature_delete", false);
+     }}
      accept="image/png,image/jpeg,image/jpg,image/webp"
      maxSizeMB={5}
      showPreview={true}
      existingFileUrl={owner.signature_url || null}
      existingFileName={t("signature")}
-     onRemoveExisting={() => { onUpdate(index, "signature", null); onUpdate(index, "signature_url", null); }}
+     onRemoveExisting={() => {
+       onUpdate(index, "signature", null);
+       onUpdate(index, "signature_url", null);
+       onUpdate(index, "signature_delete", true);
+     }}
      fileType="signature"
    />
  </Field>
