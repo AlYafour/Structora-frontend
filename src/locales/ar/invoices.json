@@ -77,7 +77,7 @@
   "remove_item": "حذف",
   "select_payment": "اختر الدفعة (اختياري)",
   "add_first_item": "إضافة أول صنف",
-  "invoice_print_title": "الفاتورة",
+  "invoice_print_title": "فاتورة مبدئية",
   "invoice_print_invoice_number": "رقم الفاتورة",
   "invoice_print_payer": "الطرف الدافع",
   "invoice_print_bank": "البنك",

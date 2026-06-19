@@ -206,6 +206,7 @@
   "edit_request": "Edit Request",
   "delete_request": "Delete Request",
   "requested_by": "Requested By",
+  "request_type": "Request Type",
   "response_reason": "Decision Reason",
   "responded_by": "Decision By",
   "variation_label": "Variation",

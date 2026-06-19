@@ -206,6 +206,7 @@
   "edit_request": "طلب تعديل",
   "delete_request": "طلب حذف",
   "requested_by": "بواسطة",
+  "request_type": "نوع الطلب",
   "response_reason": "سبب القرار",
   "responded_by": "قرار بواسطة",
   "variation_label": "أمر التغيير",

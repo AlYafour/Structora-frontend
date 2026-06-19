@@ -77,7 +77,7 @@
   "remove_item": "Remove",
   "select_payment": "Select Payment (Optional)",
   "add_first_item": "Add First Item",
-  "invoice_print_title": "Invoice",
+  "invoice_print_title": "Proforma Invoice",
   "invoice_print_invoice_number": "Invoice Number",
   "invoice_print_payer": "Payer",
   "invoice_print_bank": "Bank",
