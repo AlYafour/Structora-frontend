@@ -25,9 +25,11 @@ import projectApi from "../../../services/projects/projectApi";
 import './ProjectsPage.css';
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 import DraftsTable from "../components/DraftsTable";
+import { useTabTitle } from '../../../hooks/useTabTitle';
 
 export default function ProjectsPage() {
   const { t, i18n } = useTranslation();
+  useTabTitle(t('projects_title', 'Projects'), 'المشاريع');
   const navigate = useTenantNavigate();
   const { user, hasPermission, isAdmin } = useAuth();
   const { isArabic: isAR, isRTL } = useLanguage();

@@ -172,7 +172,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       ((contractValueExcludingConsultantFees + totalVariationsValue) * VAT_MULTIPLIER) +
       totalProlongationFeesValueWithVAT;
 
-    const totalPaymentsNet = ownerNormalPaymentsNet + ownerBankVatPayments + bankPayments;
+    const totalPaymentsNet = ownerNormalPaymentsNet + bankPayments;
     const totalPaymentsVAT = ownerNormalPaymentsVAT;
 
     const remainingWithVAT = totalContractWithVariationsWithVAT - totalPayments;
@@ -230,7 +230,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
   const ownerPaymentsForView = () => (
     showVat
       ? financialStats.ownerNormalPayments + financialStats.ownerBankVatPayments
-      : (financialStats.ownerNormalPayments / 1.05) + financialStats.ownerBankVatPayments
+      : financialStats.ownerNormalPayments / 1.05
   );
   const bankPaymentsForView = () => financialStats.bankPayments;
   const totalPaymentsForView = () => ownerPaymentsForView() + bankPaymentsForView();

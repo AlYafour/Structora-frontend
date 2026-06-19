@@ -57,6 +57,7 @@ export default function CompanySettingsPage() {
     contractor_email: '',
     contractor_address: '',
     contractor_registration_number: '',
+    company_trn: '',
   });
 
   const [ownerData, setOwnerData] = useState({
@@ -111,6 +112,7 @@ export default function CompanySettingsPage() {
         contractor_email: settings.contractor_email || '',
         contractor_address: settings.contractor_address || '',
         contractor_registration_number: settings.contractor_registration_number || '',
+        company_trn: settings.company_trn || '',
       });
       setSubscriptionData({
         max_users: settings.max_users || 0,
@@ -165,7 +167,7 @@ export default function CompanySettingsPage() {
         'company_country','company_city','company_description','company_activity_type',
         'primary_color','secondary_color','contractor_name','contractor_name_en',
         'contractor_license_no','contractor_phone','contractor_email','contractor_address',
-        'contractor_registration_number',
+        'contractor_registration_number', 'company_trn',
       ];
       const fileFields = ['company_logo','background_image','contractor_signature','letter_head_template','company_stamp'];
       const hasFiles = fileFields.some(f => companyData[f] instanceof File) || removedFields.size > 0;
@@ -336,6 +338,10 @@ export default function CompanySettingsPage() {
                   <Field label={t('company_registration_number')}>
                     <input type="text" name="contractor_registration_number" className="input"
                       value={companyData.contractor_registration_number} onChange={handleCompanyChange} />
+                  </Field>
+                  <Field label={t('company_trn_label', 'Tax Registration Number (TRN) / رقم التسجيل الضريبي')}>
+                    <input type="text" name="company_trn" className="input"
+                      value={companyData.company_trn} onChange={handleCompanyChange} maxLength={50} dir="ltr" />
                   </Field>
 
                   {/* Admin-set: read-only */}

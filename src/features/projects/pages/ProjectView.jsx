@@ -13,6 +13,7 @@ import useProjectWorkflow from "../hooks/useProjectWorkflow";
 import ProjectViewHeader from "../components/ProjectViewHeader";
 import ProjectTabsNavigation from "../components/ProjectTabsNavigation";
 import { useLanguage } from "../../../hooks";
+import { useTabTitle } from "../../../hooks/useTabTitle";
 
 export default function ProjectView() {
  const { projectId } = useParams();
@@ -33,6 +34,9 @@ export default function ProjectView() {
 const projectDisplayName = isAR
   ? (project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`)
   : (project?.display_name_en || project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`);
+
+const projectDisplayNameAr = project?.display_name || project?.name || t("wizard_project_prefix") + ` #${projectId}`;
+useTabTitle(projectDisplayName, projectDisplayNameAr);
 
  // Use workflow hook for all dialog states and action handlers
  const {

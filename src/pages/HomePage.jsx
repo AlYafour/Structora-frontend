@@ -11,11 +11,13 @@ import DashboardTopProjects from "./dashboard/DashboardTopProjects";
 import DashboardActivity from "./dashboard/DashboardActivity";
 import BrandLogo from "../components/common/BrandLogo";
 import "./HomePage.css";
+import { useTabTitle } from "../hooks/useTabTitle";
 
 const REFRESH_INTERVAL = 30_000;
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
+  useTabTitle(t('nav_home', 'Home'), 'الرئيسية');
   const { user, tenantTheme } = useAuth();
   const [stats, setStats] = useState(null);
   const [projectFinancials, setProjectFinancials] = useState([]);

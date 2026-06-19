@@ -62,7 +62,7 @@ export default function ViewReceiptVoucherPage() {
           address: settingsData.company_address || settingsData.contractor_address || "",
           phone: settingsData.company_phone || settingsData.contractor_phone || "",
           email: settingsData.contractor_email || "",
-          vat_number: settingsData.company_license_number || settingsData.contractor_license_no || "",
+          vat_number: settingsData.company_trn || "",
           logo: logoUrl,
         });
       } catch (e) {

@@ -10,6 +10,7 @@ import AiAssistantModal from "../../features/ai-assistant/AiAssistantModal";
 import ValidationPopup from "../../features/ai-assistant/ValidationPopup";
 import { ValidationProvider } from "../../contexts/ValidationContext";
 import PageSkeleton from "./PageSkeleton";
+import AppTabBar from "./AppTabBar";
 
 function LayoutContent() {
   const { i18n } = useTranslation();
@@ -38,6 +39,9 @@ function LayoutContent() {
 
         {/* Breadcrumbs for admin */}
         {isAdmin && <Breadcrumbs />}
+
+        {/* App-level tab bar for company users */}
+        {!isAdmin && <AppTabBar />}
 
         {/* Page content — Outlet renders the matched child route */}
         <main className="app-content">

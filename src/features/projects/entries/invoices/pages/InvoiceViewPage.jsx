@@ -116,7 +116,7 @@ export default function InvoiceViewPage() {
           address: settingsData.company_address || settingsData.contractor_address || "",
           phone: settingsData.company_phone || settingsData.contractor_phone || "",
           email: settingsData.contractor_email || "",
-          vat_number: settingsData.company_license_number || settingsData.contractor_license_no || "",
+          vat_number: settingsData.company_trn || "",
           logo: logoUrl,
         });
       } catch (e) {
@@ -175,7 +175,7 @@ export default function InvoiceViewPage() {
     const pid = projectId || invoice?.project || project?.id;
     navigate(pid ? `/projects/${pid}?tab=invoices` : "/projects");
   };
-
+ 
   return (
     <PageLayout>
       {/* Top bar — hidden when printing */}

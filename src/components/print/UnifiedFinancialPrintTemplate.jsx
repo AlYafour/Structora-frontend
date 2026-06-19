@@ -801,8 +801,8 @@ export default function UnifiedFinancialPrintTemplate({
                 {company?.phone && <span dir="ltr">{company.phone}</span>}
                 {company?.email && <span dir="ltr">{company.email}</span>}
                 {company?.vat_number && (
-                  <span>
-                    <BilingualText value={label("vat_registration")} />: {company.vat_number}
+                  <span style={{ flexBasis: "100%", fontWeight: 600, color: "#17202f" }}>
+                    {"رقم التسجيل الضريبي / TRN"}: <span dir="ltr">{company.vat_number}</span>
                   </span>
                 )}
               </div>
