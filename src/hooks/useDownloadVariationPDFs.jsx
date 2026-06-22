@@ -145,6 +145,9 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     });
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
+    // jsPDF defaults to FitH (fit width), which opens heavily zoomed in some
+    // viewers. Explicitly request fitting the entire page instead.
+    pdf.setDisplayMode("fullpage", "continuous", "UseNone");
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const scale = pageW / canvas.width;
