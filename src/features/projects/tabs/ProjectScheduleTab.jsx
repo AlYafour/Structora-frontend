@@ -8,10 +8,11 @@ import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
 import { useAuth } from "../../../contexts/AuthContext";
 
-const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, projectSchedule }) {
+const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, projectSchedule, startOrder }) {
   const { t } = useTranslation();
   const { hasPermission, isAdmin } = useAuth();
   const hasData = !!projectSchedule;
+  const hasExtensions = Array.isArray(startOrder?.extensions) && startOrder.extensions.length > 0;
   const canAddProjectSchedule = isAdmin || hasPermission("projects.add_project_schedule");
 
   return (
@@ -45,7 +46,9 @@ const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, project
             )}
             {projectSchedule.project_end_date && (
               <Card className="ds-info-card">
-                <div className="prj-info-label">{t("project_end_date")}</div>
+                <div className="prj-info-label">
+                  {t(hasExtensions ? "project_end_date_calculated" : "project_end_date")}
+                </div>
                 <div className="prj-info-value">{formatDate(projectSchedule.project_end_date)}</div>
               </Card>
             )}

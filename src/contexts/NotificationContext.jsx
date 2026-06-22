@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Snackbar, Alert, Slide } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../services/notifications';
 import { toastEmitter } from '../utils/toastEmitter';
 import { useAuth } from './AuthContext';
 import useNotificationSound from '../hooks/useNotificationSound';
+import IncomingNotificationPopup from '../components/notifications/IncomingNotificationPopup';
 
 const NotificationContext = createContext(null);
 
@@ -16,6 +18,8 @@ function generateId() {
 }
 
 export function NotificationProvider({ children }) {
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language?.startsWith('ar');
   const { user } = useAuth();
   const authenticatedUserId = user?.id;
   const {
@@ -34,12 +38,39 @@ export function NotificationProvider({ children }) {
   });
 
   const [notifications, setNotifications] = useState([]);
+  const [incomingPopup, setIncomingPopup] = useState({
+    open: false,
+    notification: null,
+  });
 
   const toastQueue = useRef([]);
   const isProcessing = useRef(false);
+  const incomingPopupQueue = useRef([]);
+  const isProcessingIncomingPopup = useRef(false);
   const seenNotificationIds = useRef(new Set());
   const notificationsInitialized = useRef(false);
   const fetchInFlight = useRef(false);
+
+  const processIncomingPopupQueue = useCallback(() => {
+    if (incomingPopupQueue.current.length > 0 && !isProcessingIncomingPopup.current) {
+      isProcessingIncomingPopup.current = true;
+      const notification = incomingPopupQueue.current.shift();
+      setIncomingPopup({ open: true, notification });
+    }
+  }, []);
+
+  const enqueueIncomingPopup = useCallback((notification) => {
+    incomingPopupQueue.current.push(notification);
+    processIncomingPopupQueue();
+  }, [processIncomingPopupQueue]);
+
+  const handleCloseIncomingPopup = useCallback(() => {
+    setIncomingPopup((current) => ({ ...current, open: false }));
+    setTimeout(() => {
+      isProcessingIncomingPopup.current = false;
+      processIncomingPopupQueue();
+    }, 300);
+  }, [processIncomingPopupQueue]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,10 +106,16 @@ export function NotificationProvider({ children }) {
         }));
 
         if (notificationsInitialized.current) {
-          const hasNewUnread = normalized.some(
+          const newUnreadNotifications = normalized.filter(
             (notification) => !notification.read && !seenNotificationIds.current.has(notification.id)
           );
-          if (hasNewUnread) playNotificationSound();
+          if (newUnreadNotifications.length > 0) {
+            playNotificationSound();
+            newUnreadNotifications
+              .slice()
+              .reverse()
+              .forEach(enqueueIncomingPopup);
+          }
         } else {
           notificationsInitialized.current = true;
         }
@@ -135,8 +172,11 @@ export function NotificationProvider({ children }) {
       clearInterval(interval);
       if (sse) sse.close();
       fetchInFlight.current = false;
+      incomingPopupQueue.current = [];
+      isProcessingIncomingPopup.current = false;
+      setIncomingPopup({ open: false, notification: null });
     };
-  }, [authenticatedUserId, playNotificationSound]);
+  }, [authenticatedUserId, enqueueIncomingPopup, playNotificationSound]);
 
   const processQueue = useCallback(() => {
     if (toastQueue.current.length > 0 && !isProcessing.current) {
@@ -204,9 +244,10 @@ export function NotificationProvider({ children }) {
     seenNotificationIds.current.add(newNotification.id);
     if (notificationsInitialized.current && isNew && !newNotification.read) {
       playNotificationSound();
+      enqueueIncomingPopup(newNotification);
     }
     setNotifications((prev) => [newNotification, ...prev].slice(0, 50));
-  }, [playNotificationSound]);
+  }, [enqueueIncomingPopup, playNotificationSound]);
 
   const markAsRead = useCallback(async (id) => {
     setNotifications((prev) =>
@@ -300,6 +341,16 @@ export function NotificationProvider({ children }) {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      {incomingPopup.open && incomingPopup.notification && (
+        <IncomingNotificationPopup
+          key={incomingPopup.notification.id}
+          notification={incomingPopup.notification}
+          isArabic={isArabic}
+          duration={3000}
+          onClose={handleCloseIncomingPopup}
+        />
+      )}
     </NotificationContext.Provider>
   );
 }

@@ -25,7 +25,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { VatDisplayProvider } from './contexts/VatDisplayContext';
 import { ThemeContextProvider } from './contexts/ThemeContext';
-import { TabManagerProvider } from './contexts/TabManagerContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import ThemeProvider from './theme/ThemeProvider';
 import App from './App.jsx';
@@ -115,9 +114,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <ThemeProvider>
               <NotificationProvider>
                 <VatDisplayProvider>
-                  <TabManagerProvider>
-                    <App />
-                  </TabManagerProvider>
+                  <App />
                 </VatDisplayProvider>
               </NotificationProvider>
             </ThemeProvider>

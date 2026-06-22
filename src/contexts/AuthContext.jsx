@@ -294,7 +294,6 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('permissions');
       localStorage.removeItem('tenant_theme');
       localStorage.removeItem('tenant_id');
-      if (tenantSlug) localStorage.removeItem(`structora_tabs__${tenantSlug}`);
       localStorage.removeItem('tenant_slug');
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_super_admin');

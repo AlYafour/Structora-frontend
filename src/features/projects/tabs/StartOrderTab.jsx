@@ -21,6 +21,7 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, onDel
   const [deleting, setDeleting] = useState(false);
 
   const hasData = !!startOrder;
+  const hasExtensions = Array.isArray(startOrder?.extensions) && startOrder.extensions.length > 0;
   const canAddStartOrder = isAdmin || hasPermission("projects.add_start_order");
   const canDelete = isCompanyAdmin || (isAdmin && !isCompanyAdmin);
 
@@ -76,7 +77,9 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, onDel
             )}
             {startOrder.project_end_date && (
               <Card className="ds-info-card">
-                <div className="prj-info-label">{t("project_end_date_calculated")}</div>
+                <div className="prj-info-label">
+                  {t(hasExtensions ? "project_end_date_calculated" : "project_end_date")}
+                </div>
                 <div className="prj-info-value">{formatDate(startOrder.project_end_date)}</div>
               </Card>
             )}
