@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FaSearch, FaBars, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaBars, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaTimes, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 import { useSidebar } from './SidebarContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import Button from '../common/Button';
@@ -47,7 +47,18 @@ export default function AppTopBar({ showSearch = true }) {
   const isAr = i18n.language?.startsWith('ar');
   const navigate = useNavigate();
   const { collapsed, setCollapsed } = useSidebar();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+    clearAll,
+    soundEnabled,
+    soundVolume,
+    toggleNotificationSound,
+    setNotificationVolume,
+  } = useNotifications();
   const [searchFocused, setSearchFocused] = useState(false);
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
@@ -139,6 +150,30 @@ export default function AppTopBar({ showSearch = true }) {
                   )}
                 </span>
                 <div className="ntf-panel__actions">
+                  {soundEnabled && (
+                    <input
+                      className="ntf-panel__volume"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={soundVolume}
+                      onChange={(event) => setNotificationVolume(event.target.value)}
+                      aria-label={t('notification_volume', 'Notification volume')}
+                      title={t('notification_volume', 'Notification volume')}
+                    />
+                  )}
+                  <button
+                    className="ntf-panel__action-btn"
+                    onClick={toggleNotificationSound}
+                    title={soundEnabled
+                      ? t('mute_notifications', 'Mute notification sounds')
+                      : t('unmute_notifications', 'Enable notification sounds')}
+                    aria-pressed={!soundEnabled}
+                    type="button"
+                  >
+                    {soundEnabled ? <FaVolumeUp /> : <FaVolumeMute />}
+                  </button>
                   {unreadCount > 0 && (
                     <button
                       className="ntf-panel__action-btn"

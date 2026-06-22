@@ -279,6 +279,13 @@
   gap: 4px;
 }
 
+.ntf-panel__volume {
+  width: 58px;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--primary, #3b82f6);
+}
+
 .ntf-panel__action-btn {
   background: transparent;
   border: none;

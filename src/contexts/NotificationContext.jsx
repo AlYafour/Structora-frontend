@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Snackbar, Alert, Slide } from '@mui/material';
-import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../services/notifications';
 import { toastEmitter } from '../utils/toastEmitter';
+import { useAuth } from './AuthContext';
+import useNotificationSound from '../hooks/useNotificationSound';
 
 const NotificationContext = createContext(null);
 
@@ -15,7 +16,15 @@ function generateId() {
 }
 
 export function NotificationProvider({ children }) {
-  const { t } = useTranslation();
+  const { user } = useAuth();
+  const authenticatedUserId = user?.id;
+  const {
+    soundEnabled,
+    soundVolume,
+    playNotificationSound,
+    toggleNotificationSound,
+    setNotificationVolume,
+  } = useNotificationSound();
 
   const [toast, setToast] = useState({
     open: false,
@@ -28,47 +37,70 @@ export function NotificationProvider({ children }) {
 
   const toastQueue = useRef([]);
   const isProcessing = useRef(false);
+  const seenNotificationIds = useRef(new Set());
+  const notificationsInitialized = useRef(false);
+  const fetchInFlight = useRef(false);
 
   useEffect(() => {
-    let interval;
+    let cancelled = false;
+    let sse = null;
+
+    seenNotificationIds.current = new Set();
+    notificationsInitialized.current = false;
 
     const fetchNotifications = async () => {
-      try {
-        if (!localStorage.getItem('user')) return;
+      if (!authenticatedUserId || fetchInFlight.current) return;
+      fetchInFlight.current = true;
 
+      try {
         const { data } = await notificationApi.getAll();
+        if (cancelled) return;
         const items = Array.isArray(data) ? data : data?.results || [];
 
-        setNotifications(
-          items.map((n) => ({
-            id: n.id,
+        const normalized = items.map((n) => ({
+          id: n.id,
 
-            // Arabic
-            title: n.title,
-            message: n.message,
+          // Arabic
+          title: n.title,
+          message: n.message,
 
-            // English
-            titleEn: n.title_en || n.title,
-            messageEn: n.message_en || n.message,
+          // English
+          titleEn: n.title_en || n.title,
+          messageEn: n.message_en || n.message,
 
-            type: n.notification_type || n.type || 'info',
-            link: n.link,
-            read: n.is_read,
-            createdAt: n.created_at,
-          }))
-        );
+          type: n.notification_type || n.type || 'info',
+          link: n.link,
+          read: n.is_read,
+          createdAt: n.created_at,
+        }));
+
+        if (notificationsInitialized.current) {
+          const hasNewUnread = normalized.some(
+            (notification) => !notification.read && !seenNotificationIds.current.has(notification.id)
+          );
+          if (hasNewUnread) playNotificationSound();
+        } else {
+          notificationsInitialized.current = true;
+        }
+
+        normalized.forEach((notification) => seenNotificationIds.current.add(notification.id));
+        setNotifications(normalized);
       } catch {
         // silent
+      } finally {
+        fetchInFlight.current = false;
       }
     };
 
+    if (!authenticatedUserId) {
+      setNotifications([]);
+      return undefined;
+    }
+
     fetchNotifications();
-    interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, 15000);
 
-    let sse = null;
-    const storedUser = localStorage.getItem('user');
-
-    if (storedUser) {
+    if (typeof EventSource !== 'undefined') {
       try {
         const sseBase = import.meta.env.DEV
           ? ''
@@ -90,8 +122,8 @@ export function NotificationProvider({ children }) {
         };
 
         sse.onerror = () => {
-          sse.close();
-          sse = null;
+          // EventSource reconnects automatically. Closing here permanently
+          // disabled real-time updates after a transient error or server recycle.
         };
       } catch {
         // ignore
@@ -99,10 +131,12 @@ export function NotificationProvider({ children }) {
     }
 
     return () => {
+      cancelled = true;
       clearInterval(interval);
       if (sse) sse.close();
+      fetchInFlight.current = false;
     };
-  }, []);
+  }, [authenticatedUserId, playNotificationSound]);
 
   const processQueue = useCallback(() => {
     if (toastQueue.current.length > 0 && !isProcessing.current) {
@@ -166,8 +200,13 @@ export function NotificationProvider({ children }) {
       createdAt: notification.createdAt || notification.created_at || new Date().toISOString(),
     };
 
+    const isNew = !seenNotificationIds.current.has(newNotification.id);
+    seenNotificationIds.current.add(newNotification.id);
+    if (notificationsInitialized.current && isNew && !newNotification.read) {
+      playNotificationSound();
+    }
     setNotifications((prev) => [newNotification, ...prev].slice(0, 50));
-  }, []);
+  }, [playNotificationSound]);
 
   const markAsRead = useCallback(async (id) => {
     setNotifications((prev) =>
@@ -234,6 +273,10 @@ export function NotificationProvider({ children }) {
     markAllAsRead,
     removeNotification,
     clearAll,
+    soundEnabled,
+    soundVolume,
+    toggleNotificationSound,
+    setNotificationVolume,
   };
 
   return (
