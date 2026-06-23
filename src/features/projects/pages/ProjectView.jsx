@@ -20,7 +20,7 @@ export default function ProjectView() {
  const { user } = useAuth();
  // Use custom hook for tabs
  const { activeTab, setActiveTab } = useProjectTabs("overview");
- const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, loading, tabLoading, reload } = useProjectData(projectId, activeTab);
+ const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, extensions, loading, tabLoading, reload } = useProjectData(projectId, activeTab);
  const { permissions: projectPermissions, loading: permissionsLoading } = useProjectPermissions(projectId);
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
@@ -48,7 +48,6 @@ const projectDisplayName = isAR
  onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove, handleRevokeFinalApproval,
  } = useProjectWorkflow(projectId, reload);
 
- const hasStartOrder = !!startOrder;
  const isHousingLoan = contract?.contract_classification === "housing_loan_program";
 
  return (
@@ -71,6 +70,9 @@ const projectDisplayName = isAR
  onFinalApproveClick={() => setFinalApproveDialogOpen(true)}
  onRevokeFinalApprovalClick={() => setRevokeFinalApprovalDialogOpen(true)}
  siteplan={siteplan}
+ startOrder={startOrder}
+ projectSchedule={projectSchedule}
+ extensions={extensions}
  />
 
  {/* Main Content Card with Tabs */}
@@ -79,7 +81,6 @@ const projectDisplayName = isAR
  <ProjectTabsNavigation
  activeTab={activeTab}
  onTabChange={setActiveTab}
- hasStartOrder={hasStartOrder}
  isHousingLoan={isHousingLoan}
  />
 
@@ -122,13 +123,13 @@ const projectDisplayName = isAR
  <TabComponent projectId={projectId} startOrder={startOrder} onDeleted={reload} />
  )}
  {activeTab === "project_schedule" && (
- <TabComponent projectId={projectId} projectSchedule={projectSchedule} startOrder={startOrder} />
+ <TabComponent projectId={projectId} projectSchedule={projectSchedule} startOrder={startOrder} extensions={extensions} />
  )}
  {activeTab === "excavation_notice" && (
  <TabComponent projectId={projectId} excavationNotice={excavationNotice} />
  )}
- {hasStartOrder && activeTab === "extensions" && (
- <TabComponent projectId={projectId} startOrder={startOrder} />
+ {activeTab === "extensions" && (
+ <TabComponent projectId={projectId} extensions={extensions} onReload={reload} />
  )}
  {/* Unified financial tab */}
  {(activeTab === "financial" || activeTab === "project_contract_financial_summary" || activeTab === "project_financial_entitlements") && (

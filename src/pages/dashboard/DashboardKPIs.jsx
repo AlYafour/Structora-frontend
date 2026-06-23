@@ -18,13 +18,16 @@ const KPIS = [
   { key: "progress", icon: FaTachometerAlt, color: "teal", getValue: (s) => s.avg_progress?.technical || 0, label: "dash_avg_progress", suffix: "%" },
 ];
 
-export default function DashboardKPIs({ stats, fmt }) {
+export default function DashboardKPIs({ stats, fmt, canViewFinancials = false }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
+  const visibleKpis = canViewFinancials
+    ? KPIS
+    : KPIS.filter((kpi) => kpi.key !== "budget");
 
   return (
     <div className="dash-kpis">
-      {KPIS.map((kpi) => {
+      {visibleKpis.map((kpi) => {
         const Icon = kpi.icon;
         const value = kpi.getValue(stats);
         const isClickable = kpi.key === "total";

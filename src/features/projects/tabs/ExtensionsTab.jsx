@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, useCallback } from "react";
 import { Link } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
+import { pdf } from "@react-pdf/renderer";
 import Button from "../../../components/common/Button";
 import ActionMenu from "../../../components/common/ActionMenu";
 import BulkActionsBar from "../../../components/common/BulkActionsBar";
@@ -9,117 +10,71 @@ import { MetricCard, MetricGrid } from "../../../components/common/MetricCard";
 import { extractFileNameFromUrl } from "../../../utils/helpers/file";
 import FileAttachmentView from "../../../components/file-upload/FileAttachmentView";
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
-import { pdf } from '@react-pdf/renderer';
 import { projectApi } from "../../../services/projects";
-import { api } from "../../../services/api";
 import { useNotifications } from "../../../contexts/NotificationContext";
-import { logger } from "../../../utils/logger";
-
-async function toBase64(url) {
-  if (!url) return null;
-  try {
-    // Strip origin + strip the /api/ prefix that axios baseURL will add back.
-    // e.g. http://127.0.0.1:8000/api/files/projects/... → files/projects/...
-    // api.get('files/projects/...') with baseURL='/api/' → /api/files/projects/... ✓
-    let path = url;
-    try {
-      path = new URL(url).pathname;         // /api/files/projects/...
-      path = path.replace(/^\/api\//, '');  // files/projects/...
-    } catch {}
-    const { data } = await api.get(path, { responseType: 'blob' });
-    return await new Promise((res) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => res(null);
-      r.readAsDataURL(data);
-    });
-  } catch { return null; }
-}
 import ExtensionLetterDocument from "../entries/extensions/ExtensionLetterDocument";
+import { prepareExtensionLetterAssets } from "../entries/extensions/extensionLetterAssets";
 
-const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
+const ExtensionsTab = memo(function ExtensionsTab({ projectId, extensions = [] }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
   const { error: showError } = useNotifications();
-  const extensions = startOrder?.extensions;
   const hasExtensions = Array.isArray(extensions) && extensions.length > 0;
-  const startOrderId = startOrder?.id;
 
-  const [selectedIdxs, setSelectedIdxs] = useState(new Set());
-  const [downloadingIdx, setDownloadingIdx] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [downloadingId, setDownloadingId] = useState(null);
 
-  const handleDownloadLetter = useCallback(async (idx) => {
-    if (!startOrderId) return;
-    setDownloadingIdx(idx);
+  const handleDownloadLetter = useCallback(async (ext) => {
+    setDownloadingId(ext.id);
     try {
-      const data = await projectApi.getExtensionLetterData(projectId, startOrderId, idx);
-      // Convert attachment URLs to base64 and detect portrait/landscape
-      if (Array.isArray(data.attachments)) {
-        data.attachments = await Promise.all(
-          data.attachments.map(async (att) => {
-            if (!att.is_image || !att.url) return att;
-            const b64 = await toBase64(att.url);
-            if (!b64) return { ...att, is_image: false };
-            const isPortrait = await new Promise((res) => {
-              const img = new window.Image();
-              img.onload = () => res(img.naturalHeight > img.naturalWidth);
-              img.onerror = () => res(false);
-              img.src = b64;
-            });
-            return { ...att, url: b64, isPortrait };
-          })
-        );
-      }
+      const rawData = await projectApi.getProjectExtensionLetterData(projectId, ext.id);
+      const data = await prepareExtensionLetterAssets(rawData);
       const blob = await pdf(<ExtensionLetterDocument data={data} />).toBlob();
-      const refNo = data.approval_number || `EOT${String(idx + 1).padStart(4, "0")}`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Extension_Letter_${refNo}.pdf`;
+      a.download = `Extension_Letter_${data.approval_number || ext.id}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch (err) {
-      logger.error("Download extension letter failed", err);
+    } catch {
       showError(t("download_extension_letter_failed"));
     } finally {
-      setDownloadingIdx(null);
+      setDownloadingId(null);
     }
-  }, [projectId, startOrderId, showError, t]);
+  }, [projectId, showError, t]);
 
-  const isAllSelected = hasExtensions && selectedIdxs.size === extensions.length;
-  const isIndeterminate = selectedIdxs.size > 0 && selectedIdxs.size < (extensions?.length || 0);
-
-  const handleSelect = useCallback((idx, checked) => {
-    setSelectedIdxs((prev) => {
+  const handleSelect = useCallback((id, checked) => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (checked) next.add(idx);
-      else next.delete(idx);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   }, []);
 
   const handleSelectAll = useCallback((checked) => {
-    if (checked && extensions) {
-      setSelectedIdxs(new Set(extensions.map((_, i) => i)));
+    if (checked) {
+      setSelectedIds(new Set(extensions.map((e) => e.id)));
     } else {
-      setSelectedIdxs(new Set());
+      setSelectedIds(new Set());
     }
   }, [extensions]);
 
-  const clearSelection = useCallback(() => setSelectedIdxs(new Set()), []);
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const isAllSelected = hasExtensions && selectedIds.size === extensions.length;
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < extensions.length;
 
   const selectAllRef = useCallback(
     (input) => { if (input) input.indeterminate = isIndeterminate; },
     [isIndeterminate]
   );
 
-  // Statistics
   const stats = useMemo(() => {
     if (!hasExtensions) return { count: 0, totalDays: 0, totalMonths: 0 };
-    let totalDays = 0;
-    let totalMonths = 0;
+    let totalDays = 0, totalMonths = 0;
     extensions.forEach((ext) => {
       totalDays += Number(ext.days) || 0;
       totalMonths += Number(ext.months) || 0;
@@ -127,22 +82,20 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
     return { count: extensions.length, totalDays, totalMonths };
   }, [extensions, hasExtensions]);
 
-  // Selected stats
   const selectedStats = useMemo(() => {
-    if (selectedIdxs.size === 0 || !extensions) return { count: 0, totalDays: 0, totalMonths: 0 };
-    let totalDays = 0;
-    let totalMonths = 0;
-    extensions.forEach((ext, i) => {
-      if (selectedIdxs.has(i)) {
+    if (selectedIds.size === 0) return { count: 0, totalDays: 0, totalMonths: 0 };
+    let totalDays = 0, totalMonths = 0;
+    extensions.forEach((ext) => {
+      if (selectedIds.has(ext.id)) {
         totalDays += Number(ext.days) || 0;
         totalMonths += Number(ext.months) || 0;
       }
     });
-    return { count: selectedIdxs.size, totalDays, totalMonths };
-  }, [selectedIdxs, extensions]);
+    return { count: selectedIds.size, totalDays, totalMonths };
+  }, [selectedIds, extensions]);
 
   const newUrl = `/projects/${projectId}/extensions/new`;
-  const editUrlFor = (i) => `/projects/${projectId}/extensions/${i}/edit`;
+  const editUrlFor = (id) => `/projects/${projectId}/extensions/${id}/edit`;
 
   return (
     <div className="prj-tab-panel">
@@ -156,21 +109,18 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
 
       {hasExtensions ? (
         <>
-          {/* Stats */}
           <MetricGrid>
             <MetricCard variant="blue" icon="hash" label={t("extensions_count")} value={stats.count} />
             <MetricCard variant="emerald" icon="calendar" label={t("total_extension_days")} value={stats.totalDays} />
             <MetricCard variant="emerald" icon="calendar" label={t("total_extension_months")} value={stats.totalMonths} />
           </MetricGrid>
 
-          {/* Bulk Actions Bar */}
           <BulkActionsBar
-            selectedCount={selectedIdxs.size}
+            selectedCount={selectedIds.size}
             onClear={clearSelection}
-            stats={selectedIdxs.size > 0 ? `${t("total_extension_days")}: ${selectedStats.totalDays} | ${t("total_extension_months")}: ${selectedStats.totalMonths}` : undefined}
+            stats={selectedIds.size > 0 ? `${t("total_extension_days")}: ${selectedStats.totalDays} | ${t("total_extension_months")}: ${selectedStats.totalMonths}` : undefined}
           />
 
-          {/* Table */}
           <div className="prj-table__wrapper">
             <table className="prj-table">
               <thead>
@@ -197,24 +147,22 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
               </thead>
               <tbody>
                 {extensions.map((ext, i) => {
-                  const isSelected = selectedIdxs.has(i);
+                  const isSelected = selectedIds.has(ext.id);
                   return (
                     <tr
-                      key={ext.id || i}
+                      key={ext.id}
                       className={isSelected ? "is-selected" : ""}
-                      onClick={() => navigate(editUrlFor(i))}
+                      onClick={() => navigate(editUrlFor(ext.id))}
                     >
                       <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => handleSelect(i, e.target.checked)}
+                          onChange={(e) => handleSelect(ext.id, e.target.checked)}
                           className="prj-checkbox"
                         />
                       </td>
-                      <td className="ds-text-center ds-font-medium prj-table__index">
-                        {i + 1}
-                      </td>
+                      <td className="ds-text-center ds-font-medium prj-table__index">{i + 1}</td>
                       <td>
                         <span className="ds-table__cell-text" title={ext.reason}>
                           {ext.reason || "-"}
@@ -223,22 +171,15 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
                       <td className="prj-nowrap">
                         {ext.extension_date ? formatDate(ext.extension_date, i18n.language) : "-"}
                       </td>
-                      <td>
-                        {ext.approval_number || "-"}
-                      </td>
-                      <td className="ds-text-center ds-font-semibold">
-                        {ext.days || 0}
-                      </td>
-                      <td className="ds-text-center ds-font-semibold">
-                        {ext.months || 0}
-                      </td>
+                      <td>{ext.approval_number || "-"}</td>
+                      <td className="ds-text-center ds-font-semibold">{ext.days || 0}</td>
+                      <td className="ds-text-center ds-font-semibold">{ext.months || 0}</td>
                       <td onClick={(e) => e.stopPropagation()}>
                         {ext.file_url ? (
                           <FileAttachmentView
                             fileUrl={ext.file_url}
                             fileName={ext.file_name || extractFileNameFromUrl(ext.file_url)}
                             projectId={projectId}
-                            endpoint={`projects/${projectId}/start-order/`}
                           />
                         ) : (
                           <span className="ds-text-muted">-</span>
@@ -246,12 +187,12 @@ const ExtensionsTab = memo(function ExtensionsTab({ projectId, startOrder }) {
                       </td>
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <ActionMenu items={[
-                          { label: t("edit"), to: editUrlFor(i), type: "link" },
+                          { label: t("edit"), to: editUrlFor(ext.id), type: "link" },
                           {
-                            label: downloadingIdx === i ? t("downloading") : t("download_extension_letter"),
-                            onClick: () => handleDownloadLetter(i),
+                            label: downloadingId === ext.id ? t("downloading") : t("download_extension_letter"),
+                            onClick: () => handleDownloadLetter(ext),
                             type: "button",
-                            disabled: downloadingIdx === i,
+                            disabled: downloadingId === ext.id,
                           },
                         ]} />
                       </td>

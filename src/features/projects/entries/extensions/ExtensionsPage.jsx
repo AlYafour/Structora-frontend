@@ -29,17 +29,14 @@ const EMPTY_EXTENSION = {
 };
 
 export default function ExtensionsPage() {
-  const { projectId, extensionIdx } = useParams();
+  const { projectId, extensionId } = useParams();
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
 
-  const isNew = extensionIdx === undefined;
-  const idx = isNew ? null : parseInt(extensionIdx, 10);
+  const isNew = extensionId === undefined;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [startOrderId, setStartOrderId] = useState(null);
-  const [allExtensions, setAllExtensions] = useState([]);
   const [extension, setExtension] = useState({ ...EMPTY_EXTENSION });
   const [project, setProject] = useState(null);
   const { success, error: showError } = useNotifications();
@@ -50,45 +47,37 @@ export default function ExtensionsPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [projectId, extensionIdx]);
+    projectApi.getById(projectId).then(setProject).catch((err) => {
+      logger.debug("Failed to load project", err);
+    });
 
-  const loadData = async () => {
+    if (!isNew) {
+      loadExtension();
+    }
+  }, [projectId, extensionId]);
+
+  const loadExtension = async () => {
+    setLoading(true);
     try {
-      projectApi.getById(projectId).then(setProject).catch((err) => {
-        logger.debug("Failed to load project", err);
-      });
-      const raw = await projectApi.getStartOrder(projectId);
-      const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
-      if (data && data.id) {
-        setStartOrderId(data.id);
-        const existing = Array.isArray(data.extensions)
-          ? data.extensions.map((ext) => ({
-              reason: ext.reason || "",
-              days: ext.days || 0,
-              months: ext.months || 0,
-              extension_date: ext.extension_date || "",
-              approval_number: ext.approval_number || "",
-              extension_period_from: ext.extension_period_from || "",
-              extension_period_to: ext.extension_period_to || "",
-              note: ext.note || "",
-              file: null,
-              file_url: ext.file_url || null,
-              file_name: ext.file_name || null,
-              letter_attachments: Array.isArray(ext.letter_attachments)
-                ? ext.letter_attachments.map(a => ({ url: a.url || null, name: a.name || null, newFile: null }))
-                : ext.letter_attachment_url
-                  ? [{ url: ext.letter_attachment_url, name: ext.letter_attachment_name || null, newFile: null }]
-                  : [],
-              _isExisting: true,
-            }))
-          : [];
-        setAllExtensions(existing);
-        if (!isNew && idx !== null && existing[idx]) {
-          setExtension(existing[idx]);
-        } else {
-          setExtension({ ...EMPTY_EXTENSION });
-        }
+      const data = await projectApi.getExtensions(projectId);
+      const found = Array.isArray(data) ? data.find((e) => String(e.id) === String(extensionId)) : null;
+      if (found) {
+        setExtension({
+          reason: found.reason || "",
+          days: found.days || 0,
+          months: found.months || 0,
+          extension_date: found.extension_date || "",
+          approval_number: found.approval_number || "",
+          extension_period_from: found.extension_period_from || "",
+          extension_period_to: found.extension_period_to || "",
+          note: found.note || "",
+          file: null,
+          file_url: found.file_url || null,
+          file_name: found.file_name || null,
+          letter_attachments: Array.isArray(found.letter_attachments)
+            ? found.letter_attachments.map((a) => ({ url: a.url || null, name: a.name || null, newFile: null }))
+            : [],
+        });
       }
     } catch (err) {
       logger.debug("ExtensionsPage: load failed", err);
@@ -103,90 +92,60 @@ export default function ExtensionsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!startOrderId) {
-      showError(t("start_order_required_for_extensions"));
-      return;
-    }
-
     setSaving(true);
     try {
-      const updated = [...allExtensions];
-      if (isNew) {
-        updated.push(extension);
-      } else {
-        updated[idx] = extension;
-      }
-
-      const cleanExtensions = updated
-        .filter((ext) => {
-          if (!ext || typeof ext !== "object") return false;
-          const hasReason = ext.reason && String(ext.reason).trim() !== "";
-          const hasDays = ext.days !== undefined && ext.days !== null && Number(ext.days) > 0;
-          const hasMonths = ext.months !== undefined && ext.months !== null && Number(ext.months) > 0;
-          const hasDate = ext.extension_date && String(ext.extension_date).trim() !== "";
-          const hasApproval = ext.approval_number && String(ext.approval_number).trim() !== "";
-          const hasFile = ext.file instanceof File || (ext.file_url && String(ext.file_url).trim() !== "");
-          return hasReason || hasDays || hasMonths || hasDate || hasApproval || hasFile;
-        })
-        .map((ext) => ({
-          reason: String(ext.reason || "").trim(),
-          days: Number(ext.days) || 0,
-          months: Number(ext.months) || 0,
-          extension_date: ext.extension_date ? String(ext.extension_date).trim() : null,
-          approval_number: ext.approval_number ? String(ext.approval_number).trim() : null,
-          extension_period_from: ext.extension_period_from ? String(ext.extension_period_from).trim() : null,
-          extension_period_to: ext.extension_period_to ? String(ext.extension_period_to).trim() : null,
-          note: ext.note ? String(ext.note).trim() : null,
-          file_url: ext.file_url || null,
-          file_name: ext.file_name || null,
-          letter_attachments: (ext.letter_attachments || [])
-            .filter(a => a.url || a.newFile)
-            .map(a => ({ url: a.url || null, name: a.name || null, is_new: a.newFile instanceof File })),
-          _letter_attachment_files: (ext.letter_attachments || [])
-            .filter(a => a.url || a.newFile)
-            .map(a => (a.newFile instanceof File ? a.newFile : null)),
-          _file: ext.file instanceof File ? ext.file : null,
-        }));
-
       const formData = new FormData();
 
-      const extensionsForJson = cleanExtensions.map((ext) => ({
-        reason: ext.reason,
-        days: ext.days,
-        months: ext.months,
-        extension_date: ext.extension_date,
-        approval_number: ext.approval_number,
-        extension_period_from: ext.extension_period_from,
-        extension_period_to: ext.extension_period_to,
-        note: ext.note,
-        file_url: ext.file_url,
-        file_name: ext.file_name,
-        letter_attachments: ext.letter_attachments || [],
-      }));
+      const payload = {
+        reason: String(extension.reason || "").trim(),
+        days: Number(extension.days) || 0,
+        months: Number(extension.months) || 0,
+        extension_date: extension.extension_date || null,
+        approval_number: extension.approval_number || null,
+        extension_period_from: extension.extension_period_from || null,
+        extension_period_to: extension.extension_period_to || null,
+        note: extension.note || null,
+        file_url: extension.file_url || null,
+        file_name: extension.file_name || null,
+        letter_attachments: (extension.letter_attachments || [])
+          .filter((a) => a.url || a.newFile)
+          .map((a) => ({ url: a.url || null, name: a.name || null, is_new: a.newFile instanceof File })),
+      };
 
-      formData.append("extensions", JSON.stringify(extensionsForJson));
-
-      cleanExtensions.forEach((ext, i) => {
-        if (ext._file instanceof File) {
-          formData.append(`extensions[${i}][file]`, ext._file);
+      // Append scalar fields
+      Object.entries(payload).forEach(([key, value]) => {
+        if (key === 'letter_attachments') {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value);
         }
-        let newAttCounter = 0;
-        (ext._letter_attachment_files || []).forEach((f) => {
-          if (f instanceof File) {
-            formData.append(`extensions[${i}][letter_attachment_new][${newAttCounter}]`, f);
-            newAttCounter++;
-          }
-        });
       });
 
-      await projectApi.updateStartOrder(projectId, startOrderId, formData);
+      // Main approval file
+      if (extension.file instanceof File) {
+        formData.append("file", extension.file);
+      }
+
+      // New letter attachment files
+      let newAttCounter = 0;
+      (extension.letter_attachments || []).forEach((a) => {
+        if (a.newFile instanceof File) {
+          formData.append(`letter_attachment_new[${newAttCounter}]`, a.newFile);
+          newAttCounter++;
+        }
+      });
+
+      if (isNew) {
+        await projectApi.createExtension(projectId, formData);
+      } else {
+        await projectApi.updateExtension(projectId, extensionId, formData);
+      }
 
       success(t("save_success"));
       navTimerRef.current = setTimeout(() => navigate(`/projects/${projectId}?tab=extensions`), 1200);
     } catch (error) {
       const handledError = handleError(error, "ExtensionsPage.handleSubmit");
-      logger.error("Error saving extensions", handledError);
+      logger.error("Error saving extension", handledError);
       showError(handledError.message || t("save_error"));
     } finally {
       setSaving(false);
@@ -194,26 +153,6 @@ export default function ExtensionsPage() {
   };
 
   const handleBack = () => navigate(`/projects/${projectId}?tab=extensions`);
-
-  if (!loading && !startOrderId) {
-    return (
-      <PageLayout>
-        <div className="entry-form">
-          <FinancialActionBar onBack={handleBack} saving={false} formId={FORM_ID}>
-            <ProjectEntryInfo project={project} />
-          </FinancialActionBar>
-          <div className="card">
-            <div className="card__header">{t("extensions")}</div>
-            <div className="card__body">
-              <div className="prj-empty-state">
-                {t("start_order_required_for_extensions")}
-              </div>
-            </div>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
 
   return (
     <PageLayout loading={loading} loadingText={t("loading")}>
@@ -229,8 +168,8 @@ export default function ExtensionsPage() {
             <div className="card__body">
               <ContractExtension
                 extension={extension}
-                index={isNew ? allExtensions.length : idx}
-                extensionIndex={isNew ? allExtensions.length : idx}
+                index={0}
+                extensionIndex={0}
                 isView={false}
                 onUpdate={handleUpdate}
                 onRemove={null}

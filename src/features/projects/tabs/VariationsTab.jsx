@@ -609,7 +609,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     "error",
                     t(
                         "waiting_for_general_manager_initial_approval_bulk",
-                        "Supervisor initial approval is pending. Project Manager cannot approve these variation(s) at this stage."
+                        "Supervisor approval is pending. Project Manager cannot approve these variation(s) at this stage."
                     )
                 );
             } else if (fail === 0) {

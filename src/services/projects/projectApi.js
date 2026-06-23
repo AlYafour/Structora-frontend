@@ -850,6 +850,57 @@ class ProjectService extends BaseService {
     }
   }
 
+  // ===== Project Extensions (decoupled) =====
+
+  async getExtensions(projectId) {
+    try {
+      const { data } = await api.get(`${this.basePath}${projectId}/extensions/`);
+      return Array.isArray(data) ? data : (data?.results ?? []);
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getExtensions');
+    }
+  }
+
+  async createExtension(projectId, formData) {
+    try {
+      const { data } = await api.post(`${this.basePath}${projectId}/extensions/`, formData);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.createExtension');
+    }
+  }
+
+  async updateExtension(projectId, extensionId, formData) {
+    try {
+      const { data } = await api.patch(
+        `${this.basePath}${projectId}/extensions/${extensionId}/`,
+        formData
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.updateExtension');
+    }
+  }
+
+  async deleteExtension(projectId, extensionId) {
+    try {
+      await api.delete(`${this.basePath}${projectId}/extensions/${extensionId}/`);
+    } catch (error) {
+      throw handleError(error, 'ProjectService.deleteExtension');
+    }
+  }
+
+  async getProjectExtensionLetterData(projectId, extensionId) {
+    try {
+      const { data } = await api.get(
+        `${this.basePath}${projectId}/extensions/${extensionId}/extension-letter/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getProjectExtensionLetterData');
+    }
+  }
+
   // ===== Awarding =====
 
   /**

@@ -30,7 +30,6 @@ const OpsIcon = () => (
 const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
   activeTab,
   onTabChange,
-  hasStartOrder,
   isHousingLoan,
 }) {
   const { t } = useTranslation();
@@ -74,7 +73,7 @@ const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
         { id: "start_order", label: t("start_order") },
         { id: "project_schedule", label: t("project_schedule") },
         { id: "excavation_notice", label: t("excavation_notice") },
-        { id: "extensions", label: t("extensions"), show: hasStartOrder },
+        { id: "extensions", label: t("extensions") },
         { id: "payment_claims", label: t("payment_claims") },
       ],
     },

@@ -23,6 +23,7 @@ export function invalidateProjectQueries(queryClient, projectId) {
     queryClient.invalidateQueries({ queryKey: ['project-schedule', id] });
     queryClient.invalidateQueries({ queryKey: ['project-excavation-notice', id] });
     queryClient.invalidateQueries({ queryKey: ['project-prolongation-fees', id] });
+    queryClient.invalidateQueries({ queryKey: ['project-extensions', id] });
   }
 }
 
@@ -70,9 +71,11 @@ export default function useProjectData(projectId, activeTab = null) {
   const shouldLoadPayments = !lazyByTab || activeTab === "payments" || isFinancialTab;
   const shouldLoadVariations = !lazyByTab || activeTab === "variations" || isFinancialTab;
   const shouldLoadInvoices = !lazyByTab || activeTab === "invoices";
-  const shouldLoadSchedule = !lazyByTab || activeTab === "project_schedule";
+  const shouldLoadSchedule = true;
   const shouldLoadExcavation = !lazyByTab || activeTab === "excavation_notice";
   const shouldLoadProlongationFees = !lazyByTab || isFinancialTab;
+  // Header schedule dates need to know whether standalone EOT rows affect the end date.
+  const shouldLoadExtensions = true;
 
   const projectQuery = useQuery({
     queryKey: ['project', projectId],
@@ -143,10 +146,20 @@ export default function useProjectData(projectId, activeTab = null) {
     retry: 1,
   });
 
+  const extensionsQuery = useQuery({
+    queryKey: ['project-extensions', projectId],
+    queryFn: ({ signal }) => api.get(`projects/${projectId}/extensions/`, { signal }).then(extractArrayData),
+    enabled: !!projectId && shouldLoadExtensions,
+    staleTime: 0,
+    refetchOnMount: true,
+    retry: 1,
+  });
+
   const reload = () => invalidateProjectQueries(queryClient, projectId);
   const project = projectQuery.data?.project || null;
 
   const tabLoading = (
+    (activeTab === "extensions" && extensionsQuery.isLoading) ||
     (activeTab === "payments" && paymentsQuery.isLoading) ||
     (activeTab === "variations" && variationsQuery.isLoading) ||
     (activeTab === "invoices" && invoicesQuery.isLoading) ||
@@ -183,6 +196,7 @@ export default function useProjectData(projectId, activeTab = null) {
     variations: variationsQuery.data || [],
     invoices: invoicesQuery.data || [],
     prolongationFees: prolongationFeesQuery.data || [],
+    extensions: extensionsQuery.data || [],
     loading,
     tabLoading,
     error: projectQuery.error,

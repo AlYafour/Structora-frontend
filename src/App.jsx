@@ -177,7 +177,7 @@ function TenantRoutes() {
 
       {/* Extensions */}
       <Route path="projects/:projectId/extensions/new" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
-      <Route path="projects/:projectId/extensions/:extensionIdx/edit" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
+      <Route path="projects/:projectId/extensions/:extensionId/edit" element={<ProtectedRoute><ExtensionsPage /></ProtectedRoute>} />
       <Route path="projects/:projectId/extensions/view" element={<ProtectedRoute><ViewExtensionsPage /></ProtectedRoute>} />
 
       {/* Awarding */}

@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { FaCheckCircle, FaClipboardList, FaExternalLinkAlt, FaFileAlt, FaRandom } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
 import PageLayout from "../components/layout/PageLayout";
@@ -16,9 +18,10 @@ const REFRESH_INTERVAL = 30_000;
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
-  const { user, tenantTheme } = useAuth();
+  const { user, tenantTheme, hasPermission } = useAuth();
   const [stats, setStats] = useState(null);
   const [projectFinancials, setProjectFinancials] = useState([]);
+  const [pendingTasks, setPendingTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
 
@@ -30,22 +33,38 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const canViewFinancials = hasPermission("financial.view");
+
   const fetchProjectFinancials = useCallback(() => {
+    if (!canViewFinancials) {
+      setProjectFinancials([]);
+      return;
+    }
+
     api
       .get("dashboard/project-financials/")
       .then(({ data }) => setProjectFinancials(data))
       .catch(() => setProjectFinancials([]));
+  }, [canViewFinancials]);
+
+  const fetchPendingTasks = useCallback(() => {
+    api
+      .get("dashboard/pending-tasks/")
+      .then(({ data }) => setPendingTasks(Array.isArray(data?.tasks) ? data.tasks : []))
+      .catch(() => setPendingTasks([]));
   }, []);
 
   useEffect(() => {
     fetchStats();
     fetchProjectFinancials();
+    fetchPendingTasks();
     intervalRef.current = setInterval(() => {
       fetchStats();
       fetchProjectFinancials();
+      fetchPendingTasks();
     }, REFRESH_INTERVAL);
     return () => clearInterval(intervalRef.current);
-  }, [fetchStats, fetchProjectFinancials]);
+  }, [fetchStats, fetchProjectFinancials, fetchPendingTasks]);
 
   const fmt = (n) =>
     typeof n === "number"
@@ -67,6 +86,7 @@ export default function HomePage() {
   };
 
   const firstName = user?.first_name || user?.email?.split("@")[0] || "";
+  const roleName = user?.role?.name || "";
   const today = new Date().toLocaleDateString(
     i18n.language === "ar" ? "ar-SA" : "en-US",
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
@@ -75,6 +95,40 @@ export default function HomePage() {
   const lang = i18n.language;
   const companyNameAr = tenantTheme?.company_name || "";
   const companyNameEn = tenantTheme?.contractor_name_en || "";
+
+  const formatTaskDate = (value) => {
+    if (!value) return "";
+    try {
+      return new Date(value).toLocaleDateString(
+        i18n.language === "ar" ? "ar-SA" : "en-US",
+        { month: "short", day: "numeric" }
+      );
+    } catch {
+      return "";
+    }
+  };
+
+  const getTaskIcon = (type) => {
+    if (type?.includes("project")) return <FaFileAlt />;
+    if (type?.includes("alteration")) return <FaRandom />;
+    if (type?.includes("final")) return <FaCheckCircle />;
+    return <FaClipboardList />;
+  };
+
+  const taskTypeLabel = (type) => {
+    const labels = {
+      project_manager_approval: t("task_project_manager_approval"),
+      project_final_approval: t("task_project_final_approval"),
+      variation_project_manager_approval: t("task_variation_project_manager_approval"),
+      variation_supervisor_initial_approval: t("task_variation_supervisor_initial_approval"),
+      variation_external_confirmation: t("task_variation_external_confirmation"),
+      variation_final_approval: t("task_variation_final_approval"),
+      variation_alteration_request: t("task_variation_alteration_request"),
+      variation_edit_allowed: t("task_variation_edit_allowed"),
+    };
+    return labels[type] || t("pending_task");
+  };
+
   return (
     <PageLayout loading={loading} loadingText={t("loading")}>
       <div className="dash">
@@ -109,10 +163,70 @@ export default function HomePage() {
           </div>
         </div>
 
+        <section className="dash-card dash-tasks" aria-labelledby="pending-tasks-title">
+          <div className="dash-card__header dash-tasks__header">
+            <div>
+              <h2 className="dash-card__title" id="pending-tasks-title">
+                {t("pending_tasks")}
+              </h2>
+              <p className="dash-tasks__subtitle">
+                {t("pending_tasks_subtitle")}
+              </p>
+            </div>
+            <span className="dash-card__badge">
+              {pendingTasks.length} {pendingTasks.length === 1 ? t("task") : t("tasks")}
+            </span>
+          </div>
+
+          {pendingTasks.length === 0 ? (
+            <div className="dash-tasks__empty">
+              <span className="dash-tasks__empty-icon">
+                <FaCheckCircle />
+              </span>
+              <div>
+                <strong>{t("no_pending_tasks")}</strong>
+                <p>{roleName ? t("no_pending_tasks_for_role") : t("no_pending_tasks_desc")}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="dash-tasks__list">
+              {pendingTasks.slice(0, 8).map((task) => {
+                const projectName = lang === "ar"
+                  ? (task.project_name || task.project_name_en)
+                  : (task.project_name_en || task.project_name);
+                const title = task.type?.startsWith("project_")
+                  ? (projectName || task.title)
+                  : task.title;
+                const meta = !task.type?.startsWith("project_") ? projectName : "";
+
+                return (
+                  <Link className="dash-task" to={task.action_url || "/dashboard"} key={task.id}>
+                    <span className="dash-task__icon">{getTaskIcon(task.type)}</span>
+                    <span className="dash-task__body">
+                      <span className="dash-task__topline">
+                        <span className="dash-task__type">{taskTypeLabel(task.type)}</span>
+                        {task.created_at && (
+                          <span className="dash-task__date">{formatTaskDate(task.created_at)}</span>
+                        )}
+                      </span>
+                      <span className="dash-task__title">{title}</span>
+                      <span className="dash-task__meta">{meta}</span>
+                    </span>
+                    <span className="dash-task__status">{t(task.status) || task.status}</span>
+                    <span className="dash-task__open" aria-hidden="true">
+                      <FaExternalLinkAlt />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {stats && (
           <>
             {/* ── KPI Cards ── */}
-            <DashboardKPIs stats={stats} fmt={fmt} />
+            <DashboardKPIs stats={stats} fmt={fmt} canViewFinancials={canViewFinancials} />
 
             {/* ── Charts Row ── */}
             <div className="dash__charts">
@@ -121,11 +235,15 @@ export default function HomePage() {
             </div>
 
             {/* ── Financial Analytics ── */}
-            <DashboardFinancials stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} projectFinancials={projectFinancials} />
+            {canViewFinancials && (
+              <DashboardFinancials stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} projectFinancials={projectFinancials} />
+            )}
 
             {/* ── Bottom Row ── */}
             <div className="dash__bottom">
-              <DashboardTopProjects stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} />
+              {canViewFinancials && (
+                <DashboardTopProjects stats={stats} fmtCurrency={fmtCurrency} currencyLabel={currencyLabel} />
+              )}
               <DashboardActivity stats={stats} />
             </div>
           </>

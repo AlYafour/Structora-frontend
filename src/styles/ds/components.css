@@ -3974,7 +3974,7 @@ html.theme-dark .project-entry-info__code {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 50px;
+  gap: var(--space-4);
 }
 
 .prj-view-header__status-row .prj-status-banner {
@@ -3982,6 +3982,17 @@ html.theme-dark .project-entry-info__code {
 }
 
 /* Identity: project name */
+.prj-view-header__content-row {
+  display: block;
+}
+
+.prj-view-header__content-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .prj-view-header__identity {
   display: flex;
   flex-direction: column;
@@ -4048,9 +4059,48 @@ html.theme-dark .project-entry-info__code {
 .prj-view-header__status--warning { background: rgba(245, 158, 11, 0.25);  color: #fcd34d; }
 .prj-view-header__status--success { background: rgba(34, 197, 94, 0.25);   color: #86efac; }
 
+.prj-view-header__dates {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding-top: 2px;
+  margin-inline-start: auto;
+  width: min(100%, 330px);
+}
+
+.prj-view-header__date-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.prj-view-header__date-label,
+.prj-view-header__date-value {
+  display: block;
+  min-width: 0;
+}
+
+.prj-view-header__date-label {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.prj-view-header__date-value {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
 /* Spacer: pushes nav + actions to the bottom */
 .prj-view-header__spacer {
-  flex: 1;
+  display: none;
 }
 
 /* Nav buttons row */
@@ -4330,6 +4380,10 @@ html.theme-dark .prj-status-banner__title {
 
   .prj-view-header__name-primary {
     font-size: 1.35rem;
+  }
+
+  .prj-view-header__content-row {
+    grid-template-columns: 1fr;
   }
 
   .prj-view-header__status-row {

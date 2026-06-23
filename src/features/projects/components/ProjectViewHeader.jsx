@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FiDownload, FiUpload } from "react-icons/fi";
 import Button from "../../../components/common/Button";
+import { formatDate } from "../../../utils/formatters";
 import { formatInternalCode } from "../../../utils/formatters/id";
 import { buildFileUrl } from "../../../utils/helpers/file";
 import { api, updateFile } from "../../../services/api";
@@ -13,7 +14,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   project,
   projectId,
   projectPermissions,
-  activeTab,
+  activeTab: _activeTab,
   isManager,
   isSuperAdmin,
   canDeleteProject,
@@ -25,6 +26,9 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   onFinalApproveClick,
   onRevokeFinalApprovalClick,
   siteplan,
+  startOrder,
+  projectSchedule,
+  extensions = [],
 }) {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
@@ -53,7 +57,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       showError(t("download_error"));
     } finally {
       setDownloading(false);
@@ -139,6 +143,21 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   };
 
   const statusInfo = getStatusInfo();
+  const hasDurationExtensions = (items) =>
+    Array.isArray(items) && items.some((ext) => (Number(ext?.days) || 0) > 0 || (Number(ext?.months) || 0) > 0);
+  const hasScheduleExtensions = hasDurationExtensions(extensions) || hasDurationExtensions(startOrder?.extensions);
+  const headerDates = [
+    projectSchedule?.project_start_date && {
+      id: "schedule-start-date",
+      label: t("schedule_start_date_label"),
+      value: formatDate(projectSchedule.project_start_date),
+    },
+    projectSchedule?.project_end_date && {
+      id: "schedule-end-date",
+      label: t(hasScheduleExtensions ? "project_end_date_calculated" : "schedule_end_date_label"),
+      value: formatDate(projectSchedule.project_end_date),
+    },
+  ].filter(Boolean);
 
   return (
     <div className="prj-view-header">
@@ -173,38 +192,53 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Identity: name */}
-          <div className="prj-view-header__identity">
-            {(nameAr || nameEn) ? (
-              <>
-                <h1 className="prj-view-header__name-primary">
-                  {isAR ? (nameAr || nameEn) : (nameEn || nameAr)}
-                </h1>
-                {nameAr && nameEn && nameAr !== nameEn && (
-                  <p className="prj-view-header__name-secondary">
-                    {isAR ? nameEn : nameAr}
-                  </p>
-                )}
-              </>
-            ) : (
-              <h1 className="prj-view-header__name-primary">{titleText}</h1>
-            )}
-          </div>
-
-          {/* Meta: internal code + execution status */}
-          <div className="prj-view-header__meta">
-            {project?.internal_code && (
-              <div className="prj-view-header__top-code">
-                <span className="mono">{formatInternalCode(project.internal_code)}</span>
+            {headerDates.length > 0 && (
+              <div className="prj-view-header__dates" aria-label={t("project_schedule")}>
+                {headerDates.map((item) => (
+                  <div className="prj-view-header__date-item" key={item.id}>
+                    <span className="prj-view-header__date-label">{item.label}</span>
+                    <span className="prj-view-header__date-value">{item.value}</span>
+                  </div>
+                ))}
               </div>
             )}
-            {statusInfo && (
-              <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
-                {statusInfo.label}
-              </span>
-            )}
+          </div>
+
+          <div className="prj-view-header__content-row">
+            <div className="prj-view-header__content-main">
+              {/* Identity: name */}
+              <div className="prj-view-header__identity">
+                {(nameAr || nameEn) ? (
+                  <>
+                    <h1 className="prj-view-header__name-primary">
+                      {isAR ? (nameAr || nameEn) : (nameEn || nameAr)}
+                    </h1>
+                    {nameAr && nameEn && nameAr !== nameEn && (
+                      <p className="prj-view-header__name-secondary">
+                        {isAR ? nameEn : nameAr}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <h1 className="prj-view-header__name-primary">{titleText}</h1>
+                )}
+              </div>
+
+              {/* Meta: internal code + execution status */}
+              <div className="prj-view-header__meta">
+                {project?.internal_code && (
+                  <div className="prj-view-header__top-code">
+                    <span className="mono">{formatInternalCode(project.internal_code)}</span>
+                  </div>
+                )}
+                {statusInfo && (
+                  <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
+                    {statusInfo.label}
+                  </span>
+                )}
+              </div>
+            </div>
+
           </div>
 
           {/* Spacer: pushes buttons to bottom */}

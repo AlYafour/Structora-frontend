@@ -1,30 +1,12 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 import { pdf } from '@react-pdf/renderer';
 import { projectApi } from "../../../../services/projects";
-import { api } from "../../../../services/api";
 import { logger } from "../../../../utils/logger";
 import { useNotifications } from "../../../../contexts/NotificationContext";
 import ExtensionLetterDocument from "./ExtensionLetterDocument";
-
-async function toBase64(url) {
-  if (!url) return null;
-  try {
-    let path = url;
-    try {
-      path = new URL(url).pathname;
-      path = path.replace(/^\/api\//, '');
-    } catch {}
-    const { data } = await api.get(path, { responseType: 'blob' });
-    return await new Promise((res) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => res(null);
-      r.readAsDataURL(data);
-    });
-  } catch { return null; }
-}
+import { prepareExtensionLetterAssets } from "./extensionLetterAssets";
 import PageLayout from "../../../../components/layout/PageLayout";
 import ViewPageHeader from "../../../../components/ui/ViewPageHeader";
 import ContractExtension from "../../wizard/components/ContractExtension";
@@ -38,49 +20,29 @@ export default function ViewExtensionsPage() {
   const { error: showError } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [extensions, setExtensions] = useState([]);
-  const [startOrderId, setStartOrderId] = useState(null);
-  const [downloadingIdx, setDownloadingIdx] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, [projectId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      const raw = await projectApi.getStartOrder(projectId);
-      const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
-      if (data?.id) setStartOrderId(data.id);
-      if (data?.extensions && Array.isArray(data.extensions) && data.extensions.length > 0) {
-        setExtensions(data.extensions);
-      }
+      const data = await projectApi.getExtensions(projectId);
+      setExtensions(Array.isArray(data) ? data : []);
     } catch (err) {
       logger.debug("ViewExtensionsPage: load failed", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
-  const handleDownloadLetter = async (idx) => {
-    if (!startOrderId) return;
-    setDownloadingIdx(idx);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleDownloadLetter = async (ext, idx) => {
+    if (!ext?.id) return;
+    setDownloadingId(ext.id);
     try {
-      const data = await projectApi.getExtensionLetterData(projectId, startOrderId, idx);
-      if (Array.isArray(data.attachments)) {
-        data.attachments = await Promise.all(
-          data.attachments.map(async (att) => {
-            if (!att.is_image || !att.url) return att;
-            const b64 = await toBase64(att.url);
-            if (!b64) return { ...att, is_image: false };
-            const isPortrait = await new Promise((res) => {
-              const img = new window.Image();
-              img.onload = () => res(img.naturalHeight > img.naturalWidth);
-              img.onerror = () => res(false);
-              img.src = b64;
-            });
-            return { ...att, url: b64, isPortrait };
-          })
-        );
-      }
+      const rawData = await projectApi.getProjectExtensionLetterData(projectId, ext.id);
+      const data = await prepareExtensionLetterAssets(rawData);
       const blob = await pdf(<ExtensionLetterDocument data={data} />).toBlob();
       const refNo = data.approval_number || `EOT${String(idx + 1).padStart(4, "0")}`;
       const url = URL.createObjectURL(blob);
@@ -95,7 +57,7 @@ export default function ViewExtensionsPage() {
       logger.error("Download extension letter failed", err);
       showError(t("download_extension_letter_failed"));
     } finally {
-      setDownloadingIdx(null);
+      setDownloadingId(null);
     }
   };
 
@@ -131,10 +93,10 @@ export default function ViewExtensionsPage() {
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => handleDownloadLetter(idx)}
-                        disabled={downloadingIdx === idx}
+                        onClick={() => handleDownloadLetter(ext, idx)}
+                        disabled={downloadingId === ext.id}
                       >
-                        {downloadingIdx === idx ? t("downloading") : t("download_extension_letter")}
+                        {downloadingId === ext.id ? t("downloading") : t("download_extension_letter")}
                       </Button>
                     </div>
                     <ContractExtension

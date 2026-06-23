@@ -268,6 +268,8 @@
   "project_schedule": "Project Schedule",
   "project_start_date": "Project Start Date",
   "project_end_date": "Project End Date",
+  "schedule_start_date_label": "Start Date - Project Schedule",
+  "schedule_end_date_label": "End Date - Project Schedule",
   "project_end_date_calculated": "Project End Date (Including Extensions)",
   "project_schedule_not_added": "Project schedule has not been added yet. Click 'Add' to add the data.",
   "add_project_schedule_title": "Add Project Schedule",

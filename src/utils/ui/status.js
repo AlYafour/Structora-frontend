@@ -165,12 +165,12 @@ export const APPROVAL_STATUS_CONFIG = {
   },
   rejected_by_general_manager: {
     label: {
-      ar: "تم الرفض من قبل المدير العام",
+      ar: "تم الرفض من قبل المشرف",
       en: "Rejected by Supervisor",
     },
     color: "#ef4444", // red
     bgColor: "#fee2e2",
-    badge: "❌ مرفوض من المدير العام",
+    badge: "❌ مرفوض من المشرف",
   },
   rejected_by_project_manager: {
     label: {
@@ -192,12 +192,12 @@ export const APPROVAL_STATUS_CONFIG = {
   },
   pending_general_manager_initial: {
     label: {
-      ar: "في انتظار موافقة المدير العام (مبدئي)",
-      en: "Pending Supervisor Initial Approval",
+      ar: "في انتظار موافقة المشرف",
+      en: "Pending Supervisor Approval",
     },
     color: "#f59e0b", // amber
     bgColor: "#fef3c7",
-    badge: "⏳ في انتظار المدير العام",
+    badge: "⏳ في انتظار المشرف",
   },
   pending_owner_consultant: {
     label: {
