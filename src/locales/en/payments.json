@@ -359,7 +359,7 @@
   "pf_added": "Extra fee added",
   "pf_updated": "Extra fee updated",
   "pf_deleted": "Extra fee deleted",
-  "variation_amount_tooltip_card": "Total approved Variation amount Without consultant fees.",
+  "variation_amount_tooltip_card": "Total approved variation amount including consultant fees.",
   "total_payments_tooltip": "Includes consultant fees paid by the owner , Excludes Consultant Fees paid by bank to the consultant.",
   "remaining_amount_tooltip": "Includes consultant fees paid by the owner. Excludes consultant fees paid directly by the bank to the consultant.",
   "bank_share_tooltip": "includes consultant fees paid by the bank.",

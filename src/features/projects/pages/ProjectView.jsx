@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Card from "../../../components/common/Card";
@@ -13,14 +13,37 @@ import useProjectWorkflow from "../hooks/useProjectWorkflow";
 import ProjectViewHeader from "../components/ProjectViewHeader";
 import ProjectTabsNavigation from "../components/ProjectTabsNavigation";
 import { useLanguage } from "../../../hooks";
+import {
+ PROJECT_TABS,
+ canAccessProjectTab,
+ getFirstVisibleProjectTab,
+} from "../tabs/tabConfig";
 
 export default function ProjectView() {
  const { projectId } = useParams();
  const { t } = useTranslation();
- const { user } = useAuth();
+ const auth = useAuth();
+ const { user } = auth;
  // Use custom hook for tabs
  const { activeTab, setActiveTab } = useProjectTabs("overview");
- const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, extensions, loading, tabLoading, reload } = useProjectData(projectId, activeTab);
+ const tabAuth = useMemo(() => ({
+ user,
+ isAdmin: auth.isAdmin,
+ hasAnyPermission: auth.hasAnyPermission,
+ }), [user, auth.isAdmin, auth.hasAnyPermission]);
+ const firstVisibleTab = useMemo(() => getFirstVisibleProjectTab(tabAuth), [tabAuth]);
+ const effectiveActiveTab = canAccessProjectTab(PROJECT_TABS[activeTab], tabAuth)
+ ? activeTab
+ : firstVisibleTab;
+
+ useEffect(() => {
+ if (effectiveActiveTab && activeTab !== effectiveActiveTab) {
+ setActiveTab(effectiveActiveTab);
+ }
+ }, [activeTab, effectiveActiveTab, setActiveTab]);
+
+ const dataActiveTab = effectiveActiveTab || "__none__";
+ const { project, siteplan, license, contract, awarding, startOrder, projectSchedule, excavationNotice, payments, variations, invoices, prolongationFees, extensions, loading, tabLoading, reload } = useProjectData(projectId, dataActiveTab);
  const { permissions: projectPermissions, loading: permissionsLoading } = useProjectPermissions(projectId);
  // Determine user type
  const isManager = user?.role?.name === 'Manager';
@@ -48,8 +71,6 @@ const projectDisplayName = isAR
  onDelete, handleSubmit, handleApprove, handleReject, handleFinalApprove, handleRevokeFinalApproval,
  } = useProjectWorkflow(projectId, reload);
 
- const isHousingLoan = contract?.contract_classification === "housing_loan_program";
-
  return (
  <PageLayout loading={loading} loadingText={t("loading")}>
  <div className="container">
@@ -58,7 +79,7 @@ const projectDisplayName = isAR
  project={project}
  projectId={projectId}
  projectPermissions={projectPermissions}
- activeTab={activeTab}
+ activeTab={effectiveActiveTab}
  isManager={isManager}
  isSuperAdmin={isSuperAdmin}
  canDeleteProject={canDeleteProject}
@@ -79,15 +100,19 @@ const projectDisplayName = isAR
  <Card className="prj-main-card">
  {/* Tabs Navigation */}
  <ProjectTabsNavigation
- activeTab={activeTab}
+ activeTab={effectiveActiveTab}
  onTabChange={setActiveTab}
- isHousingLoan={isHousingLoan}
+ auth={tabAuth}
  />
 
  {/* Tab Content */}
  <div className="prj-tab-content">
  {(() => {
- const TabComponent = getTabComponent(activeTab);
+ if (!effectiveActiveTab) {
+ return <div className="prj-tab-panel">{t("access_denied")}</div>;
+ }
+
+ const TabComponent = getTabComponent(effectiveActiveTab);
  if (!TabComponent) return null;
 
   return (
@@ -96,7 +121,7 @@ const projectDisplayName = isAR
   <div className="prj-tab-panel project-view__tab-loading">{t("loading")}</div>
   ) : (
   <>
-  {activeTab === "overview" && (
+  {effectiveActiveTab === "overview" && (
   <TabComponent
  projectId={projectId}
  project={project}
@@ -107,32 +132,32 @@ const projectDisplayName = isAR
  onReload={reload}
  />
  )}
- {activeTab === "siteplan" && (
+ {effectiveActiveTab === "siteplan" && (
  <TabComponent projectId={projectId} siteplan={siteplan} projectPermissions={projectPermissions} />
  )}
- {activeTab === "license" && (
+ {effectiveActiveTab === "license" && (
  <TabComponent projectId={projectId} license={license} projectPermissions={projectPermissions} />
  )}
- {activeTab === "contract" && (
+ {effectiveActiveTab === "contract" && (
  <TabComponent projectId={projectId} contract={contract} startOrder={startOrder} projectPermissions={projectPermissions} />
  )}
- {activeTab === "awarding" && (
+ {effectiveActiveTab === "awarding" && (
  <TabComponent projectId={projectId} awarding={awarding} />
  )}
- {activeTab === "start_order" && (
+ {effectiveActiveTab === "start_order" && (
  <TabComponent projectId={projectId} startOrder={startOrder} onDeleted={reload} />
  )}
- {activeTab === "project_schedule" && (
+ {effectiveActiveTab === "project_schedule" && (
  <TabComponent projectId={projectId} projectSchedule={projectSchedule} startOrder={startOrder} extensions={extensions} />
  )}
- {activeTab === "excavation_notice" && (
+ {effectiveActiveTab === "excavation_notice" && (
  <TabComponent projectId={projectId} excavationNotice={excavationNotice} />
  )}
- {activeTab === "extensions" && (
+ {effectiveActiveTab === "extensions" && (
  <TabComponent projectId={projectId} extensions={extensions} onReload={reload} />
  )}
  {/* Unified financial tab */}
- {(activeTab === "financial" || activeTab === "project_contract_financial_summary" || activeTab === "project_financial_entitlements") && (
+ {(effectiveActiveTab === "financial" || effectiveActiveTab === "project_contract_financial_summary" || effectiveActiveTab === "project_financial_entitlements") && (
  <TabComponent
  projectId={projectId}
  contract={contract}
@@ -141,28 +166,28 @@ const projectDisplayName = isAR
  prolongationFees={prolongationFees}
  />
  )}
- {activeTab === "variations" && (
+ {effectiveActiveTab === "variations" && (
  <TabComponent projectId={projectId} project={project} variations={variations} onReload={reload} />
  )}
- {activeTab === "payments" && (
+ {effectiveActiveTab === "payments" && (
  <TabComponent projectId={projectId} payments={payments} onReload={reload} />
  )}
- {activeTab === "payment_claims" && (
+ {effectiveActiveTab === "payment_claims" && (
  <TabComponent projectId={projectId} onReload={reload} />
  )}
- {activeTab === "invoices" && (
+ {effectiveActiveTab === "invoices" && (
  <TabComponent projectId={projectId} invoices={invoices} onReload={reload} />
  )}
- {activeTab === "receipt_vouchers" && (
+ {effectiveActiveTab === "receipt_vouchers" && (
  <TabComponent projectId={projectId} />
  )}
- {activeTab === "tax_invoices" && (
+ {effectiveActiveTab === "tax_invoices" && (
  <TabComponent projectId={projectId} />
  )}
- {activeTab === "progress" && (
+ {effectiveActiveTab === "progress" && (
  <TabComponent projectId={projectId} onReload={reload} />
  )}
-  {activeTab === "prolongation_fees" && (
+  {effectiveActiveTab === "prolongation_fees" && (
   <TabComponent projectId={projectId} onReload={reload} />
   )}
   </>

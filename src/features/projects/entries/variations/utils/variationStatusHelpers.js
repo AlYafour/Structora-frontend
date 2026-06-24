@@ -82,7 +82,7 @@ export const isRejected = (variation) => {
  * @param {Object} user - Current user object
  * @returns {Object} Permission flags
  */
-export const calculatePermissions = (variation, user, alterationRequests = []) => {
+export const calculatePermissions = (variation, user, alterationRequests = [], options = {}) => {
   const status = variation?.status || variation?.workflow_status || 'draft';
   const isProjectManager = user?.role?.name === 'Manager';
   const isSupervisor = user?.role?.name === 'Supervisor';
@@ -98,11 +98,19 @@ export const calculatePermissions = (variation, user, alterationRequests = []) =
     request?.status === 'accepted' &&
     (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
   );
+  const hasVariationEditPermission = options.hasVariationEditPermission === true;
 
-  // Staff can edit draft, pending PM review, or rejected variations (so they can fix and resubmit)
+  // Editing variation content requires the create/edit permission, or an accepted edit request.
   const canEdit = !finallyApproved &&
-    (!isStaff || status === 'draft' || status === 'pending_project_manager' ||
-      status === 'rejected_by_project_manager' || status === 'rejected_by_general_manager' ||
+    (
+      hasVariationEditPermission ||
+      (status === 'pending_general_manager_initial' && hasAcceptedEditRequest)
+    ) &&
+    (!isStaff ||
+      status === 'draft' ||
+      status === 'pending_project_manager' ||
+      status === 'rejected_by_project_manager' ||
+      status === 'rejected_by_general_manager' ||
       (status === 'pending_general_manager_initial' && hasAcceptedEditRequest));
 
   // Can approve/reject only if not rejected (must edit first if rejected)

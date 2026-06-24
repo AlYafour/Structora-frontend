@@ -63,7 +63,7 @@ export default function VariationViewPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
-  const { user, tenantTheme } = useAuth();
+  const { user, tenantTheme, hasPermission, isAdmin } = useAuth();
   const { isArabic: isAR } = useLanguage();
   const printDocumentRef = useRef(null);
   const printDocumentCleanRef = useRef(null);
@@ -157,7 +157,20 @@ export default function VariationViewPage() {
 
   // Status and permissions
   const variationStatus = variation?.status || variation?.workflow_status || 'draft';
-  const permissions = calculatePermissions(variation, user, alterationRequests);
+  const canEditVariationContent = isAdmin || hasPermission("variations.create");
+  const permissions = calculatePermissions(variation, user, alterationRequests, {
+    hasVariationEditPermission: canEditVariationContent,
+  });
+  const hasAcceptedEditRequest = alterationRequests.some((request) =>
+    request?.request_type === 'edit' &&
+    request?.status === 'accepted' &&
+    (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
+  );
+  const editBlockedMessageKey = !canEditVariationContent
+    ? "variation_edit_no_permission_desc"
+    : variationStatus === 'pending_general_manager_initial' && !hasAcceptedEditRequest
+      ? "variation_edit_requires_alteration_request_desc"
+      : "variation_edit_not_allowed_desc";
   const isRejected = checkRejected(variation);
 
   const preparePrintDocumentLayout = async (el) => {
@@ -612,7 +625,7 @@ export default function VariationViewPage() {
                   if (!permissions.canEdit) { setBlockEditDialogOpen(true); return; }
                   setActiveTab("edit");
                 }}
-                title={!permissions.canEdit ? t("cannot_edit_approved") : ""}
+                title={!permissions.canEdit ? t("variation_edit_not_allowed") : ""}
               >
                 {t("edit")}
               </button>
@@ -1103,7 +1116,7 @@ export default function VariationViewPage() {
         <Dialog
           open={blockEditDialogOpen}
           title={t("variation_edit_not_allowed")}
-          desc={t("variation_edit_not_allowed_desc")}
+          desc={t(editBlockedMessageKey)}
           confirmLabel={t("ok_label")}
           cancelLabel={null}
           onClose={() => setBlockEditDialogOpen(false)}

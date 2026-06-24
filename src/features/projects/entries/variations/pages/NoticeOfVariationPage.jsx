@@ -59,7 +59,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, hasPermission, isAdmin } = useAuth();
   const projectFromQuery = searchParams.get('project') || projectId;
   const isEmbeddedMode = !!variationProp && !!projectProp;
 
@@ -116,7 +116,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     user?.role?.name !== 'Supervisor' &&
     user?.role?.name !== 'company_super_admin';
   const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
-  const isEditMode = viewModeProp !== true && !isFinalApproved && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
+  const canEditVariationContent = isAdmin || hasPermission("variations.create") || allowRevisionEdit;
+  const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 
 
   const { i18n } = useTranslation();
@@ -357,6 +358,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
    */
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!isEditMode) {
+      showError(t('access_denied'));
+      return;
+    }
+
     if (!project) {
       showError(t('project_required'));
       return;

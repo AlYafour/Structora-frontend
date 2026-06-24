@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/common/Button";
+import { getVisibleProjectTabs } from "../tabs/tabConfig";
 
 /* ── Inline SVG icons (16×16, stroke-based) ── */
 const InfoIcon = () => (
@@ -30,54 +31,25 @@ const OpsIcon = () => (
 const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
   activeTab,
   onTabChange,
-  isHousingLoan,
+  auth,
 }) {
   const { t } = useTranslation();
 
-  const groups = [
-    {
-      key: "info",
-      label: t("tab_group_project_info"),
-      icon: <InfoIcon />,
-      className: "prj-tabs-group--info",
-      tabs: [
-        { id: "overview", label: t("project_information") },
-        { id: "siteplan", label: t("site_plan") },
-        { id: "license", label: t("building_license") },
-        { id: "contract", label: t("contract_information") },
-      ],
-    },
-    {
-      key: "financial",
-      label: t("tab_group_financial"),
-      icon: <FinanceIcon />,
-      className: "prj-tabs-group--financial",
-      tabs: [
-        { id: "variations", label: t("variations_title") },
-        { id: "payments", label: t("payments_title") },
-        { id: "progress", label: t("progress_tab_title") },
-        { id: "invoices", label: t("invoices_title") },
-        { id: "receipt_vouchers", label: t("receipt_vouchers_tab") },
-        { id: "tax_invoices", label: t("tax_invoices_tab") },
-        { id: "prolongation_fees", label: t("prolongation_fees_tab") },
-        { id: "financial", label: t("financial_dashboard"), accent: true },
-      ],
-    },
-    {
-      key: "ops",
-      label: t("tab_group_operations"),
-      icon: <OpsIcon />,
-      className: "prj-tabs-group--ops",
-      tabs: [
-        { id: "awarding", label: t("awarding_information") },
-        { id: "start_order", label: t("start_order") },
-        { id: "project_schedule", label: t("project_schedule") },
-        { id: "excavation_notice", label: t("excavation_notice") },
-        { id: "extensions", label: t("extensions") },
-        { id: "payment_claims", label: t("payment_claims") },
-      ],
-    },
-  ];
+  const groupIcons = {
+    info: <InfoIcon />,
+    financial: <FinanceIcon />,
+    ops: <OpsIcon />,
+  };
+
+  const groups = getVisibleProjectTabs(auth).map((group) => ({
+    ...group,
+    label: t(group.labelKey),
+    icon: groupIcons[group.key],
+    tabs: group.tabs.map((tab) => ({
+      ...tab,
+      label: t(tab.labelKey),
+    })),
+  }));
 
   // Check which group contains the active tab
   const activeGroup = groups.find((g) =>
@@ -87,9 +59,6 @@ const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
   return (
     <div className="prj-tabs-container">
       {groups.map((group) => {
-        const visibleTabs = group.tabs.filter(
-          (tab) => tab.show !== false
-        );
         const isActiveGroup = activeGroup?.key === group.key;
 
         return (
@@ -105,7 +74,7 @@ const ProjectTabsNavigation = memo(function ProjectTabsNavigation({
 
             {/* Tab buttons */}
             <div className="prj-tabs-group__tabs">
-              {visibleTabs.map((tab) => (
+              {group.tabs.map((tab) => (
                 <Button
                   key={tab.id}
                   variant="ghost"
