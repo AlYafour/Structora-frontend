@@ -4098,6 +4098,17 @@ html.theme-dark .project-entry-info__code {
   white-space: nowrap;
 }
 
+.prj-view-header__date-value--toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.prj-view-header__date-value--toggle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* Spacer: pushes nav + actions to the bottom */
 .prj-view-header__spacer {
   display: none;

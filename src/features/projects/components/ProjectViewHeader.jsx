@@ -10,6 +10,24 @@ import { api, updateFile } from "../../../services/api";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { useLanguage } from "../../../hooks";
 
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const formatDateWithMonth = (dateStr) => {
+  if (!dateStr) return "—";
+
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "—";
+
+    const dd = String(date.getDate()).padStart(2, "0");
+    const month = MONTH_LABELS[date.getMonth()];
+    const yyyy = date.getFullYear();
+    return `${dd}/ ${month} / ${yyyy}`;
+  } catch {
+    return "—";
+  }
+};
+
 const ProjectViewHeader = memo(function ProjectViewHeader({
   project,
   projectId,
@@ -35,6 +53,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   const [uploading, setUploading] = useState(false);
   const [localImageUrl, setLocalImageUrl] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [monthDateIds, setMonthDateIds] = useState({});
   const fileInputRef = useRef(null);
   const { error: showError } = useNotifications();
   const { isArabic: isAR } = useLanguage();
@@ -150,14 +169,31 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
     projectSchedule?.project_start_date && {
       id: "schedule-start-date",
       label: t("schedule_start_date_label"),
-      value: formatDate(projectSchedule.project_start_date),
+      value: monthDateIds["schedule-start-date"]
+        ? formatDateWithMonth(projectSchedule.project_start_date)
+        : formatDate(projectSchedule.project_start_date),
     },
     projectSchedule?.project_end_date && {
       id: "schedule-end-date",
       label: t(hasScheduleExtensions ? "project_end_date_calculated" : "schedule_end_date_label"),
-      value: formatDate(projectSchedule.project_end_date),
+      value: monthDateIds["schedule-end-date"]
+        ? formatDateWithMonth(projectSchedule.project_end_date)
+        : formatDate(projectSchedule.project_end_date),
     },
   ].filter(Boolean);
+
+  const toggleHeaderDateFormat = (dateId) => {
+    setMonthDateIds((prev) => ({
+      ...prev,
+      [dateId]: !prev[dateId],
+    }));
+  };
+
+  const handleHeaderDateKeyDown = (event, dateId) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    toggleHeaderDateFormat(dateId);
+  };
 
   return (
     <div className="prj-view-header">
@@ -197,7 +233,15 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 {headerDates.map((item) => (
                   <div className="prj-view-header__date-item" key={item.id}>
                     <span className="prj-view-header__date-label">{item.label}</span>
-                    <span className="prj-view-header__date-value">{item.value}</span>
+                    <span
+                      className="prj-view-header__date-value prj-view-header__date-value--toggle"
+                      onDoubleClick={() => toggleHeaderDateFormat(item.id)}
+                      onKeyDown={(event) => handleHeaderDateKeyDown(event, item.id)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      {item.value}
+                    </span>
                   </div>
                 ))}
               </div>
