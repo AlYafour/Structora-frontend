@@ -497,7 +497,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const data = await projectApi.createVariation(project.id, formDataToSend);
           if (data.variation_number) {
             // Second call: only update description (no files — already saved above)
-            const generatedReferenceNo = `VAR${data.variation_number}`;
+            const generatedReferenceNo = noticeData.reference_no || `VAR${data.variation_number}`;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
             await projectApi.updateVariation(project.id, data.id, { description: JSON.stringify(updatedNoticeData) });
           }
@@ -513,7 +513,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         } else {
           const data = await projectApi.createVariation(project.id, variationData);
           if (data?.variation_number) {
-            const generatedReferenceNo = `VAR${data.variation_number}`;
+            const generatedReferenceNo = noticeData.reference_no || `VAR${data.variation_number}`;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
             await projectApi.updateVariation(project.id, data.id, { description: JSON.stringify(updatedNoticeData) });
           }
