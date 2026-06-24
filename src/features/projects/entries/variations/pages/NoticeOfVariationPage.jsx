@@ -115,6 +115,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     user?.role?.name !== 'Manager' &&
     user?.role?.name !== 'Supervisor' &&
     user?.role?.name !== 'company_super_admin';
+  const canManageHiddenFees = !!(
+    user?.is_superuser ||
+    user?.role?.name === 'Manager' ||
+    user?.role?.name === 'Supervisor' ||
+    user?.role?.name === 'company_super_admin'
+  );
   const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
   const canEditVariationContent = isAdmin || hasPermission("variations.create") || allowRevisionEdit;
   const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
@@ -148,6 +154,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
       const consultantFeesType = noticeData.consultant_fees_type ?? 'percentage';
       const contractorOHPType = noticeData.contractor_ohp_type ?? 'percentage';
+      const hiddenFeeVatMode = parseFloat(variationData.hidden_consultant_fee_vat_rate || 0) === 0
+        ? 'no_vat'
+        : variationData.hidden_consultant_fee_vat_included
+          ? 'included'
+          : 'excluded';
       const customFeesForForm = (noticeData.custom_fees ?? []).map(fee => ({
         ...fee,
         percentage: fee.type === 'percentage' ? fee.percentage : '',
@@ -181,6 +192,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         discount_applies_to_variation: noticeData.discount_applies_to_variation !== undefined ? noticeData.discount_applies_to_variation : true,
         discount_applies_to_contractor_ohp: noticeData.discount_applies_to_contractor_ohp !== undefined ? noticeData.discount_applies_to_contractor_ohp : true,
         discount_applies_to_consultant_fees: noticeData.discount_applies_to_consultant_fees !== undefined ? noticeData.discount_applies_to_consultant_fees : true,
+        hidden_consultant_fee: variationData.hidden_consultant_fee ?? '',
+        hidden_consultant_fee_vat_mode: hiddenFeeVatMode,
+        hidden_consultant_fee_vat_included: !!variationData.hidden_consultant_fee_vat_included,
+        hidden_consultant_fee_vat_rate: variationData.hidden_consultant_fee_vat_rate ?? '5',
+        hidden_consultant_fee_net_amount: variationData.hidden_consultant_fee_net_amount ?? 0,
+        hidden_consultant_fee_vat_amount: variationData.hidden_consultant_fee_vat_amount ?? 0,
+        hidden_consultant_fee_gross_amount: variationData.hidden_consultant_fee_gross_amount ?? 0,
+        hidden_consultant_fee_note: variationData.hidden_consultant_fee_note ?? '',
         custom_fees: customFeesForForm
       });
 
@@ -447,6 +466,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const netAmountValue = round2(calculations.totalAmount);
       const vatValue = (netAmountValue * parseFloat(formData.vat_percentage || 15)) / 100;
       const netAmountWithVatValue = netAmountValue + vatValue;
+      const hiddenConsultantFeeValue = Math.max(0, parseFloat(formData.hidden_consultant_fee || 0) || 0);
+      const hiddenConsultantFeeVatRate = formData.hidden_consultant_fee_vat_mode === 'no_vat'
+        ? 0
+        : Math.max(0, parseFloat(formData.hidden_consultant_fee_vat_rate || 5) || 0);
 
       const variationData = {
         project: project.id,
@@ -463,7 +486,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         discount: calculations.discountAmount.toFixed(2),
         net_amount: netAmountValue.toFixed(2),
         vat: vatValue.toFixed(2),
-        net_amount_with_vat: netAmountWithVatValue.toFixed(2)
+        net_amount_with_vat: netAmountWithVatValue.toFixed(2),
+        ...(canManageHiddenFees ? {
+          hidden_consultant_fee: hiddenConsultantFeeValue.toFixed(2),
+          hidden_consultant_fee_vat_included: formData.hidden_consultant_fee_vat_mode === 'included',
+          hidden_consultant_fee_vat_rate: hiddenConsultantFeeVatRate.toFixed(2),
+          hidden_consultant_fee_note: formData.hidden_consultant_fee_note || ''
+        } : {})
       };
 
       const hasNewFile = variationAttachment instanceof File;
@@ -778,6 +807,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             consultantFeesAfterDiscount={calculations.consultantFeesAfterDiscount}
             formData={formData}
             isEditMode={isEditMode}
+            canManageHiddenFees={canManageHiddenFees}
             onFormDataChange={setFormData}
             t={t}
           />

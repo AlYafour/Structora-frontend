@@ -127,6 +127,60 @@
   margin-top: 6px; font-size: 12px; font-weight: 600; color: #d97706;
 }
 
+/* ==================== HIDDEN CONSULTANT FEE ALERT ==================== */
+.var-hidden-fee-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-inline-start: 4px solid #d97706;
+  border-radius: 8px;
+}
+
+.var-hidden-fee-alert__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #d97706;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.var-hidden-fee-alert__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.var-hidden-fee-alert__title {
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.var-hidden-fee-alert__body {
+  color: #78350f;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.var-hidden-fee-alert__amount {
+  flex: 0 0 auto;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ==================== TOOLBAR (Tabs + Actions combined) ==================== */
 .var-toolbar {
   display: flex;
@@ -671,6 +725,7 @@
 
 @media print {
   .no-print { display: none !important; }
+  .var-hidden-fee-alert { display: none !important; }
   .print-only { display: block !important; }
 
   @page { size: A4 portrait; margin: 0; orphans: 3; widows: 3; }

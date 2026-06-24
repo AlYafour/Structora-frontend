@@ -347,17 +347,18 @@ button.dash-kpi { cursor: pointer; }
 
 .dash-tasks__list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
 .dash-task {
+  position: relative;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 24px;
+  grid-template-columns: 38px minmax(0, 1fr);
   align-items: start;
   gap: 12px;
   min-height: 62px;
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px;
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   color: inherit;
@@ -447,11 +448,16 @@ button.dash-kpi { cursor: pointer; }
 }
 
 .dash-task__open {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
   color: var(--muted, #6b7280);
   font-size: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 22px;
+  height: 22px;
 }
 
 /* ── Donut Chart ── */
@@ -1108,7 +1114,7 @@ html.theme-dark .dash-fin-table-section__title {
   }
 
   .dash-task {
-    grid-template-columns: 34px minmax(0, 1fr) 22px;
+    grid-template-columns: 34px minmax(0, 1fr);
   }
 
   .dash-task__status {

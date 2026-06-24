@@ -33,6 +33,14 @@ const defaultFormData = {
   discount_applies_to_variation: true,
   discount_applies_to_contractor_ohp: true,
   discount_applies_to_consultant_fees: true,
+  hidden_consultant_fee: '',
+  hidden_consultant_fee_vat_mode: 'excluded',
+  hidden_consultant_fee_vat_included: false,
+  hidden_consultant_fee_vat_rate: '5',
+  hidden_consultant_fee_net_amount: 0,
+  hidden_consultant_fee_vat_amount: 0,
+  hidden_consultant_fee_gross_amount: 0,
+  hidden_consultant_fee_note: '',
   custom_fees: [],
 };
 

@@ -92,12 +92,12 @@ export default function ProjectFinancialEntitlementPage() {
   const vatRate = VAT_RATE;
 
   /** Render a financial table row */
-  const Row = ({ label, amount, percentage, note, isTotal, isHighlight, custom, showVAT }) => {
-    let amtExcl = amount, amtVAT = 0, amtIncl = amount;
+  const Row = ({ label, amount, vatAmount, grossAmount, percentage, note, isTotal, isHighlight, custom, showVAT }) => {
+    let amtExcl = amount, amtVAT = vatAmount ?? 0, amtIncl = grossAmount ?? amount;
     if (amount != null && showVAT) {
       amtExcl = round(amount);
-      amtVAT = round(amount * vatRate);
-      amtIncl = amtExcl + amtVAT;
+      amtVAT = vatAmount != null ? round(vatAmount) : round(amount * vatRate);
+      amtIncl = grossAmount != null ? round(grossAmount) : amtExcl + amtVAT;
     }
 
     const rowCls = [
@@ -195,6 +195,17 @@ export default function ProjectFinancialEntitlementPage() {
                   isHighlight
                   note={t("fe_total_vo_with_fees_note")}
                 />
+                {voSummary.hiddenConsultantFeesWithVAT > 0 && (
+                  <Row
+                    label={t("fe_hidden_consultant_fees", "Hidden Consultant Fees Paid by Contractor")}
+                    amount={voSummary.hiddenConsultantFees}
+                    vatAmount={Math.max(0, (voSummary.hiddenConsultantFeesWithVAT || 0) - (voSummary.hiddenConsultantFees || 0))}
+                    grossAmount={voSummary.hiddenConsultantFeesWithVAT}
+                    showVAT
+                    isHighlight
+                    note={t("fe_hidden_consultant_fees_note", "Internal consultant fees payable by the contractor to the consultant. This is not receivable from the owner/client and is excluded from client-facing variation documents.")}
+                  />
+                )}
                 <Row
                   label={t("prolongation_fees") || "Prolongation Fees"}
                   amount={prolongationFeesSummary?.totalNet || 0}
@@ -276,6 +287,21 @@ export default function ProjectFinancialEntitlementPage() {
                     isTotal
                     note={t("fe_final_payable_note")}
                   />
+                  {voSummary.hiddenConsultantFeesWithVAT > 0 && (
+                    <>
+                      <Row
+                        label={t("fe_hidden_consultant_fees", "Hidden Consultant Fees Paid by Contractor")}
+                        amount={voSummary.hiddenConsultantFeesWithVAT}
+                        note={t("fe_hidden_consultant_fees_note", "Internal consultant fees payable by the contractor to the consultant. This is not receivable from the owner/client and is excluded from client-facing variation documents.")}
+                      />
+                      <Row
+                        label={t("fe_contractor_net_after_hidden_fees", "Contractor Net After Hidden Consultant Fees")}
+                        amount={entitlement.contractorNetAfterHiddenFees}
+                        isHighlight
+                        note={t("fe_contractor_net_after_hidden_fees_note", "Internal net amount after deducting hidden consultant fees from the contractor payable amount. This does not change owner/client receivables.")}
+                      />
+                    </>
+                  )}
                   <Row
                     label={t("fe_total_payments_made")}
                     amount={entitlement.totalPaymentsMade}

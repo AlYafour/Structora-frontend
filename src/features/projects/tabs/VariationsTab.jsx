@@ -80,8 +80,21 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const isGeneralManager = isCompanySuperAdmin || isSuperAdmin;
     const canApproveVariations = isGeneralManager || isSupervisor || isProjectManager;
     const canRejectAnyStatus = isGeneralManager || isSuperAdmin;
+    const canViewHiddenFees = isProjectManager || isSupervisor || isGeneralManager;
     // Staff = not PM, not GM/admin, not superuser
     const isStaff = !isProjectManager && !isSupervisor && !isGeneralManager;
+
+    const getHiddenFeeAmount = (variation) => {
+        const gross = getAmountValue(variation?.hidden_consultant_fee_gross_amount);
+        if (gross > 0) return gross;
+
+        const net = getAmountValue(variation?.hidden_consultant_fee_net_amount);
+        if (net > 0) return net;
+
+        return getAmountValue(variation?.hidden_consultant_fee);
+    };
+
+    const hasHiddenFee = (variation) => getHiddenFeeAmount(variation) > 0;
 
     const [variationStatusFilter, setVariationStatusFilter] = useState("");
     const [approvingVariationId, setApprovingVariationId] = useState(null);
@@ -1047,11 +1060,15 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
                                     const rawNumber = variation.variation_number || variation.modification_number || referenceNo || variation.id;
                                     const displayNumber = `VAR${String(rawNumber).replace(/^VAR/i, "")}`;
+                                    const showHiddenFeeInRow = canViewHiddenFees && hasHiddenFee(variation);
 
                                     return (
                                         <tr
                                             key={variation.id}
-                                            className={isSelected ? "is-selected" : ""}
+                                            className={[
+                                                isSelected ? "is-selected" : "",
+                                                showHiddenFeeInRow ? "variations-tab__row--hidden-fee" : "",
+                                            ].filter(Boolean).join(" ")}
                                             onClick={() => navigate(`/variations/${variation.id}/view?project=${projectId}`)}
                                         >
                                             <td className="ds-text-center" onClick={(e) => e.stopPropagation()}>
@@ -1082,10 +1099,26 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             </td>
 
                                             <td className="prj-nowrap prj-info-value--money ds-text-right ds-font-semibold">
-                                                {renderMoney(getVariationTotalAmount(variation))}
-                                                <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
-                                                    {t('excluding_vat')} • {t('including_consultant_fees')}
-                                                </span>
+                                                <div className="variations-tab__amount-wrap">
+                                                    <div className="variations-tab__amount-topline">
+                                                        {showHiddenFeeInRow && (
+                                                            <div className="variations-tab__hidden-fee">
+                                                                <span className="variations-tab__hidden-fee-text">
+                                                                    {t("hidden_fee_short", "Hidden fee")}
+                                                                </span>
+                                                                <span className="variations-tab__hidden-fee-amount">
+                                                                    {renderMoney(getHiddenFeeAmount(variation))}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <div className="variations-tab__main-amount">
+                                                            {renderMoney(getVariationTotalAmount(variation))}
+                                                        </div>
+                                                    </div>
+                                                    <span className="prj-info-value__sub ds-block ds-text-xs ds-text-muted">
+                                                        {t('excluding_vat')} • {t('including_consultant_fees')}
+                                                    </span>
+                                                </div>
                                             </td>
 
                                             <td className="col-actions" onClick={(e) => e.stopPropagation()}>

@@ -7,7 +7,7 @@ import PageLayout from "../../../../../components/layout/PageLayout";
 import { getProjectName } from "../../../utils/projectNameUtils.jsx";
 import Button from "../../../../../components/common/Button";
 import Dialog from "../../../../../components/common/Dialog";
-import { formatDate } from "../../../../../utils/formatters";
+import { formatDate, formatMoney } from "../../../../../utils/formatters";
 import NoticeOfVariationPage from "./NoticeOfVariationPage";
 import VariationPrintDocument from "../components/VariationPrintDocument";
 import FileAttachmentView from "../../../../../components/file-upload/FileAttachmentView";
@@ -158,6 +158,15 @@ export default function VariationViewPage() {
   // Status and permissions
   const variationStatus = variation?.status || variation?.workflow_status || 'draft';
   const canEditVariationContent = isAdmin || hasPermission("variations.create");
+  const canManageHiddenFees = !!(
+    user?.is_superuser ||
+    user?.role?.name === 'Manager' ||
+    user?.role?.name === 'Supervisor' ||
+    user?.role?.name === 'company_super_admin'
+  );
+  const hiddenConsultantFeeGross = parseFloat(variation?.hidden_consultant_fee_gross_amount || 0);
+  const hiddenConsultantFeeNet = parseFloat(variation?.hidden_consultant_fee_net_amount || variation?.hidden_consultant_fee || 0);
+  const hasHiddenConsultantFee = hiddenConsultantFeeGross > 0 || hiddenConsultantFeeNet > 0;
   const permissions = calculatePermissions(variation, user, alterationRequests, {
     hasVariationEditPermission: canEditVariationContent,
   });
@@ -609,6 +618,23 @@ export default function VariationViewPage() {
               </Button>             
             </div>
           </div>
+
+          {canManageHiddenFees && hasHiddenConsultantFee && (
+            <div className="var-hidden-fee-alert">
+              <div className="var-hidden-fee-alert__icon">!</div>
+              <div className="var-hidden-fee-alert__content">
+                <div className="var-hidden-fee-alert__title">
+                  {t("hidden_consultant_fee_alert_title", "This variation includes a hidden fee payable to the consultant")}
+                </div>
+                <div className="var-hidden-fee-alert__body">
+                  {t("hidden_consultant_fee_alert_body", "This amount is paid by the contractor to the consultant and is not receivable from the owner/client.")}
+                </div>
+              </div>
+              <div className="var-hidden-fee-alert__amount">
+                {formatMoney(hiddenConsultantFeeGross || hiddenConsultantFeeNet, { lang: isAR ? "ar" : "en" })}
+              </div>
+            </div>
+          )}
 
           {/* BOTTOM ROW: tabs + approval actions */}
           <div className="var-unified-header__toolbar">

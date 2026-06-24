@@ -133,6 +133,17 @@ export default function useFinancialEntitlement({
          This ensures the value = total variations - consultant fees
       ====================================================== */
       const actualVOValueExcludingFees = totalVOWithFees - consultantFeeOnVO;
+      const hiddenConsultantFees = approvedVariationsList.reduce(
+        (sum, variation) => sum + n(variation.hidden_consultant_fee_net_amount ?? variation.hidden_consultant_fee ?? 0),
+        0
+      );
+      const hiddenConsultantFeesWithVAT = approvedVariationsList.reduce((sum, variation) => {
+        const savedGross = n(variation.hidden_consultant_fee_gross_amount || 0);
+        if (savedGross > 0) return sum + savedGross;
+        const fee = n(variation.hidden_consultant_fee || 0);
+        const vatRatePct = n(variation.hidden_consultant_fee_vat_rate ?? 5);
+        return sum + round(fee * (1 + (vatRatePct / 100)));
+      }, 0);
 
       const totalProlongationFees = prolongationFees
         .filter((f) => (f.status || "active") === "active")
@@ -218,6 +229,7 @@ export default function useFinancialEntitlement({
         (ownerTotalOriginal * (1 + vatRate)) +
         (bankActualFixed * (1 + vatRate))
       );
+      const contractorNetAfterHiddenFees = round(finalPayableAmount - hiddenConsultantFeesWithVAT);
       // Calculate VAT from the total amount (for display)
       const vatAmount = round(finalPayableAmount * (vatRate / (1 + vatRate)));
 
@@ -375,6 +387,8 @@ export default function useFinancialEntitlement({
             actualVOValueExcludingFees,
             consultantFeeOnVO,
             totalVOWithFees,
+            hiddenConsultantFees,
+            hiddenConsultantFeesWithVAT,
           },
 
           prolongationFeesSummary: {
@@ -395,6 +409,7 @@ export default function useFinancialEntitlement({
 
           entitlement: {
             finalPayableAmount,
+            contractorNetAfterHiddenFees,
             vatAmount,
             ownerPayments: calculatedOwnerPayments,
             bankPayments: calculatedBankPayments,

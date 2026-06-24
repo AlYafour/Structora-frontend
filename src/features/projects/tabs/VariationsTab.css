@@ -16,6 +16,55 @@
   white-space: nowrap;
 }
 
+.variations-tab__row--hidden-fee td {
+  background: #fffbeb;
+}
+
+.variations-tab__row--hidden-fee td:first-child {
+  border-inline-start: 3px solid #d97706;
+}
+
+.variations-tab__amount-wrap {
+  display: inline-grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.variations-tab__amount-topline {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.variations-tab__main-amount {
+  display: grid;
+  justify-items: end;
+}
+
+.variations-tab__hidden-fee {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding-inline-end: 12px;
+  border-inline-end: 1px solid #fde68a;
+}
+
+.variations-tab__hidden-fee-text {
+  color: #92400e;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.variations-tab__hidden-fee-amount {
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 @media print {
   .variations-tab__description-cell {
     max-width: 220px;
@@ -39,4 +88,3 @@
   width: 12px;
   height: 12px;
 }
-

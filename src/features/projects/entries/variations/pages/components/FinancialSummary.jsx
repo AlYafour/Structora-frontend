@@ -84,6 +84,7 @@ const FinancialSummary = memo(({
   consultantFeesAfterDiscount,
   formData,
   isEditMode,
+  canManageHiddenFees = false,
   onFormDataChange,
   t
 }) => {
@@ -101,6 +102,51 @@ const FinancialSummary = memo(({
 
   const hasDiscount = discountAmount > 0;
   const customFees = formData.custom_fees || [];
+  const hiddenConsultantFee = parseFloat(formData.hidden_consultant_fee || 0) || 0;
+  const hiddenVatMode = formData.hidden_consultant_fee_vat_mode || (
+    parseFloat(formData.hidden_consultant_fee_vat_rate || 0) === 0
+      ? 'no_vat'
+      : formData.hidden_consultant_fee_vat_included
+        ? 'included'
+        : 'excluded'
+  );
+  const computeHiddenFeePreview = () => {
+    if (hiddenConsultantFee <= 0) {
+      return { net_amount: 0, vat_amount: 0, gross_amount: 0 };
+    }
+    if (hiddenVatMode === 'no_vat') {
+      return { net_amount: hiddenConsultantFee, vat_amount: 0, gross_amount: hiddenConsultantFee };
+    }
+    if (hiddenVatMode === 'included') {
+      const net = hiddenConsultantFee / 1.05;
+      return {
+        net_amount: net,
+        vat_amount: hiddenConsultantFee - net,
+        gross_amount: hiddenConsultantFee,
+      };
+    }
+    const vat = hiddenConsultantFee * 0.05;
+    return {
+      net_amount: hiddenConsultantFee,
+      vat_amount: vat,
+      gross_amount: hiddenConsultantFee + vat,
+    };
+  };
+  const hiddenFeePreview = computeHiddenFeePreview();
+  const savedHiddenFeeNet = parseFloat(formData.hidden_consultant_fee_net_amount || 0) || 0;
+  const savedHiddenFeeVat = parseFloat(formData.hidden_consultant_fee_vat_amount || 0) || 0;
+  const savedHiddenFeeGross = parseFloat(formData.hidden_consultant_fee_gross_amount || 0) || 0;
+  const hiddenFeeDisplay = isEditMode ? hiddenFeePreview : {
+    net_amount: savedHiddenFeeNet || hiddenFeePreview.net_amount,
+    vat_amount: savedHiddenFeeVat || hiddenFeePreview.vat_amount,
+    gross_amount: savedHiddenFeeGross || hiddenFeePreview.gross_amount,
+  };
+  const hiddenVatModeLabels = {
+    excluded: t('pf_enter_without_vat', 'Amount excluding VAT'),
+    included: t('pf_enter_with_vat', 'Amount including VAT'),
+    no_vat: t('pf_enter_no_vat', 'No VAT'),
+  };
+  const showHiddenConsultantFee = canManageHiddenFees && (isEditMode || hiddenConsultantFee > 0 || (formData.hidden_consultant_fee_note || '').trim());
 
   const handleDiscountCheckbox = (field, newValue) => {
     if (!newValue) {
@@ -368,6 +414,104 @@ const FinancialSummary = memo(({
               </div>
             )}
           </div>
+
+          {showHiddenConsultantFee && (
+            <div className="nfs-block">
+              <div className="nfs-block__title">{t('extra_fees', 'Extra Fees')}</div>
+              <div className="nfs-custom-fee-card nfs-hidden-fee-card">
+                <div className="nfs-hidden-fee-card__header">
+                  <div className="nfs-hidden-fee-card__heading">
+                    <span className="nfs-hidden-fee-card__title">
+                      {t('hidden_consultant_fee', 'Hidden Consultant Fee')}
+                    </span>
+                    <span className="nfs-hidden-fee-card__desc">
+                      {t('hidden_consultant_fee_internal_desc', 'Payable by the contractor to the consultant. Not receivable from the owner/client.')}
+                    </span>
+                  </div>
+                  <span className="nfs-hidden-fee-card__mode">
+                    {hiddenVatModeLabels[hiddenVatMode]}
+                  </span>
+                </div>
+
+                {isEditMode && (
+                  <div className="nfs-vat-mode-row no-print">
+                    {[
+                      ['excluded', t('pf_enter_without_vat', 'Excluding VAT')],
+                      ['included', t('pf_enter_with_vat', 'Including VAT')],
+                      ['no_vat', t('pf_enter_no_vat', 'No VAT')],
+                    ].map(([value, label]) => (
+                      <label key={value} className="nfs-vat-mode-option">
+                        <input
+                          type="radio"
+                          name="hidden_consultant_fee_vat_mode"
+                          checked={hiddenVatMode === value}
+                          onChange={() => onFormDataChange({
+                            ...formData,
+                            hidden_consultant_fee_vat_mode: value,
+                            hidden_consultant_fee_vat_included: value === 'included',
+                            hidden_consultant_fee_vat_rate: value === 'no_vat' ? '0' : '5',
+                          })}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="nfs-hidden-fee-entry">
+                  <div className="nfs-hidden-fee-entry__label">
+                    {t('hidden_consultant_fee_entered_amount', 'Entered amount')}
+                  </div>
+                  {isEditMode && (
+                    <div className="nfs-hidden-fee-entry__control no-print">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="nvc-input nvc-input--sm nfs-num-input"
+                        placeholder="0.00"
+                        value={formData.hidden_consultant_fee ?? ''}
+                        onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  <span className="nfs-hidden-fee-entry__amount">
+                    {renderAmount(hiddenConsultantFee)}
+                  </span>
+                </div>
+
+                <div className="nfs-hidden-fee-breakdown">
+                  <div className="nfs-hidden-fee-breakdown__item">
+                    <span>{t('pf_net_amount', 'Net Amount')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.net_amount)}</strong>
+                  </div>
+                  <div className="nfs-hidden-fee-breakdown__item">
+                    <span>{t('pf_vat_amount', 'VAT (5%)')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.vat_amount)}</strong>
+                  </div>
+                  <div className="nfs-hidden-fee-breakdown__item nfs-hidden-fee-breakdown__item--total">
+                    <span>{t('pf_gross_amount', 'Total (incl. VAT)')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.gross_amount)}</strong>
+                  </div>
+                </div>
+
+                {isEditMode ? (
+                  <input
+                    type="text"
+                    className="nvc-input nvc-input--sm nfs-hidden-fee-note-input no-print"
+                    placeholder={t('hidden_consultant_fee_note', 'Internal note')}
+                    value={formData.hidden_consultant_fee_note ?? ''}
+                    onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee_note: e.target.value })}
+                  />
+                ) : formData.hidden_consultant_fee_note ? (
+                  <div className="nfs-hidden-fee-note">
+                    <span>{t('hidden_consultant_fee_note', 'Internal note')}</span>
+                    <p>{formData.hidden_consultant_fee_note}</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
 
         </div>
 

@@ -184,6 +184,9 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
     const finalPayableAmount = hasFinancialData
       ? (financialCalculations.data.entitlement?.finalPayableAmount || totalContractWithVariations)
       : totalContractWithVariations;
+    const hiddenConsultantFeesWithVAT = hasFinancialData
+      ? (financialCalculations.data.voSummary?.hiddenConsultantFeesWithVAT || 0)
+      : 0;
 
     const completionPercentage =
       totalContractWithVariationsWithVAT > 0
@@ -217,6 +220,7 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
       totalContractWithVariations,
       totalContractWithVariationsWithVAT,
       finalPayableAmount,
+      hiddenConsultantFeesWithVAT,
       contractValueExcludingConsultantFees,
     };
   }, [contract, variations, prolongationFees, payments, financialCalculations]);
@@ -363,6 +367,15 @@ const FinancialDashboardTab = memo(function FinancialDashboardTab({
               value={renderAmount(v(financialStats.totalVariationsValue))}
               sub={`${financialStats.approvedVariationsCount} ${t("approved")} · ${vatLabel}`}
             />
+            {financialStats.hiddenConsultantFeesWithVAT > 0 && (
+              <MetricCard
+                variant="slate"
+                icon="wallet"
+                label={t("fe_hidden_consultant_fees", "Hidden Consultant Fees Paid by Contractor")}
+                value={renderAmount(financialStats.hiddenConsultantFeesWithVAT)}
+                sub={t("including_vat")}
+              />
+            )}
             <MetricCard
               variant="slate"
               icon="wallet"
