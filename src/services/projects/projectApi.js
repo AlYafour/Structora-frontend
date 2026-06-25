@@ -518,6 +518,30 @@ class ProjectService extends BaseService {
     }
   }
 
+  async unapproveVariationProjectManager(projectId, variationId) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/unapprove_project_manager_initial/`,
+        {}
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.unapproveVariationProjectManager');
+    }
+  }
+
+  async unapproveVariationSupervisor(projectId, variationId) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/unapprove_supervisor_initial/`,
+        {}
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.unapproveVariationSupervisor');
+    }
+  }
+
   async createAlterationRequest(projectId, variationId, { request_type, reason }) {
     try {
       const { data } = await api.post(

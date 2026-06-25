@@ -66,6 +66,7 @@ export default function SitePlanStep({
   onDocFilesChange,
   onFormSectionChange,
   hasBlockingErrors = false,
+  prefillData = null,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -91,6 +92,18 @@ export default function SitePlanStep({
     removeRightHolder,
     updateRightHolder,
   } = useSitePlan(projectId, setup);
+
+  // Pre-fill from AI preview data (runs once on mount for new projects)
+  useEffect(() => {
+    if (!prefillData || !isNewProject || existingId) return;
+    const { owners: prefillOwners, ...siteplanFields } = prefillData;
+    if (Object.values(siteplanFields).some(v => v)) {
+      setForm(prev => ({ ...prev, ...siteplanFields }));
+    }
+    if (prefillOwners?.length) {
+      setOwners(prefillOwners.map(o => ({ ...EMPTY_OWNER, ...o, uid: generateOwnerUid() })));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // View Mode Sync
   const [viewMode, updateViewMode] = useViewMode(isViewProp, isViewState, setIsView);

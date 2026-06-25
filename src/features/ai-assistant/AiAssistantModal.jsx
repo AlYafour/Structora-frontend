@@ -135,7 +135,7 @@ export default function AiAssistantModal({ projectId = null }) {
   // Project creation flow
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [uploadInsertIndex, setUploadInsertIndex] = useState(-1);
-  const [createdProjectId, setCreatedProjectId] = useState(null);
+  const [aiPreviewData, setAiPreviewData] = useState(null);
   const [files, setFiles] = useState({
     site_plan: null, owner_id: null, build_permit: null, contract: null,
   });
@@ -251,7 +251,7 @@ export default function AiAssistantModal({ projectId = null }) {
           pushMessage("ai", data.message);
           if (data.show_file_upload) {
             setShowFileUpload(true);
-            setCreatedProjectId(null);
+            setAiPreviewData(null);
             setFiles({ site_plan: null, owner_id: null, build_permit: null, contract: null });
           }
           if (data.pending_action) {
@@ -370,8 +370,8 @@ export default function AiAssistantModal({ projectId = null }) {
     pushMessage("ai", t("ai_assistant_creating"));
     try {
       const data = await aiAssistantApi.createProject(files, lang);
-      if (data.success) {
-        setCreatedProjectId(data.project_id);
+      if (data.success && data.preview) {
+        setAiPreviewData(data.preview);
         setShowFileUpload(false);
         setMessages((prev) => {
           const copy = [...prev];
@@ -401,7 +401,7 @@ export default function AiAssistantModal({ projectId = null }) {
     sessionStorage.removeItem(MESSAGES_KEY);
     setMessages([{ role: "ai", text: t("ai_assistant_greeting") }]);
     setShowFileUpload(false);
-    setCreatedProjectId(null);
+    setAiPreviewData(null);
     setFiles({ site_plan: null, owner_id: null, build_permit: null, contract: null });
     setInput("");
     setAttachedExcelFile(null);
@@ -420,10 +420,10 @@ export default function AiAssistantModal({ projectId = null }) {
     setIsOpen(true);
   };
 
-  const handleViewProject = () => {
-    if (!createdProjectId) return;
+  const handlePreviewProject = () => {
+    if (!aiPreviewData) return;
     setIsOpen(false);
-    navigate(`/projects/${createdProjectId}`);
+    navigate("/wizard/new", { state: { aiPreviewData } });
   };
 
   if (!isOpen) {
@@ -519,7 +519,7 @@ export default function AiAssistantModal({ projectId = null }) {
           )}
 
           {/* Project creation file slots — rendered in-flow so responses appear below */}
-          {showFileUpload && !createdProjectId && (
+          {showFileUpload && !aiPreviewData && (
             <div className="ai-file-upload-block">
               <FileSlot label={t("ai_assistant_file_site_plan")} required file={files.site_plan} onChange={(f) => setFiles((p) => ({ ...p, site_plan: f }))} disabled={loading} />
               <FileSlot label={t("ai_assistant_file_owner_id")} required file={files.owner_id} onChange={(f) => setFiles((p) => ({ ...p, owner_id: f }))} disabled={loading} />
@@ -553,9 +553,9 @@ export default function AiAssistantModal({ projectId = null }) {
             </div>
           )}
 
-          {createdProjectId && (
-            <button className="ai-view-project-btn" onClick={handleViewProject}>
-              {t("ai_assistant_view_project")} →
+          {aiPreviewData && (
+            <button className="ai-view-project-btn" onClick={handlePreviewProject}>
+              {t("ai_assistant_preview_project")}
             </button>
           )}
 

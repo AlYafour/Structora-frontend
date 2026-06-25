@@ -294,8 +294,7 @@ export default function ProjectsPage() {
     });
 
   const createProject = () => {
-    // Navigate directly to wizard without creating a project
-    navigate("/wizard/new");
+    navigate("/wizard");
   };
 
   const hasActiveFilters = Object.values(filters).some(v => v && v.trim() !== "");

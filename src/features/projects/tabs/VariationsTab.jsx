@@ -108,6 +108,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [alterationReason, setAlterationReason] = useState("");
     const [submittingAlteration, setSubmittingAlteration] = useState(false);
     const [revokingVariationId, setRevokingVariationId] = useState(null);
+    const [unapprovingVariationId, setUnapprovingVariationId] = useState(null);
     const [approveVariationConfirmOpen, setApproveVariationConfirmOpen] = useState(false);
     const [cancelVariationConfirmOpen, setCancelVariationConfirmOpen] = useState(false);
     const [rejectVariationConfirmOpen, setRejectVariationConfirmOpen] = useState(false);
@@ -393,11 +394,51 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
     };
 
+    const handleUnapproveVariation = async (variation) => {
+        if (!variation?.id || !projectId) return;
+
+        try {
+            setUnapprovingVariationId(variation.id);
+            if (isProjectManager) {
+                await projectApi.unapproveVariationProjectManager(projectId, variation.id);
+            } else if (isSupervisor) {
+                await projectApi.unapproveVariationSupervisor(projectId, variation.id);
+            }
+            success(t("variation_unapproved", "Variation approval removed"));
+            onReload();
+        } catch (e) {
+            const msg = e?.response?.data?.error || e?.message || t("error_generic", "حدث خطأ");
+            showError(msg);
+        } finally {
+            setUnapprovingVariationId(null);
+        }
+    };
+
     const openAlterationDialog = (variation, requestType) => {
         setAlterationVariation(variation);
         setAlterationRequestType(requestType);
         setAlterationReason("");
         setAlterationDialogOpen(true);
+    };
+
+    const getAlterationDialogTitle = () => {
+        if (alterationRequestType === "edit") {
+            return t("request_edit", "طلب تعديل أمر التغيير");
+        }
+        if (alterationRequestType === "delete") {
+            return t("request_delete", "طلب حذف أمر التغيير");
+        }
+        return t("request_unapprove", "Request Unapprove");
+    };
+
+    const getAlterationDialogDesc = () => {
+        if (alterationRequestType === "edit") {
+            return t("request_edit_desc", "سيتم إرسال طلب التعديل إلى مدير المشروع للموافقة عليه.");
+        }
+        if (alterationRequestType === "delete") {
+            return t("request_delete_desc", "سيتم إرسال طلب الحذف إلى مدير المشروع للموافقة عليه.");
+        }
+        return t("request_unapprove_desc", "This will send an unapprove request to the approver responsible for the current approval step.");
     };
 
     const handleSubmitAlterationRequest = async () => {
@@ -408,7 +449,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 request_type: alterationRequestType,
                 reason: alterationReason.trim(),
             });
-            showToast("success", t("alteration_request_sent", "تم إرسال الطلب إلى مدير المشروع"));
+            showToast("success", `${getAlterationDialogTitle()} - ${t("alteration_request_sent", "تم إرسال الطلب إلى مدير المشروع")}`);
             onReload();
         } catch (e) {
             const msg = e?.response?.data?.error || e?.message || t("error_generic", "حدث خطأ");
@@ -861,6 +902,39 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         return false;
     };
 
+    const canDirectUnapproveThisVariation = (variation) => {
+        const status = getVariationStatus(variation);
+        if (status === "approved" || status === "final_approved") return false;
+
+        if (isProjectManager) {
+            return status === "pending_general_manager_initial" && !!variation.project_manager_initial_approved_by;
+        }
+
+        if (isSupervisor) {
+            return (
+                (status === "pending_owner_consultant" || status === "pending_general_manager_final") &&
+                !!variation.general_manager_initial_approved_by
+            );
+        }
+
+        return false;
+    };
+
+    const canRequestUnapproveThisVariation = (variation) => {
+        const status = getVariationStatus(variation);
+        if (status === "approved" || status === "final_approved") return false;
+
+        if (isStaff) {
+            return status === "pending_general_manager_initial";
+        }
+
+        if (isProjectManager) {
+            return status === "pending_owner_consultant" || status === "pending_general_manager_final";
+        }
+
+        return false;
+    };
+
     return (
         <div className="prj-tab-panel">
             <div className="prj-tab-header">
@@ -1044,6 +1118,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                     const statusLabel = getApprovalStatusLabel(status, isAR ? "ar" : "en");
                                     const canApproveThis = canApproveThisVariation(variation);
                                     const canRejectThis = canRejectThisVariation(variation);
+                                    const canDirectUnapproveThis = canDirectUnapproveThisVariation(variation);
+                                    const canRequestUnapproveThis = canRequestUnapproveThisVariation(variation);
 
                                     let variationDescription = "";
                                     let referenceNo = null;
@@ -1141,6 +1217,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                                             variant: "danger",
                                                                             onClick: () => openAlterationDialog(variation, "delete"),
                                                                         },
+                                                                        {
+                                                                            label: t("request_unapprove", "Request Unapprove"),
+                                                                            type: "button",
+                                                                            variant: "warning",
+                                                                            onClick: () => openAlterationDialog(variation, "unapprove"),
+                                                                        },
                                                                     ]
                                                                     : [
                                                                         {
@@ -1177,6 +1259,27 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                                     variant: "danger",
                                                                     onClick: () => askRejectVariation(variation),
                                                                     disabled: !!rejectingVariationId,
+                                                                },
+                                                            ]
+                                                            : []),
+                                                        ...(canDirectUnapproveThis
+                                                            ? [
+                                                                {
+                                                                    label: t("unapprove", "Unapprove"),
+                                                                    type: "button",
+                                                                    variant: "warning",
+                                                                    onClick: () => handleUnapproveVariation(variation),
+                                                                    disabled: unapprovingVariationId === variation.id,
+                                                                },
+                                                            ]
+                                                            : []),
+                                                        ...(!isStaff && canRequestUnapproveThis
+                                                            ? [
+                                                                {
+                                                                    label: t("request_unapprove", "Request Unapprove"),
+                                                                    type: "button",
+                                                                    variant: "warning",
+                                                                    onClick: () => openAlterationDialog(variation, "unapprove"),
                                                                 },
                                                             ]
                                                             : []),
@@ -1417,17 +1520,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             {/* Alteration Request Dialog (staff → PM) */}
             <Dialog
                 open={alterationDialogOpen}
-                title={
-                    alterationRequestType === "edit"
-                        ? t("request_edit", "طلب تعديل أمر التغيير")
-                        : t("request_delete", "طلب حذف أمر التغيير")
-                }
+                title={getAlterationDialogTitle()}
                 desc={
                     <div>
                         <p className="ds-mb-3">
-                            {alterationRequestType === "edit"
-                                ? t("request_edit_desc", "سيتم إرسال طلب التعديل إلى مدير المشروع للموافقة عليه.")
-                                : t("request_delete_desc", "سيتم إرسال طلب الحذف إلى مدير المشروع للموافقة عليه.")}
+                            {getAlterationDialogDesc()}
                         </p>
                         <textarea
                             className="prj-input ds-w-full ds-mt-2"

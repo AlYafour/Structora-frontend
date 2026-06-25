@@ -30,6 +30,7 @@ export default function VariationAlterationRequestPage() {
     const navigate = useTenantNavigate();
 
     const isProjectManager = user?.role?.name === "Manager";
+    const isSupervisor = user?.role?.name === "Supervisor";
 
     const [loading, setLoading] = useState(true);
     const [request, setRequest] = useState(null);
@@ -96,8 +97,17 @@ export default function VariationAlterationRequestPage() {
         }
     };
 
-    const requestTypeLabel = (type) =>
-        type === "edit" ? t("edit_request") : t("delete_request");
+    const requestTypeLabel = (type) => {
+        if (type === "edit") return t("edit_request");
+        if (type === "delete") return t("delete_request");
+        return t("unapprove_request", "Unapprove request");
+    };
+
+    const canRespond = request?.status === "pending" && (
+        request?.request_type === "unapprove" && request?.requested_by_role === "Manager"
+            ? isSupervisor
+            : isProjectManager
+    );
 
     const statusConfig = {
         pending:  { icon: <FaClock />,        cls: "prj-badge prj-badge--warning", color: "#b45309" },
@@ -164,14 +174,14 @@ export default function VariationAlterationRequestPage() {
                                     style={{
                                         width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
                                         display: "flex", alignItems: "center", justifyContent: "center",
-                                        background: request.request_type === "edit"
-                                            ? "var(--color-blue-100, #dbeafe)"
-                                            : "var(--color-red-100, #fee2e2)",
+                                        background: request.request_type === "delete"
+                                            ? "var(--color-red-100, #fee2e2)"
+                                            : "var(--color-blue-100, #dbeafe)",
                                     }}
                                 >
-                                    {request.request_type === "edit"
-                                        ? <FaEdit style={{ color: "var(--color-blue-600, #2563eb)", fontSize: 18 }} />
-                                        : <FaTrashAlt style={{ color: "var(--color-red-600, #dc2626)", fontSize: 18 }} />
+                                    {request.request_type === "delete"
+                                        ? <FaTrashAlt style={{ color: "var(--color-red-600, #dc2626)", fontSize: 18 }} />
+                                        : <FaEdit style={{ color: "var(--color-blue-600, #2563eb)", fontSize: 18 }} />
                                     }
                                 </div>
                                 <div>
@@ -352,13 +362,13 @@ export default function VariationAlterationRequestPage() {
                             style={{
                                 padding: "16px 24px 24px",
                                 display: "flex", gap: 12, flexWrap: "wrap",
-                                borderTop: (isProjectManager && request.status === "pending" && !confirmOpen)
+                                borderTop: (canRespond && !confirmOpen)
                                     ? "1px solid var(--color-border, #e5e7eb)"
                                     : undefined,
-                                marginTop: (isProjectManager && request.status === "pending" && !confirmOpen) ? 0 : undefined,
+                                marginTop: (canRespond && !confirmOpen) ? 0 : undefined,
                             }}
                         >
-                            {isProjectManager && request.status === "pending" && !confirmOpen && (
+                            {canRespond && !confirmOpen && (
                                 <>
                                     <Button variant="primary" onClick={() => openConfirm("accepted")}>
                                         <FaCheckCircle style={{ marginInlineEnd: 6 }} />

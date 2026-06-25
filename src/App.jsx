@@ -58,6 +58,8 @@ const RolesPage = lazy(() => import("./features/company/pages/RolesPage"));
 const ProjectsPage = lazy(() => import("./features/projects/pages/ProjectsPage"));
 const ProjectView = lazy(() => import("./features/projects/pages/ProjectView"));
 const WizardPage = lazy(() => import("./features/projects/wizard/WizardPage"));
+const CreationModeScreen = lazy(() => import("./features/projects/wizard/CreationModeScreen"));
+const AiUploadScreen = lazy(() => import("./features/projects/wizard/AiUploadScreen"));
 const PendingApprovalsPage = lazy(() => import("./features/projects/pages/PendingApprovalsPage"));
 const ViewSitePlan = lazy(() => import("./features/projects/wizard/view/ViewSitePlan"));
 const ViewLicense = lazy(() => import("./features/projects/wizard/view/ViewLicense"));
@@ -186,6 +188,8 @@ function TenantRoutes() {
       <Route path="projects/:projectId/awarding/view" element={<ProtectedRoute><ViewAwardingPage /></ProtectedRoute>} />
 
       {/* Wizard for new project */}
+      <Route path="wizard" element={<ProtectedRoute permission="projects.create"><CreationModeScreen /></ProtectedRoute>} />
+      <Route path="wizard/ai" element={<ProtectedRoute permission="projects.create"><AiUploadScreen /></ProtectedRoute>} />
       <Route path="wizard/new" element={<ProtectedRoute permission="projects.create"><WizardPage /></ProtectedRoute>} />
 
       {/* Payments */}

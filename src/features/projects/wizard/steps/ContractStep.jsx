@@ -44,7 +44,7 @@ import { extractFileNameFromUrl, buildFileUrl } from "../../../../utils/helpers/
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 import UniqueFieldInput from "../../../../components/forms/UniqueFieldInput";
 
-export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false }) {
+export default function ContractStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onCreateProject, setup, onSetupChange, siteplanSnapshot, noPermit = false, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false, prefillData = null }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { isArabic: isAR } = useLanguage();
@@ -58,6 +58,15 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   useEffect(() => {
     return () => clearTimeout(navTimerRef.current);
   }, []);
+
+  // Pre-fill from AI preview data (runs once on mount for new projects)
+  useEffect(() => {
+    if (!prefillData || !isNewProject || existingId) return;
+    const { owners: _owners, ...contractFields } = prefillData;
+    if (Object.values(contractFields).some(v => v)) {
+      setForm(prev => ({ ...prev, ...contractFields }));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Report the complete contract section only when at least one date has been entered
   useEffect(() => {

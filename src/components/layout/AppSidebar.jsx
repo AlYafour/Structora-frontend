@@ -164,7 +164,7 @@ function useAdminMenuItems() {
 const COMPANY_NAV_MAP = {
   home: '/dashboard',
   'projects-list': '/projects',
-  'add-project': '/wizard/new',
+  'add-project': '/wizard',
   'import-data': '/boq',
   owners: '/owners',
   consultants: '/consultants',
@@ -177,7 +177,7 @@ const COMPANY_NAV_MAP = {
 function getCompanyActiveKey(pathname) {
   if (pathname === '/dashboard' || pathname === '/' || pathname === '/home') return 'home';
   if (pathname === '/projects' || pathname === '/projects/') return 'projects-list';
-  if (pathname === '/wizard/new') return 'add-project';
+  if (pathname.startsWith('/wizard')) return 'add-project';
 
   const selectMatch = pathname.match(/^\/projects\/select\/(.+)$/);
   if (selectMatch) return `add-${selectMatch[1]}`;
@@ -186,7 +186,7 @@ function getCompanyActiveKey(pathname) {
   if (pathname.startsWith('/projects/') && pathname.includes('/progress')) return 'add-progress';
   if (pathname === '/projects/pending-approvals') return 'pending-approvals';
   if (pathname.startsWith('/boq') || pathname.startsWith('/import-data')) return 'import-data';
-  if (pathname.startsWith('/projects') || pathname.startsWith('/wizard')) return 'projects-list';
+  if (pathname.startsWith('/projects')) return 'projects-list';
   if (pathname === '/owners') return 'owners';
   if (pathname === '/consultants') return 'consultants';
   if (pathname === '/company/users') return 'company-users';

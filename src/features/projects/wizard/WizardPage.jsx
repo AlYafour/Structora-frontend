@@ -97,6 +97,7 @@ export default function WizardPage() {
 
   const isNewProject = !projectId || location.pathname === "/wizard/new";
   const draftIdFromUrl = params.get("draftId");
+  const aiPreviewData = location.state?.aiPreviewData ?? null;
 
   const hasBlockingErrors = !!(validationIssues?.some(i => i.severity === "error"));
 
@@ -133,14 +134,14 @@ export default function WizardPage() {
   const pendingAdvanceRef = useRef(false);
 
   const [draftId, setDraftId] = useState(draftIdFromUrl ? Number(draftIdFromUrl) : null);
-  const [wizardData, setWizardData] = useState({
-    setup: {},
-    siteplan: null,
+  const [wizardData, setWizardData] = useState(() => ({
+    setup: aiPreviewData?.setup || {},
+    siteplan: aiPreviewData?.siteplan || null,
     sitePlanFormData: null,
-    license: null,
+    license: aiPreviewData?.license || null,
     licenseFormData: null,
-    contract: null,
-  });
+    contract: aiPreviewData?.contract || null,
+  }));
   const draftSaveTimerRef = useRef(null);
 
   useEffect(() => {
@@ -190,19 +191,33 @@ export default function WizardPage() {
   useEffect(() => {
     if (isNewProject) {
       if (!draftIdFromUrl) {
-        setSetup({
-          projectType: "",
-          contractType: "",
-          internalCode: "",
-          legacyCode: "",
-          contractClassification: "",
-          projectCategory: "",
-          maintenanceType: "",
-          contractYear: new Date().getFullYear(),
-        });
-        try {
-          localStorage.removeItem("wizard_setup_state_v1");
-        } catch (_e) { }
+        if (aiPreviewData?.setup) {
+          setSetup({
+            projectType: aiPreviewData.setup.project_type || "",
+            contractType: aiPreviewData.setup.contract_type || "",
+            internalCode: "",
+            legacyCode: "",
+            contractClassification: aiPreviewData.setup.contract_classification || "",
+            projectCategory: aiPreviewData.setup.project_category || "",
+            maintenanceType: aiPreviewData.setup.maintenance_type || "",
+            contractYear: aiPreviewData.setup.contract_year || new Date().getFullYear(),
+            _classification: aiPreviewData.setup._classification || null,
+          });
+        } else {
+          setSetup({
+            projectType: "",
+            contractType: "",
+            internalCode: "",
+            legacyCode: "",
+            contractClassification: "",
+            projectCategory: "",
+            maintenanceType: "",
+            contractYear: new Date().getFullYear(),
+          });
+          try {
+            localStorage.removeItem("wizard_setup_state_v1");
+          } catch (_e) { }
+        }
       }
       return;
     }
@@ -612,6 +627,13 @@ export default function WizardPage() {
         </div>
       )}
 
+      {aiPreviewData && isNewProject && (
+        <div className="wizard-ai-banner">
+          <span className="wizard-ai-banner__icon">✦</span>
+          {t("wizard_ai_preview_banner")}
+        </div>
+      )}
+
       <div className="wizard-content">
         <div style={{ display: index === 0 ? undefined : "none" }}>
           {STEPS.length > 0 && (
@@ -629,7 +651,7 @@ export default function WizardPage() {
                   return current;
                 });
               }}
-              initialData={!isNewProject ? setup._classification : null}
+              initialData={!isNewProject ? setup._classification : (aiPreviewData?.setup?._classification || null)}
               isView={isView}
               projectId={isNewProject ? null : projectId}
               isNewProject={isNewProject}
@@ -653,6 +675,7 @@ export default function WizardPage() {
                   onDocFilesChange={handleDocFilesChange}
                   onFormSectionChange={handleFormSectionChange}
                   hasBlockingErrors={hasBlockingErrors}
+                  prefillData={aiPreviewData?.siteplan || null}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -678,6 +701,7 @@ export default function WizardPage() {
                   onDocFilesChange={handleDocFilesChange}
                   onFormSectionChange={handleFormSectionChange}
                   hasBlockingErrors={hasBlockingErrors}
+                  prefillData={aiPreviewData?.license || null}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -712,6 +736,7 @@ export default function WizardPage() {
                 setup={setup}
                 onSetupChange={setSetup}
                 siteplanSnapshot={isNewProject ? wizardData.siteplan : null}
+                prefillData={aiPreviewData?.contract || null}
                 noPermit={noPermit}
                 onDocFilesChange={handleDocFilesChange}
                 onFormSectionChange={handleFormSectionChange}

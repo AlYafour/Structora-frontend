@@ -25,6 +25,32 @@
   overflow: hidden;
 }
 
+/* ==================== AI PREVIEW BANNER ==================== */
+.wizard-ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid #3b82f6;
+  border-radius: 0;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.wizard-ai-banner__icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+html.theme-dark .wizard-ai-banner {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
 /* ==================== WIZARD CONTENT AREA ==================== */
 .wizard-content {
   background: var(--color-surface, #ffffff);
