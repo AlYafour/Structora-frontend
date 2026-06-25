@@ -40,7 +40,6 @@ const defaultFormData = {
   hidden_consultant_fee_net_amount: 0,
   hidden_consultant_fee_vat_amount: 0,
   hidden_consultant_fee_gross_amount: 0,
-  hidden_consultant_fee_note: '',
   custom_fees: [],
 };
 

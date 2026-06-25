@@ -199,7 +199,6 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         hidden_consultant_fee_net_amount: variationData.hidden_consultant_fee_net_amount ?? 0,
         hidden_consultant_fee_vat_amount: variationData.hidden_consultant_fee_vat_amount ?? 0,
         hidden_consultant_fee_gross_amount: variationData.hidden_consultant_fee_gross_amount ?? 0,
-        hidden_consultant_fee_note: variationData.hidden_consultant_fee_note ?? '',
         custom_fees: customFeesForForm
       });
 
@@ -490,8 +489,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         ...(canManageHiddenFees ? {
           hidden_consultant_fee: hiddenConsultantFeeValue.toFixed(2),
           hidden_consultant_fee_vat_included: formData.hidden_consultant_fee_vat_mode === 'included',
-          hidden_consultant_fee_vat_rate: hiddenConsultantFeeVatRate.toFixed(2),
-          hidden_consultant_fee_note: formData.hidden_consultant_fee_note || ''
+          hidden_consultant_fee_vat_rate: hiddenConsultantFeeVatRate.toFixed(2)
         } : {})
       };
 

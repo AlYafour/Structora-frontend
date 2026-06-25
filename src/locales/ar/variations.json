@@ -15,7 +15,6 @@
   "consultant_fees": "أتعاب الاستشاري",
   "consultant_fees_calculated": "أتعاب الاستشاري المحسوبة:",
   "hidden_consultant_fee": "أتعاب استشاري مخفية",
-  "hidden_consultant_fee_note": "ملاحظة داخلية",
   "hidden_consultant_fee_internal_desc": "مستحقة الدفع من المقاول إلى الاستشاري، ولا يتم تحصيلها من المالك/العميل.",
   "hidden_consultant_fee_entered_amount": "المبلغ المدخل",
   "hidden_consultant_fee_alert_title": "يتضمن هذا التعديل أتعاباً مخفية مستحقة الدفع للاستشاري",

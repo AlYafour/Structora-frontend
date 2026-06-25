@@ -146,7 +146,7 @@ const FinancialSummary = memo(({
     included: t('pf_enter_with_vat', 'Amount including VAT'),
     no_vat: t('pf_enter_no_vat', 'No VAT'),
   };
-  const showHiddenConsultantFee = canManageHiddenFees && (isEditMode || hiddenConsultantFee > 0 || (formData.hidden_consultant_fee_note || '').trim());
+  const showHiddenConsultantFee = canManageHiddenFees && (isEditMode || hiddenConsultantFee > 0);
 
   const handleDiscountCheckbox = (field, newValue) => {
     if (!newValue) {
@@ -224,10 +224,10 @@ const FinancialSummary = memo(({
       <div className="nfs-body">
 
         {/* ── LEFT COLUMN: Amounts flow ── */}
-        <div className="nfs-left">
+        <div className={`nfs-top-row${showHiddenConsultantFee ? ' nfs-top-row--with-hidden-fees' : ''}`}>
 
           {/* Variation breakdown */}
-          <div className="nfs-block">
+          <div className="nfs-block nfs-block--variation">
             <div className="nfs-block__title">{t('variation_summary')}</div>
             <div className="nfs-flow">
 
@@ -277,8 +277,167 @@ const FinancialSummary = memo(({
             </div>
           </div>
 
-          {/* Fees — unified 2-column grid */}
-          <div className="nfs-block">
+          <div className="nfs-right">
+            <div className="nfs-block__title">{t('final_summary')}</div>
+            <div className="nfs-total-card">
+              <div className="nfs-total-card__content">
+                <div className="nfs-total-rows">
+                  <div className="nfs-total-row">
+                    <span>{t('total_omitted')}</span>
+                    <span className="nfs-total-row__val nfs-total-row__val--neg">
+                      - {renderAmount(totalOmitted)}
+                    </span>
+                  </div>
+                  <div className="nfs-total-row">
+                    <span>{t('total_added')}</span>
+                    <span className="nfs-total-row__val nfs-total-row__val--pos">
+                      + {renderAmount(totalAdded)}
+                    </span>
+                  </div>
+                  <div className="nfs-total-row nfs-total-row--variation">
+                    <span>{t('total_variation_amount')}</span>
+                    <span className={`nfs-total-row__val ${isPositive ? 'nfs-total-row__val--pos' : 'nfs-total-row__val--neg'}`}>
+                      {renderAmount(totalVariationAmount)}
+                    </span>
+                  </div>
+                  <div className="nfs-total-row">
+                    <span>{t('contractor_ohp') || 'Contractor OHP'}</span>
+                    <span className="nfs-total-row__val nfs-total-row__val--pos">
+                      + {renderAmount(contractorEngineeringOHP)}
+                    </span>
+                  </div>
+                  <div className="nfs-total-row">
+                    <span>{t('consultant_fees') || 'Consultant Fees'}</span>
+                    <span className="nfs-total-row__val nfs-total-row__val--pos">
+                      + {renderAmount(consultantFees)}
+                    </span>
+                  </div>
+                  {(customFeesWithAmounts || []).map(fee => (
+                    <div key={fee.id} className="nfs-total-row">
+                      <span>
+                        {fee.name || (t('custom_fee') || 'Custom Fee')}
+                        {fee.type === 'percentage' && fee.percentage && (
+                          <span style={{ fontSize: '0.8em', color: '#6b7280', marginLeft: 4 }}>({fee.percentage}%)</span>
+                        )}
+                      </span>
+                      <span className="nfs-total-row__val nfs-total-row__val--pos">
+                        + {renderAmount(fee.computedAmount || 0)}
+                      </span>
+                    </div>
+                  ))}
+                  {hasDiscount && (
+                    <div className="nfs-total-row">
+                      <span>{t('total_before_discount')}</span>
+                      <span className="nfs-total-row__val">
+                        {renderAmount(totalAmountBeforeDiscount)}
+                      </span>
+                    </div>
+                  )}
+                  {hasDiscount && (
+                    <div className="nfs-total-row nfs-total-row--disc">
+                      <span>{t('discount')} {discountPercentage > 0 && `(${discountPercentage.toFixed(1)}%)`}</span>
+                      <span className="nfs-total-row__val nfs-total-row__val--neg">
+                        - {renderAmount(discountAmount)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="nfs-total-card__final">
+                  <span className="nfs-total-card__final-label">{t('final_amount')}</span>
+                  <span className="nfs-total-card__final-value">
+                    {renderAmount(totalAmount)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showHiddenConsultantFee && (
+            <div className="nfs-block nfs-block--hidden-fees">
+              <div className="nfs-block__title">{t('extra_fees', 'Extra Fees')}</div>
+              <div className="nfs-custom-fee-card nfs-hidden-fee-card">
+                <div className="nfs-hidden-fee-card__header">
+                  <div className="nfs-hidden-fee-card__heading">
+                    <span className="nfs-hidden-fee-card__title">
+                      {t('hidden_consultant_fee', 'Hidden Consultant Fee')}
+                    </span>
+                  </div>
+                  <span className="nfs-hidden-fee-card__mode">
+                    {hiddenVatModeLabels[hiddenVatMode]}
+                  </span>
+                </div>
+
+                {isEditMode && (
+                  <div className="nfs-vat-mode-row no-print">
+                    {[
+                      ['excluded', t('pf_enter_without_vat', 'Excluding VAT')],
+                      ['included', t('pf_enter_with_vat', 'Including VAT')],
+                      ['no_vat', t('pf_enter_no_vat', 'No VAT')],
+                    ].map(([value, label]) => (
+                      <label key={value} className="nfs-vat-mode-option">
+                        <input
+                          type="radio"
+                          name="hidden_consultant_fee_vat_mode"
+                          checked={hiddenVatMode === value}
+                          onChange={() => onFormDataChange({
+                            ...formData,
+                            hidden_consultant_fee_vat_mode: value,
+                            hidden_consultant_fee_vat_included: value === 'included',
+                            hidden_consultant_fee_vat_rate: value === 'no_vat' ? '0' : '5',
+                          })}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="nfs-hidden-fee-entry">
+                  <div className="nfs-hidden-fee-entry__label">
+                    {t('hidden_consultant_fee_entered_amount', 'Entered amount')}
+                  </div>
+                  {isEditMode && (
+                    <div className="nfs-hidden-fee-entry__control no-print">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="nvc-input nvc-input--sm nfs-num-input"
+                        placeholder="0.00"
+                        value={formData.hidden_consultant_fee ?? ''}
+                        onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  <span className="nfs-hidden-fee-entry__amount">
+                    {renderAmount(hiddenConsultantFee)}
+                  </span>
+                </div>
+
+                <div className="nfs-hidden-fee-breakdown">
+                  <div className="nfs-hidden-fee-breakdown__item">
+                    <span>{t('pf_net_amount', 'Net Amount')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.net_amount)}</strong>
+                  </div>
+                  <div className="nfs-hidden-fee-breakdown__item">
+                    <span>{t('pf_vat_amount', 'VAT (5%)')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.vat_amount)}</strong>
+                  </div>
+                  <div className="nfs-hidden-fee-breakdown__item nfs-hidden-fee-breakdown__item--total">
+                    <span>{t('pf_gross_amount', 'Total (incl. VAT)')}</span>
+                    <strong>{renderAmount(hiddenFeeDisplay.gross_amount)}</strong>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        <div className="nfs-fees-row">
+          <div className="nfs-block nfs-block--fees">
             <div className="nfs-block__title">{t('fees')}</div>
 
             <div className="nfs-fees-grid">
@@ -415,192 +574,7 @@ const FinancialSummary = memo(({
             )}
           </div>
 
-          {showHiddenConsultantFee && (
-            <div className="nfs-block">
-              <div className="nfs-block__title">{t('extra_fees', 'Extra Fees')}</div>
-              <div className="nfs-custom-fee-card nfs-hidden-fee-card">
-                <div className="nfs-hidden-fee-card__header">
-                  <div className="nfs-hidden-fee-card__heading">
-                    <span className="nfs-hidden-fee-card__title">
-                      {t('hidden_consultant_fee', 'Hidden Consultant Fee')}
-                    </span>
-                    <span className="nfs-hidden-fee-card__desc">
-                      {t('hidden_consultant_fee_internal_desc', 'Payable by the contractor to the consultant. Not receivable from the owner/client.')}
-                    </span>
-                  </div>
-                  <span className="nfs-hidden-fee-card__mode">
-                    {hiddenVatModeLabels[hiddenVatMode]}
-                  </span>
-                </div>
-
-                {isEditMode && (
-                  <div className="nfs-vat-mode-row no-print">
-                    {[
-                      ['excluded', t('pf_enter_without_vat', 'Excluding VAT')],
-                      ['included', t('pf_enter_with_vat', 'Including VAT')],
-                      ['no_vat', t('pf_enter_no_vat', 'No VAT')],
-                    ].map(([value, label]) => (
-                      <label key={value} className="nfs-vat-mode-option">
-                        <input
-                          type="radio"
-                          name="hidden_consultant_fee_vat_mode"
-                          checked={hiddenVatMode === value}
-                          onChange={() => onFormDataChange({
-                            ...formData,
-                            hidden_consultant_fee_vat_mode: value,
-                            hidden_consultant_fee_vat_included: value === 'included',
-                            hidden_consultant_fee_vat_rate: value === 'no_vat' ? '0' : '5',
-                          })}
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                <div className="nfs-hidden-fee-entry">
-                  <div className="nfs-hidden-fee-entry__label">
-                    {t('hidden_consultant_fee_entered_amount', 'Entered amount')}
-                  </div>
-                  {isEditMode && (
-                    <div className="nfs-hidden-fee-entry__control no-print">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="nvc-input nvc-input--sm nfs-num-input"
-                        placeholder="0.00"
-                        value={formData.hidden_consultant_fee ?? ''}
-                        onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee: e.target.value })}
-                      />
-                    </div>
-                  )}
-                  <span className="nfs-hidden-fee-entry__amount">
-                    {renderAmount(hiddenConsultantFee)}
-                  </span>
-                </div>
-
-                <div className="nfs-hidden-fee-breakdown">
-                  <div className="nfs-hidden-fee-breakdown__item">
-                    <span>{t('pf_net_amount', 'Net Amount')}</span>
-                    <strong>{renderAmount(hiddenFeeDisplay.net_amount)}</strong>
-                  </div>
-                  <div className="nfs-hidden-fee-breakdown__item">
-                    <span>{t('pf_vat_amount', 'VAT (5%)')}</span>
-                    <strong>{renderAmount(hiddenFeeDisplay.vat_amount)}</strong>
-                  </div>
-                  <div className="nfs-hidden-fee-breakdown__item nfs-hidden-fee-breakdown__item--total">
-                    <span>{t('pf_gross_amount', 'Total (incl. VAT)')}</span>
-                    <strong>{renderAmount(hiddenFeeDisplay.gross_amount)}</strong>
-                  </div>
-                </div>
-
-                {isEditMode ? (
-                  <input
-                    type="text"
-                    className="nvc-input nvc-input--sm nfs-hidden-fee-note-input no-print"
-                    placeholder={t('hidden_consultant_fee_note', 'Internal note')}
-                    value={formData.hidden_consultant_fee_note ?? ''}
-                    onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee_note: e.target.value })}
-                  />
-                ) : formData.hidden_consultant_fee_note ? (
-                  <div className="nfs-hidden-fee-note">
-                    <span>{t('hidden_consultant_fee_note', 'Internal note')}</span>
-                    <p>{formData.hidden_consultant_fee_note}</p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-
         </div>
-
-        {/* ── RIGHT COLUMN: Final Amount Card ── */}
-        <div className="nfs-right">
-          <div className="nfs-total-card">
-            <div className="nfs-total-card__header">{t('final_summary')}</div>
-
-            <div className="nfs-total-rows">
-              <div className="nfs-total-row">
-                <span>{t('total_omitted')}</span>
-                <span className="nfs-total-row__val nfs-total-row__val--neg">
-                  - {renderAmount(totalOmitted)}
-                </span>
-              </div>
-              <div className="nfs-total-row">
-                <span>{t('total_added')}</span>
-                <span className="nfs-total-row__val nfs-total-row__val--pos">
-                  + {renderAmount(totalAdded)}
-                </span>
-              </div>
-              <div className="nfs-total-row nfs-total-row--variation">
-                <span>{t('total_variation_amount')}</span>
-                <span className={`nfs-total-row__val ${isPositive ? 'nfs-total-row__val--pos' : 'nfs-total-row__val--neg'}`}>
-                  {renderAmount(totalVariationAmount)}
-                </span>
-              </div>
-            </div>
-
-            <div className="nfs-total-card__divider" />
-
-            <div className="nfs-total-rows">
-              <div className="nfs-total-row">
-                <span>{t('contractor_ohp') || 'Contractor OHP'}</span>
-                <span className="nfs-total-row__val nfs-total-row__val--pos">
-                  + {renderAmount(contractorEngineeringOHP)}
-                </span>
-              </div>
-              <div className="nfs-total-row">
-                <span>{t('consultant_fees') || 'Consultant Fees'}</span>
-                <span className="nfs-total-row__val nfs-total-row__val--pos">
-                  + {renderAmount(consultantFees)}
-                </span>
-              </div>
-              {(customFeesWithAmounts || []).map(fee => (
-                <div key={fee.id} className="nfs-total-row">
-                  <span>
-                    {fee.name || (t('custom_fee') || 'Custom Fee')}
-                    {fee.type === 'percentage' && fee.percentage && (
-                      <span style={{ fontSize: '0.8em', color: '#6b7280', marginLeft: 4 }}>({fee.percentage}%)</span>
-                    )}
-                  </span>
-                  <span className="nfs-total-row__val nfs-total-row__val--pos">
-                    + {renderAmount(fee.computedAmount || 0)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="nfs-total-card__divider" />
-
-            <div className="nfs-total-rows">
-              {hasDiscount && (
-                <div className="nfs-total-row">
-                  <span>{t('total_before_discount')}</span>
-                  <span className="nfs-total-row__val">
-                    {renderAmount(totalAmountBeforeDiscount)}
-                  </span>
-                </div>
-              )}
-              {hasDiscount && (
-                <div className="nfs-total-row nfs-total-row--disc">
-                  <span>{t('discount')} {discountPercentage > 0 && `(${discountPercentage.toFixed(1)}%)`}</span>
-                  <span className="nfs-total-row__val nfs-total-row__val--neg">
-                    - {renderAmount(discountAmount)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="nfs-total-card__final">
-              <span className="nfs-total-card__final-label">{t('final_amount')}</span>
-              <span className="nfs-total-card__final-value">
-                {renderAmount(totalAmount)}
-              </span>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );

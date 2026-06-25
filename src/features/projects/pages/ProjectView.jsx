@@ -74,36 +74,39 @@ const projectDisplayName = isAR
  return (
  <PageLayout loading={loading} loadingText={t("loading")}>
  <div className="container">
- {/* Header Section */}
- <ProjectViewHeader
- project={project}
- projectId={projectId}
- projectPermissions={projectPermissions}
- activeTab={effectiveActiveTab}
- isManager={isManager}
- isSuperAdmin={isSuperAdmin}
- canDeleteProject={canDeleteProject}
- permissionsLoading={permissionsLoading}
- onDeleteClick={() => canDeleteProject && setConfirmOpen(true)}
- onSubmitClick={() => setSubmitDialogOpen(true)}
- onApproveClick={() => setApproveDialogOpen(true)}
- onRejectClick={() => setRejectDialogOpen(true)}
- onFinalApproveClick={() => setFinalApproveDialogOpen(true)}
- onRevokeFinalApprovalClick={() => setRevokeFinalApprovalDialogOpen(true)}
- siteplan={siteplan}
- startOrder={startOrder}
- projectSchedule={projectSchedule}
- extensions={extensions}
- />
+ <div className="project-view__sticky-header">
+  {/* Header Section */}
+  <ProjectViewHeader
+  project={project}
+  projectId={projectId}
+  projectPermissions={projectPermissions}
+  activeTab={effectiveActiveTab}
+  isManager={isManager}
+  isSuperAdmin={isSuperAdmin}
+  canDeleteProject={canDeleteProject}
+  permissionsLoading={permissionsLoading}
+  onDeleteClick={() => canDeleteProject && setConfirmOpen(true)}
+  onSubmitClick={() => setSubmitDialogOpen(true)}
+  onApproveClick={() => setApproveDialogOpen(true)}
+  onRejectClick={() => setRejectDialogOpen(true)}
+  onFinalApproveClick={() => setFinalApproveDialogOpen(true)}
+  onRevokeFinalApprovalClick={() => setRevokeFinalApprovalDialogOpen(true)}
+  siteplan={siteplan}
+  startOrder={startOrder}
+  projectSchedule={projectSchedule}
+  extensions={extensions}
+  />
 
- {/* Main Content Card with Tabs */}
+  {/* Tabs Navigation */}
+  <ProjectTabsNavigation
+  activeTab={effectiveActiveTab}
+  onTabChange={setActiveTab}
+  auth={tabAuth}
+  />
+ </div>
+
+ {/* Main Content Card */}
  <Card className="prj-main-card">
- {/* Tabs Navigation */}
- <ProjectTabsNavigation
- activeTab={effectiveActiveTab}
- onTabChange={setActiveTab}
- auth={tabAuth}
- />
 
  {/* Tab Content */}
  <div className="prj-tab-content">

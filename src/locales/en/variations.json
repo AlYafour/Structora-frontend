@@ -15,7 +15,6 @@
   "consultant_fees": "Consultant Fees",
   "consultant_fees_calculated": "Calculated Consultant Fees:",
   "hidden_consultant_fee": "Hidden Consultant Fee",
-  "hidden_consultant_fee_note": "Internal note",
   "hidden_consultant_fee_internal_desc": "Payable by the contractor to the consultant. Not receivable from the owner/client.",
   "hidden_consultant_fee_entered_amount": "Entered amount",
   "hidden_consultant_fee_alert_title": "This variation includes a hidden fee payable to the consultant",
