@@ -916,7 +916,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                 <path d="M12 17V3M6 11l6 6 6-6" />
                                 <path d="M4 21h16" />
                             </svg>
-                            {t("download_pdf", "Download PDF")}
+                            {t("download_tab_summary", "Download Tab Summary")}
                         </button>
                     )}
 
@@ -1192,9 +1192,19 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                             ]
                                                             : []),
                                                         {
-                                                            label: singleLoading === variation.id ? t("downloading", "Downloading...") : t("download_pdf"),
+                                                            label: singleLoading === variation.id
+                                                                ? t("downloading", "Downloading...")
+                                                                : t("download_variation_doc_clean", "Download Variation Doc (No Signatures)"),
                                                             type: "button",
-                                                            onClick: () => downloadSingle(variation),
+                                                            onClick: () => downloadSingle(variation, { hideSignatures: true }),
+                                                            disabled: singleLoading === variation.id,
+                                                        },
+                                                        {
+                                                            label: singleLoading === variation.id
+                                                                ? t("downloading", "Downloading...")
+                                                                : t("download_variation_doc_signed", "Download Variation Doc (With Signatures)"),
+                                                            type: "button",
+                                                            onClick: () => downloadSingle(variation, { hideSignatures: false }),
                                                             disabled: singleLoading === variation.id,
                                                         },
                                                     ]}

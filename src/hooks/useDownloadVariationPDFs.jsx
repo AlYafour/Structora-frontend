@@ -89,7 +89,7 @@ async function preparePrintDocumentLayout(el) {
   await waitForFrame();
 }
 
-async function renderVariationPrintPdfBlob({ variation, project, companyInfo, noticeData }) {
+async function renderVariationPrintPdfBlob({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }) {
   const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
   const container = document.createElement("div");
@@ -115,6 +115,9 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
         project={project}
         companyInfo={companyInfo}
         noticeData={noticeData}
+        consultantStampUrl={consultantStampUrl}
+        gmSignatureUrl={gmSignatureUrl}
+        hideSignatures={hideSignatures}
       />
     );
 
@@ -285,9 +288,10 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
 }
 
 async function fetchProjectAndCompanyInfo(projectId) {
-  const [projectData, settingsRes] = await Promise.all([
+  const [projectData, settingsRes, licenseData] = await Promise.all([
     projectApi.getWithIncludes(projectId, ["siteplan", "license", "contract"]),
     api.get("auth/tenant-settings/current/", { _skipAuthRedirect: true }),
+    projectApi.getLicense(projectId).catch(() => null),
   ]);
 
   const settingsData = settingsRes.data;
@@ -303,9 +307,15 @@ async function fetchProjectAndCompanyInfo(projectId) {
     phone:   settingsData.company_phone      || settingsData.contractor_phone || "",
     email:   settingsData.company_email      || settingsData.contractor_email || "",
     address: settingsData.company_address    || settingsData.contractor_address || "",
+    company_stamp_url: settingsData.company_stamp_url || null,
   };
 
-  return { projectData, companyInfo };
+  const license = Array.isArray(licenseData) ? licenseData[0] : licenseData;
+  const consultantStampUrl = license?.consultant_stamp
+    ? (license.consultant_stamp.startsWith("http") ? license.consultant_stamp : buildFileUrl(license.consultant_stamp))
+    : null;
+
+  return { projectData, companyInfo, consultantStampUrl };
 }
 
 export function useDownloadVariationPDFs(projectId) {
@@ -314,25 +324,33 @@ export function useDownloadVariationPDFs(projectId) {
   const [zipLoading, setZipLoading] = useState(false);
   const [singleLoading, setSingleLoading] = useState(null);
 
-  const downloadSingle = useCallback(async (variation) => {
+  const downloadSingle = useCallback(async (variation, options = {}) => {
+    const hideSignatures = !!options.hideSignatures;
     setSingleLoading(variation.id);
     try {
-      const { projectData, companyInfo } = await fetchProjectAndCompanyInfo(projectId);
+      const { projectData, companyInfo, consultantStampUrl } = await fetchProjectAndCompanyInfo(projectId);
+      const fullVariation = await projectApi.getVariationById(projectId, variation.id).catch(() => variation);
 
       let noticeData = {};
-      if (variation?.description) {
-        try { noticeData = JSON.parse(variation.description); } catch { noticeData = {}; }
+      if (fullVariation?.description) {
+        try { noticeData = JSON.parse(fullVariation.description); } catch { noticeData = {}; }
       }
 
       const blob = await renderVariationPrintPdfBlob({
-        variation,
+        variation: fullVariation,
         project: projectData,
         companyInfo,
         noticeData,
+        consultantStampUrl,
+        gmSignatureUrl: fullVariation?.general_manager_final_approved_by?.signature_url || null,
+        hideSignatures,
       });
 
       if (blob) {
-        downloadBlob(blob, generatePDFFilename(variation, noticeData));
+        const filename = hideSignatures
+          ? generatePDFFilename(fullVariation, noticeData).replace(/\.pdf$/i, "_unsigned.pdf")
+          : generatePDFFilename(fullVariation, noticeData);
+        downloadBlob(blob, filename);
       }
 
       success(t("document_downloaded", "Document downloaded successfully"));
