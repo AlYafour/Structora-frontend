@@ -130,6 +130,10 @@ function translateBackendMessage(message) {
 }
 
 function formatValidationMessage(message) {
+  if (String(message || "").toLowerCase().includes("project, variation_number")) {
+    return "This variation number is already used in this project. Please choose another number.";
+  }
+
   const translated = translateBackendMessage(message);
   if (translated) return translated;
   if (message && !isTechnicalMessage(message)) return String(message).trim();
@@ -310,15 +314,20 @@ function getFieldLabels() {
  * Comprehensive error handler with context information
  */
 export function handleError(error, context = "") {
-  logger.error(`[Error Handler] ${context}:`, error);
-
+  const status = error?.response?.status;
   const message = formatError(error);
+
+  if (status === 400 || status === 422) {
+    logger.warn(`[Error Handler] ${context}:`, message);
+  } else {
+    logger.error(`[Error Handler] ${context}:`, error);
+  }
 
   return {
     message,
     originalError: error,
     context,
-    status: error?.response?.status,
+    status,
     data: error?.response?.data,
     timestamp: new Date().toISOString(),
   };

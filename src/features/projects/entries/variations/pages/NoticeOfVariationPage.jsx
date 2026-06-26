@@ -53,6 +53,40 @@ const computeNextVariationNumber = async (projectId) => {
   }
 };
 
+const formatVariationSaveError = (errData, fallback) => {
+  if (!errData) return fallback;
+  if (typeof errData === 'string') return errData;
+
+  const nonFieldErrors = errData.non_field_errors
+    ? (Array.isArray(errData.non_field_errors) ? errData.non_field_errors : [errData.non_field_errors])
+    : [];
+
+  const duplicateVariationNumber = nonFieldErrors.some(errorText =>
+    String(errorText || '').toLowerCase().includes('project, variation_number')
+  );
+
+  if (duplicateVariationNumber) {
+    return 'This variation number is already used in this project. Please choose another number.';
+  }
+
+  if (errData.detail) return errData.detail;
+  if (errData.message) return errData.message;
+  if (errData.error) return errData.error;
+  if (nonFieldErrors.length > 0) return nonFieldErrors.join(' | ');
+
+  const fieldErrors = Object.entries(errData)
+    .map(([key, value]) => {
+      const message = Array.isArray(value) ? value[0] : value;
+      if (!message) return null;
+      if (key === 'variation_number') return `Variation number: ${message}`;
+      return `${key}: ${message}`;
+    })
+    .filter(Boolean)
+    .join(' | ');
+
+  return fieldErrors || fallback;
+};
+
 export default function NoticeOfVariationPage({ variation: variationProp, project: projectProp, viewMode: viewModeProp, allowRevisionEdit = false }) {
   const { variationId, projectId } = useParams();
   const [searchParams] = useSearchParams();
@@ -493,6 +527,16 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         } : {})
       };
 
+      const saveData = { ...variationData };
+      const originalVariationNumber = String(effectiveVariation?.variation_number ?? '');
+      const submittedVariationNumber = String(saveData.variation_number ?? '');
+      if (variationId) {
+        delete saveData.project;
+        if (submittedVariationNumber === originalVariationNumber) {
+          delete saveData.variation_number;
+        }
+      }
+
       const hasNewFile = variationAttachment instanceof File;
       const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
       const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
@@ -516,7 +560,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       };
 
       if (needsFormData) {
-        const formDataToSend = buildFormData(variationData);
+        const formDataToSend = buildFormData(saveData);
 
         if (variationId) {
           await projectApi.updateVariation(project.id, variationId, formDataToSend);
@@ -533,12 +577,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         // No new files — send JSON; still need to tell backend which IDs to keep for deletions
         if (variationId) {
           const fd = new FormData();
-          Object.keys(variationData).forEach(key => fd.append(key, safeVal(variationData[key])));
+          Object.keys(saveData).forEach(key => fd.append(key, safeVal(saveData[key])));
           fd.append('keep_attachment_ids', currentSavedIds.join(','));
           if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
           await projectApi.updateVariation(project.id, variationId, fd);
         } else {
-          const data = await projectApi.createVariation(project.id, variationData);
+          const data = await projectApi.createVariation(project.id, saveData);
           if (data?.variation_number) {
             const generatedReferenceNo = noticeData.reference_no || `VAR${data.variation_number}`;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
@@ -553,25 +597,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     } catch (e) {
       // handleError() wraps the Axios error — check both shapes
       const errData = e?.data ?? e?.response?.data ?? e?.originalError?.response?.data;
-      let msg = t('save_error');
-      if (errData) {
-        if (typeof errData === 'string') {
-          msg = errData;
-        } else if (errData.detail) {
-          msg = errData.detail;
-        } else if (errData.message) {
-          msg = errData.message;
-        } else if (errData.error) {
-          msg = errData.error;
-        } else {
-          const fieldErrors = Object.entries(errData)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`)
-            .join(' | ');
-          if (fieldErrors) msg = fieldErrors;
-        }
-      } else if (e?.message) {
-        msg = e.message;
-      }
+      let msg = formatVariationSaveError(errData, t('save_error'));
+      if (!errData && e?.message) msg = e.message;
       showError(msg);
     } finally {
       setSaving(false);

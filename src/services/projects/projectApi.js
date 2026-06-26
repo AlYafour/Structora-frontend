@@ -5,7 +5,6 @@
 import { BaseService } from '../baseService';
 import { api } from '../api';
 import { handleError } from '../../utils/errorHandler';
-import { logger } from '../../utils/logger';
 
 class ProjectService extends BaseService {
   constructor() {
@@ -319,7 +318,6 @@ class ProjectService extends BaseService {
       );
       return data;
     } catch (error) {
-      logger.error('ProjectService.updateVariation backend error:', error?.response?.data);
       throw handleError(error, 'ProjectService.updateVariation');
     }
   }
