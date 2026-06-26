@@ -111,6 +111,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const [existingVariationAttachmentName, setExistingVariationAttachmentName] = useState(null);
   const [variationFileCleared, setVariationFileCleared] = useState(false);
   const [variationAttachments, setVariationAttachments] = useState([]);
+  const [hiddenFeeAttachment, setHiddenFeeAttachment] = useState(null);
+  const [existingHiddenFeeAttachment, setExistingHiddenFeeAttachment] = useState(null);
+  const [existingHiddenFeeAttachmentName, setExistingHiddenFeeAttachmentName] = useState(null);
+  const [hiddenFeeAttachmentCleared, setHiddenFeeAttachmentCleared] = useState(false);
   const navTimerRef = useRef(null);
 
   useEffect(() => {
@@ -309,6 +313,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         setExistingVariationAttachment(foundVariation.variation_invoice_file);
         setExistingVariationAttachmentName(foundVariation.variation_invoice_file_name || null);
       }
+      if (foundVariation?.hidden_consultant_fee_attachment) {
+        setExistingHiddenFeeAttachment(foundVariation.hidden_consultant_fee_attachment);
+        setExistingHiddenFeeAttachmentName(foundVariation.hidden_consultant_fee_attachment_name || null);
+      }
       if (foundVariation?.variation_attachments?.length) {
         setVariationAttachments(foundVariation.variation_attachments.map(a => ({
           id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null
@@ -336,6 +344,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         if (variationProp.variation_invoice_file) {
           setExistingVariationAttachment(variationProp.variation_invoice_file);
           setExistingVariationAttachmentName(variationProp.variation_invoice_file_name || null);
+        }
+        if (variationProp.hidden_consultant_fee_attachment) {
+          setExistingHiddenFeeAttachment(variationProp.hidden_consultant_fee_attachment);
+          setExistingHiddenFeeAttachmentName(variationProp.hidden_consultant_fee_attachment_name || null);
         }
         if (variationProp.variation_attachments?.length) {
           setVariationAttachments(variationProp.variation_attachments.map(a => ({
@@ -538,9 +550,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       }
 
       const hasNewFile = variationAttachment instanceof File;
+      const hasNewHiddenFeeAttachment = hiddenFeeAttachment instanceof File;
       const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
       const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
-      const needsFormData = hasNewFile || newAttachmentFiles.length > 0;
+      const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0;
 
       const safeVal = (v) => {
         const s = String(v ?? '0');
@@ -551,7 +564,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         const fd = new FormData();
         Object.keys(base).forEach(key => fd.append(key, safeVal(base[key])));
         if (variationAttachment instanceof File) fd.append('variation_invoice_file', variationAttachment);
+        if (hiddenFeeAttachment instanceof File) fd.append('hidden_consultant_fee_attachment', hiddenFeeAttachment);
         if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
+        if (hiddenFeeAttachmentCleared) fd.append('clear_hidden_consultant_fee_attachment', 'true');
         // Upload new attachment files (only once — never re-call buildFormData for these)
         newAttachmentFiles.forEach((a, i) => fd.append(`variation_attachments[${i}]`, a.newFile));
         // Tell backend which saved IDs to keep; it will delete the rest
@@ -580,6 +595,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           Object.keys(saveData).forEach(key => fd.append(key, safeVal(saveData[key])));
           fd.append('keep_attachment_ids', currentSavedIds.join(','));
           if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
+          if (hiddenFeeAttachmentCleared) fd.append('clear_hidden_consultant_fee_attachment', 'true');
           await projectApi.updateVariation(project.id, variationId, fd);
         } else {
           const data = await projectApi.createVariation(project.id, saveData);
@@ -833,6 +849,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             formData={formData}
             isEditMode={isEditMode}
             canManageHiddenFees={canManageHiddenFees}
+            hiddenFeeAttachment={hiddenFeeAttachment}
+            setHiddenFeeAttachment={setHiddenFeeAttachment}
+            existingHiddenFeeAttachment={existingHiddenFeeAttachment}
+            existingHiddenFeeAttachmentName={existingHiddenFeeAttachmentName}
+            setExistingHiddenFeeAttachment={setExistingHiddenFeeAttachment}
+            setHiddenFeeAttachmentCleared={setHiddenFeeAttachmentCleared}
+            project={project}
             onFormDataChange={setFormData}
             t={t}
           />

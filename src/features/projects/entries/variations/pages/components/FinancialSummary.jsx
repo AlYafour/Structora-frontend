@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import { FaMinus, FaPlus, FaEquals, FaTag, FaTimes } from 'react-icons/fa';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
+import FileUpload from '../../../../../../components/file-upload/FileUpload';
+import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
 
 // Shared card used for every fee row (contractor, consultant, custom)
 function FeeCard({
@@ -85,6 +87,13 @@ const FinancialSummary = memo(({
   formData,
   isEditMode,
   canManageHiddenFees = false,
+  hiddenFeeAttachment,
+  setHiddenFeeAttachment,
+  existingHiddenFeeAttachment,
+  existingHiddenFeeAttachmentName,
+  setExistingHiddenFeeAttachment,
+  setHiddenFeeAttachmentCleared,
+  project,
   onFormDataChange,
   t
 }) => {
@@ -277,7 +286,7 @@ const FinancialSummary = memo(({
             </div>
           </div>
 
-          <div className="nfs-right">
+          <div className={`nfs-right${showHiddenConsultantFee ? ' nfs-right--with-hidden-fees' : ''}`}>
             <div className="nfs-block__title">{t('final_summary')}</div>
             <div className="nfs-total-card">
               <div className="nfs-total-card__content">
@@ -429,6 +438,40 @@ const FinancialSummary = memo(({
                     <strong>{renderAmount(hiddenFeeDisplay.gross_amount)}</strong>
                   </div>
                 </div>
+
+                {(isEditMode || existingHiddenFeeAttachment) && (
+                  <div className="nfs-hidden-fee-attachment no-print">
+                    <div className="nfs-hidden-fee-attachment__label">
+                      {t('hidden_consultant_fee_attachment', 'Hidden fee attachment')}
+                    </div>
+                    {isEditMode ? (
+                      <FileUpload
+                        className="nfs-hidden-fee-file-upload"
+                        value={hiddenFeeAttachment}
+                        onChange={(file) => {
+                          setHiddenFeeAttachment?.(file);
+                          if (file) setHiddenFeeAttachmentCleared?.(false);
+                        }}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                        maxSizeMB={50}
+                        showPreview={true}
+                        existingFileUrl={existingHiddenFeeAttachment}
+                        existingFileName={existingHiddenFeeAttachmentName || (existingHiddenFeeAttachment || '').split('/').pop()}
+                        onRemoveExisting={() => {
+                          setExistingHiddenFeeAttachment?.(null);
+                          setHiddenFeeAttachment?.(null);
+                          setHiddenFeeAttachmentCleared?.(true);
+                        }}
+                      />
+                    ) : (
+                      <FileAttachmentView
+                        fileUrl={existingHiddenFeeAttachment}
+                        fileName={existingHiddenFeeAttachmentName || (existingHiddenFeeAttachment || '').split('/').pop()}
+                        projectId={project?.id}
+                      />
+                    )}
+                  </div>
+                )}
 
               </div>
             </div>

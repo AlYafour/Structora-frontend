@@ -164,9 +164,13 @@ export default function VariationViewPage() {
     user?.role?.name === 'Supervisor' ||
     user?.role?.name === 'company_super_admin'
   );
+  const canDecideHiddenFees = !!(user?.is_superuser || user?.role?.name === 'company_super_admin');
   const hiddenConsultantFeeGross = parseFloat(variation?.hidden_consultant_fee_gross_amount || 0);
   const hiddenConsultantFeeNet = parseFloat(variation?.hidden_consultant_fee_net_amount || variation?.hidden_consultant_fee || 0);
   const hasHiddenConsultantFee = hiddenConsultantFeeGross > 0 || hiddenConsultantFeeNet > 0;
+  const hiddenFeeStatus = variation?.hidden_consultant_fee_status || 'pending';
+  const hiddenFeeAttachmentUrl = variation?.hidden_consultant_fee_attachment;
+  const hiddenFeeAttachmentName = variation?.hidden_consultant_fee_attachment_name || (hiddenFeeAttachmentUrl || '').split('/').pop();
   const permissions = calculatePermissions(variation, user, alterationRequests, {
     hasVariationEditPermission: canEditVariationContent,
   });
@@ -629,10 +633,49 @@ export default function VariationViewPage() {
                 <div className="var-hidden-fee-alert__body">
                   {t("hidden_consultant_fee_alert_body", "This amount is paid by the contractor to the consultant and is not receivable from the owner/client.")}
                 </div>
+                <div className="var-hidden-fee-alert__meta">
+                  <span className={`var-hidden-fee-status var-hidden-fee-status--${hiddenFeeStatus}`}>
+                    {t(`hidden_fee_status_${hiddenFeeStatus}`, hiddenFeeStatus)}
+                  </span>
+                  {variation?.hidden_consultant_fee_decision_by && (
+                    <span>
+                      {variation.hidden_consultant_fee_decision_by.full_name || variation.hidden_consultant_fee_decision_by.email}
+                      {variation.hidden_consultant_fee_decision_at && ` • ${formatDate(variation.hidden_consultant_fee_decision_at)}`}
+                    </span>
+                  )}
+                </div>
+                {hiddenFeeStatus === 'rejected' && variation?.hidden_consultant_fee_rejection_reason && (
+                  <div className="var-hidden-fee-alert__reason">
+                    {variation.hidden_consultant_fee_rejection_reason}
+                  </div>
+                )}
+                {hiddenFeeAttachmentUrl && (
+                  <div className="var-hidden-fee-alert__attachment no-print">
+                    <FileAttachmentView
+                      fileUrl={hiddenFeeAttachmentUrl}
+                      fileName={hiddenFeeAttachmentName}
+                      projectId={project?.id}
+                    />
+                  </div>
+                )}
               </div>
               <div className="var-hidden-fee-alert__amount">
                 {formatMoney(hiddenConsultantFeeGross || hiddenConsultantFeeNet, { lang: isAR ? "ar" : "en" })}
               </div>
+              {canDecideHiddenFees && (
+                <div className="var-hidden-fee-alert__actions no-print">
+                  {hiddenFeeStatus !== 'approved' && (
+                    <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveHiddenFeesDialogOpen(true)}>
+                      <FaCheckCircle /> {t("approve_hidden_fee", "Approve hidden fee")}
+                    </Button>
+                  )}
+                  {hiddenFeeStatus !== 'rejected' && (
+                    <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectHiddenFeesDialogOpen(true)}>
+                      <FaTimesCircle /> {t("reject_hidden_fee", "Reject hidden fee")}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -933,7 +976,7 @@ export default function VariationViewPage() {
                               <div className="var-audit-entry__body">
                                 <div className="var-audit-entry__top">
                                   <span className="var-audit-entry__action">
-                                    {log.action_display || log.action}
+                                    {t(log.action, log.action_display || log.action)}
                                   </span>
                                   <span className="var-audit-entry__date">
                                     {log.created_at ? formatDate(log.created_at) : ''}
@@ -1250,6 +1293,31 @@ export default function VariationViewPage() {
         />
 
         <Dialog
+          open={dialogStates.approveHiddenFeesDialogOpen}
+          title={t("approve_hidden_fee", "Approve hidden fee")}
+          desc={
+            <div>
+              <p>{t("approve_hidden_fee_confirmation", "Are you sure you want to approve the hidden consultant fee?")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("approve")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setApproveHiddenFeesDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleApproveHiddenFees}
+          busy={processingApproval}
+        />
+
+        <Dialog
           open={dialogStates.rejectProjectManagerDialogOpen}
           title={t("reject_variation")}
           desc={
@@ -1298,6 +1366,32 @@ export default function VariationViewPage() {
           cancelLabel={t("cancel")}
           onClose={() => { dialogStates.setRejectGeneralManagerDialogOpen(false); setActionNotes(""); }}
           onConfirm={handlers.handleRejectGeneralManager}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.rejectHiddenFeesDialogOpen}
+          title={t("reject_hidden_fee", "Reject hidden fee")}
+          desc={
+            <div>
+              <p>{t("reject_hidden_fee_confirmation", "Are you sure you want to reject the hidden consultant fee? Please enter the rejection reason below.")}</p>
+              <label className="var-dialog-label">
+                {t("rejection_reason")} <span className="var-required">*</span>
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("enter_rejection_reason")}
+                required
+              />
+            </div>
+          }
+          confirmLabel={t("reject")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setRejectHiddenFeesDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleRejectHiddenFees}
           busy={processingApproval}
         />
       </div>

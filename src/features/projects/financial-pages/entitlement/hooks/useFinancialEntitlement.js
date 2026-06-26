@@ -133,11 +133,15 @@ export default function useFinancialEntitlement({
          This ensures the value = total variations - consultant fees
       ====================================================== */
       const actualVOValueExcludingFees = totalVOWithFees - consultantFeeOnVO;
-      const hiddenConsultantFees = approvedVariationsList.reduce(
+      const approvedHiddenFeeVariations = approvedVariationsList.filter(
+        (variation) => (variation.hidden_consultant_fee_status || 'pending') === 'approved'
+      );
+
+      const hiddenConsultantFees = approvedHiddenFeeVariations.reduce(
         (sum, variation) => sum + n(variation.hidden_consultant_fee_net_amount ?? variation.hidden_consultant_fee ?? 0),
         0
       );
-      const hiddenConsultantFeesWithVAT = approvedVariationsList.reduce((sum, variation) => {
+      const hiddenConsultantFeesWithVAT = approvedHiddenFeeVariations.reduce((sum, variation) => {
         const savedGross = n(variation.hidden_consultant_fee_gross_amount || 0);
         if (savedGross > 0) return sum + savedGross;
         const fee = n(variation.hidden_consultant_fee || 0);

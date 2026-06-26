@@ -95,6 +95,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     };
 
     const hasHiddenFee = (variation) => getHiddenFeeAmount(variation) > 0;
+    const getHiddenFeeStatus = (variation) => variation?.hidden_consultant_fee_status || "pending";
 
     const [variationStatusFilter, setVariationStatusFilter] = useState("");
     const [approvingVariationId, setApprovingVariationId] = useState(null);
@@ -122,6 +123,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [bulkRejectingVariations, setBulkRejectingVariations] = useState(false);
     const [deleteVariationsConfirmOpen, setDeleteVariationsConfirmOpen] = useState(false);
     const [deletingVariations, setDeletingVariations] = useState(false);
+    const [hiddenFeeActionVariation, setHiddenFeeActionVariation] = useState(null);
+    const [hiddenFeeRejectDialogOpen, setHiddenFeeRejectDialogOpen] = useState(false);
+    const [hiddenFeeRejectionReason, setHiddenFeeRejectionReason] = useState("");
+    const [processingHiddenFeeAction, setProcessingHiddenFeeAction] = useState(null);
 
     const getVariationStatus = (variation) => {
         return variation.workflow_status || variation.status || "draft";
@@ -411,6 +416,52 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             showError(msg);
         } finally {
             setUnapprovingVariationId(null);
+        }
+    };
+
+    const handleApproveHiddenFee = async (variation) => {
+        if (!variation?.id || !projectId || !isGeneralManager) return;
+
+        try {
+            setProcessingHiddenFeeAction(`approve-${variation.id}`);
+            await projectApi.approveVariationHiddenFees(projectId, variation.id);
+            showToast("success", t("hidden_fee_approved", "Hidden fee approved"));
+            await onReload();
+        } catch (error) {
+            const handledError = handleError(error, "VariationsTab.handleApproveHiddenFee");
+            showToast("error", handledError.message || t("approve_error"));
+        } finally {
+            setProcessingHiddenFeeAction(null);
+        }
+    };
+
+    const askRejectHiddenFee = (variation) => {
+        setHiddenFeeActionVariation(variation);
+        setHiddenFeeRejectionReason("");
+        setHiddenFeeRejectDialogOpen(true);
+    };
+
+    const handleRejectHiddenFee = async () => {
+        if (!hiddenFeeActionVariation?.id || !projectId || !isGeneralManager) return;
+
+        if (!hiddenFeeRejectionReason.trim()) {
+            showToast("error", t("rejection_reason_required"));
+            return;
+        }
+
+        try {
+            setProcessingHiddenFeeAction(`reject-${hiddenFeeActionVariation.id}`);
+            await projectApi.rejectVariationHiddenFees(projectId, hiddenFeeActionVariation.id, hiddenFeeRejectionReason.trim());
+            showToast("success", t("hidden_fee_rejected", "Hidden fee rejected"));
+            setHiddenFeeRejectDialogOpen(false);
+            setHiddenFeeActionVariation(null);
+            setHiddenFeeRejectionReason("");
+            await onReload();
+        } catch (error) {
+            const handledError = handleError(error, "VariationsTab.handleRejectHiddenFee");
+            showToast("error", handledError.message || t("reject_error"));
+        } finally {
+            setProcessingHiddenFeeAction(null);
         }
     };
 
@@ -859,7 +910,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isGeneralManager) {
-            return status === "pending_general_manager_final";
+            return (
+                status === "pending_project_manager" ||
+                status === "pending_general_manager_initial" ||
+                status === "pending_owner_consultant" ||
+                status === "pending_general_manager_final"
+            );
         }
 
         return false;
@@ -1137,6 +1193,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                     const rawNumber = variation.variation_number || variation.modification_number || referenceNo || variation.id;
                                     const displayNumber = `VAR${String(rawNumber).replace(/^VAR/i, "")}`;
                                     const showHiddenFeeInRow = canViewHiddenFees && hasHiddenFee(variation);
+                                    const hiddenFeeStatus = getHiddenFeeStatus(variation);
+                                    const canDecideHiddenFeeInRow = isGeneralManager && showHiddenFeeInRow;
 
                                     return (
                                         <tr
@@ -1182,8 +1240,39 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                                 <span className="variations-tab__hidden-fee-text">
                                                                     {t("hidden_fee_short", "Hidden fee")}
                                                                 </span>
-                                                                <span className="variations-tab__hidden-fee-amount">
-                                                                    {renderMoney(getHiddenFeeAmount(variation))}
+                                                                <span className="variations-tab__hidden-fee-line">
+                                                                    {canDecideHiddenFeeInRow && (
+                                                                        <span className="variations-tab__hidden-fee-actions" onClick={(e) => e.stopPropagation()}>
+                                                                            {hiddenFeeStatus !== "approved" && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="variations-tab__hidden-fee-btn variations-tab__hidden-fee-btn--approve"
+                                                                                    onClick={() => handleApproveHiddenFee(variation)}
+                                                                                    disabled={processingHiddenFeeAction === `approve-${variation.id}`}
+                                                                                    title={t("approve_hidden_fee", "Approve hidden fee")}
+                                                                                >
+                                                                                    {t("approve", "Approve")}
+                                                                                </button>
+                                                                            )}
+                                                                            {hiddenFeeStatus !== "rejected" && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="variations-tab__hidden-fee-btn variations-tab__hidden-fee-btn--reject"
+                                                                                    onClick={() => askRejectHiddenFee(variation)}
+                                                                                    disabled={processingHiddenFeeAction === `reject-${variation.id}`}
+                                                                                    title={t("reject_hidden_fee", "Reject hidden fee")}
+                                                                                >
+                                                                                    {t("reject", "Reject")}
+                                                                                </button>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="variations-tab__hidden-fee-amount">
+                                                                        {renderMoney(getHiddenFeeAmount(variation))}
+                                                                    </span>
+                                                                </span>
+                                                                <span className={`variations-tab__hidden-fee-status variations-tab__hidden-fee-status--${hiddenFeeStatus}`}>
+                                                                    {t(`hidden_fee_status_${hiddenFeeStatus}`, hiddenFeeStatus)}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -1436,6 +1525,38 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 onConfirm={handleRejectVariation}
                 danger
                 busy={!!rejectingVariationId}
+            />
+
+            <Dialog
+                open={hiddenFeeRejectDialogOpen}
+                title={t("reject_hidden_fee", "Reject hidden fee")}
+                desc={
+                    <div>
+                        <p className="ds-mb-3">
+                            {t("reject_hidden_fee_confirmation", "Are you sure you want to reject the hidden consultant fee? Please enter the rejection reason below.")}
+                        </p>
+                        <textarea
+                            className="prj-input ds-w-full ds-mt-2"
+                            rows={4}
+                            value={hiddenFeeRejectionReason}
+                            onChange={(e) => setHiddenFeeRejectionReason(e.target.value)}
+                            placeholder={t("rejection_reason_placeholder")}
+                            required
+                        />
+                    </div>
+                }
+                confirmLabel={processingHiddenFeeAction ? t("rejecting") : t("reject")}
+                cancelLabel={t("cancel")}
+                onClose={() => {
+                    if (!processingHiddenFeeAction) {
+                        setHiddenFeeRejectDialogOpen(false);
+                        setHiddenFeeActionVariation(null);
+                        setHiddenFeeRejectionReason("");
+                    }
+                }}
+                onConfirm={handleRejectHiddenFee}
+                danger
+                busy={!!processingHiddenFeeAction}
             />
 
             <Dialog

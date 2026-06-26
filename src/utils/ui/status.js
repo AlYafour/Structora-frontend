@@ -165,12 +165,12 @@ export const APPROVAL_STATUS_CONFIG = {
   },
   rejected_by_general_manager: {
     label: {
-      ar: "تم الرفض من قبل المشرف",
-      en: "Rejected by Supervisor",
+      ar: "تم الرفض من قبل المدير العام",
+      en: "Rejected by General Manager",
     },
     color: "#ef4444", // red
     bgColor: "#fee2e2",
-    badge: "❌ مرفوض من المشرف",
+    badge: "❌ مرفوض من المدير العام",
   },
   rejected_by_project_manager: {
     label: {

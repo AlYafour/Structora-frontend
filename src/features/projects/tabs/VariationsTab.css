@@ -65,6 +65,76 @@
   font-variant-numeric: tabular-nums;
 }
 
+.variations-tab__hidden-fee-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.variations-tab__hidden-fee-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+.variations-tab__hidden-fee-status--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.variations-tab__hidden-fee-status--approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.variations-tab__hidden-fee-status--rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.variations-tab__hidden-fee-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.variations-tab__hidden-fee-btn {
+  min-width: 0;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.variations-tab__hidden-fee-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.variations-tab__hidden-fee-btn--approve {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.variations-tab__hidden-fee-btn--reject {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
 @media print {
   .variations-tab__description-cell {
     max-width: 220px;

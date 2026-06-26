@@ -31,6 +31,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
   const [confirmOwnerApprovalDialogOpen, setConfirmOwnerApprovalDialogOpen] = useState(false);
   const [confirmConsultantApprovalDialogOpen, setConfirmConsultantApprovalDialogOpen] = useState(false);
   const [approveGeneralManagerFinalDialogOpen, setApproveGeneralManagerFinalDialogOpen] = useState(false);
+  const [approveHiddenFeesDialogOpen, setApproveHiddenFeesDialogOpen] = useState(false);
+  const [rejectHiddenFeesDialogOpen, setRejectHiddenFeesDialogOpen] = useState(false);
 
   // Approval handlers
   const handleApproveProjectManagerInitial = async () => {
@@ -153,6 +155,42 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     }
   };
 
+  const handleApproveHiddenFees = async () => {
+    if (!variation || !project) return;
+    setProcessingApproval(true);
+    try {
+      await projectApi.approveVariationHiddenFees(project.id, variation.id);
+      toast("success", t("hidden_fee_approved") || "Hidden fee approved");
+      setApproveHiddenFeesDialogOpen(false);
+      setActionNotes("");
+      invalidateAndRefresh();
+    } catch (e) {
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const handleRejectHiddenFees = async () => {
+    if (!variation || !project) return;
+    if (!actionNotes?.trim()) {
+      toast("error", t("rejection_reason_required") || "Rejection reason is required");
+      return;
+    }
+    setProcessingApproval(true);
+    try {
+      await projectApi.rejectVariationHiddenFees(project.id, variation.id, actionNotes.trim());
+      toast("success", t("hidden_fee_rejected") || "Hidden fee rejected");
+      setRejectHiddenFeesDialogOpen(false);
+      setActionNotes("");
+      invalidateAndRefresh();
+    } catch (e) {
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
   return {
     processingApproval,
     actionNotes,
@@ -172,6 +210,10 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       setConfirmConsultantApprovalDialogOpen,
       approveGeneralManagerFinalDialogOpen,
       setApproveGeneralManagerFinalDialogOpen,
+      approveHiddenFeesDialogOpen,
+      setApproveHiddenFeesDialogOpen,
+      rejectHiddenFeesDialogOpen,
+      setRejectHiddenFeesDialogOpen,
     },
     handlers: {
       handleApproveProjectManagerInitial,
@@ -181,6 +223,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       handleApproveGeneralManagerFinal,
       handleRejectProjectManager,
       handleRejectGeneralManager,
+      handleApproveHiddenFees,
+      handleRejectHiddenFees,
     },
   };
 };

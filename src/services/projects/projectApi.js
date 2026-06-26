@@ -432,6 +432,29 @@ class ProjectService extends BaseService {
     }
   }
 
+  async approveVariationHiddenFees(projectId, variationId) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/approve_hidden_fees/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.approveVariationHiddenFees');
+    }
+  }
+
+  async rejectVariationHiddenFees(projectId, variationId, notes) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/reject_hidden_fees/`,
+        { rejection_reason: notes }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.rejectVariationHiddenFees');
+    }
+  }
+
   /**
    * Confirm owner approval
    * @param {string|number} projectId - Project ID
