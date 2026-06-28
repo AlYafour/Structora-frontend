@@ -36,7 +36,7 @@ import { logger } from "../../../../utils/logger";
 import { renameFileForUpload } from "../../../../utils/helpers/file";
 import useTenantNavigate from '../../../../hooks/useTenantNavigate';
 
-export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false, prefillData = null }) {
+export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewProp, isNewProject = false, onLicenseReady, isActive = true, onDocFilesChange, onFormSectionChange, hasBlockingErrors = false, prefillData = null, prefillFile = null }) {
   const { t } = useTranslation();
   const navigate = useTenantNavigate();
   const { form, setForm, setF, owners, existingId, setExistingId, isView: isViewState, setIsView } = useLicense(projectId);
@@ -51,10 +51,11 @@ export default function LicenseStep({ projectId, onPrev, onNext, isView: isViewP
 
   // Pre-fill from AI preview data (runs once on mount for new projects)
   useEffect(() => {
-    if (!prefillData || !isNewProject || existingId) return;
-    if (Object.values(prefillData).some(v => v)) {
+    if (!isNewProject || existingId) return;
+    if (prefillData && Object.values(prefillData).some(v => v)) {
       setForm(prev => ({ ...prev, ...prefillData }));
     }
+    if (prefillFile instanceof File) setF("building_license_file", prefillFile);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [buildingLicenseFileUrl, setBuildingLicenseFileUrl] = useState("");
   const [consultantStamp, setConsultantStamp] = useState(null);

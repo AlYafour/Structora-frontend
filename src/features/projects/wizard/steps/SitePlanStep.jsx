@@ -67,6 +67,8 @@ export default function SitePlanStep({
   onFormSectionChange,
   hasBlockingErrors = false,
   prefillData = null,
+  prefillFile = null,
+  prefillOwnerIdFile = null,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -95,13 +97,27 @@ export default function SitePlanStep({
 
   // Pre-fill from AI preview data (runs once on mount for new projects)
   useEffect(() => {
-    if (!prefillData || !isNewProject || existingId) return;
-    const { owners: prefillOwners, ...siteplanFields } = prefillData;
-    if (Object.values(siteplanFields).some(v => v)) {
-      setForm(prev => ({ ...prev, ...siteplanFields }));
+    if (!isNewProject || existingId) return;
+    if (prefillData) {
+      const { owners: prefillOwners, ...siteplanFields } = prefillData;
+      if (Object.values(siteplanFields).some(v => v)) {
+        setForm(prev => ({ ...prev, ...siteplanFields }));
+      }
+      if (prefillOwners?.length) {
+        setOwners(prefillOwners.map((o, i) => ({
+          ...EMPTY_OWNER, ...o, uid: generateOwnerUid(),
+          nationality: o.nationality ? normalizeNationality(o.nationality) : (EMPTY_OWNER.nationality || ""),
+          ...(i === 0 && prefillOwnerIdFile instanceof File ? { id_attachment: prefillOwnerIdFile } : {}),
+        })));
+      }
     }
-    if (prefillOwners?.length) {
-      setOwners(prefillOwners.map(o => ({ ...EMPTY_OWNER, ...o, uid: generateOwnerUid() })));
+    if (prefillFile instanceof File) {
+      setF("site_plan_file", prefillFile);
+      setSitePlanUploaded(true);
+    }
+    if (prefillOwnerIdFile instanceof File) {
+      if (!prefillData?.owners?.length) updateOwner(0, "id_attachment", prefillOwnerIdFile);
+      setOwnerIdUploaded(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

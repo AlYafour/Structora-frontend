@@ -21,6 +21,7 @@ export default function FinancialActionBar({
   title,
   subtitle,
   children,
+  extraActions,
 }) {
   const { t } = useTranslation();
 
@@ -40,13 +41,20 @@ export default function FinancialActionBar({
     </Button>
   ) : null;
 
+  const actionsNode = (saveButton || extraActions) ? (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      {extraActions}
+      {saveButton}
+    </div>
+  ) : null;
+
   return (
     <PageHeader
       title={title}
       subtitle={subtitle}
       onBack={showBack ? onBack : undefined}
       backLabel={backLabel}
-      actions={saveButton}
+      actions={actionsNode}
       className={className}
     >
       {children}

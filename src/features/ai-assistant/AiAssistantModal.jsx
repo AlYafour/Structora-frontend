@@ -136,6 +136,7 @@ export default function AiAssistantModal({ projectId = null }) {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [uploadInsertIndex, setUploadInsertIndex] = useState(-1);
   const [aiPreviewData, setAiPreviewData] = useState(null);
+  const [aiValidationIssues, setAiValidationIssues] = useState([]);
   const [files, setFiles] = useState({
     site_plan: null, owner_id: null, build_permit: null, contract: null,
   });
@@ -372,6 +373,7 @@ export default function AiAssistantModal({ projectId = null }) {
       const data = await aiAssistantApi.createProject(files, lang);
       if (data.success && data.preview) {
         setAiPreviewData(data.preview);
+        setAiValidationIssues(data.validation_issues || []);
         setShowFileUpload(false);
         setMessages((prev) => {
           const copy = [...prev];
@@ -402,6 +404,7 @@ export default function AiAssistantModal({ projectId = null }) {
     setMessages([{ role: "ai", text: t("ai_assistant_greeting") }]);
     setShowFileUpload(false);
     setAiPreviewData(null);
+    setAiValidationIssues([]);
     setFiles({ site_plan: null, owner_id: null, build_permit: null, contract: null });
     setInput("");
     setAttachedExcelFile(null);
@@ -423,7 +426,7 @@ export default function AiAssistantModal({ projectId = null }) {
   const handlePreviewProject = () => {
     if (!aiPreviewData) return;
     setIsOpen(false);
-    navigate("/wizard/new", { state: { aiPreviewData } });
+    navigate("/wizard/new", { state: { aiPreviewData, aiFiles: files, aiValidationIssues } });
   };
 
   if (!isOpen) {

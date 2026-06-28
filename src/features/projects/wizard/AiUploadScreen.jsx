@@ -59,7 +59,7 @@ export default function AiUploadScreen() {
     try {
       const data = await aiAssistantApi.createProject(files, lang);
       if (data.success && data.preview) {
-        navigate("/wizard/new", { state: { aiPreviewData: data.preview } });
+        navigate("/wizard/new", { state: { aiPreviewData: data.preview, aiFiles: files, aiValidationIssues: data.validation_issues || [] } });
       } else {
         setError(data.error || t("ai_assistant_create_failed"));
       }
@@ -81,7 +81,7 @@ export default function AiUploadScreen() {
 
       <div className="wizard-content">
         <WizardShell
-          footer={(
+          footer={loading ? null : (
             <div className="wizard-actions-bar" dir={isRTL ? "rtl" : "ltr"}>
               <div className="wizard-actions-bar__inner">
                 <span />
@@ -89,62 +89,74 @@ export default function AiUploadScreen() {
                   variant="primary"
                   size="lg"
                   onClick={handleAnalyze}
-                  disabled={!canAnalyze || loading}
-                  loading={loading}
+                  disabled={!canAnalyze}
                   className="wizard-actions__btn-size"
                 >
-                  {loading ? t("wizard_ai_upload_analyzing") : t("wizard_ai_upload_analyze")}
+                  {t("wizard_ai_upload_analyze")}
                 </Button>
               </div>
             </div>
           )}
         >
-          <div className="pts-container" dir={isRTL ? "rtl" : "ltr"}>
-            <div className="pts-header">
-              <div style={{ fontSize: "2rem", lineHeight: 1 }}>✦</div>
-              <p className="pts-subtitle">{t("wizard_ai_upload_subtitle")}</p>
-            </div>
-
-            <div className="pts-ai-search">
-              <div className="pts-ai-search__label">
-                <FiZap size={14} className="pts-ai-search__zap" />
-                {isRTL ? "وثائق المشروع" : "Project Documents"}
-              </div>
-
-              <div className="aus-files-grid">
-                <FileSlot
-                  label={t("ai_assistant_file_site_plan")}
-                  required
-                  file={files.site_plan}
-                  onChange={(f) => setFiles(p => ({ ...p, site_plan: f }))}
-                  disabled={loading}
-                />
-                <FileSlot
-                  label={t("ai_assistant_file_owner_id")}
-                  required
-                  file={files.owner_id}
-                  onChange={(f) => setFiles(p => ({ ...p, owner_id: f }))}
-                  disabled={loading}
-                />
-                <FileSlot
-                  label={t("ai_assistant_file_contract")}
-                  required={false}
-                  file={files.contract}
-                  onChange={(f) => setFiles(p => ({ ...p, contract: f }))}
-                  disabled={loading}
-                />
-                <FileSlot
-                  label={t("ai_assistant_file_build_permit")}
-                  required={false}
-                  file={files.build_permit}
-                  onChange={(f) => setFiles(p => ({ ...p, build_permit: f }))}
-                  disabled={loading}
-                />
+          {loading ? (
+            <div className="aus-processing" dir={isRTL ? "rtl" : "ltr"}>
+              <div className="aus-processing__star">✦</div>
+              <h3 className="aus-processing__title">
+                {isRTL ? "جارٍ إنشاء المشروع بالذكاء الاصطناعي..." : "AI Project Creation in Progress..."}
+              </h3>
+              <p className="aus-processing__sub">
+                {isRTL
+                  ? "يقوم الذكاء الاصطناعي بقراءة مستنداتك واستخراج بيانات المشروع، يرجى الانتظار"
+                  : "AI is reading your documents and extracting project data, please wait"}
+              </p>
+              <div className="aus-processing__dots">
+                <span /><span /><span />
               </div>
             </div>
+          ) : (
+            <div className="pts-container" dir={isRTL ? "rtl" : "ltr"}>
+              <div className="pts-header">
+                <div style={{ fontSize: "2rem", lineHeight: 1 }}>✦</div>
+                <p className="pts-subtitle">{t("wizard_ai_upload_subtitle")}</p>
+              </div>
 
-            {error && <div className="pts-ai-search__error">{error}</div>}
-          </div>
+              <div className="pts-ai-search">
+                <div className="pts-ai-search__label">
+                  <FiZap size={14} className="pts-ai-search__zap" />
+                  {isRTL ? "وثائق المشروع" : "Project Documents"}
+                </div>
+
+                <div className="aus-files-grid">
+                  <FileSlot
+                    label={t("ai_assistant_file_site_plan")}
+                    required
+                    file={files.site_plan}
+                    onChange={(f) => setFiles(p => ({ ...p, site_plan: f }))}
+                  />
+                  <FileSlot
+                    label={t("ai_assistant_file_owner_id")}
+                    required
+                    file={files.owner_id}
+                    onChange={(f) => setFiles(p => ({ ...p, owner_id: f }))}
+                  />
+                  <FileSlot
+                    label={t("ai_assistant_file_contract")}
+                    required={false}
+                    file={files.contract}
+                    onChange={(f) => setFiles(p => ({ ...p, contract: f }))}
+                  />
+                  <FileSlot
+                    label={t("ai_assistant_file_build_permit")}
+                    required={false}
+                    file={files.build_permit}
+                    onChange={(f) => setFiles(p => ({ ...p, build_permit: f }))}
+                  />
+                </div>
+              </div>
+
+              {error && <div className="pts-ai-search__error">{error}</div>}
+            </div>
+          )}
         </WizardShell>
       </div>
     </div>

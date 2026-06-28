@@ -78,6 +78,14 @@ export default function WizardPage() {
 
   scheduleValidationRef.current = scheduleValidation;
 
+  // Push AI-flow validation issues into the wizard on first load.
+  // Always as warnings — these are advisory only; the user must be able to proceed.
+  useEffect(() => {
+    if (aiValidationIssues?.length) {
+      pushValidationResults(aiValidationIssues.map(i => ({ ...i, severity: "warning" })));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleDocFilesChange = useCallback((type, file) => {
     if (!(file instanceof File)) return;
     docFilesRef.current = { ...docFilesRef.current, [type]: file };
@@ -98,6 +106,8 @@ export default function WizardPage() {
   const isNewProject = !projectId || location.pathname === "/wizard/new";
   const draftIdFromUrl = params.get("draftId");
   const aiPreviewData = location.state?.aiPreviewData ?? null;
+  const aiFiles = location.state?.aiFiles ?? null;
+  const aiValidationIssues = location.state?.aiValidationIssues ?? null;
 
   const hasBlockingErrors = !!(validationIssues?.some(i => i.severity === "error"));
 
@@ -676,6 +686,8 @@ export default function WizardPage() {
                   onFormSectionChange={handleFormSectionChange}
                   hasBlockingErrors={hasBlockingErrors}
                   prefillData={aiPreviewData?.siteplan || null}
+                  prefillFile={aiFiles?.site_plan || null}
+                  prefillOwnerIdFile={aiFiles?.owner_id || null}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -702,6 +714,7 @@ export default function WizardPage() {
                   onFormSectionChange={handleFormSectionChange}
                   hasBlockingErrors={hasBlockingErrors}
                   prefillData={aiPreviewData?.license || null}
+                  prefillFile={aiFiles?.build_permit || null}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -737,6 +750,7 @@ export default function WizardPage() {
                 onSetupChange={setSetup}
                 siteplanSnapshot={isNewProject ? wizardData.siteplan : null}
                 prefillData={aiPreviewData?.contract || null}
+                prefillFile={aiFiles?.contract || null}
                 noPermit={noPermit}
                 onDocFilesChange={handleDocFilesChange}
                 onFormSectionChange={handleFormSectionChange}

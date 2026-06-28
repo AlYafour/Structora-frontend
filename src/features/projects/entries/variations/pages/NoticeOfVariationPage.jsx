@@ -612,6 +612,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         }
       }
 
+      // If saving (not draft) an existing draft variation, submit it into the approval workflow
+      if (!isDraft && variationId && effectiveVariation?.status === 'draft') {
+        await projectApi.submitVariationDraft(project.id, variationId);
+      }
+
       success(isDraft ? t('draft_saved', 'Draft saved successfully') : t('notice_variation_saved'));
       invalidateProjectQueries(queryClient, project.id);
       navTimerRef.current = setTimeout(() => navigate(`/projects/${project.id}?tab=variations`), 1000);
@@ -775,6 +780,20 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           showSave={isEditMode}
           title={getProjectTitle()}
           subtitle={getProjectSubtitle()}
+          extraActions={
+            isEditMode && (!variationId || effectiveVariation?.status === 'draft') ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={saving}
+                loading={saving}
+                onClick={(e) => handleSubmit(e, true)}
+              >
+                {t('save_as_draft', 'Save as Draft')}
+              </Button>
+            ) : null
+          }
         >
           <div className="nvc-actionbar-info">
             <div className="nvc-actionbar-item">
@@ -899,20 +918,6 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             t={t}
           />
 
-          {/* Draft action — only shown when creating/editing (not in view mode) */}
-          {isEditMode && !variationId && (
-            <div className="nvc-draft-actions">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={saving}
-                loading={saving}
-                onClick={(e) => handleSubmit(e, true)}
-              >
-                {t('save_as_draft', 'Save as Draft')}
-              </Button>
-            </div>
-          )}
         </div>
       </form>
 
