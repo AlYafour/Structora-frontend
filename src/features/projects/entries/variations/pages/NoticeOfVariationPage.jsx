@@ -419,8 +419,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
   /**
    * Handle form submission
+   * @param {Event} e
+   * @param {boolean} isDraft - when true, skips validation and saves as draft
    */
-  const handleSubmit = async e => {
+  const handleSubmit = async (e, isDraft = false) => {
     e.preventDefault();
     if (!isEditMode) {
       showError(t('access_denied'));
@@ -432,18 +434,20 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       return;
     }
 
-    // Validation
-    const validationError = validateVariationSubmit(
-      formData,
-      calculations,
-      omittedItems,
-      addedItems,
-      t,
-      formatMoney
-    );
-    if (validationError) {
-      showError(validationError);
-      return;
+    // Skip validation when saving as draft
+    if (!isDraft) {
+      const validationError = validateVariationSubmit(
+        formData,
+        calculations,
+        omittedItems,
+        addedItems,
+        t,
+        formatMoney
+      );
+      if (validationError) {
+        showError(validationError);
+        return;
+      }
     }
 
     setSaving(true);
@@ -540,6 +544,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       };
 
       const saveData = { ...variationData };
+      if (isDraft) saveData.save_as_draft = 'true';
       const originalVariationNumber = String(effectiveVariation?.variation_number ?? '');
       const submittedVariationNumber = String(saveData.variation_number ?? '');
       if (variationId) {
@@ -607,7 +612,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         }
       }
 
-      success(t('notice_variation_saved'));
+      success(isDraft ? t('draft_saved', 'Draft saved successfully') : t('notice_variation_saved'));
       invalidateProjectQueries(queryClient, project.id);
       navTimerRef.current = setTimeout(() => navigate(`/projects/${project.id}?tab=variations`), 1000);
     } catch (e) {
@@ -893,6 +898,21 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             variation={variation}
             t={t}
           />
+
+          {/* Draft action — only shown when creating/editing (not in view mode) */}
+          {isEditMode && !variationId && (
+            <div className="nvc-draft-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving}
+                loading={saving}
+                onClick={(e) => handleSubmit(e, true)}
+              >
+                {t('save_as_draft', 'Save as Draft')}
+              </Button>
+            </div>
+          )}
         </div>
       </form>
 

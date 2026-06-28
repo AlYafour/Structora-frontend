@@ -119,11 +119,11 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
   return {
     canEdit,
     canApproveProjectManager: canApproveOrReject && isProjectManager &&
-      (status === 'draft' || status === 'pending_project_manager') &&
+      status === 'pending_project_manager' &&
       !variation?.project_manager_initial_approved_by &&
       !variation?.rejected_by,
     canRejectProjectManager: canApproveOrReject && isProjectManager &&
-      (status === 'draft' || status === 'pending_project_manager') &&
+      status === 'pending_project_manager' &&
       !variation?.rejected_by,
     canConfirmOwnerApproval: canApproveOrReject && isProjectManager &&
       status === 'pending_owner_consultant' &&

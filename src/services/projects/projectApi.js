@@ -398,6 +398,17 @@ class ProjectService extends BaseService {
     }
   }
 
+  async submitVariationDraft(projectId, variationId) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/submit_draft/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.submitVariationDraft');
+    }
+  }
+
   /**
    * Approve variation (general manager initial)
    * @param {string|number} projectId - Project ID

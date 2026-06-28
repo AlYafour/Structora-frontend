@@ -127,6 +127,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [hiddenFeeRejectDialogOpen, setHiddenFeeRejectDialogOpen] = useState(false);
     const [hiddenFeeRejectionReason, setHiddenFeeRejectionReason] = useState("");
     const [processingHiddenFeeAction, setProcessingHiddenFeeAction] = useState(null);
+    const [submittingDraftId, setSubmittingDraftId] = useState(null);
 
     const getVariationStatus = (variation) => {
         return variation.workflow_status || variation.status || "draft";
@@ -164,6 +165,21 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         throw new Error(t("permission_denied", "Permission denied"));
+    };
+
+    const handleSubmitDraft = async (variation) => {
+        if (!variation?.id || !projectId) return;
+        try {
+            setSubmittingDraftId(variation.id);
+            await projectApi.submitVariationDraft(projectId, variation.id);
+            showToast("success", t("variation_submitted", "Variation submitted for approval"));
+            onReload();
+        } catch (error) {
+            const handledError = handleError(error, "VariationsTab.handleSubmitDraft");
+            showToast("error", handledError.message || t("submit_error", "Failed to submit variation"));
+        } finally {
+            setSubmittingDraftId(null);
+        }
     };
 
     const filteredVariations = useMemo(() => {
@@ -617,6 +633,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 try {
                     const status = getVariationStatus(variation);
 
+                    if (status === "draft") {
+                        fail += 1;
+                        continue;
+                    }
+
                     if (checkRequiresEdit(variation)) {
                         fail += 1;
                         continue;
@@ -630,7 +651,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                         }
 
                         if (
-                            (status === "draft" || status === "pending_project_manager") &&
+                            status === "pending_project_manager" &&
                             !variation.project_manager_initial_approved_by
                         ) {
                             await projectApi.approveVariationProjectManager(
@@ -759,7 +780,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             for (const variation of selectedVariations) {
                 const status = getVariationStatus(variation);
 
-                if (status === "approved" || status === "final_approved") {
+                if (status === "approved" || status === "final_approved" || status === "draft") {
                     continue;
                 }
 
@@ -862,6 +883,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         `,
     });
 
+    const isDraftVariation = (variation) => getVariationStatus(variation) === "draft";
+
     const canStaffDeleteVariation = (variation) => {
         const s = getVariationStatus(variation);
         return s === "draft" || s === "pending_project_manager";
@@ -889,7 +912,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         if (isProjectManager) {
             if (
-                (status === "draft" || status === "pending_project_manager") &&
+                status === "pending_project_manager" &&
                 !variation.project_manager_initial_approved_by
             ) {
                 return true;
@@ -948,7 +971,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isProjectManager) {
-            return workflowStatus === "draft" || workflowStatus === "pending_project_manager";
+            return workflowStatus === "pending_project_manager";
         }
 
         if (isSupervisor) {
@@ -1288,118 +1311,135 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
                                             <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                                                 <ActionMenu
-                                                    items={[
-                                                        // Staff: show request-edit/delete when PM has initially approved; hide direct edit/delete
-                                                        ...(isStaff && status === "pending_general_manager_initial"
-                                                            ? [
-                                                                ...(!variation.pending_alteration_request
-                                                                    ? [
-                                                                        {
-                                                                            label: t("request_edit", "طلب تعديل"),
-                                                                            type: "button",
-                                                                            variant: "warning",
-                                                                            onClick: () => openAlterationDialog(variation, "edit"),
-                                                                        },
-                                                                        {
-                                                                            label: t("request_delete", "طلب حذف"),
-                                                                            type: "button",
-                                                                            variant: "danger",
-                                                                            onClick: () => openAlterationDialog(variation, "delete"),
-                                                                        },
-                                                                        {
-                                                                            label: t("request_unapprove", "Request Unapprove"),
-                                                                            type: "button",
-                                                                            variant: "warning",
-                                                                            onClick: () => openAlterationDialog(variation, "unapprove"),
-                                                                        },
-                                                                    ]
-                                                                    : [
-                                                                        {
-                                                                            label: t("request_pending", "طلب قيد الانتظار"),
-                                                                            type: "button",
-                                                                            variant: "ghost",
-                                                                            disabled: true,
-                                                                        },
-                                                                    ]
-                                                                ),
-                                                            ]
-                                                            : [
-                                                                ...(canEditVariation && !(isStaff && status === "pending_general_manager_initial")
-                                                                    ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
-                                                                    : []),
-                                                            ]
-                                                        ),
-                                                        ...(canApproveThis
-                                                            ? [
-                                                                {
-                                                                    label: t("approve"),
-                                                                    type: "button",
-                                                                    variant: "success",
-                                                                    onClick: () => askApproveVariation(variation),
-                                                                    disabled: !!approvingVariationId,
-                                                                },
-                                                            ]
-                                                            : []),
-                                                        ...(canRejectThis
-                                                            ? [
-                                                                {
-                                                                    label: t("reject"),
-                                                                    type: "button",
-                                                                    variant: "danger",
-                                                                    onClick: () => askRejectVariation(variation),
-                                                                    disabled: !!rejectingVariationId,
-                                                                },
-                                                            ]
-                                                            : []),
-                                                        ...(canDirectUnapproveThis
-                                                            ? [
-                                                                {
-                                                                    label: t("unapprove", "Unapprove"),
-                                                                    type: "button",
-                                                                    variant: "warning",
-                                                                    onClick: () => handleUnapproveVariation(variation),
-                                                                    disabled: unapprovingVariationId === variation.id,
-                                                                },
-                                                            ]
-                                                            : []),
-                                                        ...(!isStaff && canRequestUnapproveThis
-                                                            ? [
-                                                                {
-                                                                    label: t("request_unapprove", "Request Unapprove"),
-                                                                    type: "button",
-                                                                    variant: "warning",
-                                                                    onClick: () => openAlterationDialog(variation, "unapprove"),
-                                                                },
-                                                            ]
-                                                            : []),
-                                                        ...(isGeneralManager && (status === "approved" || status === "final_approved")
-                                                            ? [
-                                                                {
-                                                                    label: t("revoke_approval", "إلغاء الاعتماد"),
-                                                                    type: "button",
-                                                                    variant: "warning",
-                                                                    onClick: () => handleRevokeApproval(variation),
-                                                                    disabled: revokingVariationId === variation.id,
-                                                                },
-                                                            ]
-                                                            : []),
-                                                        {
-                                                            label: singleLoading === variation.id
-                                                                ? t("downloading", "Downloading...")
-                                                                : t("download_variation_doc_clean", "Download Variation Doc (No Signatures)"),
-                                                            type: "button",
-                                                            onClick: () => downloadSingle(variation, { hideSignatures: true }),
-                                                            disabled: singleLoading === variation.id,
-                                                        },
-                                                        {
-                                                            label: singleLoading === variation.id
-                                                                ? t("downloading", "Downloading...")
-                                                                : t("download_variation_doc_signed", "Download Variation Doc (With Signatures)"),
-                                                            type: "button",
-                                                            onClick: () => downloadSingle(variation, { hideSignatures: false }),
-                                                            disabled: singleLoading === variation.id,
-                                                        },
-                                                    ]}
+                                                    items={status === "draft"
+                                                        ? [
+                                                            // Draft rows: Edit + Submit only — no approval/rejection actions
+                                                            ...(canEditVariation
+                                                                ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
+                                                                : []),
+                                                            {
+                                                                label: submittingDraftId === variation.id
+                                                                    ? t("submitting", "Submitting...")
+                                                                    : t("submit_draft", "Submit"),
+                                                                type: "button",
+                                                                variant: "primary",
+                                                                onClick: () => handleSubmitDraft(variation),
+                                                                disabled: submittingDraftId === variation.id,
+                                                            },
+                                                        ]
+                                                        : [
+                                                            // Normal (non-draft) rows
+                                                            ...(isStaff && status === "pending_general_manager_initial"
+                                                                ? [
+                                                                    ...(!variation.pending_alteration_request
+                                                                        ? [
+                                                                            {
+                                                                                label: t("request_edit", "طلب تعديل"),
+                                                                                type: "button",
+                                                                                variant: "warning",
+                                                                                onClick: () => openAlterationDialog(variation, "edit"),
+                                                                            },
+                                                                            {
+                                                                                label: t("request_delete", "طلب حذف"),
+                                                                                type: "button",
+                                                                                variant: "danger",
+                                                                                onClick: () => openAlterationDialog(variation, "delete"),
+                                                                            },
+                                                                            {
+                                                                                label: t("request_unapprove", "Request Unapprove"),
+                                                                                type: "button",
+                                                                                variant: "warning",
+                                                                                onClick: () => openAlterationDialog(variation, "unapprove"),
+                                                                            },
+                                                                        ]
+                                                                        : [
+                                                                            {
+                                                                                label: t("request_pending", "طلب قيد الانتظار"),
+                                                                                type: "button",
+                                                                                variant: "ghost",
+                                                                                disabled: true,
+                                                                            },
+                                                                        ]
+                                                                    ),
+                                                                ]
+                                                                : [
+                                                                    ...(canEditVariation && !(isStaff && status === "pending_general_manager_initial")
+                                                                        ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
+                                                                        : []),
+                                                                ]
+                                                            ),
+                                                            ...(canApproveThis
+                                                                ? [
+                                                                    {
+                                                                        label: t("approve"),
+                                                                        type: "button",
+                                                                        variant: "success",
+                                                                        onClick: () => askApproveVariation(variation),
+                                                                        disabled: !!approvingVariationId,
+                                                                    },
+                                                                ]
+                                                                : []),
+                                                            ...(canRejectThis
+                                                                ? [
+                                                                    {
+                                                                        label: t("reject"),
+                                                                        type: "button",
+                                                                        variant: "danger",
+                                                                        onClick: () => askRejectVariation(variation),
+                                                                        disabled: !!rejectingVariationId,
+                                                                    },
+                                                                ]
+                                                                : []),
+                                                            ...(canDirectUnapproveThis
+                                                                ? [
+                                                                    {
+                                                                        label: t("unapprove", "Unapprove"),
+                                                                        type: "button",
+                                                                        variant: "warning",
+                                                                        onClick: () => handleUnapproveVariation(variation),
+                                                                        disabled: unapprovingVariationId === variation.id,
+                                                                    },
+                                                                ]
+                                                                : []),
+                                                            ...(!isStaff && canRequestUnapproveThis
+                                                                ? [
+                                                                    {
+                                                                        label: t("request_unapprove", "Request Unapprove"),
+                                                                        type: "button",
+                                                                        variant: "warning",
+                                                                        onClick: () => openAlterationDialog(variation, "unapprove"),
+                                                                    },
+                                                                ]
+                                                                : []),
+                                                            ...(isGeneralManager && (status === "approved" || status === "final_approved")
+                                                                ? [
+                                                                    {
+                                                                        label: t("revoke_approval", "إلغاء الاعتماد"),
+                                                                        type: "button",
+                                                                        variant: "warning",
+                                                                        onClick: () => handleRevokeApproval(variation),
+                                                                        disabled: revokingVariationId === variation.id,
+                                                                    },
+                                                                ]
+                                                                : []),
+                                                            {
+                                                                label: singleLoading === variation.id
+                                                                    ? t("downloading", "Downloading...")
+                                                                    : t("download_variation_doc_clean", "Download Variation Doc (No Signatures)"),
+                                                                type: "button",
+                                                                onClick: () => downloadSingle(variation, { hideSignatures: true }),
+                                                                disabled: singleLoading === variation.id,
+                                                            },
+                                                            {
+                                                                label: singleLoading === variation.id
+                                                                    ? t("downloading", "Downloading...")
+                                                                    : t("download_variation_doc_signed", "Download Variation Doc (With Signatures)"),
+                                                                type: "button",
+                                                                onClick: () => downloadSingle(variation, { hideSignatures: false }),
+                                                                disabled: singleLoading === variation.id,
+                                                            },
+                                                        ]
+                                                    }
                                                 />
                                             </td>
                                         </tr>
