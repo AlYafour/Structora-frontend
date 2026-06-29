@@ -10,6 +10,8 @@
   "ai_assistant_file_owner_id": "Owner ID",
   "ai_assistant_file_build_permit": "Build Permit (optional)",
   "ai_assistant_file_contract": "Contract",
+  "ai_assistant_file_owner_signature": "Owner Signature (optional)",
+  "ai_assistant_file_consultant_stamp": "Consultant Stamp (optional)",
   "ai_assistant_create_btn": "Create Project Automatically",
   "ai_assistant_creating": "Reading and analyzing documents...",
   "ai_assistant_view_project": "View Project",

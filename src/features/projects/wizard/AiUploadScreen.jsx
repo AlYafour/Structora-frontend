@@ -5,6 +5,7 @@ import useTenantNavigate from "../../../hooks/useTenantNavigate";
 import PageHeader from "../../../components/layout/PageHeader";
 import WizardShell from "./components/WizardShell";
 import Button from "../../../components/common/Button";
+import BrandLogo from "../../../components/common/BrandLogo";
 import { aiAssistantApi } from "../../ai-assistant/aiAssistantApi";
 import FileUpload from "../../../components/file-upload/FileUpload";
 import "./components/wizard.css";
@@ -46,6 +47,8 @@ export default function AiUploadScreen() {
     owner_id: null,
     build_permit: null,
     contract: null,
+    owner_signature: null,
+    consultant_stamp: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -100,7 +103,9 @@ export default function AiUploadScreen() {
         >
           {loading ? (
             <div className="aus-processing" dir={isRTL ? "rtl" : "ltr"}>
-              <div className="aus-processing__star">✦</div>
+              <div className="aus-processing__logo-wrap">
+                <BrandLogo type="tenant" size={80} className="aus-processing__logo" />
+              </div>
               <h3 className="aus-processing__title">
                 {isRTL ? "جارٍ إنشاء المشروع بالذكاء الاصطناعي..." : "AI Project Creation in Progress..."}
               </h3>
@@ -150,6 +155,18 @@ export default function AiUploadScreen() {
                     required={false}
                     file={files.build_permit}
                     onChange={(f) => setFiles(p => ({ ...p, build_permit: f }))}
+                  />
+                  <FileSlot
+                    label={t("ai_assistant_file_owner_signature")}
+                    required={false}
+                    file={files.owner_signature}
+                    onChange={(f) => setFiles(p => ({ ...p, owner_signature: f }))}
+                  />
+                  <FileSlot
+                    label={t("ai_assistant_file_consultant_stamp")}
+                    required={false}
+                    file={files.consultant_stamp}
+                    onChange={(f) => setFiles(p => ({ ...p, consultant_stamp: f }))}
                   />
                 </div>
               </div>

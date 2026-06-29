@@ -688,6 +688,7 @@ export default function WizardPage() {
                   prefillData={aiPreviewData?.siteplan || null}
                   prefillFile={aiFiles?.site_plan || null}
                   prefillOwnerIdFile={aiFiles?.owner_id || null}
+                  prefillOwnerSignatureFile={aiFiles?.owner_signature || null}
                   onSitePlanReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,
@@ -715,6 +716,7 @@ export default function WizardPage() {
                   hasBlockingErrors={hasBlockingErrors}
                   prefillData={aiPreviewData?.license || null}
                   prefillFile={aiFiles?.build_permit || null}
+                  prefillConsultantStamp={aiFiles?.consultant_stamp || null}
                   onLicenseReady={({ formData, snapshot }) => {
                     setWizardData((prev) => ({
                       ...prev,

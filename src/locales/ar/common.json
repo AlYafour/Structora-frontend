@@ -10,6 +10,8 @@
   "ai_assistant_file_owner_id": "هوية المالك",
   "ai_assistant_file_build_permit": "رخصة البناء (اختياري)",
   "ai_assistant_file_contract": "العقد",
+  "ai_assistant_file_owner_signature": "توقيع المالك (اختياري)",
+  "ai_assistant_file_consultant_stamp": "ختم المستشار (اختياري)",
   "ai_assistant_create_btn": "إنشاء المشروع تلقائياً",
   "ai_assistant_creating": "جاري قراءة وتحليل الملفات...",
   "ai_assistant_view_project": "عرض المشروع",

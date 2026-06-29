@@ -18,6 +18,8 @@ export const aiAssistantApi = {
     if (files.owner_id) form.append("owner_id", files.owner_id);
     if (files.build_permit) form.append("build_permit", files.build_permit);
     if (files.contract) form.append("contract", files.contract);
+    if (files.owner_signature) form.append("owner_signature", files.owner_signature);
+    if (files.consultant_stamp) form.append("consultant_stamp", files.consultant_stamp);
 
     const response = await api.post("ai-assistant/create-project/", form, {
       headers: { "Content-Type": "multipart/form-data" },

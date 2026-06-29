@@ -69,6 +69,7 @@ export default function SitePlanStep({
   prefillData = null,
   prefillFile = null,
   prefillOwnerIdFile = null,
+  prefillOwnerSignatureFile = null,
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useTenantNavigate();
@@ -108,6 +109,7 @@ export default function SitePlanStep({
           ...EMPTY_OWNER, ...o, uid: generateOwnerUid(),
           nationality: o.nationality ? normalizeNationality(o.nationality) : (EMPTY_OWNER.nationality || ""),
           ...(i === 0 && prefillOwnerIdFile instanceof File ? { id_attachment: prefillOwnerIdFile } : {}),
+          ...(i === 0 && prefillOwnerSignatureFile instanceof File ? { signature: prefillOwnerSignatureFile } : {}),
         })));
       }
     }
