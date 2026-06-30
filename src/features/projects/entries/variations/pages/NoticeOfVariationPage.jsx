@@ -159,7 +159,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     user?.role?.name === 'Supervisor' ||
     user?.role?.name === 'company_super_admin'
   );
-  const isPMInitialApproved = effectiveVariation?.status === 'pending_general_manager_initial';
+  const isPMInitialApproved = effectiveVariation?.status === 'pending_gm_initial' || effectiveVariation?.status === 'pending_supervisor';
   const canEditVariationContent = isAdmin || hasPermission("variations.create") || allowRevisionEdit;
   const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 

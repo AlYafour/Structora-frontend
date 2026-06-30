@@ -165,10 +165,28 @@ export const APPROVAL_STATUS_CONFIG = {
   },
   rejected_by_general_manager: {
     label: {
-      ar: "تم الرفض من قبل المدير العام",
-      en: "Rejected by General Manager",
+      ar: "تم الرفض من قبل المشرف",
+      en: "Rejected by Supervisor",
     },
-    color: "#ef4444", // red
+    color: "#ef4444",
+    bgColor: "#fee2e2",
+    badge: "❌ مرفوض من المشرف",
+  },
+  rejected_by_supervisor: {
+    label: {
+      ar: "تم الرفض من قبل المشرف",
+      en: "Rejected by Supervisor",
+    },
+    color: "#ef4444",
+    bgColor: "#fee2e2",
+    badge: "❌ مرفوض من المشرف",
+  },
+  rejected_by_gm_initial: {
+    label: {
+      ar: "مرفوض من المدير العام (مبدئي)",
+      en: "Rejected by General Manager (Initial)",
+    },
+    color: "#ef4444",
     bgColor: "#fee2e2",
     badge: "❌ مرفوض من المدير العام",
   },
@@ -195,7 +213,25 @@ export const APPROVAL_STATUS_CONFIG = {
       ar: "في انتظار موافقة المشرف",
       en: "Pending Supervisor Approval",
     },
-    color: "#f59e0b", // amber
+    color: "#f59e0b",
+    bgColor: "#fef3c7",
+    badge: "⏳ في انتظار المشرف",
+  },
+  pending_gm_initial: {
+    label: {
+      ar: "في انتظار الاعتماد المبدئي من المدير العام",
+      en: "Pending GM Initial Approval",
+    },
+    color: "#f59e0b",
+    bgColor: "#fef3c7",
+    badge: "⏳ في انتظار المدير العام",
+  },
+  pending_supervisor: {
+    label: {
+      ar: "في انتظار موافقة المشرف",
+      en: "Pending Supervisor Approval",
+    },
+    color: "#f59e0b",
     bgColor: "#fef3c7",
     badge: "⏳ في انتظار المشرف",
   },

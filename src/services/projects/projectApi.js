@@ -426,6 +426,29 @@ class ProjectService extends BaseService {
     }
   }
 
+  async approveVariationGMInitial(projectId, variationId) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/approve_gm_initial/`
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.approveVariationGMInitial');
+    }
+  }
+
+  async rejectVariationGMInitial(projectId, variationId, notes) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/reject_gm_initial/`,
+        { rejection_reason: notes }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.rejectVariationGMInitial');
+    }
+  }
+
   /**
    * Approve variation (general manager final)
    * @param {string|number} projectId - Project ID

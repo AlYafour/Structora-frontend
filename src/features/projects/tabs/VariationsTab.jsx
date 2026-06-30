@@ -156,8 +156,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return projectApi.approveVariationProjectManager(projectId, variation.id);
         }
 
-        if (isSupervisor && status === "pending_general_manager_initial") {
+        if (isSupervisor && status === "pending_supervisor") {
             return projectApi.approveVariationGeneralManagerInitial(projectId, variation.id);
+        }
+
+        if (isGeneralManager && status === "pending_gm_initial") {
+            return projectApi.approveVariationGMInitial(projectId, variation.id);
         }
 
         if (isGeneralManager) {
@@ -516,7 +520,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 request_type: alterationRequestType,
                 reason: alterationReason.trim(),
             });
-            showToast("success", `${getAlterationDialogTitle()} - ${t("alteration_request_sent", "تم إرسال الطلب إلى مدير المشروع")}`);
+            const sentToKey = (isProjectManager && alterationRequestType === "unapprove")
+                ? "alteration_request_sent_to_supervisor"
+                : "alteration_request_sent";
+            showToast("success", `${getAlterationDialogTitle()} - ${t(sentToKey)}`);
             onReload();
         } catch (e) {
             const msg = e?.response?.data?.error || e?.message || t("error_generic", "حدث خطأ");
@@ -644,7 +651,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     }
 
                     if (isProjectManager) {
-                        if (status === "pending_general_manager_initial") {
+                        if (status === "pending_gm_initial" || status === "pending_supervisor") {
                             gmInitialPendingCount += 1;
                             fail += 1;
                             continue;
@@ -695,7 +702,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     }
 
                     if (isSupervisor) {
-                        if (status === "pending_general_manager_initial") {
+                        if (status === "pending_supervisor") {
                             await projectApi.approveVariationGeneralManagerInitial(
                                 projectId,
                                 variation.id
@@ -715,6 +722,18 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     }
 
                     if (isGeneralManager) {
+                        if (status === "pending_gm_initial") {
+                            await projectApi.approveVariationGMInitial(projectId, variation.id);
+                            ok += 1;
+                            continue;
+                        }
+
+                        if (status === "pending_general_manager_final") {
+                            await projectApi.approveVariation(projectId, variation.id);
+                            ok += 1;
+                            continue;
+                        }
+
                         fail += 1;
                         continue;
                     }
@@ -902,7 +921,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         if (
             status === "rejected_by_project_manager" ||
-            status === "rejected_by_general_manager" ||
+            status === "rejected_by_supervisor" ||
+            status === "rejected_by_gm_initial" ||
             status === "rejected" ||
             status === "approved" ||
             status === "final_approved"
@@ -929,14 +949,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isSupervisor) {
-            return status === "pending_general_manager_initial";
+            return status === "pending_supervisor";
         }
 
         if (isGeneralManager) {
             return (
-                status === "pending_project_manager" ||
-                status === "pending_general_manager_initial" ||
-                status === "pending_owner_consultant" ||
+                status === "pending_gm_initial" ||
                 status === "pending_general_manager_final"
             );
         }
@@ -956,7 +974,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         const status = getVariationStatus(variation);
 
-        if (status === "rejected_by_project_manager" || status === "rejected_by_general_manager" || status === "rejected") {
+        if (status === "rejected_by_project_manager" || status === "rejected_by_supervisor" || status === "rejected_by_gm_initial" || status === "rejected") {
             return false;
         }
 
@@ -975,7 +993,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isSupervisor) {
-            return workflowStatus === "pending_general_manager_initial";
+            return workflowStatus === "pending_supervisor";
         }
 
         return false;
@@ -986,7 +1004,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         if (status === "approved" || status === "final_approved") return false;
 
         if (isProjectManager) {
-            return status === "pending_general_manager_initial" && !!variation.project_manager_initial_approved_by;
+            return status === "pending_gm_initial" && !!variation.project_manager_initial_approved_by;
         }
 
         if (isSupervisor) {
@@ -1004,11 +1022,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         if (status === "approved" || status === "final_approved") return false;
 
         if (isStaff) {
-            return status === "pending_general_manager_initial";
+            return status === "pending_supervisor" || status === "pending_gm_initial";
         }
 
         if (isProjectManager) {
-            return status === "pending_owner_consultant" || status === "pending_general_manager_final";
+            return status === "pending_supervisor" || status === "pending_owner_consultant" || status === "pending_general_manager_final";
         }
 
         return false;
@@ -1329,7 +1347,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                         ]
                                                         : [
                                                             // Normal (non-draft) rows
-                                                            ...(isStaff && status === "pending_general_manager_initial"
+                                                            ...(isStaff && (status === "pending_supervisor" || status === "pending_gm_initial")
                                                                 ? [
                                                                     ...(!variation.pending_alteration_request
                                                                         ? [
@@ -1363,8 +1381,18 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                                     ),
                                                                 ]
                                                                 : [
-                                                                    ...(canEditVariation && !(isStaff && status === "pending_general_manager_initial")
+                                                                    ...(canEditVariation &&
+                                                                        !(isStaff && status === "pending_supervisor") &&
+                                                                        !(isProjectManager && ["pending_gm_initial", "pending_supervisor", "pending_owner_consultant", "pending_general_manager_final"].includes(status))
                                                                         ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
+                                                                        : []),
+                                                                    ...(isProjectManager && status === "pending_supervisor" && !variation.pending_alteration_request
+                                                                        ? [{
+                                                                            label: t("request_unapprove", "Request Unapprove"),
+                                                                            type: "button",
+                                                                            variant: "warning",
+                                                                            onClick: () => openAlterationDialog(variation, "unapprove"),
+                                                                        }]
                                                                         : []),
                                                                 ]
                                                             ),

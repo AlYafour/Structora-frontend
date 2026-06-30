@@ -346,7 +346,6 @@ export default function CompanyLoginPage() {
         }
       }
 
-      localStorage.setItem('user', JSON.stringify(result.user));
       localStorage.setItem('user_role', result.role);
       localStorage.setItem('is_super_admin', result.is_super_admin);
 
@@ -356,10 +355,6 @@ export default function CompanyLoginPage() {
 
       if (result.tenant_slug) {
         localStorage.setItem('tenant_slug', result.tenant_slug);
-      }
-
-      if (result.user?.permissions) {
-        localStorage.setItem('permissions', JSON.stringify(result.user.permissions));
       }
 
       const slug = result.tenant_slug || tenantSlug;

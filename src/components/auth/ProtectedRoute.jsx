@@ -3,7 +3,6 @@
  * Protects routes based on authentication, permissions, and tenant slug validation.
  */
 
-import { useEffect } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -56,18 +55,6 @@ export default function ProtectedRoute({
   const { t } = useTranslation();
   const location = useLocation();
   const { tenantSlug } = useParams();
-
-  // Re-validate session on browser back/forward navigation
-  useEffect(() => {
-    const handlePopState = () => {
-      const storedUser = localStorage.getItem('user');
-      if (!storedUser && user) {
-        window.location.reload();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [user]);
 
   // Loading
   if (loading) {

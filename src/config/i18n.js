@@ -58,26 +58,13 @@ const saveLanguage = (language) => {
 };
 
 const getInitialLanguage = () => {
-  // 1. Most recent explicit user selection wins (set on every language change)
+  // Most recent explicit user selection wins (set on every language change)
   const storedLanguage = getStoredLanguage();
   if (storedLanguage) {
     return storedLanguage;
   }
 
-  // 2. Fallback: user profile preference (may come from backend on login)
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (user?.preferred_language === 'ar' || user?.preferred_language === 'en') {
-        return user.preferred_language;
-      }
-    }
-  } catch {
-    // silent
-  }
-
-  // 3. Default: Arabic
+  // Default: Arabic
   return "ar";
 };
 
@@ -101,25 +88,14 @@ export function applyDir(lang) {
 applyDir(i18n.language);
 
 i18n.on("languageChanged", async (language) => {
-  // 1. Always persist the selection immediately
   saveLanguage(language);
   applyDir(language);
 
-  // 2. Sync to user object in localStorage + backend if logged in
+  // Persist preference to backend if a session exists (async, silent fail)
   try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      user.preferred_language = language;
-      localStorage.setItem('user', JSON.stringify(user));
-
-      // Update in backend (async - don't wait)
-      try {
-        const { api } = await import('../services/api');
-        await api.patch('auth/users/update_profile/', { preferred_language: language });
-      } catch {
-        // Silent fail - don't disrupt the user experience
-      }
+    if (document.cookie.includes('is_logged_in=true')) {
+      const { api } = await import('../services/api');
+      api.patch('auth/users/update_profile/', { preferred_language: language }).catch(() => {});
     }
   } catch {
     // Silent fail

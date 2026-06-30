@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { api, API_BASE_URL } from '../services/api';
 import { logger } from '../utils/logger';
+import { isLoggedIn } from '../utils/cookies';
 import useThemeManager from '../hooks/useThemeManager';
 import useAdminSessionGuard from '../hooks/useAdminSessionGuard';
 
@@ -25,91 +26,69 @@ export function AuthProvider({ children }) {
   // Extract theme management into dedicated hook
   const { tenantTheme, setTenantTheme, loadTenantTheme, applyAdminTheme, resetTheme } = useThemeManager(userRef);
 
-  // Load user data on mount — check cookie signal then verify with API
+  // Load user data on mount — API-first, no PII in localStorage
   useEffect(() => {
     const loadInitialData = async () => {
-      const storedUser = localStorage.getItem('user');
-      const storedPermissions = localStorage.getItem('permissions');
+      // Use non-sensitive signals to decide whether a session might exist.
+      // This avoids an unnecessary API round-trip for unauthenticated first-time visitors
+      // while still working across domains where is_logged_in cookie is unreadable.
+      const sessionMayExist =
+        isLoggedIn() ||
+        Boolean(localStorage.getItem('tenant_slug')) ||
+        localStorage.getItem('is_super_admin') === 'true';
 
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
+      if (!sessionMayExist) {
+        setLoading(false);
+        return;
+      }
 
-          // If we have stored user data, trust it initially and verify with API in background
-          // This fixes cross-domain cookie issues where is_logged_in cookie
-          // is set on API domain but not readable from frontend domain
-          setUser(userData);
+      const applyUser = async (userData) => {
+        setUser(userData);
+        setPermissions(userData.permissions || []);
+        userRef.current = userData;
 
-          if (storedPermissions) {
-            setPermissions(JSON.parse(storedPermissions));
-          } else if (userData.permissions) {
-            setPermissions(userData.permissions);
-          }
-
-          userRef.current = userData;
-
-          // Load theme immediately after loading user
-          if (userData.is_superuser) {
-            localStorage.removeItem('tenant_theme');
-            localStorage.removeItem('tenant_id');
-            setTenantTheme(null);
-            applyAdminTheme();
-          } else if (userData.tenant) {
-            try {
-              await loadTenantTheme(true);
-            } catch (err) {
-              // Silent fail
-            }
-          }
-
-          // Verify session is still valid with API (in background)
+        if (userData.is_superuser) {
+          localStorage.removeItem('tenant_theme');
+          localStorage.removeItem('tenant_id');
+          setTenantTheme(null);
+          applyAdminTheme();
+        } else if (userData.tenant) {
           try {
-            const response = await apiClient.get('auth/users/profile/', {
+            await loadTenantTheme(true);
+          } catch {
+            // Silent fail
+          }
+        }
+      };
+
+      try {
+        const response = await apiClient.get('auth/users/profile/', {
+          _skipAuthRedirect: true,
+        });
+        await applyUser(response.data);
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          // Safari ITP / cross-domain: access token may have expired; try refresh once.
+          try {
+            await axios.post(
+              `${API_BASE_URL}auth/token/refresh/`,
+              {},
+              { withCredentials: true }
+            );
+            const retryResponse = await apiClient.get('auth/users/profile/', {
               _skipAuthRedirect: true,
             });
-            const freshData = response.data;
-            setUser(freshData);
-            setPermissions(freshData.permissions || []);
-            localStorage.setItem('user', JSON.stringify(freshData));
-            localStorage.setItem('permissions', JSON.stringify(freshData.permissions || []));
-            userRef.current = freshData;
-          } catch (verifyErr) {
-            // On 401, try refreshing the token first before logging out.
-            // Safari ITP blocks cross-site cookies, causing false 401s right after login.
-            if (verifyErr?.response?.status === 401) {
-              try {
-                await axios.post(
-                  `${API_BASE_URL}auth/token/refresh/`,
-                  {},
-                  { withCredentials: true }
-                );
-                // Refresh succeeded — re-fetch profile
-                const retryResponse = await apiClient.get('auth/users/profile/', {
-                  _skipAuthRedirect: true,
-                });
-                const freshData = retryResponse.data;
-                setUser(freshData);
-                setPermissions(freshData.permissions || []);
-                localStorage.setItem('user', JSON.stringify(freshData));
-                localStorage.setItem('permissions', JSON.stringify(freshData.permissions || []));
-                userRef.current = freshData;
-              } catch {
-                // Refresh also failed — session is truly expired, clear everything
-                localStorage.removeItem('user');
-                localStorage.removeItem('permissions');
-                localStorage.removeItem('tenant_theme');
-                setUser(null);
-                setPermissions([]);
-                userRef.current = null;
-              }
-            }
-            // For other errors (network, 500), keep the stored user data
+            await applyUser(retryResponse.data);
+          } catch {
+            // Refresh also failed — session truly expired
+            localStorage.removeItem('tenant_theme');
+            localStorage.removeItem('tenant_id');
+            setUser(null);
+            setPermissions([]);
+            userRef.current = null;
           }
-        } catch (e) {
-          localStorage.removeItem('user');
-          localStorage.removeItem('permissions');
-          localStorage.removeItem('tenant_theme');
         }
+        // Network errors / 500s: leave user as null, let ProtectedRoute redirect
       }
 
       setLoading(false);
@@ -180,8 +159,6 @@ export function AuthProvider({ children }) {
 
     setUser(userData);
     setPermissions(userData.permissions || []);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('permissions', JSON.stringify(userData.permissions || []));
 
     if (userData.preferred_language && (userData.preferred_language === 'ar' || userData.preferred_language === 'en')) {
       try {
@@ -212,9 +189,7 @@ export function AuthProvider({ children }) {
       // Tokens are now in httpOnly cookies — only user data comes in JSON
       const { user: userData, role, tenant_id, tenant_slug, is_super_admin } = response.data;
 
-      // Save non-sensitive data to localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('permissions', JSON.stringify(userData.permissions || []));
+      // Save non-sensitive routing helpers to localStorage
       localStorage.setItem('user_role', role);
       localStorage.setItem('is_super_admin', is_super_admin ? 'true' : 'false');
 

@@ -31,6 +31,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
   const [confirmOwnerApprovalDialogOpen, setConfirmOwnerApprovalDialogOpen] = useState(false);
   const [confirmConsultantApprovalDialogOpen, setConfirmConsultantApprovalDialogOpen] = useState(false);
   const [approveGeneralManagerFinalDialogOpen, setApproveGeneralManagerFinalDialogOpen] = useState(false);
+  const [approveGmInitialDialogOpen, setApproveGmInitialDialogOpen] = useState(false);
+  const [rejectGmInitialDialogOpen, setRejectGmInitialDialogOpen] = useState(false);
   const [approveHiddenFeesDialogOpen, setApproveHiddenFeesDialogOpen] = useState(false);
   const [rejectHiddenFeesDialogOpen, setRejectHiddenFeesDialogOpen] = useState(false);
 
@@ -46,6 +48,42 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       invalidateAndRefresh();
     } catch (e) {
       toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const handleApproveGMInitial = async () => {
+    if (!variation || !project) return;
+    setProcessingApproval(true);
+    try {
+      await projectApi.approveVariationGMInitial(project.id, variation.id);
+      toast("success", t("variation_approved") || "Variation approved successfully");
+      setApproveGmInitialDialogOpen(false);
+      setActionNotes("");
+      invalidateAndRefresh();
+    } catch (e) {
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("approve_error"));
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const handleRejectGMInitial = async () => {
+    if (!variation || !project) return;
+    if (!actionNotes?.trim()) {
+      toast("error", t("rejection_reason_required") || "Rejection reason is required");
+      return;
+    }
+    setProcessingApproval(true);
+    try {
+      await projectApi.rejectVariationGMInitial(project.id, variation.id, actionNotes.trim());
+      toast("success", t("variation_rejected") || "Variation rejected");
+      setRejectGmInitialDialogOpen(false);
+      setActionNotes("");
+      invalidateAndRefresh();
+    } catch (e) {
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -210,6 +248,10 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       setConfirmConsultantApprovalDialogOpen,
       approveGeneralManagerFinalDialogOpen,
       setApproveGeneralManagerFinalDialogOpen,
+      approveGmInitialDialogOpen,
+      setApproveGmInitialDialogOpen,
+      rejectGmInitialDialogOpen,
+      setRejectGmInitialDialogOpen,
       approveHiddenFeesDialogOpen,
       setApproveHiddenFeesDialogOpen,
       rejectHiddenFeesDialogOpen,
@@ -217,6 +259,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     },
     handlers: {
       handleApproveProjectManagerInitial,
+      handleApproveGMInitial,
+      handleRejectGMInitial,
       handleApproveGeneralManagerInitial,
       handleConfirmOwnerApproval,
       handleConfirmConsultantApproval,

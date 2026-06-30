@@ -493,18 +493,6 @@ export default function AppSidebar({ mode = 'company' }) {
 
   const handleLanguageChange = () => {
     const newLang = lang === 'ar' ? 'en' : 'ar';
-
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const u = JSON.parse(userStr);
-        u.preferred_language = newLang;
-        localStorage.setItem('user', JSON.stringify(u));
-      }
-    } catch (_) {
-      // silent
-    }
-
     i18n.changeLanguage(newLang);
   };
 

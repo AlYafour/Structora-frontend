@@ -46,7 +46,7 @@ export default function useThemeManager(userRef) {
     try {
       // Use userRef or localStorage — cookie-based isLoggedIn() is unreliable
       // in cross-domain setups (cookie on railway.app, JS on vercel.app)
-      const hasUser = userRef.current || localStorage.getItem('user');
+      const hasUser = userRef.current;
       if (!hasUser) {
         setTenantTheme(STRUCTORA_THEME);
         return STRUCTORA_THEME;
@@ -89,13 +89,13 @@ export default function useThemeManager(userRef) {
 
       // Use tenant name from user object as final fallback for company_name
       if (!merged.company_name) {
-        const currentUser = userRef.current || JSON.parse(localStorage.getItem("user") || "{}");
+        const currentUser = userRef.current || {};
         merged.company_name = currentUser?.tenant?.name || "";
       }
 
       // Ensure tenant_id
       if (!merged.tenant_id) {
-        const currentUser = userRef.current || JSON.parse(localStorage.getItem("user") || "{}");
+        const currentUser = userRef.current || {};
         if (currentUser?.tenant?.id) {
           merged.tenant_id = String(currentUser.tenant.id);
         }
@@ -114,7 +114,7 @@ export default function useThemeManager(userRef) {
       return merged;
     } catch (error) {
       logger.debug("Theme load fallback", error?.message);
-      const currentUser = userRef.current || JSON.parse(localStorage.getItem("user") || "{}");
+      const currentUser = userRef.current || {};
       const fallback = {
         ...EMPTY_TENANT_THEME,
         company_name: currentUser?.tenant?.name || "",

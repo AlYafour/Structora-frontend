@@ -75,11 +75,15 @@
 }
 .var-status-pill--rejected_by_project_manager,
 .var-status-pill--rejected_by_general_manager,
+.var-status-pill--rejected_by_supervisor,
+.var-status-pill--rejected_by_gm_initial,
 .var-status-pill--rejected {
   background: #fef2f2; color: #b91c1c; border-color: #fecaca;
 }
 .var-status-pill--draft,
 .var-status-pill--pending_project_manager,
+.var-status-pill--pending_gm_initial,
+.var-status-pill--pending_supervisor,
 .var-status-pill--pending_general_manager_initial,
 .var-status-pill--pending_owner_consultant,
 .var-status-pill--pending_general_manager_final {
@@ -969,11 +973,15 @@ html.theme-dark .var-status-pill--approved {
 }
 html.theme-dark .var-status-pill--rejected_by_project_manager,
 html.theme-dark .var-status-pill--rejected_by_general_manager,
+html.theme-dark .var-status-pill--rejected_by_supervisor,
+html.theme-dark .var-status-pill--rejected_by_gm_initial,
 html.theme-dark .var-status-pill--rejected {
   background: rgba(232, 93, 86, 0.12); color: #fca5a5; border-color: rgba(232, 93, 86, 0.3);
 }
 html.theme-dark .var-status-pill--draft,
 html.theme-dark .var-status-pill--pending_project_manager,
+html.theme-dark .var-status-pill--pending_gm_initial,
+html.theme-dark .var-status-pill--pending_supervisor,
 html.theme-dark .var-status-pill--pending_general_manager_initial,
 html.theme-dark .var-status-pill--pending_owner_consultant,
 html.theme-dark .var-status-pill--pending_general_manager_final {

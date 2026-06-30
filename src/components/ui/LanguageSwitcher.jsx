@@ -14,14 +14,6 @@ export default function LanguageSwitcher() {
 
     try {
       if (isLoggedIn()) {
-        // Update User object in localStorage
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          user.preferred_language = newLanguage;
-          localStorage.setItem('user', JSON.stringify(user));
-        }
-
         // Update in Backend (async - don't wait)
         api.patch('auth/users/update_profile/', { preferred_language: newLanguage }).catch(() => {
           // Silent fail - don't disrupt user experience

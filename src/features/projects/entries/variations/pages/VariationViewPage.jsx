@@ -181,7 +181,7 @@ export default function VariationViewPage() {
   );
   const editBlockedMessageKey = !canEditVariationContent
     ? "variation_edit_no_permission_desc"
-    : variationStatus === 'pending_general_manager_initial' && !hasAcceptedEditRequest
+    : (variationStatus === 'pending_supervisor' || variationStatus === 'pending_gm_initial') && !hasAcceptedEditRequest
       ? "variation_edit_requires_alteration_request_desc"
       : "variation_edit_not_allowed_desc";
   const isRejected = checkRejected(variation);
@@ -726,6 +726,7 @@ export default function VariationViewPage() {
                     </>
                   )}
                   {(permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
+                    permissions.canApproveGMInitial || permissions.canRejectGMInitial ||
                     permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
                     permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
                     permissions.canApproveGeneralManagerFinal) && (
@@ -738,6 +739,16 @@ export default function VariationViewPage() {
                       )}
                       {permissions.canRejectProjectManager && (
                         <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectProjectManagerDialogOpen(true)}>
+                          <FaTimesCircle /> {t("reject")}
+                        </Button>
+                      )}
+                      {permissions.canApproveGMInitial && (
+                        <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveGmInitialDialogOpen(true)}>
+                          <FaCheckCircle /> {t("approve_gm_initial")}
+                        </Button>
+                      )}
+                      {permissions.canRejectGMInitial && (
+                        <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectGmInitialDialogOpen(true)}>
                           <FaTimesCircle /> {t("reject")}
                         </Button>
                       )}
@@ -1056,13 +1067,33 @@ export default function VariationViewPage() {
                   </div>
                 </div>
 
-                {/* General Manager Initial */}
-                <div className={`var-approval-step ${variation?.general_manager_initial_approved_by ? 'var-approval-step--completed' : ''}`}>
+                {/* GM Initial Approval (Step 2) */}
+                <div className={`var-approval-step ${variation?.gm_initial_approved_by ? 'var-approval-step--completed' : ''}`}>
                   <div className="var-approval-step__indicator">
-                    {variation?.general_manager_initial_approved_by ? <FaCheckCircle /> : <span>2</span>}
+                    {variation?.gm_initial_approved_by ? <FaCheckCircle /> : <span>2</span>}
                   </div>
                   <div className="var-approval-step__content">
-                    <div className="var-approval-step__title">{t("general_manager_initial_approval")}</div>
+                    <div className="var-approval-step__title">{t("gm_initial_approval")}</div>
+                    {variation?.gm_initial_approved_by ? (
+                      <div className="var-approval-step__info">
+                        <span className="var-approval-step__user">{variation.gm_initial_approved_by?.full_name}</span>
+                        {variation.gm_initial_approved_at && (
+                          <span className="var-approval-step__date">{formatDate(variation.gm_initial_approved_at)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="var-approval-step__pending">{t("pending")}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Supervisor Approval (Step 3) */}
+                <div className={`var-approval-step ${variation?.general_manager_initial_approved_by ? 'var-approval-step--completed' : ''}`}>
+                  <div className="var-approval-step__indicator">
+                    {variation?.general_manager_initial_approved_by ? <FaCheckCircle /> : <span>3</span>}
+                  </div>
+                  <div className="var-approval-step__content">
+                    <div className="var-approval-step__title">{t("supervisor_approval")}</div>
                     {variation?.general_manager_initial_approved_by ? (
                       <div className="var-approval-step__info">
                         <span className="var-approval-step__user">{variation.general_manager_initial_approved_by?.full_name}</span>
@@ -1076,10 +1107,10 @@ export default function VariationViewPage() {
                   </div>
                 </div>
 
-                {/* Owner Confirmation */}
+                {/* Owner Confirmation (Step 4) */}
                 <div className={`var-approval-step ${variation?.owner_approval_confirmed ? 'var-approval-step--completed' : ''}`}>
                   <div className="var-approval-step__indicator">
-                    {variation?.owner_approval_confirmed ? <FaCheckCircle /> : <span>3</span>}
+                    {variation?.owner_approval_confirmed ? <FaCheckCircle /> : <span>4</span>}
                   </div>
                   <div className="var-approval-step__content">
                     <div className="var-approval-step__title">{t("owner_approval_confirmed")}</div>
@@ -1099,10 +1130,10 @@ export default function VariationViewPage() {
                   </div>
                 </div>
 
-                {/* Consultant Confirmation */}
+                {/* Consultant Confirmation (Step 5) */}
                 <div className={`var-approval-step ${variation?.consultant_approval_confirmed ? 'var-approval-step--completed' : ''}`}>
                   <div className="var-approval-step__indicator">
-                    {variation?.consultant_approval_confirmed ? <FaCheckCircle /> : <span>4</span>}
+                    {variation?.consultant_approval_confirmed ? <FaCheckCircle /> : <span>5</span>}
                   </div>
                   <div className="var-approval-step__content">
                     <div className="var-approval-step__title">{t("consultant_approval_confirmed")}</div>
@@ -1122,10 +1153,10 @@ export default function VariationViewPage() {
                   </div>
                 </div>
 
-                {/* General Manager Final */}
+                {/* General Manager Final (Step 6) */}
                 <div className={`var-approval-step ${variation?.general_manager_final_approved_by ? 'var-approval-step--completed' : ''}`}>
                   <div className="var-approval-step__indicator">
-                    {variation?.general_manager_final_approved_by ? <FaCheckCircle /> : <span>5</span>}
+                    {variation?.general_manager_final_approved_by ? <FaCheckCircle /> : <span>6</span>}
                   </div>
                   <div className="var-approval-step__content">
                     <div className="var-approval-step__title">{t("general_manager_final_approval")}</div>
@@ -1178,6 +1209,57 @@ export default function VariationViewPage() {
           cancelLabel={t("cancel")}
           onClose={() => { dialogStates.setApproveProjectManagerDialogOpen(false); setActionNotes(""); }}
           onConfirm={handlers.handleApproveProjectManagerInitial}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.approveGmInitialDialogOpen}
+          title={t("approve_gm_initial")}
+          desc={
+            <div>
+              <p>{t("approve_gm_initial_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("notes")} ({t("optional")})
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("approval_notes_placeholder")}
+              />
+            </div>
+          }
+          confirmLabel={t("approve")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setApproveGmInitialDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleApproveGMInitial}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.rejectGmInitialDialogOpen}
+          title={t("reject_variation")}
+          desc={
+            <div>
+              <p>{t("reject_gm_initial_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("rejection_reason")} <span className="var-required">*</span>
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("enter_rejection_reason")}
+                required
+              />
+            </div>
+          }
+          confirmLabel={t("reject")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setRejectGmInitialDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleRejectGMInitial}
           busy={processingApproval}
         />
 

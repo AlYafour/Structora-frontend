@@ -17,8 +17,10 @@ export const getStatusLabel = (status, t) => {
     'draft': t("draft"),
     'pending_project_manager': t("pending_project_manager"),
     'rejected_by_project_manager': t("rejected_by_project_manager"),
-    'pending_general_manager_initial': t("pending_general_manager_initial"),
-    'rejected_by_general_manager': t("rejected_by_general_manager"),
+    'pending_gm_initial': t("pending_gm_initial"),
+    'rejected_by_gm_initial': t("rejected_by_gm_initial"),
+    'pending_supervisor': t("pending_supervisor"),
+    'rejected_by_supervisor': t("rejected_by_supervisor"),
     'pending_owner_consultant': t("pending_owner_consultant"),
     'pending_general_manager_final': t("pending_general_manager_final"),
     'approved': t("approved"),
@@ -72,7 +74,8 @@ export const isFinallyApproved = (variation) => {
 export const isRejected = (variation) => {
   const status = variation?.status || variation?.workflow_status || 'draft';
   return status === 'rejected_by_project_manager' ||
-         status === 'rejected_by_general_manager' ||
+         status === 'rejected_by_supervisor' ||
+         status === 'rejected_by_gm_initial' ||
          status === 'rejected';
 };
 
@@ -100,18 +103,28 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
   );
   const hasVariationEditPermission = options.hasVariationEditPermission === true;
 
+  // PM is locked out once they have approved — they must unapprove or request-unapprove first.
+  const pmEditBlocked = isProjectManager && (
+    status === 'pending_gm_initial' ||
+    status === 'pending_supervisor' ||
+    status === 'pending_owner_consultant' ||
+    status === 'pending_general_manager_final'
+  );
+
   // Editing variation content requires the create/edit permission, or an accepted edit request.
   const canEdit = !finallyApproved &&
+    !pmEditBlocked &&
     (
       hasVariationEditPermission ||
-      (status === 'pending_general_manager_initial' && hasAcceptedEditRequest)
+      ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest)
     ) &&
     (!isStaff ||
       status === 'draft' ||
       status === 'pending_project_manager' ||
       status === 'rejected_by_project_manager' ||
-      status === 'rejected_by_general_manager' ||
-      (status === 'pending_general_manager_initial' && hasAcceptedEditRequest));
+      status === 'rejected_by_supervisor' ||
+      status === 'rejected_by_gm_initial' ||
+      ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest));
 
   // Can approve/reject only if not rejected (must edit first if rejected)
   const canApproveOrReject = !rejected;
@@ -132,9 +145,13 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       status === 'pending_owner_consultant' &&
       !variation?.consultant_approval_confirmed,
     canApproveGeneralManagerInitial: canApproveOrReject && isSupervisor &&
-      status === 'pending_general_manager_initial',
+      status === 'pending_supervisor',
     canRejectGeneralManager: canApproveOrReject && (isSupervisor || isGeneralManager) &&
-      status === 'pending_general_manager_initial',
+      status === 'pending_supervisor',
+    canApproveGMInitial: canApproveOrReject && isGeneralManager &&
+      status === 'pending_gm_initial',
+    canRejectGMInitial: canApproveOrReject && isGeneralManager &&
+      status === 'pending_gm_initial',
     canApproveGeneralManagerFinal: canApproveOrReject && isGeneralManager &&
       status !== 'approved' &&
       !variation?.general_manager_final_approved_by,
