@@ -70,7 +70,12 @@ export function calculateConsultantFees(formData, totalVariationAmount, totalAdd
 }
 
 /**
- * Calculate discount based on type with component selection
+ * Calculate discount based on type with component selection.
+ *
+ * Works correctly when the net variation total is negative (omissions > additions).
+ * discountAmount is always >= 0 and is distributed across selected components
+ * proportionally by their absolute value, so every component's magnitude is
+ * reduced (positive components decrease, negative components become more negative).
  */
 export function calculateDiscountAdvanced(formData, totalVariationAmount, contractorOHP, consultantFees, totalAmountBeforeDiscount, customFeesTotal = 0) {
   const discountAppliesToVariation = formData.discount_applies_to_variation !== undefined
@@ -83,145 +88,83 @@ export function calculateDiscountAdvanced(formData, totalVariationAmount, contra
     ? formData.discount_applies_to_consultant_fees
     : true;
 
-  // Calculate discount base (sum of selected components only)
-  let discountBase = 0;
-  if (discountAppliesToVariation) {
-    discountBase += totalVariationAmount;
-  }
-  if (discountAppliesToContractorOHP) {
-    discountBase += contractorOHP;
-  }
-  if (discountAppliesToConsultantFees) {
-    discountBase += consultantFees;
-  }
-
   const hasSelectedComponents = discountAppliesToVariation || discountAppliesToContractorOHP || discountAppliesToConsultantFees;
 
+  // Signed sum of selected components (can be negative when omissions dominate)
+  let discountBase = 0;
+  if (discountAppliesToVariation) discountBase += totalVariationAmount;
+  if (discountAppliesToContractorOHP) discountBase += contractorOHP;
+  if (discountAppliesToConsultantFees) discountBase += consultantFees;
+
+  // Maximum discount that can be applied (always non-negative)
+  const absDiscountBase = Math.abs(discountBase);
+
   let discountAmount = 0;
-  let effectiveDiscountRatio = 0;
   let discountPercentage = 0;
-  let finalAmountAfterDiscount = totalAmountBeforeDiscount;
 
-  // Calculate effective discount ratio based on discount type
-  if (formData.discount_type === 'percentage' && hasSelectedComponents && discountBase > 0) {
-    discountPercentage = parseFloat(formData.discount_percentage || 0);
-    effectiveDiscountRatio = discountPercentage / 100;
-    discountAmount = discountBase * effectiveDiscountRatio;
-  } else if (formData.discount_type === 'amount' && hasSelectedComponents && discountBase > 0) {
-    discountAmount = parseFloat(formData.discount_amount || 0) || 0;
-    if (discountAmount > discountBase) {
-      discountAmount = discountBase;
+  if (formData.discount_type !== 'none' && hasSelectedComponents && absDiscountBase > 0) {
+    if (formData.discount_type === 'percentage') {
+      discountPercentage = parseFloat(formData.discount_percentage || 0);
+      discountAmount = absDiscountBase * (discountPercentage / 100);
+    } else if (formData.discount_type === 'amount') {
+      discountAmount = parseFloat(formData.discount_amount || 0) || 0;
+      if (discountAmount > absDiscountBase) discountAmount = absDiscountBase;
+      discountPercentage = (discountAmount / absDiscountBase) * 100;
+    } else if (formData.discount_type === 'final_amount') {
+      const targetFinalAmount = parseFloat(formData.final_amount_after_discount);
+      if (!isNaN(targetFinalAmount)) {
+        // discountAmount = reduction needed to reach the user's target total
+        discountAmount = totalAmountBeforeDiscount - targetFinalAmount;
+        if (discountAmount < 0) discountAmount = 0;
+        if (discountAmount > absDiscountBase) discountAmount = absDiscountBase;
+        discountPercentage = (discountAmount / absDiscountBase) * 100;
+      }
     }
-    effectiveDiscountRatio = discountAmount / discountBase;
-    discountPercentage = effectiveDiscountRatio * 100;
-  } else if (formData.discount_type === 'final_amount' && hasSelectedComponents && discountBase > 0) {
-    const targetFinalAmount = parseFloat(formData.final_amount_after_discount || totalAmountBeforeDiscount);
-    let adjustedFinalAmount = targetFinalAmount;
-    if (adjustedFinalAmount < 0) adjustedFinalAmount = 0;
-
-    // Custom fees are never discountable — treat them like non-selected components
-    // so the user's entered target is the true grand total (subtotal + custom fees)
-    const nonSelectedAmount =
-      customFeesTotal +
-      (discountAppliesToVariation ? 0 : totalVariationAmount) +
-      (discountAppliesToContractorOHP ? 0 : contractorOHP) +
-      (discountAppliesToConsultantFees ? 0 : consultantFees);
-
-    // Remaining amount for selected components after discount
-    const remainingForSelected = adjustedFinalAmount - nonSelectedAmount;
-
-    // Ensure remaining amount is logical (>= 0 and <= discountBase)
-    let adjustedRemainingForSelected = remainingForSelected;
-    if (adjustedRemainingForSelected < 0) adjustedRemainingForSelected = 0;
-    if (adjustedRemainingForSelected > discountBase) adjustedRemainingForSelected = discountBase;
-
-    // Calculate discount amount
-    discountAmount = discountBase - adjustedRemainingForSelected;
-
-    // Calculate effective discount ratio
-    if (discountBase > 0) {
-      effectiveDiscountRatio = discountAmount / discountBase;
-      discountPercentage = effectiveDiscountRatio * 100;
-    } else {
-      effectiveDiscountRatio = 0;
-      discountPercentage = 0;
-    }
-
-    // finalAmountAfterDiscount is the discounted subtotal (without custom fees),
-    // so that totalAmount = finalAmountAfterDiscount + customFeesTotal = user's target
-    finalAmountAfterDiscount = Math.max(0, adjustedFinalAmount - customFeesTotal);
   }
 
-  // Apply effective discount ratio to selected components only
+  // Distribute discountAmount proportionally across selected components by absolute value.
+  // discountOnComponent is always >= 0:
+  //   positive component → becomes smaller (normal discount)
+  //   negative component → becomes more negative (larger credit)
   let discountOnVariation = 0;
   let discountOnContractorOHP = 0;
   let discountOnConsultantFees = 0;
 
-  let variationAmountAfterDiscount = totalVariationAmount;
-  let contractorOHPAfterDiscount = contractorOHP;
-  let consultantFeesAfterDiscount = consultantFees;
+  if (discountAmount > 0) {
+    const totalAbsSelected =
+      (discountAppliesToVariation ? Math.abs(totalVariationAmount) : 0) +
+      (discountAppliesToContractorOHP ? Math.abs(contractorOHP) : 0) +
+      (discountAppliesToConsultantFees ? Math.abs(consultantFees) : 0);
 
-  if (formData.discount_type !== 'none' && hasSelectedComponents && discountBase > 0 && effectiveDiscountRatio >= 0 && !isNaN(effectiveDiscountRatio)) {
-    // Calculate discount on each component (only if selected)
-    if (discountAppliesToVariation) {
-      discountOnVariation = totalVariationAmount * effectiveDiscountRatio;
-    }
-
-    if (discountAppliesToContractorOHP) {
-      discountOnContractorOHP = contractorOHP * effectiveDiscountRatio;
-    }
-
-    if (discountAppliesToConsultantFees) {
-      discountOnConsultantFees = consultantFees * effectiveDiscountRatio;
-    }
-
-    // Ensure sum of partial discounts equals total discount (handle rounding differences)
-    const sumOfPartialDiscounts = discountOnVariation + discountOnContractorOHP + discountOnConsultantFees;
-    const roundingDifference = discountAmount - sumOfPartialDiscounts;
-
-    // Distribute rounding difference to largest discount component (from selected only)
-    if (Math.abs(roundingDifference) > 0.01) {
-      const selectedDiscounts = [];
-      if (discountAppliesToVariation && discountOnVariation !== 0) {
-        selectedDiscounts.push({ key: 'variation', value: discountOnVariation });
+    if (totalAbsSelected > 0) {
+      if (discountAppliesToVariation) {
+        discountOnVariation = discountAmount * (Math.abs(totalVariationAmount) / totalAbsSelected);
       }
-      if (discountAppliesToContractorOHP && discountOnContractorOHP !== 0) {
-        selectedDiscounts.push({ key: 'ohp', value: discountOnContractorOHP });
+      if (discountAppliesToContractorOHP) {
+        discountOnContractorOHP = discountAmount * (Math.abs(contractorOHP) / totalAbsSelected);
       }
-      if (discountAppliesToConsultantFees && discountOnConsultantFees !== 0) {
-        selectedDiscounts.push({ key: 'consultant', value: discountOnConsultantFees });
+      if (discountAppliesToConsultantFees) {
+        discountOnConsultantFees = discountAmount * (Math.abs(consultantFees) / totalAbsSelected);
       }
 
-      if (selectedDiscounts.length > 0) {
-        const maxDiscount = selectedDiscounts.reduce((max, item) =>
-          Math.abs(item.value) > Math.abs(max.value) ? item : max
-        );
-
-        if (maxDiscount.key === 'variation') {
-          discountOnVariation = discountOnVariation + roundingDifference;
-        } else if (maxDiscount.key === 'ohp') {
-          discountOnContractorOHP = discountOnContractorOHP + roundingDifference;
-        } else if (maxDiscount.key === 'consultant') {
-          discountOnConsultantFees = discountOnConsultantFees + roundingDifference;
+      // Fix floating-point rounding: adjust largest share so sum == discountAmount exactly
+      const roundingDiff = discountAmount - (discountOnVariation + discountOnContractorOHP + discountOnConsultantFees);
+      if (Math.abs(roundingDiff) > 0.001) {
+        if (discountOnVariation >= discountOnContractorOHP && discountOnVariation >= discountOnConsultantFees) {
+          discountOnVariation += roundingDiff;
+        } else if (discountOnContractorOHP >= discountOnConsultantFees) {
+          discountOnContractorOHP += roundingDiff;
+        } else {
+          discountOnConsultantFees += roundingDiff;
         }
       }
     }
-
-    // Calculate values after discount
-    variationAmountAfterDiscount = totalVariationAmount - discountOnVariation;
-    contractorOHPAfterDiscount = contractorOHP - discountOnContractorOHP;
-    consultantFeesAfterDiscount = consultantFees - discountOnConsultantFees;
   }
 
-  // Calculate final amount after discount
-  if (formData.discount_type === 'final_amount' && hasSelectedComponents && discountBase > 0) {
-    // For final_amount type, use the calculated value from above
-  } else if (hasSelectedComponents && formData.discount_type !== 'none') {
-    // For other types, calculate from sum of all components
-    finalAmountAfterDiscount = variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount;
-  } else {
-    finalAmountAfterDiscount = variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount;
-  }
+  const variationAmountAfterDiscount = totalVariationAmount - discountOnVariation;
+  const contractorOHPAfterDiscount = contractorOHP - discountOnContractorOHP;
+  const consultantFeesAfterDiscount = consultantFees - discountOnConsultantFees;
+  const finalAmountAfterDiscount = variationAmountAfterDiscount + contractorOHPAfterDiscount + consultantFeesAfterDiscount;
 
   return {
     discountAmount,

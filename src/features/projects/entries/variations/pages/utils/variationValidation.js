@@ -31,34 +31,37 @@ export function validateDiscount(formData, totalVariationAmount, contractorOHP, 
     (formData.discount_applies_to_contractor_ohp ? contractorOHP : 0) +
     (formData.discount_applies_to_consultant_fees ? consultantFees : 0);
 
+  const absDiscountBase = Math.abs(discountBase);
+
   // Validate by discount type
   if (formData.discount_type === 'amount') {
     const enteredDiscount = parseFloat(formData.discount_amount || 0);
-    if (enteredDiscount > discountBase) {
+    if (enteredDiscount > absDiscountBase) {
       return {
         valid: false,
         error:
           t('discount_exceeds_base') ||
-          `الخصم المدخل (${formatMoney(enteredDiscount)}) يتجاوز المبلغ القابل للخصم (${formatMoney(discountBase)})`,
+          `الخصم المدخل (${formatMoney(enteredDiscount)}) يتجاوز المبلغ القابل للخصم (${formatMoney(absDiscountBase)})`,
       };
     }
   } else if (formData.discount_type === 'final_amount') {
     const enteredFinalAmount = parseFloat(formData.final_amount_after_discount || totalAmountBeforeDiscount);
+    const impliedDiscount = totalAmountBeforeDiscount - enteredFinalAmount;
 
-    const nonSelectedAmount =
-      (formData.discount_applies_to_variation ? 0 : totalVariationAmount) +
-      (formData.discount_applies_to_contractor_ohp ? 0 : contractorOHP) +
-      (formData.discount_applies_to_consultant_fees ? 0 : consultantFees);
-
-    const maxAmount = totalAmountBeforeDiscount;
-    const minAmount = nonSelectedAmount;
-
-    if (enteredFinalAmount < minAmount || enteredFinalAmount > maxAmount) {
+    if (impliedDiscount < 0) {
       return {
         valid: false,
         error:
-          t('final_amount_invalid') ||
-          `المبلغ النهائي يجب أن يكون بين ${formatMoney(minAmount)} و ${formatMoney(maxAmount)}`,
+          t('final_amount_exceeds_total') ||
+          `المبلغ النهائي يتجاوز الإجمالي قبل الخصم (${formatMoney(totalAmountBeforeDiscount)})`,
+      };
+    }
+    if (impliedDiscount > absDiscountBase) {
+      return {
+        valid: false,
+        error:
+          t('discount_exceeds_base') ||
+          `الخصم المطلوب يتجاوز المبلغ القابل للخصم (${formatMoney(absDiscountBase)})`,
       };
     }
   }
@@ -100,32 +103,33 @@ export function validateVariationSubmit(formData, calculations, omittedItems, ad
       (formData.discount_applies_to_contractor_ohp ? calculations.contractorOHP : 0) +
       (formData.discount_applies_to_consultant_fees ? calculations.consultantFees : 0);
 
+    const absDiscountBase = Math.abs(discountBase);
+
     if (formData.discount_type === 'amount') {
       const enteredDiscount = parseFloat(formData.discount_amount || 0);
 
-      if (enteredDiscount > discountBase) {
+      if (enteredDiscount > absDiscountBase) {
         return (
           t('discount_exceeds_base') ||
-          `الخصم المدخل (${formatMoney(enteredDiscount)}) يتجاوز المبلغ القابل للخصم (${formatMoney(discountBase)})`
+          `الخصم المدخل (${formatMoney(enteredDiscount)}) يتجاوز المبلغ القابل للخصم (${formatMoney(absDiscountBase)})`
         );
       }
     } else if (formData.discount_type === 'final_amount') {
       const enteredFinalAmount = parseFloat(
         formData.final_amount_after_discount || calculations.totalAmountBeforeDiscount
       );
+      const impliedDiscount = calculations.totalAmountBeforeDiscount - enteredFinalAmount;
 
-      const nonSelectedAmount =
-        (formData.discount_applies_to_variation ? 0 : calculations.totalVariationAmount) +
-        (formData.discount_applies_to_contractor_ohp ? 0 : calculations.contractorOHP) +
-        (formData.discount_applies_to_consultant_fees ? 0 : calculations.consultantFees);
-
-      const maxAmount = calculations.totalAmountBeforeDiscount;
-      const minAmount = nonSelectedAmount;
-
-      if (enteredFinalAmount < minAmount || enteredFinalAmount > maxAmount) {
+      if (impliedDiscount < 0) {
         return (
-          t('final_amount_invalid') ||
-          `المبلغ النهائي يجب أن يكون بين ${formatMoney(minAmount)} و ${formatMoney(maxAmount)}`
+          t('final_amount_exceeds_total') ||
+          `المبلغ النهائي يتجاوز الإجمالي قبل الخصم (${formatMoney(calculations.totalAmountBeforeDiscount)})`
+        );
+      }
+      if (impliedDiscount > absDiscountBase) {
+        return (
+          t('discount_exceeds_base') ||
+          `الخصم المطلوب يتجاوز المبلغ القابل للخصم (${formatMoney(absDiscountBase)})`
         );
       }
     }
