@@ -12,7 +12,7 @@ import { projectApi } from "../../../services/projects";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { logger } from "../../../utils/logger";
 
-const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, onDeleted }) {
+const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, extensions = [], onDeleted }) {
   const { t } = useTranslation();
   const { hasPermission, isAdmin, isCompanyAdmin } = useAuth();
   const { success, error: showError } = useNotifications();
@@ -21,7 +21,7 @@ const StartOrderTab = memo(function StartOrderTab({ projectId, startOrder, onDel
   const [deleting, setDeleting] = useState(false);
 
   const hasData = !!startOrder;
-  const hasExtensions = Array.isArray(startOrder?.extensions) && startOrder.extensions.length > 0;
+  const hasExtensions = Array.isArray(extensions) && extensions.length > 0;
   const canAddStartOrder = isAdmin || hasPermission("projects.add_start_order");
   const canDelete = isCompanyAdmin || (isAdmin && !isCompanyAdmin);
 

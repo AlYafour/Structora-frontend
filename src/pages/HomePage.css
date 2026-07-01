@@ -460,6 +460,26 @@ button.dash-kpi { cursor: pointer; }
   height: 22px;
 }
 
+.dash-tasks__show-more {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px 16px;
+  border: 1px dashed var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary, #14213D);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dash-tasks__show-more:hover {
+  background: var(--primary-50, #EDF2F7);
+  border-color: var(--color-primary, #14213D);
+}
+
 /* ── Donut Chart ── */
 .dash-chart-donut {
   display: flex;

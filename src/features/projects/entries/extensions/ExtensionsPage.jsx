@@ -25,6 +25,7 @@ const EMPTY_EXTENSION = {
   file: null,
   file_url: null,
   file_name: null,
+  extension_file_delete: false,
   letter_attachments: [],
 };
 
@@ -74,6 +75,7 @@ export default function ExtensionsPage() {
           file: null,
           file_url: found.file_url || null,
           file_name: found.file_name || null,
+          extension_file_delete: false,
           letter_attachments: Array.isArray(found.letter_attachments)
             ? found.letter_attachments.map((a) => ({ url: a.url || null, name: a.name || null, newFile: null }))
             : [],
@@ -107,6 +109,7 @@ export default function ExtensionsPage() {
         note: extension.note || null,
         file_url: extension.file_url || null,
         file_name: extension.file_name || null,
+        extension_file_delete: Boolean(extension.extension_file_delete),
         letter_attachments: (extension.letter_attachments || [])
           .filter((a) => a.url || a.newFile)
           .map((a) => ({ url: a.url || null, name: a.name || null, is_new: a.newFile instanceof File })),

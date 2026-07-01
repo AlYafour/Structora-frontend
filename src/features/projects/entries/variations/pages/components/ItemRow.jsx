@@ -6,6 +6,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
+import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
 
 const ItemRow = memo(
   ({
@@ -22,6 +23,12 @@ const ItemRow = memo(
     colSpan,
   }) => {
     const { i18n } = useTranslation();
+
+    const { translating: translatingRemark } = useAutoTranslate(
+      item.remarks,
+      (ar) => onUpdate?.(item.id, 'remarks_ar', ar),
+      { enabled: isEditMode }
+    );
 
     const formatCurrency = (value) => {
       const str = formatMoney(value, { lang: i18n.language });
@@ -220,25 +227,62 @@ const ItemRow = memo(
           <tr className="nvi-remarks-row">
             <td colSpan={colSpan} className="nvi-td nvi-td--remarks">
               <div className="nvi-remarks-wrap">
-                <span className="nvi-remarks-label">{t('remarks')}</span>
-
                 {isEditMode ? (
-                  <textarea
-                    className="nvi-remarks-input"
-                    value={item.remarks ?? ''}
-                    onChange={(e) =>
-                      onUpdate?.(item.id, 'remarks', e.target.value)
-                    }
-                    placeholder={t('item_remarks_placeholder')}
-                    rows={2}
-                    autoComplete="off"
-                  />
-                ) : (
-                  <div className="nvi-remarks-text">
-                    {item.remarks || (
-                      <span className="nvi-remarks-empty">—</span>
-                    )}
+                  <div className="nvc-remarks-split-card">
+                    {/* English pane — original input */}
+                    <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en">
+                      <div className="nvc-remarks-split-pane__header">
+                        <span className="nvc-remarks-split-pane__lang">EN</span>
+                        <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                      </div>
+                      <textarea
+                        className="nvc-remarks-split-input"
+                        value={item.remarks ?? ''}
+                        onChange={(e) => onUpdate?.(item.id, 'remarks', e.target.value)}
+                        placeholder={t('item_remarks_placeholder')}
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="nvc-remarks-split-divider" />
+
+                    {/* Arabic pane — auto-translated, read-only */}
+                    <div className="nvc-remarks-split-pane nvc-remarks-split-pane--ar">
+                      <div className="nvc-remarks-split-pane__header">
+                        <span className="nvc-remarks-split-pane__lang">ع</span>
+                        <span className="nvc-remarks-split-pane__label">
+                          {translatingRemark ? (
+                            <span className="nvc-remarks-split-pane__translating">
+                              <span className="nvc-remarks-split-pane__dot" />
+                              {t('translating', 'Translating')}...
+                            </span>
+                          ) : t('arabic', 'Arabic')}
+                        </span>
+                      </div>
+                      <div className="nvc-remarks-split-ar-view" dir="rtl">
+                        {item.remarks_ar
+                          ? item.remarks_ar
+                          : <span className="nvc-remarks-split-placeholder">{t('auto_translated_arabic', 'ترجمة تلقائية...')}</span>
+                        }
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  item.remarks_ar ? (
+                    <div className="nvc-remarks-split-view-grid">
+                      <div className="nvc-remarks-split-view-col">
+                        <div className="nvi-remarks-text">{item.remarks || <span className="nvi-remarks-empty">—</span>}</div>
+                      </div>
+                      <div className="nvc-remarks-split-view-divider" />
+                      <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
+                        <div className="nvi-remarks-text">{item.remarks_ar}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="nvi-remarks-text">
+                      {item.remarks || <span className="nvi-remarks-empty">—</span>}
+                    </div>
+                  )
                 )}
               </div>
             </td>
@@ -255,6 +299,7 @@ const ItemRow = memo(
     p.item.rate === n.item.rate &&
     p.item.amount === n.item.amount &&
     p.item.remarks === n.item.remarks &&
+    p.item.remarks_ar === n.item.remarks_ar &&
     p.item.includesOverheadProfit === n.item.includesOverheadProfit &&
     p.isEditMode === n.isEditMode &&
     p.itemsCount === n.itemsCount &&

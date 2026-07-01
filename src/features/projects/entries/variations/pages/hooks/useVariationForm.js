@@ -18,6 +18,7 @@ const defaultFormData = {
   item_description: '',
   project_description: '',
   remarks: '',
+  remarks_ar: '',
   vat_percentage: '15',
   consultant_fees_type: 'percentage',
   consultant_fees_percentage: '4',

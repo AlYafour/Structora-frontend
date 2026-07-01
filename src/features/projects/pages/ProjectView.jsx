@@ -148,10 +148,10 @@ const projectDisplayName = isAR
  <TabComponent projectId={projectId} awarding={awarding} />
  )}
  {effectiveActiveTab === "start_order" && (
- <TabComponent projectId={projectId} startOrder={startOrder} onDeleted={reload} />
+ <TabComponent projectId={projectId} startOrder={startOrder} extensions={extensions} onDeleted={reload} />
  )}
  {effectiveActiveTab === "project_schedule" && (
- <TabComponent projectId={projectId} projectSchedule={projectSchedule} startOrder={startOrder} extensions={extensions} />
+ <TabComponent projectId={projectId} projectSchedule={projectSchedule} extensions={extensions} />
  )}
  {effectiveActiveTab === "excavation_notice" && (
  <TabComponent projectId={projectId} excavationNotice={excavationNotice} />

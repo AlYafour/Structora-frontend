@@ -212,7 +212,10 @@ export default function ContractExtension({
         <Field label={t("upload_extension_file")}>
           <FileUpload
             value={extension.file}
-            onChange={(file) => onUpdate(actualIndex, "file", file)}
+            onChange={(file) => {
+              onUpdate(actualIndex, "file", file);
+              if (file) onUpdate(actualIndex, "extension_file_delete", false);
+            }}
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             maxSizeMB={30}
             showPreview={true}
@@ -222,6 +225,7 @@ export default function ContractExtension({
               onUpdate(actualIndex, "file", null);
               onUpdate(actualIndex, "file_url", null);
               onUpdate(actualIndex, "file_name", null);
+              onUpdate(actualIndex, "extension_file_delete", true);
             }}
             fileType="extension_file"
             fileIndex={actualIndex}

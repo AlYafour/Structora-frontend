@@ -14,6 +14,7 @@ const createNewItem = (id, includeOverheadProfit = false) => ({
   amount: '',
   description: '',
   remarks: '',
+  remarks_ar: '',
   ...(includeOverheadProfit && { includesOverheadProfit: false })
 });
 

@@ -22,6 +22,7 @@ export default function HomePage() {
   const [stats, setStats] = useState(null);
   const [projectFinancials, setProjectFinancials] = useState([]);
   const [pendingTasks, setPendingTasks] = useState([]);
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
 
@@ -189,37 +190,49 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <div className="dash-tasks__list">
-              {pendingTasks.slice(0, 8).map((task) => {
-                const projectName = lang === "ar"
-                  ? (task.project_name || task.project_name_en)
-                  : (task.project_name_en || task.project_name);
-                const title = task.type?.startsWith("project_")
-                  ? (projectName || task.title)
-                  : task.title;
-                const meta = !task.type?.startsWith("project_") ? projectName : "";
+            <>
+              <div className="dash-tasks__list">
+                {(showAllTasks ? pendingTasks : pendingTasks.slice(0, 8)).map((task) => {
+                  const projectName = lang === "ar"
+                    ? (task.project_name || task.project_name_en)
+                    : (task.project_name_en || task.project_name);
+                  const title = task.type?.startsWith("project_")
+                    ? (projectName || task.title)
+                    : task.title;
+                  const meta = !task.type?.startsWith("project_") ? projectName : "";
 
-                return (
-                  <Link className="dash-task" to={task.action_url || "/dashboard"} key={task.id}>
-                    <span className="dash-task__icon">{getTaskIcon(task.type)}</span>
-                    <span className="dash-task__body">
-                      <span className="dash-task__topline">
-                        <span className="dash-task__type">{taskTypeLabel(task.type)}</span>
-                        {task.created_at && (
-                          <span className="dash-task__date">{formatTaskDate(task.created_at)}</span>
-                        )}
+                  return (
+                    <Link className="dash-task" to={task.action_url || "/dashboard"} key={task.id}>
+                      <span className="dash-task__icon">{getTaskIcon(task.type)}</span>
+                      <span className="dash-task__body">
+                        <span className="dash-task__topline">
+                          <span className="dash-task__type">{taskTypeLabel(task.type)}</span>
+                          {task.created_at && (
+                            <span className="dash-task__date">{formatTaskDate(task.created_at)}</span>
+                          )}
+                        </span>
+                        <span className="dash-task__title">{title}</span>
+                        <span className="dash-task__meta">{meta}</span>
                       </span>
-                      <span className="dash-task__title">{title}</span>
-                      <span className="dash-task__meta">{meta}</span>
-                    </span>
-                    <span className="dash-task__status">{t(task.status) || task.status}</span>
-                    <span className="dash-task__open" aria-hidden="true">
-                      <FaExternalLinkAlt />
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+                      <span className="dash-task__status">{t(task.status) || task.status}</span>
+                      <span className="dash-task__open" aria-hidden="true">
+                        <FaExternalLinkAlt />
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+              {pendingTasks.length > 8 && (
+                <button
+                  className="dash-tasks__show-more"
+                  onClick={() => setShowAllTasks((prev) => !prev)}
+                >
+                  {showAllTasks
+                    ? t("show_less")
+                    : t("show_more_tasks", { count: pendingTasks.length - 8 })}
+                </button>
+              )}
+            </>
           )}
         </section>
 

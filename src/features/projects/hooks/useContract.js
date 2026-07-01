@@ -254,19 +254,6 @@ export default function useContract(projectId) {
                     : [],
                 }))
               : [],
-            // Load extensions with new fields
-            extensions: Array.isArray(s.extensions) 
-              ? s.extensions.map(ext => ({
-                  reason: ext.reason || "",
-                  days: ext.days || 0,
-                  months: ext.months || 0,
-                  extension_date: ext.extension_date || "",
-                  approval_number: ext.approval_number || "",
-                  file: null, // Don't load File object
-                  file_url: ext.file_url || null,
-                  file_name: ext.file_name || null,
-                }))
-              : [],
             // Load owners: prefer contract owners, fallback to siteplan owners
             owners: Array.isArray(s.owners) && s.owners.length > 0 ? s.owners : sitePlanOwners,
             // Use filtered attachments (without main_contract) ensuring file_url and file_name exist

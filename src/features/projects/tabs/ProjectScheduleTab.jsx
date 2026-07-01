@@ -11,11 +11,11 @@ import { useAuth } from "../../../contexts/AuthContext";
 const hasDurationExtensions = (extensions) =>
   Array.isArray(extensions) && extensions.some((ext) => (Number(ext?.days) || 0) > 0 || (Number(ext?.months) || 0) > 0);
 
-const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, projectSchedule, startOrder, extensions = [] }) {
+const ProjectScheduleTab = memo(function ProjectScheduleTab({ projectId, projectSchedule, extensions = [] }) {
   const { t } = useTranslation();
   const { hasPermission, isAdmin } = useAuth();
   const hasData = !!projectSchedule;
-  const hasExtensions = hasDurationExtensions(extensions) || hasDurationExtensions(startOrder?.extensions);
+  const hasExtensions = hasDurationExtensions(extensions);
   const canAddProjectSchedule = isAdmin || hasPermission("projects.add_project_schedule");
 
   return (

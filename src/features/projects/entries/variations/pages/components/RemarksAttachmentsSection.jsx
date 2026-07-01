@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { FaPaperclip, FaTrash, FaPlus } from 'react-icons/fa';
 import FileUpload from '../../../../../../components/file-upload/FileUpload';
 import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
+import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
 
 const RemarksAttachmentsSection = memo(({
   formData,
@@ -21,6 +22,12 @@ const RemarksAttachmentsSection = memo(({
   variation,
   t
 }) => {
+  const { translating } = useAutoTranslate(
+    formData.remarks,
+    (ar) => onFormDataChange(prev => ({ ...prev, remarks_ar: ar })),
+    { enabled: isEditMode }
+  );
+
   if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
   }
@@ -49,19 +56,71 @@ const RemarksAttachmentsSection = memo(({
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
           {isEditMode ? (
-            <textarea
-              value={formData.remarks ?? ''}
-              onChange={(e) => onFormDataChange({ ...formData, remarks: e.target.value })}
-              className="nvc-input nvc-textarea"
-              rows={3}
-              placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
-            />
+            <div className="nvc-remarks-split-card">
+              {/* English pane — original input */}
+              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en">
+                <div className="nvc-remarks-split-pane__header">
+                  <span className="nvc-remarks-split-pane__lang">EN</span>
+                  <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                </div>
+                <textarea
+                  className="nvc-remarks-split-input"
+                  value={formData.remarks ?? ''}
+                  onChange={(e) => onFormDataChange({ ...formData, remarks: e.target.value })}
+                  placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="nvc-remarks-split-divider" />
+
+              {/* Arabic pane — auto-translated, read-only */}
+              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--ar">
+                <div className="nvc-remarks-split-pane__header">
+                  <span className="nvc-remarks-split-pane__lang">ع</span>
+                  <span className="nvc-remarks-split-pane__label">
+                    {translating ? (
+                      <span className="nvc-remarks-split-pane__translating">
+                        <span className="nvc-remarks-split-pane__dot" />
+                        {t('translating', 'Translating')}...
+                      </span>
+                    ) : t('arabic', 'Arabic')}
+                  </span>
+                </div>
+                <div className="nvc-remarks-split-ar-view" dir="rtl">
+                  {formData.remarks_ar
+                    ? formData.remarks_ar
+                    : <span className="nvc-remarks-split-placeholder">{t('auto_translated_arabic', 'ترجمة تلقائية...')}</span>
+                  }
+                </div>
+              </div>
+            </div>
           ) : formData.remarks ? (
-            <ul className="nvc-remarks-bullets">
-              {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
-                <li key={i}>{line.trim()}</li>
-              ))}
-            </ul>
+            formData.remarks_ar ? (
+              <div className="nvc-remarks-split-view-grid">
+                <div className="nvc-remarks-split-view-col">
+                  <ul className="nvc-remarks-bullets">
+                    {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
+                      <li key={i}>{line.trim()}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="nvc-remarks-split-view-divider" />
+                <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
+                  <ul className="nvc-remarks-bullets nvc-remarks-bullets--ar">
+                    {formData.remarks_ar.split('\n').filter(l => l.trim()).map((line, i) => (
+                      <li key={i}>{line.trim()}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <ul className="nvc-remarks-bullets">
+                {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
+                  <li key={i}>{line.trim()}</li>
+                ))}
+              </ul>
+            )
           ) : null}
         </div>
 

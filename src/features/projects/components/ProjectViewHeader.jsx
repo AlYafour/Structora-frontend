@@ -44,7 +44,6 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   onFinalApproveClick,
   onRevokeFinalApprovalClick,
   siteplan,
-  startOrder,
   projectSchedule,
   extensions = [],
 }) {
@@ -164,7 +163,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   const statusInfo = getStatusInfo();
   const hasDurationExtensions = (items) =>
     Array.isArray(items) && items.some((ext) => (Number(ext?.days) || 0) > 0 || (Number(ext?.months) || 0) > 0);
-  const hasScheduleExtensions = hasDurationExtensions(extensions) || hasDurationExtensions(startOrder?.extensions);
+  const hasScheduleExtensions = hasDurationExtensions(extensions);
   const headerDates = [
     projectSchedule?.project_start_date && {
       id: "schedule-start-date",

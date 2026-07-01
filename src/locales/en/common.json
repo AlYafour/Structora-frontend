@@ -52,6 +52,8 @@
   "no_pending_tasks": "No pending tasks",
   "no_pending_tasks_desc": "Everything assigned to you is clear for now.",
   "no_pending_tasks_for_role": "There are no pending items for your role right now.",
+  "show_more_tasks": "Show {{count}} more tasks",
+  "show_less": "Show less",
   "task_project_manager_approval": "Project Approval",
   "task_project_final_approval": "Final Project Approval",
   "task_variation_project_manager_approval": "Variation PM Approval",

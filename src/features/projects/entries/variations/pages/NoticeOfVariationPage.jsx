@@ -215,6 +215,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         item_description: noticeData.item_description ?? '',
         project_description: noticeData.project_description ?? '',
         remarks: noticeData.remarks ?? '',
+        remarks_ar: noticeData.remarks_ar ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',
         consultant_fees_type: consultantFeesType,
         consultant_fees_percentage: consultantFeesType === 'percentage' ? (noticeData.consultant_fees_percentage ?? '4') : '',
@@ -245,6 +246,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           ...item,
           description: item.description || '',
           remarks: item.remarks || '',
+          remarks_ar: item.remarks_ar || '',
           includesOverheadProfit: item.includesOverheadProfit ?? false
         }));
         setOmittedItems(items);
@@ -258,7 +260,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         const items = noticeData.added_items.map(item => ({
           ...item,
           description: item.description || '',
-          remarks: item.remarks || ''
+          remarks: item.remarks || '',
+          remarks_ar: item.remarks_ar || '',
         }));
         setAddedItems(items);
         const itemsWithRemarks = items.filter(item => item.remarks && item.remarks.trim());
@@ -469,6 +472,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         item_description: formData.item_description,
         project_description: formData.project_description,
         remarks: formData.remarks,
+        remarks_ar: formData.remarks_ar,
         omitted_items: omittedItems,
         added_items: addedItems,
         total_omitted: calculations.totalOmitted,
@@ -778,6 +782,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           saving={saving}
           formId="notice-variation-form"
           showSave={isEditMode}
+          saveLabel={(!variationId || effectiveVariation?.status === 'draft') ? t('submit', 'Submit') : undefined}
           title={getProjectTitle()}
           subtitle={getProjectSubtitle()}
           extraActions={
@@ -897,6 +902,16 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
                 t={t}
               />
             </div>
+          )}
+
+          {/* Hidden draft-save trigger for embedded mode (called from VariationViewPage toolbar) */}
+          {isEmbeddedMode && (
+            <button
+              type="button"
+              id="nvc-save-draft-trigger"
+              style={{ display: 'none' }}
+              onClick={(e) => handleSubmit(e, true)}
+            />
           )}
 
           {/* Remarks & Attachments */}

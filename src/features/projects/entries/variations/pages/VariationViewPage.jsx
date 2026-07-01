@@ -307,6 +307,7 @@ export default function VariationViewPage() {
       });
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
+      pdf.setDisplayMode("fullpage", "continuous", "UseNone");
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 0;
@@ -715,13 +716,22 @@ export default function VariationViewPage() {
                   {activeTab === "edit" && permissions.canEdit && (
                     <>
                       <span className="var-toolbar__actions-label">{t("actions")}</span>
+                      {variationStatus === 'draft' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => document.getElementById('nvc-save-draft-trigger')?.click()}
+                        >
+                          {t("save_as_draft", "Save as Draft")}
+                        </Button>
+                      )}
                       <Button
                         variant="primary"
                         size="sm"
                         type="submit"
                         form="notice-variation-form"
                       >
-                        {t("save")}
+                        {variationStatus === 'draft' ? t("submit", "Submit") : t("save")}
                       </Button>
                     </>
                   )}

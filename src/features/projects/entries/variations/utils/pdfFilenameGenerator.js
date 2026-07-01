@@ -11,11 +11,7 @@
  * @returns {string} Generated filename
  */
 export const generatePDFFilename = (variation, noticeData) => {
-  const referenceNo = (
-    noticeData.reference_no ||
-    variation?.variation_number ||
-    `VAR${variation?.id}`
-  ).replace(/\s+/g, "");
+  const varNo = `VAR${variation?.variation_number || variation?.id || ""}`;
 
   const description = (
     noticeData.variation_description ||
@@ -28,7 +24,7 @@ export const generatePDFFilename = (variation, noticeData) => {
     .trim()
     .substring(0, 50);
 
-  return `${referenceNo} - ${description}.pdf`;
+  return `${varNo} - ${description}.pdf`;
 };
 
 /**
@@ -38,11 +34,7 @@ export const generatePDFFilename = (variation, noticeData) => {
  * @returns {string} Generated document title (without .pdf extension)
  */
 export const generateDocumentTitle = (variation, noticeData) => {
-  const referenceNo = (
-    noticeData.reference_no ||
-    variation?.variation_number ||
-    `VAR${variation?.id}`
-  ).replace(/\s+/g, "");
+  const varNo = `VAR${variation?.variation_number || variation?.id || ""}`;
 
   const description = (
     noticeData.variation_description ||
@@ -55,5 +47,5 @@ export const generateDocumentTitle = (variation, noticeData) => {
     .trim()
     .substring(0, 50);
 
-  return `${referenceNo} - ${description}`;
+  return `${varNo} - ${description}`;
 };

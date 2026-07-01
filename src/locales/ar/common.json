@@ -52,6 +52,8 @@
   "no_pending_tasks": "لا توجد مهام معلقة",
   "no_pending_tasks_desc": "لا توجد عناصر مسندة إليك حالياً.",
   "no_pending_tasks_for_role": "لا توجد عناصر معلقة لدورك حالياً.",
+  "show_more_tasks": "عرض {{count}} مهمة إضافية",
+  "show_less": "عرض أقل",
   "task_project_manager_approval": "اعتماد مشروع",
   "task_project_final_approval": "الاعتماد النهائي للمشروع",
   "task_variation_project_manager_approval": "اعتماد مدير المشروع للتعديل",
