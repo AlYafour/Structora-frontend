@@ -773,6 +773,7 @@
   "pending_supervisor": "Pending Supervisor Approval",
   "rejected_by_supervisor": "Rejected by Supervisor",
   "rejected_by_gm_initial": "Rejected by General Manager (Initial)",
+  "rejected_by_owner_consultant": "Rejected by Owner/Consultant",
   "approval_notes_placeholder": "Add notes (optional)...",
   "submitted": "Submitted",
   "audit_log": "Audit Log",

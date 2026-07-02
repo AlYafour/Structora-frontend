@@ -711,6 +711,7 @@ export default function VariationViewPage() {
               permissions.canApproveProjectManager || permissions.canRejectProjectManager ||
               permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
               permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
+              permissions.canRejectOwnerConsultant ||
               permissions.canApproveGeneralManagerFinal) && (
                 <div className="var-toolbar__actions">
                   {activeTab === "edit" && permissions.canEdit && (
@@ -739,6 +740,7 @@ export default function VariationViewPage() {
                     permissions.canApproveGMInitial || permissions.canRejectGMInitial ||
                     permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
                     permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
+                    permissions.canRejectOwnerConsultant ||
                     permissions.canApproveGeneralManagerFinal) && (
                     <>
                       <span className="var-toolbar__actions-label">{t("available_actions")}</span>
@@ -780,6 +782,11 @@ export default function VariationViewPage() {
                       {permissions.canConfirmConsultantApproval && (
                         <Button variant="primary" size="sm" onClick={() => dialogStates.setConfirmConsultantApprovalDialogOpen(true)}>
                           <FaCheckCircle /> {t("confirm_consultant_approval")}
+                        </Button>
+                      )}
+                      {permissions.canRejectOwnerConsultant && (
+                        <Button variant="danger" size="sm" onClick={() => dialogStates.setRejectOwnerConsultantDialogOpen(true)}>
+                          <FaTimesCircle /> {t("reject")}
                         </Button>
                       )}
                       {permissions.canApproveGeneralManagerFinal && (
@@ -1458,6 +1465,32 @@ export default function VariationViewPage() {
           cancelLabel={t("cancel")}
           onClose={() => { dialogStates.setRejectGeneralManagerDialogOpen(false); setActionNotes(""); }}
           onConfirm={handlers.handleRejectGeneralManager}
+          busy={processingApproval}
+        />
+
+        <Dialog
+          open={dialogStates.rejectOwnerConsultantDialogOpen}
+          title={t("reject_variation")}
+          desc={
+            <div>
+              <p>{t("reject_owner_consultant_confirmation")}</p>
+              <label className="var-dialog-label">
+                {t("rejection_reason")} <span className="var-required">*</span>
+              </label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder={t("enter_rejection_reason")}
+                required
+              />
+            </div>
+          }
+          confirmLabel={t("reject")}
+          cancelLabel={t("cancel")}
+          onClose={() => { dialogStates.setRejectOwnerConsultantDialogOpen(false); setActionNotes(""); }}
+          onConfirm={handlers.handleRejectOwnerConsultant}
           busy={processingApproval}
         />
 

@@ -30,6 +30,7 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
   const [rejectGeneralManagerDialogOpen, setRejectGeneralManagerDialogOpen] = useState(false);
   const [confirmOwnerApprovalDialogOpen, setConfirmOwnerApprovalDialogOpen] = useState(false);
   const [confirmConsultantApprovalDialogOpen, setConfirmConsultantApprovalDialogOpen] = useState(false);
+  const [rejectOwnerConsultantDialogOpen, setRejectOwnerConsultantDialogOpen] = useState(false);
   const [approveGeneralManagerFinalDialogOpen, setApproveGeneralManagerFinalDialogOpen] = useState(false);
   const [approveGmInitialDialogOpen, setApproveGmInitialDialogOpen] = useState(false);
   const [rejectGmInitialDialogOpen, setRejectGmInitialDialogOpen] = useState(false);
@@ -132,6 +133,26 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       invalidateAndRefresh();
     } catch (e) {
       toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("confirm_error"));
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const handleRejectOwnerConsultant = async () => {
+    if (!variation || !project) return;
+    if (!actionNotes?.trim()) {
+      toast("error", t("rejection_reason_required") || "Rejection reason is required");
+      return;
+    }
+    setProcessingApproval(true);
+    try {
+      await projectApi.rejectVariationOwnerConsultant(project.id, variation.id, actionNotes.trim());
+      toast("success", t("variation_rejected") || "Variation rejected");
+      setRejectOwnerConsultantDialogOpen(false);
+      setActionNotes("");
+      invalidateAndRefresh();
+    } catch (e) {
+      toast("error", e?.response?.data?.error || e?.response?.data?.detail || t("reject_error"));
     } finally {
       setProcessingApproval(false);
     }
@@ -246,6 +267,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       setConfirmOwnerApprovalDialogOpen,
       confirmConsultantApprovalDialogOpen,
       setConfirmConsultantApprovalDialogOpen,
+      rejectOwnerConsultantDialogOpen,
+      setRejectOwnerConsultantDialogOpen,
       approveGeneralManagerFinalDialogOpen,
       setApproveGeneralManagerFinalDialogOpen,
       approveGmInitialDialogOpen,
@@ -264,6 +287,7 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
       handleApproveGeneralManagerInitial,
       handleConfirmOwnerApproval,
       handleConfirmConsultantApproval,
+      handleRejectOwnerConsultant,
       handleApproveGeneralManagerFinal,
       handleRejectProjectManager,
       handleRejectGeneralManager,

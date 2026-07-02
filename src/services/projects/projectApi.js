@@ -524,6 +524,25 @@ class ProjectService extends BaseService {
   }
 
   /**
+   * Reject variation (owner/consultant stage, recorded by project manager)
+   * @param {string|number} projectId - Project ID
+   * @param {string|number} variationId - Variation ID
+   * @param {string} notes - Rejection notes
+   * @returns {Promise} Response data
+   */
+  async rejectVariationOwnerConsultant(projectId, variationId, notes) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/reject_owner_consultant/`,
+        { rejection_reason: notes }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.rejectVariationOwnerConsultant');
+    }
+  }
+
+  /**
    * Reject variation (project manager)
    * @param {string|number} projectId - Project ID
    * @param {string|number} variationId - Variation ID

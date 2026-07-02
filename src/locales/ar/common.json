@@ -773,6 +773,7 @@
   "pending_supervisor": "في انتظار موافقة المشرف",
   "rejected_by_supervisor": "مرفوض من المشرف",
   "rejected_by_gm_initial": "مرفوض من المدير العام (مبدئي)",
+  "rejected_by_owner_consultant": "مرفوض من المالك أو الاستشاري",
   "approval_notes_placeholder": "أضف ملاحظات (اختياري)...",
   "submitted": "مُرسل",
   "audit_log": "سجل التغييرات",

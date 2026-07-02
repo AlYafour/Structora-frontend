@@ -199,6 +199,15 @@ export const APPROVAL_STATUS_CONFIG = {
     bgColor: "#fee2e2",
     badge: "❌ مرفوض من مدير المشروع",
   },
+  rejected_by_owner_consultant: {
+    label: {
+      ar: "مرفوض من المالك أو الاستشاري",
+      en: "Rejected by Owner/Consultant",
+    },
+    color: "#ef4444", // red
+    bgColor: "#fee2e2",
+    badge: "❌ مرفوض من المالك أو الاستشاري",
+  },
   pending_project_manager: {
     label: {
       ar: "في انتظار موافقة مدير المشروع",

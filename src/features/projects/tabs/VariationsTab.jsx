@@ -380,7 +380,9 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         try {
             setRejectingVariationId(actionVariation.id);
-            if (isProjectManager) {
+            if (isProjectManager && workflowStatus === "pending_owner_consultant") {
+                await projectApi.rejectVariationOwnerConsultant(projectId, actionVariation.id, rejectionReason.trim());
+            } else if (isProjectManager) {
                 await projectApi.rejectVariationProjectManager(projectId, actionVariation.id, rejectionReason.trim());
             } else {
                 await projectApi.rejectVariation(projectId, actionVariation.id, rejectionReason.trim());
@@ -909,6 +911,20 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         return s === "draft" || s === "pending_project_manager";
     };
 
+    // Staff may only edit directly before it leaves their hands, or once it's kicked back to them.
+    // Any other pending status (supervisor/GM/owner-consultant review) must go through the request-edit flow.
+    const canStaffEditVariation = (variation) => {
+        const s = getVariationStatus(variation);
+        return (
+            s === "draft" ||
+            s === "pending_project_manager" ||
+            s === "rejected_by_project_manager" ||
+            s === "rejected_by_supervisor" ||
+            s === "rejected_by_gm_initial" ||
+            s === "rejected_by_owner_consultant"
+        );
+    };
+
     const staffCanDeleteSelected = !isStaff || [...selectedVariationIds].every(id => {
         const v = filteredVariations.find(v => v.id === id);
         return v && canStaffDeleteVariation(v);
@@ -974,7 +990,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         const status = getVariationStatus(variation);
 
-        if (status === "rejected_by_project_manager" || status === "rejected_by_supervisor" || status === "rejected_by_gm_initial" || status === "rejected") {
+        if (status === "rejected_by_project_manager" || status === "rejected_by_supervisor" || status === "rejected_by_gm_initial" || status === "rejected_by_owner_consultant" || status === "rejected") {
             return false;
         }
 
@@ -989,7 +1005,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isProjectManager) {
-            return workflowStatus === "pending_project_manager";
+            return workflowStatus === "pending_project_manager" || workflowStatus === "pending_owner_consultant";
         }
 
         if (isSupervisor) {
@@ -1382,8 +1398,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                                 ]
                                                                 : [
                                                                     ...(canEditVariation &&
-                                                                        !(isStaff && status === "pending_supervisor") &&
-                                                                        !(isProjectManager && ["pending_gm_initial", "pending_supervisor", "pending_owner_consultant", "pending_general_manager_final"].includes(status))
+                                                                        !(isProjectManager && ["pending_gm_initial", "pending_supervisor", "pending_owner_consultant", "pending_general_manager_final"].includes(status)) &&
+                                                                        (!isStaff || canStaffEditVariation(variation))
                                                                         ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
                                                                         : []),
                                                                     ...(isProjectManager && status === "pending_supervisor" && !variation.pending_alteration_request

@@ -22,6 +22,7 @@ export const getStatusLabel = (status, t) => {
     'pending_supervisor': t("pending_supervisor"),
     'rejected_by_supervisor': t("rejected_by_supervisor"),
     'pending_owner_consultant': t("pending_owner_consultant"),
+    'rejected_by_owner_consultant': t("rejected_by_owner_consultant"),
     'pending_general_manager_final': t("pending_general_manager_final"),
     'approved': t("approved"),
     'rejected': t("rejected"),
@@ -76,6 +77,7 @@ export const isRejected = (variation) => {
   return status === 'rejected_by_project_manager' ||
          status === 'rejected_by_supervisor' ||
          status === 'rejected_by_gm_initial' ||
+         status === 'rejected_by_owner_consultant' ||
          status === 'rejected';
 };
 
@@ -124,6 +126,7 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       status === 'rejected_by_project_manager' ||
       status === 'rejected_by_supervisor' ||
       status === 'rejected_by_gm_initial' ||
+      status === 'rejected_by_owner_consultant' ||
       ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest));
 
   // Can approve/reject only if not rejected (must edit first if rejected)
@@ -144,6 +147,8 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
     canConfirmConsultantApproval: canApproveOrReject && isProjectManager &&
       status === 'pending_owner_consultant' &&
       !variation?.consultant_approval_confirmed,
+    canRejectOwnerConsultant: canApproveOrReject && isProjectManager &&
+      status === 'pending_owner_consultant',
     canApproveGeneralManagerInitial: canApproveOrReject && isSupervisor &&
       status === 'pending_supervisor',
     canRejectGeneralManager: canApproveOrReject && (isSupervisor || isGeneralManager) &&
