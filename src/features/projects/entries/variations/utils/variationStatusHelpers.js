@@ -22,6 +22,8 @@ export const getStatusLabel = (status, t) => {
     'pending_supervisor': t("pending_supervisor"),
     'rejected_by_supervisor': t("rejected_by_supervisor"),
     'pending_owner_consultant': t("pending_owner_consultant"),
+    'pending_official_document': t("pending_official_document"),
+    'returned_for_edit': t("returned_for_edit"),
     'rejected_by_owner_consultant': t("rejected_by_owner_consultant"),
     'pending_general_manager_final': t("pending_general_manager_final"),
     'approved': t("approved"),
@@ -128,19 +130,29 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       status === 'rejected_by_gm_initial' ||
       status === 'rejected_by_owner_consultant' ||
       ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest));
+  const isOriginalCreator = variation?.created_by
+    ? String(variation.created_by) === String(user?.id || '')
+    : isStaff;
 
   // Can approve/reject only if not rejected (must edit first if rejected)
   const canApproveOrReject = !rejected;
 
   return {
-    canEdit,
+    canEdit: status === 'rejected_by_owner_consultant' && isStaff
+      ? true
+      : status === 'returned_for_edit'
+      ? isOriginalCreator
+      : canEdit && ![
+          'pending_project_manager', 'pending_gm_initial', 'pending_supervisor',
+          'pending_owner_consultant', 'pending_official_document', 'pending_general_manager_final'
+        ].includes(status),
+    canUploadSignedCopy: isStaff && (status === 'pending_official_document' || (status === 'approved' && variation?.updated_document_pending)),
+    canRunSignedCopyAudit: isGeneralManager && status === 'pending_general_manager_final',
     canApproveProjectManager: canApproveOrReject && isProjectManager &&
       status === 'pending_project_manager' &&
       !variation?.project_manager_initial_approved_by &&
       !variation?.rejected_by,
-    canRejectProjectManager: canApproveOrReject && isProjectManager &&
-      status === 'pending_project_manager' &&
-      !variation?.rejected_by,
+    canRejectProjectManager: false,
     canConfirmOwnerApproval: canApproveOrReject && isProjectManager &&
       status === 'pending_owner_consultant' &&
       !variation?.owner_approval_confirmed,
@@ -151,14 +163,18 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       status === 'pending_owner_consultant',
     canApproveGeneralManagerInitial: canApproveOrReject && isSupervisor &&
       status === 'pending_supervisor',
-    canRejectGeneralManager: canApproveOrReject && (isSupervisor || isGeneralManager) &&
-      status === 'pending_supervisor',
+    canRejectGeneralManager: false,
     canApproveGMInitial: canApproveOrReject && isGeneralManager &&
       status === 'pending_gm_initial',
-    canRejectGMInitial: canApproveOrReject && isGeneralManager &&
-      status === 'pending_gm_initial',
+    canRejectGMInitial: false,
     canApproveGeneralManagerFinal: canApproveOrReject && isGeneralManager &&
-      status !== 'approved' &&
+      status === 'pending_general_manager_final' &&
       !variation?.general_manager_final_approved_by,
+    canReturnForEdit: (
+      (isProjectManager && (status === 'pending_project_manager' || status === 'pending_owner_consultant')) ||
+      (isGeneralManager && (status === 'pending_gm_initial' || status === 'pending_general_manager_final')) ||
+      (isSupervisor && status === 'pending_supervisor')
+    ),
+    canEditReturnedVariation: status === 'returned_for_edit' && isOriginalCreator,
   };
 };

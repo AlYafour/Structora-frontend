@@ -235,6 +235,8 @@
   "accepted": "مقبول",
   "pending_project_manager": "في انتظار مدير المشروع",
   "pending_owner_consultant": "في انتظار المالك والاستشاري",
+  "pending_official_document": "بانتظار المستند الرسمي الموقع",
+  "returned_for_edit": "معاد للتعديل",
   "pending_general_manager_final": "في انتظار الاعتماد النهائي",
   "final_approved": "معتمد نهائياً",
   "rejected": "مرفوض",

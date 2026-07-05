@@ -8,18 +8,11 @@ const RemarksAttachmentsSection = memo(({
   formData,
   isEditMode,
   onFormDataChange,
-  variationAttachment,
-  setVariationAttachment,
   existingVariationAttachment,
-  existingVariationAttachmentName,
-  setExistingVariationAttachment,
-  setVariationFileCleared,
   // new multi-attachment props
   variationAttachments,
   setVariationAttachments,
   project,
-  variationId,
-  variation,
   t
 }) => {
   const { translating } = useAutoTranslate(
@@ -123,38 +116,6 @@ const RemarksAttachmentsSection = memo(({
             )
           ) : null}
         </div>
-
-        {/* Single variation document (existing) */}
-        {(() => {
-          const rawName = existingVariationAttachmentName || (existingVariationAttachment ? existingVariationAttachment.split('/').pop() : '');
-          const ext = rawName.includes('.') ? '.' + rawName.split('.').pop().toLowerCase() : '';
-          const varNum = variation?.variation_number || formData?.variation_number;
-          const varSuffix = varNum ? ` - VAR${varNum}` : '';
-          const displayName = `Approved Variation${varSuffix}${ext}`;
-          return isEditMode ? (
-            <div className="nvc-field no-print">
-              <label>{t('variation_document')}</label>
-              <FileUpload
-                value={variationAttachment}
-                onChange={(file) => {
-                  setVariationAttachment(file);
-                  if (file) setVariationFileCleared(false);
-                }}
-                accept=".pdf,.jpg,.jpeg,.png"
-                maxSizeMB={30}
-                showPreview={true}
-                existingFileUrl={existingVariationAttachment}
-                existingFileName={existingVariationAttachment ? displayName : ''}
-                onRemoveExisting={() => {
-                  setExistingVariationAttachment(null);
-                  setVariationAttachment(null);
-                  setVariationFileCleared(true);
-                }}
-                disabled={!isEditMode}
-              />
-            </div>
-          ) : null;
-        })()}
 
         {/* Multi-file PDF attachments */}
         <div className="nvc-field nvc-field--full no-print">

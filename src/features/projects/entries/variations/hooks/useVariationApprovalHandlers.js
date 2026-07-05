@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invalidateProjectQueries } from "../../../hooks/useProjectData";
 import { projectApi } from "../../../../../services";
 
-export const useVariationApprovalHandlers = (variation, project, toast, t, onSuccess) => {
+export const useVariationApprovalHandlers = (variation, project, toast, t, onSuccess, createGmInitialSnapshot) => {
   const queryClient = useQueryClient();
 
   // Invalidate all project-related caches so every tab gets fresh data.
@@ -58,7 +58,8 @@ export const useVariationApprovalHandlers = (variation, project, toast, t, onSuc
     if (!variation || !project) return;
     setProcessingApproval(true);
     try {
-      await projectApi.approveVariationGMInitial(project.id, variation.id);
+      const snapshotBlob = await createGmInitialSnapshot();
+      await projectApi.approveVariationGMInitial(project.id, variation.id, snapshotBlob);
       toast("success", t("variation_approved") || "Variation approved successfully");
       setApproveGmInitialDialogOpen(false);
       setActionNotes("");

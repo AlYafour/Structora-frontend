@@ -426,10 +426,15 @@ class ProjectService extends BaseService {
     }
   }
 
-  async approveVariationGMInitial(projectId, variationId) {
+  async approveVariationGMInitial(projectId, variationId, snapshotBlob) {
     try {
+      if (!(snapshotBlob instanceof Blob)) {
+        throw new Error('GM initial approval requires the frontend-generated variation PDF snapshot.');
+      }
+      const body = new FormData();
+      body.append('system_pdf_snapshot', snapshotBlob, `variation-${variationId}-gm-initial-snapshot.pdf`);
       const { data } = await api.post(
-        `${this.basePath}${projectId}/variations/${variationId}/approve_gm_initial/`
+        `${this.basePath}${projectId}/variations/${variationId}/approve_gm_initial/`, body
       );
       return data;
     } catch (error) {
@@ -520,6 +525,55 @@ class ProjectService extends BaseService {
       return data;
     } catch (error) {
       throw handleError(error, 'ProjectService.confirmConsultantApproval');
+    }
+  }
+
+  async uploadVariationSignedCopy(projectId, variationId, file) {
+    try {
+      const body = new FormData();
+      body.append('variation_invoice_file', file);
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/signed-copy/`, body
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.uploadVariationSignedCopy');
+    }
+  }
+
+  async removeVariationSignedCopy(projectId, variationId) {
+    try {
+      const { data } = await api.delete(`${this.basePath}${projectId}/variations/${variationId}/signed-copy/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.removeVariationSignedCopy');
+    }
+  }
+
+  async runVariationAiAudit(projectId, variationId) {
+    try {
+      const { data } = await api.post(`${this.basePath}${projectId}/variations/${variationId}/run-signed-copy-audit/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.runVariationAiAudit');
+    }
+  }
+
+  async returnVariationForEdit(projectId, variationId, reason) {
+    try {
+      const { data } = await api.post(`${this.basePath}${projectId}/variations/${variationId}/return-for-edit/`, { reason });
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.returnVariationForEdit');
+    }
+  }
+
+  async addVariationPostApprovalDiscount(projectId, variationId, discount) {
+    try {
+      const { data } = await api.post(`${this.basePath}${projectId}/variations/${variationId}/post-approval-discount/`, { discount });
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.addVariationPostApprovalDiscount');
     }
   }
 

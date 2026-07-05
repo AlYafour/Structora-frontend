@@ -235,6 +235,8 @@
   "accepted": "Accepted",
   "pending_project_manager": "Pending Project Manager",
   "pending_owner_consultant": "Pending Owner & Consultant",
+  "pending_official_document": "Pending Official Signed Document",
+  "returned_for_edit": "Returned for Edit",
   "pending_general_manager_final": "Pending Final Approval",
   "final_approved": "Final Approved",
   "rejected": "Rejected",

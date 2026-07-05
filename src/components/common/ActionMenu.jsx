@@ -29,14 +29,20 @@ export default function ActionMenu({ items, project, onApprove, onReject, onFina
     const rect = triggerRef.current.getBoundingClientRect();
     const isRtl = document.documentElement.dir === "rtl";
     const dropdownWidth = 160;
+    const dropdownHeight = dropdownRef.current?.offsetHeight || 200;
 
-    let top = rect.bottom + 4;
     let left = isRtl ? rect.left : rect.right - dropdownWidth;
 
-    // Keep within viewport
+    // Keep within viewport horizontally
     if (left < 8) left = 8;
     if (left + dropdownWidth > window.innerWidth - 8) left = window.innerWidth - dropdownWidth - 8;
-    if (top + 200 > window.innerHeight) top = rect.top - 4; // flip up if near bottom
+
+    // Prefer opening below the trigger; flip above it if there isn't room
+    let top = rect.bottom + 4;
+    if (top + dropdownHeight > window.innerHeight - 8) {
+      top = rect.top - dropdownHeight - 4;
+    }
+    if (top < 8) top = 8;
 
     setPos({ top, left });
   }, []);

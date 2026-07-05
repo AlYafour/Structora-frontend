@@ -203,7 +203,7 @@ export function formatError(error) {
         }
 
         if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422) {
-          return getGenericStatusMessage(status);
+          return formatValidationMessage(serverMessage);
         }
       }
     }

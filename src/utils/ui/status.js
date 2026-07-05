@@ -262,6 +262,18 @@ export const APPROVAL_STATUS_CONFIG = {
     bgColor: "#dbeafe",
     badge: "⏳ في انتظار الاعتماد النهائي",
   },
+  pending_official_document: {
+    label: { ar: "بانتظار المستند الرسمي الموقع", en: "Pending Official Signed Document" },
+    color: "#f59e0b",
+    bgColor: "#fef3c7",
+    badge: "⏳ بانتظار المستند الرسمي الموقع",
+  },
+  returned_for_edit: {
+    label: { ar: "معاد للتعديل", en: "Returned for Edit" },
+    color: "#d97706",
+    bgColor: "#fffbeb",
+    badge: "↩ معاد للتعديل",
+  },
   final_approved: {
     label: {
       ar: "معتمدة نهائياً",

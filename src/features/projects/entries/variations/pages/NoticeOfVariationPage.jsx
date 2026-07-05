@@ -145,6 +145,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
   // Determine edit mode
   const effectiveVariation = variationProp || variation;
+  const hasPostApprovalDiscount = parseFloat(effectiveVariation?.post_approval_discount || 0) > 0;
+  const persistedTotal = parseFloat(effectiveVariation?.total_amount || 0);
+  const persistedDiscount = parseFloat(effectiveVariation?.discount || 0);
+  const persistedBeforeDiscount = persistedTotal + persistedDiscount;
+  const persistedDiscountPercentage = persistedBeforeDiscount > 0
+    ? (persistedDiscount / persistedBeforeDiscount) * 100
+    : 0;
   const isFinalApproved =
     !!effectiveVariation?.general_manager_final_approved_by ||
     effectiveVariation?.status === 'approved' ||
@@ -617,7 +624,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       }
 
       // If saving (not draft) an existing draft variation, submit it into the approval workflow
-      if (!isDraft && variationId && effectiveVariation?.status === 'draft') {
+      if (!isDraft && variationId && ['draft', 'returned_for_edit'].includes(effectiveVariation?.status)) {
         await projectApi.submitVariationDraft(project.id, variationId);
       }
 
@@ -782,11 +789,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           saving={saving}
           formId="notice-variation-form"
           showSave={isEditMode}
-          saveLabel={(!variationId || effectiveVariation?.status === 'draft') ? t('submit', 'Submit') : undefined}
+          saveLabel={(!variationId || ['draft', 'returned_for_edit'].includes(effectiveVariation?.status)) ? t('submit', 'Submit') : undefined}
           title={getProjectTitle()}
           subtitle={getProjectSubtitle()}
           extraActions={
-            isEditMode && (!variationId || effectiveVariation?.status === 'draft') ? (
+            isEditMode && (!variationId || ['draft', 'returned_for_edit'].includes(effectiveVariation?.status)) ? (
               <Button
                 type="button"
                 variant="secondary"
@@ -821,7 +828,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             <div className="nvc-actionbar-item">
               <span className="nvc-actionbar-label">{t('total_amount')}</span>
               <span className="nvc-actionbar-value nvc-actionbar-value--lg">
-                {renderAmount(calculations.totalAmount)}
+                {renderAmount(!isEditMode && hasPostApprovalDiscount ? persistedTotal : calculations.totalAmount)}
               </span>
             </div>
           </div>
@@ -868,10 +875,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             consultantFees={calculations.consultantFees}
             customFeesWithAmounts={calculations.customFeesWithAmounts}
             customFeesTotal={calculations.customFeesTotal}
-            totalAmountBeforeDiscount={calculations.totalAmountBeforeDiscount}
-            discountAmount={calculations.discountAmount}
-            discountPercentage={calculations.discountPercentage}
-            totalAmount={calculations.totalAmount}
+            totalAmountBeforeDiscount={!isEditMode && hasPostApprovalDiscount ? persistedBeforeDiscount : calculations.totalAmountBeforeDiscount}
+            discountAmount={!isEditMode && hasPostApprovalDiscount ? persistedDiscount : calculations.discountAmount}
+            discountPercentage={!isEditMode && hasPostApprovalDiscount ? persistedDiscountPercentage : calculations.discountPercentage}
+            totalAmount={!isEditMode && hasPostApprovalDiscount ? persistedTotal : calculations.totalAmount}
             variationAmountAfterDiscount={calculations.variationAmountAfterDiscount}
             contractorOHPAfterDiscount={calculations.contractorOHPAfterDiscount}
             consultantFeesAfterDiscount={calculations.consultantFeesAfterDiscount}

@@ -128,6 +128,9 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [hiddenFeeRejectionReason, setHiddenFeeRejectionReason] = useState("");
     const [processingHiddenFeeAction, setProcessingHiddenFeeAction] = useState(null);
     const [submittingDraftId, setSubmittingDraftId] = useState(null);
+    const [discountDialogVariation, setDiscountDialogVariation] = useState(null);
+    const [postApprovalDiscount, setPostApprovalDiscount] = useState('');
+    const [savingPostApprovalDiscount, setSavingPostApprovalDiscount] = useState(false);
 
     const getVariationStatus = (variation) => {
         return variation.workflow_status || variation.status || "draft";
@@ -304,6 +307,13 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return;
         }
 
+        if (isGeneralManager && ['pending_gm_initial', 'pending_general_manager_final'].includes(getVariationStatus(actionVariation))) {
+            setApproveVariationConfirmOpen(false);
+            setActionVariation(null);
+            navigate(`/variations/${actionVariation.id}/view?project=${projectId}`);
+            return;
+        }
+
         try {
             setApprovingVariationId(actionVariation.id);
             await approveVariationByRole(actionVariation);
@@ -322,6 +332,22 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             setApproveVariationConfirmOpen(false);
             setActionVariation(null);
             onReload();
+        }
+    };
+
+    const handleAddPostApprovalDiscount = async () => {
+        if (!discountDialogVariation || !postApprovalDiscount) return;
+        setSavingPostApprovalDiscount(true);
+        try {
+            await projectApi.addVariationPostApprovalDiscount(projectId, discountDialogVariation.id, postApprovalDiscount);
+            showToast('success', t('post_approval_discount_added'));
+            setDiscountDialogVariation(null);
+            setPostApprovalDiscount('');
+            await onReload();
+        } catch (error) {
+            showToast('error', handleError(error, 'VariationsTab.addDiscount').message);
+        } finally {
+            setSavingPostApprovalDiscount(false);
         }
     };
 
@@ -725,8 +751,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
                     if (isGeneralManager) {
                         if (status === "pending_gm_initial") {
-                            await projectApi.approveVariationGMInitial(projectId, variation.id);
-                            ok += 1;
+                            // The canonical snapshot is generated from the rendered detail page.
+                            fail += 1;
                             continue;
                         }
 
@@ -921,7 +947,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             s === "rejected_by_project_manager" ||
             s === "rejected_by_supervisor" ||
             s === "rejected_by_gm_initial" ||
-            s === "rejected_by_owner_consultant"
+            s === "rejected_by_owner_consultant" ||
+            (s === "returned_for_edit" && String(variation.created_by) === String(user?.id))
         );
     };
 
@@ -986,33 +1013,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     };
 
     const canRejectThisVariation = (variation) => {
-        if (!canApproveVariations) return false;
-
         const status = getVariationStatus(variation);
-
-        if (status === "rejected_by_project_manager" || status === "rejected_by_supervisor" || status === "rejected_by_gm_initial" || status === "rejected_by_owner_consultant" || status === "rejected") {
-            return false;
-        }
-
-        if (canRejectAnyStatus) {
-            return status !== "final_approved" && status !== "approved";
-        }
-
-        const workflowStatus = variation.workflow_status || variation.status || "";
-
-        if (status === "approved" || status === "final_approved" || status === "rejected") {
-            return false;
-        }
-
-        if (isProjectManager) {
-            return workflowStatus === "pending_project_manager" || workflowStatus === "pending_owner_consultant";
-        }
-
-        if (isSupervisor) {
-            return workflowStatus === "pending_supervisor";
-        }
-
-        return false;
+        return isProjectManager && status === "pending_owner_consultant";
     };
 
     const canDirectUnapproveThisVariation = (variation) => {
@@ -1458,6 +1460,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                             ...(isGeneralManager && (status === "approved" || status === "final_approved")
                                                                 ? [
                                                                     {
+                                                                        label: t("add_post_approval_discount"),
+                                                                        type: "button",
+                                                                        variant: "primary",
+                                                                        onClick: () => { setDiscountDialogVariation(variation); setPostApprovalDiscount(String(variation.post_approval_discount || '')); },
+                                                                    },
+                                                                    {
                                                                         label: t("revoke_approval", "إلغاء الاعتماد"),
                                                                         type: "button",
                                                                         variant: "warning",
@@ -1567,6 +1575,17 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 onClose={() => !approvingVariationId && setApproveVariationConfirmOpen(false)}
                 onConfirm={handleApproveVariation}
                 busy={!!approvingVariationId}
+            />
+
+            <Dialog
+                open={!!discountDialogVariation}
+                title={t('add_post_approval_discount')}
+                desc={<div><p className="ds-mb-3">{t('post_approval_discount_dialog_desc')}</p><label className="var-dialog-label">{t('discount_amount')}</label><input className="prj-input ds-w-full ds-mt-2" type="number" min="0.01" step="0.01" value={postApprovalDiscount} onChange={(e) => setPostApprovalDiscount(e.target.value)} placeholder={t('post_approval_discount_placeholder')} /></div>}
+                confirmLabel={t('add_discount_confirm')}
+                cancelLabel={t('cancel')}
+                onClose={() => { if (!savingPostApprovalDiscount) { setDiscountDialogVariation(null); setPostApprovalDiscount(''); } }}
+                onConfirm={handleAddPostApprovalDiscount}
+                busy={savingPostApprovalDiscount}
             />
 
             <Dialog

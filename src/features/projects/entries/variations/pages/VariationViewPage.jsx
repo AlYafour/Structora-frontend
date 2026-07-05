@@ -25,6 +25,8 @@ import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGrou
 import { fetchFileWithAuth, buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
+import VariationAiAuditPanel from './components/VariationAiAuditPanel';
+import { projectApi } from '../../../../../services/projects/projectApi';
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
@@ -74,6 +76,9 @@ export default function VariationViewPage() {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "view");
   const [isPrintPreview, setIsPrintPreview] = useState(false);
   const [blockEditDialogOpen, setBlockEditDialogOpen] = useState(false);
+  const [returnEditDialogOpen, setReturnEditDialogOpen] = useState(false);
+  const [returnEditReason, setReturnEditReason] = useState('');
+  const [returnEditBusy, setReturnEditBusy] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [consultantStampUrl, setConsultantStampUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -104,14 +109,6 @@ export default function VariationViewPage() {
   );
 
   const { noticeData } = useVariationFinancials(variation);
-
-  const {
-    processingApproval,
-    actionNotes,
-    setActionNotes,
-    dialogStates,
-    handlers,
-  } = useVariationApprovalHandlers(variation, project, toast, t, loadVariation);
 
   // Load company information for print header (non-critical — don't redirect on 401)
   useEffect(() => {
@@ -186,6 +183,25 @@ export default function VariationViewPage() {
       : "variation_edit_not_allowed_desc";
   const isRejected = checkRejected(variation);
 
+  const handleReturnForEdit = async () => {
+    if (!returnEditReason.trim()) {
+      showError(t('return_for_edit_reason_required'));
+      return;
+    }
+    setReturnEditBusy(true);
+    try {
+      await projectApi.returnVariationForEdit(project.id, variation.id, returnEditReason.trim());
+      success(t('variation_returned_for_edit'));
+      setReturnEditDialogOpen(false);
+      setReturnEditReason('');
+      await loadVariation();
+    } catch (error) {
+      showError(error?.message || t('return_for_edit_error'));
+    } finally {
+      setReturnEditBusy(false);
+    }
+  };
+
   const preparePrintDocumentLayout = async (el) => {
     const prevWidth = el?.style.width || "";
     let cleanupTablePagination = null;
@@ -254,17 +270,17 @@ export default function VariationViewPage() {
   };
 
   // PDF Export — client-side using html2canvas + jsPDF, then pdf-lib to append attachments
-  const exportPDF = async (ref, filenameSuffix = '') => {
+  const exportPDF = async (ref, filenameSuffix = '', { download = true } = {}) => {
     if (!variation || !project || !ref.current) {
-      showError(t("pdf_export_error"));
-      return;
+      if (download) showError(t("pdf_export_error"));
+      throw new Error('Variation PDF document is not ready');
     }
     setPdfLoading(true);
     let cleanupPrintLayout = null;
     let _watermarkEl = null;
     const _authImages = [];
     try {
-      success(t("generating_pdf"));
+      if (download) success(t("generating_pdf"));
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
@@ -442,6 +458,7 @@ export default function VariationViewPage() {
 
         const mergedBytes = await mergedDoc.save();
         const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+        if (!download) return blob;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -450,14 +467,16 @@ export default function VariationViewPage() {
         a.click();
         URL.revokeObjectURL(url);
       } else {
+        if (!download) return pdf.output('blob');
         const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
         pdf.save(fname);
       }
 
-      success(t("pdf_exported_successfully"));
+      if (download) success(t("pdf_exported_successfully"));
     } catch (error) {
       logger.error("Error generating PDF", error);
-      showError(t("pdf_export_error"));
+      if (download) showError(t("pdf_export_error"));
+      throw error;
     } finally {
       if (_watermarkEl) _watermarkEl.style.display = '';
       // Restore original image src values and free blob URLs
@@ -472,6 +491,19 @@ export default function VariationViewPage() {
 
   const handleExportPDF = () => exportPDF(printDocumentRef);
   const handleExportPDFClean = () => exportPDF(printDocumentCleanRef, '_unsigned');
+  const createGmInitialSnapshot = () => exportPDF(
+    printDocumentCleanRef, '_gm_initial_snapshot', { download: false }
+  );
+
+  const {
+    processingApproval,
+    actionNotes,
+    setActionNotes,
+    dialogStates,
+    handlers,
+  } = useVariationApprovalHandlers(
+    variation, project, toast, t, loadVariation, createGmInitialSnapshot
+  );
 
   if (loading) {
     return (
@@ -712,12 +744,13 @@ export default function VariationViewPage() {
               permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
               permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
               permissions.canRejectOwnerConsultant ||
+              permissions.canReturnForEdit ||
               permissions.canApproveGeneralManagerFinal) && (
                 <div className="var-toolbar__actions">
                   {activeTab === "edit" && permissions.canEdit && (
                     <>
                       <span className="var-toolbar__actions-label">{t("actions")}</span>
-                      {variationStatus === 'draft' && (
+                      {['draft', 'returned_for_edit'].includes(variationStatus) && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -732,7 +765,7 @@ export default function VariationViewPage() {
                         type="submit"
                         form="notice-variation-form"
                       >
-                        {variationStatus === 'draft' ? t("submit", "Submit") : t("save")}
+                        {['draft', 'returned_for_edit'].includes(variationStatus) ? t("submit", "Submit") : t("save")}
                       </Button>
                     </>
                   )}
@@ -741,6 +774,7 @@ export default function VariationViewPage() {
                     permissions.canApproveGeneralManagerInitial || permissions.canRejectGeneralManager ||
                     permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
                     permissions.canRejectOwnerConsultant ||
+                    permissions.canReturnForEdit ||
                     permissions.canApproveGeneralManagerFinal) && (
                     <>
                       <span className="var-toolbar__actions-label">{t("available_actions")}</span>
@@ -794,6 +828,11 @@ export default function VariationViewPage() {
                           <FaCheckCircle /> {t("approve_general_manager_final")}
                         </Button>
                       )}
+                      {permissions.canReturnForEdit && (
+                        <Button variant="secondary" size="sm" onClick={() => setReturnEditDialogOpen(true)}>
+                          <FaEdit /> {t('return_for_edit')}
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -829,6 +868,11 @@ export default function VariationViewPage() {
           {activeTab === "view" && (
             <div className="var-view-content">
               <NoticeOfVariationPage variation={variation} project={project} viewMode={true} />
+
+              <VariationAiAuditPanel
+                variation={variation} project={project} user={user} t={t} isArabic={isAR}
+                reload={loadVariation} success={success} showError={showError}
+              />
 
               {/* ========== BOTTOM PANELS: ATTACHMENTS + AUDIT ========== */}
               <div className="var-bottom-panels no-print">
@@ -991,6 +1035,13 @@ export default function VariationViewPage() {
                           else if (isReject) logClass = 'var-audit-entry--reject';
                           else if (isCreate) logClass = 'var-audit-entry--create';
                           else if (isEdit) logClass = 'var-audit-entry--edit';
+                          const descriptionKey = {
+                            return_for_edit: 'audit_description_return_for_edit',
+                            add_discount: 'audit_description_add_discount',
+                          }[log.action];
+                          const translatedDescription = descriptionKey
+                            ? t(descriptionKey, { reason: log.changes?.reason, discount: log.changes?.discount })
+                            : log.description;
 
                           return (
                             <div key={log.id || index} className={`var-audit-entry ${logClass}`}>
@@ -1018,8 +1069,8 @@ export default function VariationViewPage() {
                                     {log.user.full_name || log.user.email}
                                   </div>
                                 )}
-                                {log.description && (
-                                  <div className="var-audit-entry__desc">{log.description}</div>
+                                {translatedDescription && (
+                                  <div className="var-audit-entry__desc">{translatedDescription}</div>
                                 )}
                                 {log.changes?.old_status && log.changes?.new_status && (
                                   <div className="var-audit-entry__status-change">
@@ -1281,6 +1332,17 @@ export default function VariationViewPage() {
         />
 
         {/* Block Edit Dialog for Final Approved Variations */}
+        <Dialog
+          open={returnEditDialogOpen}
+          title={t('return_for_edit')}
+          desc={<div><p>{t('return_for_edit_confirmation')}</p><label className="var-dialog-label">{t('reason')} <span className="var-required">*</span></label><textarea className="var-dialog-textarea" rows={4} value={returnEditReason} onChange={(e) => setReturnEditReason(e.target.value)} placeholder={t('return_for_edit_reason_placeholder')} /></div>}
+          confirmLabel={t('return_for_edit')}
+          cancelLabel={t('cancel')}
+          onClose={() => { if (!returnEditBusy) { setReturnEditDialogOpen(false); setReturnEditReason(''); } }}
+          onConfirm={handleReturnForEdit}
+          busy={returnEditBusy}
+        />
+
         <Dialog
           open={blockEditDialogOpen}
           title={t("variation_edit_not_allowed")}
