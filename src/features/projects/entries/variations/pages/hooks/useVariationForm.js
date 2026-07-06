@@ -17,6 +17,7 @@ const defaultFormData = {
   trade_discipline: '',
   item_description: '',
   project_description: '',
+  index_items: [],
   remarks: '',
   remarks_ar: '',
   vat_percentage: '15',

@@ -5,7 +5,7 @@
  * Reduced from ~1734 lines to ~450 lines by extracting components and utilities
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,18 +28,104 @@ import { useVariationCalculations } from './hooks/useVariationCalculations';
 
 // Components
 import VariationHeaderInfo from './components/VariationHeaderInfo';
+import VariationIndexSection from './components/VariationIndexSection';
 import VariationItemsTable from './components/VariationItemsTable';
 import FinancialSummary from './components/FinancialSummary';
 import DiscountSection from './components/DiscountSection';
 import RemarksAttachmentsSection from './components/RemarksAttachmentsSection';
+import VariationPrintDocument from '../components/VariationPrintDocument';
 
 // Utilities
 import { validateVariationSubmit } from './utils/variationValidation';
 import { round2 } from './utils/variationCalculations';
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from '../utils/printPagination';
 
 import { getProjectName } from '../../../utils/projectNameUtils.jsx';
 import './NoticeOfVariationPage.css';
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
+
+const PRINT_A4_WIDTH_PX = 794;
+const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
+
+const waitForRenderFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+const normalizeIndexItems = (indexItems = []) => (
+  Array.isArray(indexItems)
+    ? indexItems
+        .map(item => ({
+          serial_no: String(item?.serial_no ?? '').trim(),
+          attachment: String(item?.attachment ?? item?.content ?? item?.content_type ?? '').trim(),
+          ref_no: String(item?.ref_no ?? item?.quotation_reference_number ?? item?.drawing_reference ?? '').trim(),
+          date: String(item?.date ?? '').trim(),
+          page_numbers: String(item?.page_numbers ?? '').trim(),
+          purpose: String(item?.purpose ?? item?.remark ?? item?.supplier_name ?? '').trim(),
+        }))
+        .filter(item =>
+          item.serial_no ||
+          item.attachment ||
+          item.ref_no ||
+          item.date ||
+          item.page_numbers ||
+          item.purpose
+        )
+    : []
+);
+
+const buildNoticeData = (formData, omittedItems, addedItems, calculations, { includeIndex = true } = {}) => {
+  const customFeesForSave = (formData.custom_fees ?? []).map(fee => ({
+    ...fee,
+    percentage: fee.type === 'percentage' ? fee.percentage : '',
+    amount: fee.type === 'amount' ? fee.amount : '',
+  }));
+
+  return {
+    document_date: formData.document_date,
+    reference_no: formData.reference_no || '',
+    first_variation_date: formData.first_variation_date,
+    variation_description: formData.variation_description,
+    variation_cause: formData.variation_cause,
+    additional_time: formData.additional_time,
+    trade_discipline: formData.trade_discipline,
+    item_description: formData.item_description,
+    project_description: formData.project_description,
+    index_items: includeIndex ? normalizeIndexItems(formData.index_items) : [],
+    remarks: formData.remarks,
+    remarks_ar: formData.remarks_ar,
+    omitted_items: omittedItems,
+    added_items: addedItems,
+    total_omitted: calculations.totalOmitted,
+    total_added: calculations.totalAdded,
+    total_variation_amount: calculations.totalVariationAmount,
+    contractor_engineering_oh_p: calculations.contractorOHP,
+    consultant_fees: calculations.consultantFees,
+    vat_percentage: formData.vat_percentage,
+    total_amount_before_discount: calculations.totalAmountBeforeDiscount,
+    discount_amount: calculations.discountAmount,
+    discount_percentage: calculations.discountPercentage,
+    total_amount: calculations.totalAmount,
+    discount_on_variation: calculations.discountOnVariation,
+    discount_on_contractor_ohp: calculations.discountOnContractorOHP,
+    discount_on_consultant_fees: calculations.discountOnConsultantFees,
+    variation_amount_after_discount: calculations.variationAmountAfterDiscount,
+    contractor_ohp_after_discount: calculations.contractorOHPAfterDiscount,
+    consultant_fees_after_discount: calculations.consultantFeesAfterDiscount,
+    consultant_fees_type: formData.consultant_fees_type,
+    consultant_fees_percentage: formData.consultant_fees_type === 'percentage' ? formData.consultant_fees_percentage : '',
+    consultant_fees_amount: formData.consultant_fees_type === 'amount' ? formData.consultant_fees_amount : '',
+    consultant_fee_on_total_added: formData.consultant_fee_on_total_added,
+    contractor_ohp_type: formData.contractor_ohp_type,
+    contractor_ohp_percentage: formData.contractor_ohp_type === 'percentage' ? formData.contractor_ohp_percentage : '',
+    contractor_ohp_amount: formData.contractor_ohp_type === 'amount' ? formData.contractor_ohp_amount : '',
+    discount_type: formData.discount_type,
+    discount_percentage_input: formData.discount_percentage,
+    discount_amount_input: formData.discount_amount,
+    final_amount_after_discount: formData.final_amount_after_discount,
+    discount_applies_to_variation: formData.discount_applies_to_variation,
+    discount_applies_to_contractor_ohp: formData.discount_applies_to_contractor_ohp,
+    discount_applies_to_consultant_fees: formData.discount_applies_to_consultant_fees,
+    custom_fees: customFeesForSave,
+  };
+};
 
 const computeNextVariationNumber = async (projectId) => {
   try {
@@ -115,6 +201,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const [existingHiddenFeeAttachment, setExistingHiddenFeeAttachment] = useState(null);
   const [existingHiddenFeeAttachmentName, setExistingHiddenFeeAttachmentName] = useState(null);
   const [hiddenFeeAttachmentCleared, setHiddenFeeAttachmentCleared] = useState(false);
+  const [estimatedNoticePages, setEstimatedNoticePages] = useState(1);
+  const noticePageMeasureRef = useRef(null);
   const navTimerRef = useRef(null);
 
   useEffect(() => {
@@ -142,6 +230,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
   // Calculate financials
   const calculations = useVariationCalculations(formData, omittedItems, addedItems);
+  const liveNoticeData = useMemo(
+    () => buildNoticeData(formData, omittedItems, addedItems, calculations, { includeIndex: true }),
+    [formData, omittedItems, addedItems, calculations]
+  );
 
   // Determine edit mode
   const effectiveVariation = variationProp || variation;
@@ -160,14 +252,25 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     user?.role?.name !== 'Manager' &&
     user?.role?.name !== 'Supervisor' &&
     user?.role?.name !== 'company_super_admin';
+  const canManageReturnedVariation = !!(
+    user?.is_superuser ||
+    user?.role?.name === 'Manager' ||
+    user?.role?.name === 'Supervisor' ||
+    user?.role?.name === 'company_super_admin'
+  );
   const canManageHiddenFees = !!(
     user?.is_superuser ||
     user?.role?.name === 'Manager' ||
     user?.role?.name === 'Supervisor' ||
     user?.role?.name === 'company_super_admin'
   );
+  const isCompanyGeneralManager = !!(user?.is_superuser || user?.role?.name === 'company_super_admin');
   const isPMInitialApproved = effectiveVariation?.status === 'pending_gm_initial' || effectiveVariation?.status === 'pending_supervisor';
-  const canEditVariationContent = isAdmin || hasPermission("variations.create") || allowRevisionEdit;
+  const canEditVariationContent = isAdmin ||
+    isCompanyGeneralManager ||
+    hasPermission("variations.create") ||
+    allowRevisionEdit ||
+    (effectiveVariation?.status === 'returned_for_edit' && canManageReturnedVariation);
   const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 
 
@@ -182,6 +285,57 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     }
     return str;
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const measureNoticePages = async () => {
+      const el = noticePageMeasureRef.current;
+      if (!el || !project) {
+        if (!cancelled) setEstimatedNoticePages(1);
+        return;
+      }
+
+      let cleanupTablePagination = null;
+      let cleanupPageBreaks = null;
+      let cleanupPinnedBottom = null;
+
+      try {
+        el.classList.add('vpd-print-mode');
+        el.style.width = `${PRINT_A4_WIDTH_PX}px`;
+
+        await waitForRenderFrame();
+
+        cleanupTablePagination = applyPrintTablePagination(el, PRINT_A4_HEIGHT_PX);
+        await waitForRenderFrame();
+
+        cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+        await waitForRenderFrame();
+
+        cleanupPinnedBottom = pinPrintBottomGroup(el, {
+          pageHeight: PRINT_A4_HEIGHT_PX,
+          continuationPageHeight: PRINT_A4_HEIGHT_PX,
+        });
+        await waitForRenderFrame();
+
+        const height = Math.max(el.scrollHeight || 0, el.getBoundingClientRect().height || 0);
+        const pages = Math.max(1, Math.ceil(height / PRINT_A4_HEIGHT_PX));
+        if (!cancelled) setEstimatedNoticePages(pages);
+      } finally {
+        cleanupPinnedBottom?.();
+        cleanupPageBreaks?.();
+        cleanupTablePagination?.();
+        el.classList.remove('vpd-print-mode');
+        el.style.width = '';
+      }
+    };
+
+    measureNoticePages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [liveNoticeData, project]);
 
   /**
    * Load variation data into form
@@ -221,6 +375,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         trade_discipline: noticeData.trade_discipline ?? '',
         item_description: noticeData.item_description ?? '',
         project_description: noticeData.project_description ?? '',
+        index_items: Array.isArray(noticeData.index_items) ? noticeData.index_items : [],
         remarks: noticeData.remarks ?? '',
         remarks_ar: noticeData.remarks_ar ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',
@@ -462,58 +617,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
     setSaving(true);
     try {
-      const customFeesForSave = (formData.custom_fees ?? []).map(fee => ({
-        ...fee,
-        percentage: fee.type === 'percentage' ? fee.percentage : '',
-        amount: fee.type === 'amount' ? fee.amount : '',
-      }));
-
-      const noticeData = {
-        document_date: formData.document_date,
-        reference_no: formData.reference_no || '',
-        first_variation_date: formData.first_variation_date,
-        variation_description: formData.variation_description,
-        variation_cause: formData.variation_cause,
-        additional_time: formData.additional_time,
-        trade_discipline: formData.trade_discipline,
-        item_description: formData.item_description,
-        project_description: formData.project_description,
-        remarks: formData.remarks,
-        remarks_ar: formData.remarks_ar,
-        omitted_items: omittedItems,
-        added_items: addedItems,
-        total_omitted: calculations.totalOmitted,
-        total_added: calculations.totalAdded,
-        total_variation_amount: calculations.totalVariationAmount,
-        contractor_engineering_oh_p: calculations.contractorOHP,
-        consultant_fees: calculations.consultantFees,
-        vat_percentage: formData.vat_percentage,
-        total_amount_before_discount: calculations.totalAmountBeforeDiscount,
-        discount_amount: calculations.discountAmount,
-        discount_percentage: calculations.discountPercentage,
-        total_amount: calculations.totalAmount,
-        discount_on_variation: calculations.discountOnVariation,
-        discount_on_contractor_ohp: calculations.discountOnContractorOHP,
-        discount_on_consultant_fees: calculations.discountOnConsultantFees,
-        variation_amount_after_discount: calculations.variationAmountAfterDiscount,
-        contractor_ohp_after_discount: calculations.contractorOHPAfterDiscount,
-        consultant_fees_after_discount: calculations.consultantFeesAfterDiscount,
-        consultant_fees_type: formData.consultant_fees_type,
-        consultant_fees_percentage: formData.consultant_fees_type === 'percentage' ? formData.consultant_fees_percentage : '',
-        consultant_fees_amount: formData.consultant_fees_type === 'amount' ? formData.consultant_fees_amount : '',
-        consultant_fee_on_total_added: formData.consultant_fee_on_total_added,
-        contractor_ohp_type: formData.contractor_ohp_type,
-        contractor_ohp_percentage: formData.contractor_ohp_type === 'percentage' ? formData.contractor_ohp_percentage : '',
-        contractor_ohp_amount: formData.contractor_ohp_type === 'amount' ? formData.contractor_ohp_amount : '',
-        discount_type: formData.discount_type,
-        discount_percentage_input: formData.discount_percentage,
-        discount_amount_input: formData.discount_amount,
-        final_amount_after_discount: formData.final_amount_after_discount,
-        discount_applies_to_variation: formData.discount_applies_to_variation,
-        discount_applies_to_contractor_ohp: formData.discount_applies_to_contractor_ohp,
-        discount_applies_to_consultant_fees: formData.discount_applies_to_consultant_fees,
-        custom_fees: customFeesForSave
-      };
+      const noticeData = buildNoticeData(formData, omittedItems, addedItems, calculations);
 
       const MAX_VALUE = 999999999999.99;
       const cappedVariationAmount = Math.min(Math.abs(calculations.totalVariationAmount), MAX_VALUE);
@@ -940,8 +1044,31 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             t={t}
           />
 
+          <VariationIndexSection
+            formData={formData}
+            isEditMode={isEditMode}
+            onFormDataChange={setFormData}
+            estimatedNoticePages={estimatedNoticePages}
+            t={t}
+          />
+
         </div>
       </form>
+
+      {project && (
+        <div className="nvc-notice-page-measure" aria-hidden="true">
+          <VariationPrintDocument
+            ref={noticePageMeasureRef}
+            variation={effectiveVariation}
+            project={project}
+            companyInfo={null}
+            noticeData={liveNoticeData}
+            consultantStampUrl={null}
+            gmSignatureUrl={null}
+            hideSignatures={true}
+          />
+        </div>
+      )}
 
       {/* Confirm Remove Item Dialog */}
       <Dialog

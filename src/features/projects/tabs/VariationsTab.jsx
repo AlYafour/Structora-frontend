@@ -937,7 +937,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         return s === "draft" || s === "pending_project_manager";
     };
 
-    // Staff may only edit directly before it leaves their hands, or once it's kicked back to them.
+    // Staff may only edit directly before it leaves their hands, or once it's returned for edit.
     // Any other pending status (supervisor/GM/owner-consultant review) must go through the request-edit flow.
     const canStaffEditVariation = (variation) => {
         const s = getVariationStatus(variation);
@@ -948,7 +948,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             s === "rejected_by_supervisor" ||
             s === "rejected_by_gm_initial" ||
             s === "rejected_by_owner_consultant" ||
-            (s === "returned_for_edit" && String(variation.created_by) === String(user?.id))
+            s === "returned_for_edit"
         );
     };
 

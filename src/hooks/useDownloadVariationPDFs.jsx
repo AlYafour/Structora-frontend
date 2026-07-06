@@ -9,6 +9,7 @@ import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
 import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
+import { appendWrappedVariationAttachments } from "../features/projects/entries/variations/utils/wrapVariationAttachments";
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
@@ -242,42 +243,18 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
       return pdf.output("blob");
     }
 
-    // Merge PDF attachments using pdf-lib
+    // Merge PDF/image attachments as header/footer attachment pages.
     const { PDFDocument } = await import("pdf-lib");
     const mainBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainBytes);
-
-    for (const att of attachments) {
-      const fileUrl = att.file || att.url;
-      if (!fileUrl) continue;
-      try {
-        const blob = await fetchFileWithAuth(fileUrl);
-        const bytes = await blob.arrayBuffer();
-        const fullUrl = buildFileUrl(fileUrl) || fileUrl;
-        const lowerUrl = fullUrl.toLowerCase();
-        const contentType = blob.type || "";
-
-        if (contentType.includes("pdf") || lowerUrl.endsWith(".pdf")) {
-          const attDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
-          const copied = await mergedDoc.copyPages(attDoc, attDoc.getPageIndices());
-          copied.forEach(p => mergedDoc.addPage(p));
-        } else {
-          const imgPage = mergedDoc.addPage([pageW, pageH]);
-          const embeddedImg = lowerUrl.endsWith(".png") || contentType.includes("png")
-            ? await mergedDoc.embedPng(bytes)
-            : await mergedDoc.embedJpg(bytes);
-          const { width: iW, height: iH } = embeddedImg.scaleToFit(pageW, pageH);
-          imgPage.drawImage(embeddedImg, {
-            x: (pageW - iW) / 2,
-            y: (pageH - iH) / 2,
-            width: iW,
-            height: iH,
-          });
-        }
-      } catch (attErr) {
-        console.warn("[useDownloadVariationPDFs] Could not append attachment", fileUrl, attErr);
-      }
-    }
+    await appendWrappedVariationAttachments(mergedDoc, {
+      attachments,
+      variation,
+      project,
+      companyInfo,
+      noticeData,
+      logger: console,
+    });
 
     const mergedBytes = await mergedDoc.save();
     return new Blob([mergedBytes], { type: "application/pdf" });

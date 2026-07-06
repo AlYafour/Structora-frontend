@@ -22,6 +22,7 @@ import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../utils/printPagination";
+import { appendWrappedVariationAttachments } from "../utils/wrapVariationAttachments";
 import { fetchFileWithAuth, buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
@@ -154,7 +155,17 @@ export default function VariationViewPage() {
 
   // Status and permissions
   const variationStatus = variation?.status || variation?.workflow_status || 'draft';
-  const canEditVariationContent = isAdmin || hasPermission("variations.create");
+  const canManageReturnedVariation = !!(
+    user?.is_superuser ||
+    user?.role?.name === 'Manager' ||
+    user?.role?.name === 'Supervisor' ||
+    user?.role?.name === 'company_super_admin'
+  );
+  const isCompanyGeneralManager = !!(user?.is_superuser || user?.role?.name === 'company_super_admin');
+  const canEditVariationContent = isAdmin ||
+    isCompanyGeneralManager ||
+    hasPermission("variations.create") ||
+    (variationStatus === 'returned_for_edit' && canManageReturnedVariation);
   const canManageHiddenFees = !!(
     user?.is_superuser ||
     user?.role?.name === 'Manager' ||
@@ -287,6 +298,7 @@ export default function VariationViewPage() {
       const el = ref.current;
       cleanupPrintLayout = await preparePrintDocumentLayout(el);
 
+      const attachments = variation?.variation_attachments || [];
       // Hide the CSS watermark element — will be drawn onto canvas instead
       _watermarkEl = el.querySelector('.vpd-watermark');
       const _logoSrc = _watermarkEl?.src || null;
@@ -411,50 +423,20 @@ export default function VariationViewPage() {
         }
       }
 
-      // Merge variation_attachments (PDFs/images) using pdf-lib
-      const attachments = variation?.variation_attachments || [];
+      // Merge variation_attachments (PDFs/images) as header/footer attachment pages.
       if (attachments.length > 0) {
         const { PDFDocument } = await import('pdf-lib');
         const mainPdfBytes = pdf.output('arraybuffer');
         const mergedDoc = await PDFDocument.load(mainPdfBytes);
 
-        const { fetchFileWithAuth, buildFileUrl } = await import('../../../../../utils/helpers/file');
-
-        for (const att of attachments) {
-          const fileUrl = att.file || att.url;
-          if (!fileUrl) continue;
-          try {
-            const blob = await fetchFileWithAuth(fileUrl);
-            const bytes = await blob.arrayBuffer();
-            const fullUrl = buildFileUrl(fileUrl) || fileUrl;
-            const contentType = blob.type || '';
-            const lowerUrl = fullUrl.toLowerCase();
-
-            if (contentType.includes('pdf') || lowerUrl.endsWith('.pdf')) {
-              const attDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
-              const copiedPages = await mergedDoc.copyPages(attDoc, attDoc.getPageIndices());
-              copiedPages.forEach(p => mergedDoc.addPage(p));
-            } else {
-              // Image — embed as a full A4 page
-              const imgPage = mergedDoc.addPage([pageW, pageH]);
-              let embeddedImg;
-              if (lowerUrl.endsWith('.png') || contentType.includes('png')) {
-                embeddedImg = await mergedDoc.embedPng(bytes);
-              } else {
-                embeddedImg = await mergedDoc.embedJpg(bytes);
-              }
-              const { width: iW, height: iH } = embeddedImg.scaleToFit(pageW, pageH);
-              imgPage.drawImage(embeddedImg, {
-                x: (pageW - iW) / 2,
-                y: (pageH - iH) / 2,
-                width: iW,
-                height: iH,
-              });
-            }
-          } catch (attErr) {
-            logger.warn('Could not append attachment', fileUrl, attErr);
-          }
-        }
+        await appendWrappedVariationAttachments(mergedDoc, {
+          attachments,
+          variation,
+          project,
+          companyInfo,
+          noticeData,
+          logger,
+        });
 
         const mergedBytes = await mergedDoc.save();
         const blob = new Blob([mergedBytes], { type: 'application/pdf' });

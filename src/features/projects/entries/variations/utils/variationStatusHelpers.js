@@ -96,6 +96,7 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
   const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
   const isSuperAdminUser = user?.is_superuser;
   const isGeneralManager = isCompanySuperAdmin || isSuperAdminUser;
+  const canManageReturnedVariation = isProjectManager || isSupervisor || isGeneralManager;
 
   const finallyApproved = isFinallyApproved(variation);
   const rejected = isRejected(variation);
@@ -106,6 +107,15 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
     (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
   );
   const hasVariationEditPermission = options.hasVariationEditPermission === true;
+  const approvalStageStatuses = [
+    'pending_project_manager',
+    'pending_gm_initial',
+    'pending_supervisor',
+    'pending_owner_consultant',
+    'pending_official_document',
+    'pending_general_manager_final',
+  ];
+  const isApprovalStage = approvalStageStatuses.includes(status);
 
   // PM is locked out once they have approved — they must unapprove or request-unapprove first.
   const pmEditBlocked = isProjectManager && (
@@ -120,6 +130,7 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
     !pmEditBlocked &&
     (
       hasVariationEditPermission ||
+      (status === 'returned_for_edit' && canManageReturnedVariation) ||
       ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest)
     ) &&
     (!isStaff ||
@@ -128,24 +139,21 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       status === 'rejected_by_project_manager' ||
       status === 'rejected_by_supervisor' ||
       status === 'rejected_by_gm_initial' ||
+      status === 'returned_for_edit' ||
       status === 'rejected_by_owner_consultant' ||
       ((status === 'pending_supervisor' || status === 'pending_gm_initial') && hasAcceptedEditRequest));
-  const isOriginalCreator = variation?.created_by
-    ? String(variation.created_by) === String(user?.id || '')
-    : isStaff;
 
   // Can approve/reject only if not rejected (must edit first if rejected)
   const canApproveOrReject = !rejected;
 
   return {
-    canEdit: status === 'rejected_by_owner_consultant' && isStaff
+    canEdit: isGeneralManager && isApprovalStage && !finallyApproved
+      ? true
+      : status === 'rejected_by_owner_consultant' && isStaff
       ? true
       : status === 'returned_for_edit'
-      ? isOriginalCreator
-      : canEdit && ![
-          'pending_project_manager', 'pending_gm_initial', 'pending_supervisor',
-          'pending_owner_consultant', 'pending_official_document', 'pending_general_manager_final'
-        ].includes(status),
+      ? canEdit
+      : canEdit && !approvalStageStatuses.includes(status),
     canUploadSignedCopy: isStaff && (status === 'pending_official_document' || (status === 'approved' && variation?.updated_document_pending)),
     canRunSignedCopyAudit: isGeneralManager && status === 'pending_general_manager_final',
     canApproveProjectManager: canApproveOrReject && isProjectManager &&
@@ -175,6 +183,6 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       (isGeneralManager && (status === 'pending_gm_initial' || status === 'pending_general_manager_final')) ||
       (isSupervisor && status === 'pending_supervisor')
     ),
-    canEditReturnedVariation: status === 'returned_for_edit' && isOriginalCreator,
+    canEditReturnedVariation: status === 'returned_for_edit' && canEdit,
   };
 };
