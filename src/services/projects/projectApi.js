@@ -5,6 +5,7 @@
 import { BaseService } from '../baseService';
 import { api } from '../api';
 import { handleError } from '../../utils/errorHandler';
+import { getCsrfToken } from '../../utils/cookies';
 
 class ProjectService extends BaseService {
   constructor() {
@@ -530,10 +531,14 @@ class ProjectService extends BaseService {
 
   async uploadVariationSignedCopy(projectId, variationId, file) {
     try {
+      await api.get('csrf/', { _skipAuthRedirect: true });
+      const csrfToken = getCsrfToken();
       const body = new FormData();
       body.append('variation_invoice_file', file);
       const { data } = await api.post(
-        `${this.basePath}${projectId}/variations/${variationId}/signed-copy/`, body
+        `${this.basePath}${projectId}/variations/${variationId}/signed-copy/`,
+        body,
+        csrfToken ? { headers: { 'X-CSRFToken': csrfToken } } : undefined
       );
       return data;
     } catch (error) {

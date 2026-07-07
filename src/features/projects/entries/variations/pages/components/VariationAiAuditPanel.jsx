@@ -19,11 +19,56 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
   const role = user?.role?.name;
   const pendingUpload = variation?.status === 'pending_official_document' || (variation?.status === 'approved' && variation?.updated_document_pending);
   const pendingAudit = variation?.status === 'pending_general_manager_final';
-  const isStaff = !user?.is_superuser && !['Manager', 'Supervisor', 'company_super_admin'].includes(role);
-  const canUpload = pendingUpload && isStaff;
+  const canManageOfficialDocument = !!user;
+  const canUpload = pendingUpload && canManageOfficialDocument;
   const canAudit = pendingAudit && (role === 'company_super_admin' || user?.is_superuser);
   const result = variation?.ai_audit_result_json;
+  const failedAuditError = variation?.ai_audit_status === 'failed' && typeof result?.error === 'string'
+    ? result.error
+    : '';
+  const auditPoints = (() => {
+    const directPoints = isArabic ? result?.points_ar : result?.points_en;
+    if (Array.isArray(directPoints) && directPoints.length) {
+      return directPoints.filter(point => typeof point === 'string' && point.trim());
+    }
+
+    if (Array.isArray(result?.discrepancies) && result.discrepancies.length) {
+      return result.discrepancies
+        .map((item) => {
+          const description = isArabic ? item.description_ar : item.description_en;
+          const page = item.page ? ` (${t('page')} ${item.page})` : '';
+          return description ? `${description}${page}` : '';
+        })
+        .filter(Boolean);
+    }
+
+    const legacySummary = isArabic ? variation?.ai_audit_summary_ar : variation?.ai_audit_summary_en;
+    return String(legacySummary || '')
+      .split(/\n+/)
+      .map(point => point.trim())
+      .filter(Boolean);
+  })();
   const selectedFileSize = file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '';
+
+  const renderAuditPoint = (point) => {
+    const pageMatch = String(point).match(/\s*\((Page|صفحة|الصفحة)\s+(\d+)\)\s*$/i);
+    const pageLabel = pageMatch ? `${t('page')} ${pageMatch[2]}` : '';
+    const text = pageMatch ? String(point).slice(0, pageMatch.index).trim() : String(point);
+    const parts = text.split(/(BASELINE|SIGNED COPY)/g);
+
+    return (
+      <>
+        <span className="var-ai-audit__finding-text">
+          {parts.map((part, index) => (
+            part === 'BASELINE' || part === 'SIGNED COPY'
+              ? <strong key={`${part}-${index}`}>{part}</strong>
+              : <span key={`${part}-${index}`}>{part}</span>
+          ))}
+        </span>
+        {pageLabel && <span className="var-ai-audit__page-badge">{pageLabel}</span>}
+      </>
+    );
+  };
 
   const run = async (action) => {
     setBusy(true);
@@ -34,6 +79,7 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
       setFile(null);
     } catch (error) {
       showError(error?.message || t('signed_copy_action_error'));
+      await reload();
     } finally {
       setBusy(false);
     }
@@ -71,13 +117,29 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
       {!pendingUpload && !pendingAudit && <p>{t('signed_copy_stage_locked')}</p>}
       {variation?.variation_invoice_file && <div className="var-ai-audit__file"><FaCheckCircle /><span>{t('signed_copy_ready')}</span></div>}
       {canAudit && <div className="var-ai-audit__audit-action"><div><strong>{t('official_document_ready_for_audit')}</strong><small>{t('ai_audit_compare_hint')}</small></div><Button size="md" loading={busy} disabled={!variation?.variation_invoice_file} startIcon={<FaRobot />} onClick={() => run(() => projectApi.runVariationAiAudit(project.id, variation.id))}>{t('run_ai_audit')}</Button></div>}
-      {variation?.ai_audit_status === 'failed' && <div className="var-ai-audit__error">{t('ai_audit_failed')}</div>}
+      {variation?.ai_audit_status === 'failed' && (
+        <div className="var-ai-audit__error">
+          <strong>{t('ai_audit_failed')}</strong>
+          {failedAuditError && <small>{failedAuditError}</small>}
+        </div>
+      )}
       {variation?.ai_audit_outcome && (
         <div className={`var-ai-audit__result var-ai-audit__result--${variation.ai_audit_outcome}`}>
-          <strong>{t(outcomes[variation.ai_audit_outcome])}</strong>
-          <p>{isArabic ? variation.ai_audit_summary_ar : variation.ai_audit_summary_en}</p>
-          {result?.needs_human_review && <small>{t('human_review_required')}</small>}
-          {!!result?.discrepancies?.length && <ul>{result.discrepancies.map((item, index) => <li key={`${item.category}-${index}`}>{isArabic ? item.description_ar : item.description_en}{item.page ? ` (${t('page')} ${item.page})` : ''}</li>)}</ul>}
+          <div className="var-ai-audit__result-head">
+            <span className="var-ai-audit__outcome">{t(outcomes[variation.ai_audit_outcome])}</span>
+            {result?.needs_human_review && (
+              <span className="var-ai-audit__review-badge">{t('human_review_required')}</span>
+            )}
+          </div>
+          {!!auditPoints.length && (
+            <ol className="var-ai-audit__findings">
+              {auditPoints.map((point, index) => (
+                <li key={`${variation.ai_audit_outcome}-${index}`}>
+                  {renderAuditPoint(point)}
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
     </section>

@@ -2,8 +2,10 @@ import { PDFDocument, PDFName, StandardFonts, rgb } from "pdf-lib";
 import { buildFileUrl, fetchFileWithAuth } from "../../../../../utils/helpers/file";
 import { logger as defaultLogger } from "../../../../../utils/logger";
 
-const A4_WIDTH = 595.28;
-const A4_HEIGHT = 841.89;
+const DEFAULT_PAGE_SIZE = {
+  width: 595.28,
+  height: 841.89,
+};
 const TEXT = rgb(0.09, 0.13, 0.2);
 const MUTED = rgb(0.47, 0.42, 0.36);
 const BORDER = rgb(0.78, 0.72, 0.64);
@@ -94,16 +96,34 @@ async function getLogoImage(pdfDoc, logoUrl, cache) {
   return cache.logo;
 }
 
-async function drawWatermark(page, pdfDoc, companyInfo, cache) {
+function normalizePageSize(size) {
+  const width = Number(size?.width);
+  const height = Number(size?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  return { width, height };
+}
+
+function getSourcePageSize(sourcePage, embeddedPage) {
+  try {
+    return normalizePageSize(sourcePage?.getSize?.() || embeddedPage);
+  } catch {
+    return normalizePageSize(embeddedPage);
+  }
+}
+
+async function drawWatermark(page, pdfDoc, companyInfo, cache, pageSize = DEFAULT_PAGE_SIZE) {
   const logo = await getLogoImage(pdfDoc, companyInfo?.logo, cache);
   if (!logo) return;
 
-  const maxW = A4_WIDTH * 0.5;
-  const maxH = A4_HEIGHT * 0.5;
+  const { width, height } = normalizePageSize(pageSize);
+  const maxW = width * 0.5;
+  const maxH = height * 0.5;
   const fit = logo.scaleToFit(maxW, maxH);
   page.drawImage(logo, {
-    x: (A4_WIDTH - fit.width) / 2,
-    y: (A4_HEIGHT - fit.height) / 2,
+    x: (width - fit.width) / 2,
+    y: (height - fit.height) / 2,
     width: fit.width,
     height: fit.height,
     opacity: 0.08,
@@ -164,11 +184,12 @@ function drawCenteredText(page, text, x, y, width, font, size, color = TEXT) {
   });
 }
 
-function drawCompactHeader(page, fonts, { variation, project, noticeData }) {
+function drawCompactHeader(page, fonts, { variation, project, noticeData }, pageSize = DEFAULT_PAGE_SIZE) {
+  const { width, height } = normalizePageSize(pageSize);
   const x = SIDE_MARGIN;
-  const topY = A4_HEIGHT - HEADER_TOP;
+  const topY = height - HEADER_TOP;
   const y = topY - HEADER_HEIGHT;
-  const w = A4_WIDTH - (SIDE_MARGIN * 2);
+  const w = width - (SIDE_MARGIN * 2);
   const topRowH = 28;
   const topRowY = topY - topRowH;
 
@@ -214,24 +235,26 @@ function drawCompactHeader(page, fonts, { variation, project, noticeData }) {
   drawLabelValue(page, fonts, "Additional Time", noticeData?.additional_time || "-", x + (colW * 3) + 6, y + 8, colW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
 }
 
-function getContentBox() {
+function getContentBox(pageSize = DEFAULT_PAGE_SIZE) {
+  const { width, height } = normalizePageSize(pageSize);
   const x = SIDE_MARGIN;
-  const top = A4_HEIGHT - HEADER_TOP - HEADER_HEIGHT - CONTENT_GAP;
+  const top = height - HEADER_TOP - HEADER_HEIGHT - CONTENT_GAP;
   const bottom = FOOTER_HEIGHT + 30;
   return {
     x,
     y: bottom,
-    width: A4_WIDTH - (SIDE_MARGIN * 2),
+    width: width - (SIDE_MARGIN * 2),
     height: top - bottom,
   };
 }
 
 function drawPageNumber(page, fonts, pageNo, totalPages) {
+  const { width: pageWidth } = normalizePageSize(page.getSize());
   const text = `Page ${pageNo} of ${totalPages}`;
   const size = 10;
   const width = fonts.regular.widthOfTextAtSize(text, size);
   page.drawText(text, {
-    x: (A4_WIDTH - width) / 2,
+    x: (pageWidth - width) / 2,
     y: 22,
     size,
     font: fonts.regular,
@@ -264,11 +287,12 @@ function ensureSourcePageContents(sourcePage, srcDoc) {
   }
 }
 
-async function createAttachmentPage(pdfDoc, fonts, opts) {
-  const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
-  await drawWatermark(page, pdfDoc, opts.companyInfo, opts.cache);
-  drawCompactHeader(page, fonts, opts);
-  return { page, box: getContentBox() };
+async function createAttachmentPage(pdfDoc, fonts, opts, pageSize = DEFAULT_PAGE_SIZE) {
+  const normalizedPageSize = normalizePageSize(pageSize);
+  const page = pdfDoc.addPage([normalizedPageSize.width, normalizedPageSize.height]);
+  await drawWatermark(page, pdfDoc, opts.companyInfo, opts.cache, normalizedPageSize);
+  drawCompactHeader(page, fonts, opts, normalizedPageSize);
+  return { page, box: getContentBox(normalizedPageSize) };
 }
 
 async function renderSourcePdfPageImage(bytes, pageIndex) {
@@ -322,7 +346,8 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
     const embeddedPage = embeddedPages[sourceIndex];
     if (!embeddedPage) continue;
 
-    const { page, box } = await createAttachmentPage(pdfDoc, fonts, opts);
+    const pageSize = getSourcePageSize(sourcePages[sourceIndex], embeddedPage);
+    const { page, box } = await createAttachmentPage(pdfDoc, fonts, opts, pageSize);
     appendedIndexes.push(pdfDoc.getPageCount() - 1);
 
     if (rasterFallbackPages[sourceIndex]) {

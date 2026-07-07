@@ -62,6 +62,7 @@
   "task_variation_final_approval": "الاعتماد النهائي للتعديل",
   "task_variation_alteration_request": "طلب تعديل",
   "task_variation_edit_allowed": "تعديل أمر تغيير",
+  "task_variation_returned_for_edit": "أمر تغيير معاد للتعديل",
   "sidebar_projects": "المشاريع",
   "projects_list": "قائمة المشاريع",
   "sidebar_payments": "الدفعات",

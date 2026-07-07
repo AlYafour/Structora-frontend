@@ -154,7 +154,7 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       : status === 'returned_for_edit'
       ? canEdit
       : canEdit && !approvalStageStatuses.includes(status),
-    canUploadSignedCopy: isStaff && (status === 'pending_official_document' || (status === 'approved' && variation?.updated_document_pending)),
+    canUploadSignedCopy: !!user && (status === 'pending_official_document' || (status === 'approved' && variation?.updated_document_pending)),
     canRunSignedCopyAudit: isGeneralManager && status === 'pending_general_manager_final',
     canApproveProjectManager: canApproveOrReject && isProjectManager &&
       status === 'pending_project_manager' &&

@@ -21,7 +21,7 @@ import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandl
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
 import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
-import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../utils/printPagination";
+import { prepareVariationPrintDocumentLayout } from "../utils/variationPdfExport";
 import { appendWrappedVariationAttachments } from "../utils/wrapVariationAttachments";
 import { fetchFileWithAuth, buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
@@ -213,36 +213,7 @@ export default function VariationViewPage() {
     }
   };
 
-  const preparePrintDocumentLayout = async (el) => {
-    const prevWidth = el?.style.width || "";
-    let cleanupTablePagination = null;
-    let cleanupPageBreaks = null;
-    let cleanupPinnedBottom = null;
-
-    el.classList.add('vpd-print-mode');
-    el.style.width = `${PRINT_A4_WIDTH_PX}px`;
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-    cleanupTablePagination = applyPrintTablePagination(el, PRINT_A4_HEIGHT_PX);
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    cleanupPinnedBottom = pinPrintBottomGroup(el, {
-      pageHeight: PRINT_A4_HEIGHT_PX,
-      continuationPageHeight: PRINT_A4_HEIGHT_PX,
-    });
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    return () => {
-      cleanupPinnedBottom?.();
-      cleanupPageBreaks?.();
-      cleanupTablePagination?.();
-      el.classList.remove('vpd-print-mode');
-      el.style.width = prevWidth;
-    };
-  };
+  const preparePrintDocumentLayout = prepareVariationPrintDocumentLayout;
 
   // Professional Print Handler using react-to-print v3
   const handlePrint = useReactToPrint({
@@ -262,7 +233,7 @@ export default function VariationViewPage() {
     `,
     onBeforePrint: async () => {
       if (!printDocumentRef.current) return;
-      printLayoutCleanupRef.current = await preparePrintDocumentLayout(printDocumentRef.current);
+      printLayoutCleanupRef.current = await prepareVariationPrintDocumentLayout(printDocumentRef.current);
     },
     onAfterPrint: () => {
       printLayoutCleanupRef.current?.();
@@ -474,7 +445,7 @@ export default function VariationViewPage() {
   const handleExportPDF = () => exportPDF(printDocumentRef);
   const handleExportPDFClean = () => exportPDF(printDocumentCleanRef, '_unsigned');
   const createGmInitialSnapshot = () => exportPDF(
-    printDocumentCleanRef, '_gm_initial_snapshot', { download: false }
+    printDocumentRef, '_gm_initial_snapshot', { download: false }
   );
 
   const {

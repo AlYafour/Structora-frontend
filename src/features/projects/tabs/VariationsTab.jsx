@@ -22,6 +22,8 @@ import useTenantNavigate from "../../../hooks/useTenantNavigate";
 import { useDownloadVariationPDFs } from "../../../hooks/useDownloadVariationPDFs";
 import DownloadAllButton from "../../../components/common/DownloadAllButton";
 import { getVariationTotalAmount } from "../entries/variations/utils/variationAmount";
+import VariationPrintDocument from "../entries/variations/components/VariationPrintDocument";
+import { exportVariationPdf } from "../entries/variations/utils/variationPdfExport";
 
 // Map status → prj-badge CSS class
 const getStatusBadgeClass = (status) => {
@@ -131,6 +133,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [discountDialogVariation, setDiscountDialogVariation] = useState(null);
     const [postApprovalDiscount, setPostApprovalDiscount] = useState('');
     const [savingPostApprovalDiscount, setSavingPostApprovalDiscount] = useState(false);
+    const gmInitialSnapshotRef = useRef(null);
 
     const getVariationStatus = (variation) => {
         return variation.workflow_status || variation.status || "draft";
@@ -139,6 +142,20 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const checkRequiresEdit = (variation) => {
         const status = getVariationStatus(variation);
         return status === "requires_edit";
+    };
+
+    const createGmInitialSnapshot = async (variation) => {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        return exportVariationPdf({
+            ref: gmInitialSnapshotRef,
+            variation,
+            project,
+            companyInfo: null,
+            noticeData: null,
+            filenameSuffix: '_gm_initial_snapshot',
+            download: false,
+            logger,
+        });
     };
 
     const approveVariationByRole = async (variation) => {
@@ -164,7 +181,8 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
 
         if (isGeneralManager && status === "pending_gm_initial") {
-            return projectApi.approveVariationGMInitial(projectId, variation.id);
+            const snapshotBlob = await createGmInitialSnapshot(variation);
+            return projectApi.approveVariationGMInitial(projectId, variation.id, snapshotBlob);
         }
 
         if (isGeneralManager) {
@@ -304,13 +322,6 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
         if (checkRequiresEdit(actionVariation)) {
             showToast("error", t("must_edit_before_approval"));
-            return;
-        }
-
-        if (isGeneralManager && ['pending_gm_initial', 'pending_general_manager_final'].includes(getVariationStatus(actionVariation))) {
-            setApproveVariationConfirmOpen(false);
-            setActionVariation(null);
-            navigate(`/variations/${actionVariation.id}/view?project=${projectId}`);
             return;
         }
 
@@ -1564,6 +1575,21 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 </>
             ) : (
                 <div className="prj-empty-state">{t("no_variations")}</div>
+            )}
+
+            {actionVariation && getVariationStatus(actionVariation) === "pending_gm_initial" && (
+                <div className="variations-tab__snapshot-document">
+                    <VariationPrintDocument
+                        ref={gmInitialSnapshotRef}
+                        variation={actionVariation}
+                        project={project}
+                        companyInfo={null}
+                        noticeData={null}
+                        consultantStampUrl={null}
+                        gmSignatureUrl={null}
+                        hideSignatures={false}
+                    />
+                </div>
             )}
 
             <Dialog

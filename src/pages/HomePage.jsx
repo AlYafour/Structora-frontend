@@ -126,6 +126,7 @@ export default function HomePage() {
       variation_final_approval: t("task_variation_final_approval"),
       variation_alteration_request: t("task_variation_alteration_request"),
       variation_edit_allowed: t("task_variation_edit_allowed"),
+      variation_returned_for_edit: t("task_variation_returned_for_edit"),
     };
     return labels[type] || t("pending_task");
   };

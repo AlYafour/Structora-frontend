@@ -183,10 +183,6 @@ export function formatError(error) {
     const status = error.response.status;
     const data = error.response.data;
 
-    if (status >= 500) {
-      return i18n.t("errors.server_support");
-    }
-
     // If there is error data from the server
     if (data) {
       // Try formatting field errors first
@@ -202,7 +198,7 @@ export function formatError(error) {
           return translated;
         }
 
-        if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422) {
+        if (status === 400 || status === 403 || status === 404 || status === 409 || status === 422 || status >= 500) {
           return formatValidationMessage(serverMessage);
         }
       }

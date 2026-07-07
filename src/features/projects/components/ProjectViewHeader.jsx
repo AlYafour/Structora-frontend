@@ -161,6 +161,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   };
 
   const statusInfo = getStatusInfo();
+  const legacyCode = String(project?.legacy_code || "").trim();
   const hasDurationExtensions = (items) =>
     Array.isArray(items) && items.some((ext) => (Number(ext?.days) || 0) > 0 || (Number(ext?.months) || 0) > 0);
   const hasScheduleExtensions = hasDurationExtensions(extensions);
@@ -273,6 +274,16 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                   <div className="prj-view-header__top-code">
                     <span className="mono">{formatInternalCode(project.internal_code)}</span>
                   </div>
+                )}
+                {legacyCode && (
+                  <span
+                    className="prj-view-header__legacy-code"
+                    data-tooltip={legacyCode}
+                    tabIndex={0}
+                    aria-label={`${t("legacy_project_code")}: ${legacyCode}`}
+                  >
+                    {t("legacy_project_code")}
+                  </span>
                 )}
                 {statusInfo && (
                   <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
