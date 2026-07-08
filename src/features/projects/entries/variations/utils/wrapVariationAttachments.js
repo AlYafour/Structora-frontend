@@ -279,40 +279,76 @@ function getContentBox(pageSize = DEFAULT_PAGE_SIZE) {
   };
 }
 
-function drawPageNumber(page, fonts, pageNo, totalPages) {
+function drawPageNumber(page, fonts, pageNo, totalPages, {
+  variation = null,
+  project = null,
+  noticeData = {},
+  showDetails = false,
+} = {}) {
   const { width: pageWidth } = normalizePageSize(page.getSize());
-  const text = `Page ${pageNo}/${totalPages}`;
-  const size = 8;
-  const textWidth = fonts.bold.widthOfTextAtSize(text, size);
+  const pageText = `Page ${pageNo} / ${totalPages}`;
+  const size = showDetails ? 8 : 7;
+  const maxTextWidth = pageWidth - (SIDE_MARGIN * 2) - 12;
 
-  // Main content pages can have full-bleed content (e.g. the credentials
-  // banner) sitting right at the page bottom. Draw the number as an opaque
-  // chip in the bottom-right corner so it stays legible over anything
-  // underneath instead of being centered on top of it.
+  // Attachment pages can have varied source content, so they keep an opaque
+  // chip. Notice pages already reserve a footer band, so they use plain text.
   const paddingX = 6;
   const paddingY = 4;
+  const x = SIDE_MARGIN;
+  const y = showDetails ? 10 : 2;
+
+  const sectionGap = showDetails ? 3 : 10;
+  const separator = "|";
+  const referenceText = getReferenceNo(variation, noticeData) || "-";
+  const projectName = getProjectName(project) || "-";
+  const pageWidthText = fonts.bold.widthOfTextAtSize(pageText, size);
+  const separatorWidth = fonts.bold.widthOfTextAtSize(separator, size);
+  const referenceMaxWidth = Math.min(120, maxTextWidth * 0.28);
+  const clippedReference = truncateToWidth(referenceText, fonts.bold, size, referenceMaxWidth);
+  const referenceWidth = fonts.bold.widthOfTextAtSize(clippedReference, size);
+  const usedWidth = pageWidthText + (separatorWidth * 2) + referenceWidth + (sectionGap * 4);
+  const projectMaxWidth = Math.max(40, maxTextWidth - usedWidth);
+  const clippedProject = truncateToWidth(projectName, fonts.bold, size, projectMaxWidth);
+  const projectWidth = fonts.bold.widthOfTextAtSize(clippedProject, size);
+  const textWidth = usedWidth + projectWidth;
   const boxWidth = textWidth + (paddingX * 2);
   const boxHeight = size + (paddingY * 2);
-  const x = pageWidth - SIDE_MARGIN - boxWidth;
-  const y = 10;
 
-  page.drawRectangle({
-    x,
-    y,
-    width: boxWidth,
-    height: boxHeight,
-    color: rgb(1, 1, 1),
-    opacity: 0.9,
-    borderColor: BORDER,
-    borderWidth: 0.6,
-  });
-  page.drawText(text, {
-    x: x + paddingX,
-    y: y + paddingY,
-    size,
-    font: fonts.bold,
-    color: rgb(0.25, 0.25, 0.25),
-  });
+  if (showDetails) {
+    page.drawRectangle({
+      x,
+      y,
+      width: boxWidth,
+      height: boxHeight,
+      color: rgb(1, 1, 1),
+      opacity: 0.9,
+      borderColor: BORDER,
+      borderWidth: 0.6,
+    });
+  }
+
+  let cursorX = showDetails ? x + paddingX : x;
+  const textY = showDetails ? y + paddingY : y;
+  const drawSegment = (value) => {
+    page.drawText(value, {
+      x: cursorX,
+      y: textY,
+      size,
+      font: fonts.bold,
+      color: rgb(0.25, 0.25, 0.25),
+    });
+    cursorX += fonts.bold.widthOfTextAtSize(value, size);
+  };
+
+  drawSegment(pageText);
+  cursorX += sectionGap;
+  drawSegment(separator);
+  cursorX += sectionGap;
+  drawSegment(clippedReference);
+  cursorX += sectionGap;
+  drawSegment(separator);
+  cursorX += sectionGap;
+  drawSegment(clippedProject);
 }
 
 function scaleToFit(srcW, srcH, boxW, boxH) {
@@ -483,13 +519,17 @@ export async function appendWrappedVariationAttachments(pdfDoc, {
   return appendedPageIndexes;
 }
 
-// Stamps "Page X of Y" on every page of the document (main content + any
+// Stamps page numbers on every page of the document (main content + any
 // appended attachment pages). Call this once, after all pages exist, so the
 // main Variation Order pages get numbered too, not just the attachments.
-export async function stampVariationPageNumbers(pdfDoc) {
+export async function stampVariationPageNumbers(pdfDoc, context = {}) {
   const fonts = await getFonts(pdfDoc);
   const totalPages = pdfDoc.getPageCount();
+  const detailedPageIndexes = new Set(context.detailedPageIndexes || []);
   for (let i = 0; i < totalPages; i += 1) {
-    drawPageNumber(pdfDoc.getPage(i), fonts, i + 1, totalPages);
+    drawPageNumber(pdfDoc.getPage(i), fonts, i + 1, totalPages, {
+      ...context,
+      showDetails: detailedPageIndexes.has(i),
+    });
   }
 }

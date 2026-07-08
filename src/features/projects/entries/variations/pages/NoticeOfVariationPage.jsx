@@ -266,6 +266,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   );
   const isCompanyGeneralManager = !!(user?.is_superuser || user?.role?.name === 'company_super_admin');
   const isPMInitialApproved = effectiveVariation?.status === 'pending_gm_initial' || effectiveVariation?.status === 'pending_supervisor';
+  const draftWorkflowStatuses = ['draft', 'returned_for_edit', 'rejected_by_owner_consultant'];
   const canEditVariationContent = isAdmin ||
     isCompanyGeneralManager ||
     hasPermission("variations.create") ||
@@ -893,11 +894,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           saving={saving}
           formId="notice-variation-form"
           showSave={isEditMode}
-          saveLabel={(!variationId || ['draft', 'returned_for_edit'].includes(effectiveVariation?.status)) ? t('submit', 'Submit') : undefined}
+          saveLabel={(!variationId || draftWorkflowStatuses.includes(effectiveVariation?.status)) ? t('submit', 'Submit') : undefined}
           title={getProjectTitle()}
           subtitle={getProjectSubtitle()}
           extraActions={
-            isEditMode && (!variationId || ['draft', 'returned_for_edit'].includes(effectiveVariation?.status)) ? (
+            isEditMode && (!variationId || draftWorkflowStatuses.includes(effectiveVariation?.status)) ? (
               <Button
                 type="button"
                 variant="secondary"

@@ -7,6 +7,7 @@ const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_CANVAS_SCALE = 3;
 const PDF_JPEG_QUALITY = 0.97;
+const NOTICE_PDF_FOOTER_HEIGHT_PT = 11;
 
 async function createPdfWatermarkImage(src) {
   const blob = await fetchFileWithAuth(src);
@@ -128,9 +129,9 @@ export async function exportVariationPdf({
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const contentW = pageW;
-    const contentH = pageH;
+    const contentH = pageH - NOTICE_PDF_FOOTER_HEIGHT_PT;
     const scale = contentW / canvas.width;
-    const pageCanvasH = Math.round(contentH / scale);
+    const pageCanvasH = Math.round(pageH / scale);
     const pages = Math.ceil(canvas.height / pageCanvasH);
 
     let watermarkImage = null;
@@ -186,14 +187,22 @@ export async function exportVariationPdf({
       slice.width = canvas.width;
       slice.height = srcH;
       slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+      const drawScale = Math.min(contentW / canvas.width, contentH / srcH);
+      const drawW = canvas.width * drawScale;
+      const drawH = srcH * drawScale;
       pdf.addImage(
         slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
         "JPEG",
+        (pageW - drawW) / 2,
         0,
-        0,
-        contentW,
-        srcH * scale
+        drawW,
+        drawH
       );
+      pdf.setFillColor(251, 248, 242);
+      pdf.rect(0, contentH, pageW, NOTICE_PDF_FOOTER_HEIGHT_PT, "F");
+      pdf.setDrawColor(216, 201, 179);
+      pdf.setLineWidth(0.5);
+      pdf.line(0, contentH, pageW, contentH);
       if (watermarkImage) {
         const maxW = pageW * 0.55;
         const maxH = pageH * 0.55;
@@ -217,8 +226,9 @@ export async function exportVariationPdf({
     const mainPdfBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainPdfBytes);
 
+    let attachmentPageIndexes = [];
     if (attachments.length > 0) {
-      await appendWrappedVariationAttachments(mergedDoc, {
+      attachmentPageIndexes = await appendWrappedVariationAttachments(mergedDoc, {
         attachments,
         variation,
         project,
@@ -228,7 +238,12 @@ export async function exportVariationPdf({
       });
     }
 
-    await stampVariationPageNumbers(mergedDoc);
+    await stampVariationPageNumbers(mergedDoc, {
+      variation,
+      project,
+      noticeData,
+      detailedPageIndexes: attachmentPageIndexes,
+    });
 
     const mergedBytes = await mergedDoc.save();
     const blob = new Blob([mergedBytes], { type: "application/pdf" });
