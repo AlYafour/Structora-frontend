@@ -1,6 +1,6 @@
 import { generatePDFFilename } from "./pdfFilenameGenerator";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "./printPagination";
-import { appendWrappedVariationAttachments } from "./wrapVariationAttachments";
+import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "./wrapVariationAttachments";
 import { fetchFileWithAuth } from "../../../../../utils/helpers/file";
 
 const PRINT_A4_WIDTH_PX = 794;
@@ -211,11 +211,13 @@ export async function exportVariationPdf({
       }
     }
 
-    if (attachments.length > 0) {
-      const { PDFDocument } = await import("pdf-lib");
-      const mainPdfBytes = pdf.output("arraybuffer");
-      const mergedDoc = await PDFDocument.load(mainPdfBytes);
+    // Load into pdf-lib (even with no attachments) so we can stamp page
+    // numbers on the main Variation Order pages too, not just attachments.
+    const { PDFDocument } = await import("pdf-lib");
+    const mainPdfBytes = pdf.output("arraybuffer");
+    const mergedDoc = await PDFDocument.load(mainPdfBytes);
 
+    if (attachments.length > 0) {
       await appendWrappedVariationAttachments(mergedDoc, {
         attachments,
         variation,
@@ -224,23 +226,19 @@ export async function exportVariationPdf({
         noticeData,
         logger,
       });
-
-      const mergedBytes = await mergedDoc.save();
-      const blob = new Blob([mergedBytes], { type: "application/pdf" });
-      if (!download) return blob;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
-      a.click();
-      URL.revokeObjectURL(url);
-      return blob;
     }
 
-    const blob = pdf.output("blob");
-    if (download) {
-      pdf.save(generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`));
-    }
+    await stampVariationPageNumbers(mergedDoc);
+
+    const mergedBytes = await mergedDoc.save();
+    const blob = new Blob([mergedBytes], { type: "application/pdf" });
+    if (!download) return blob;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
+    a.click();
+    URL.revokeObjectURL(url);
     return blob;
   } finally {
     if (watermarkEl) watermarkEl.style.display = "";

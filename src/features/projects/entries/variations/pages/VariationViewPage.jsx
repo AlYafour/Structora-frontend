@@ -19,10 +19,10 @@ import { FiFile, FiDownload } from "react-icons/fi";
 import { useVariationData } from "../hooks/useVariationData";
 import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandlers";
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
-import { getStatusLabel, getStatusConfig, calculatePermissions, isRejected as checkRejected } from "../utils/variationStatusHelpers";
+import { getStatusLabel, getStatusConfig, calculatePermissions, canDirectUnapproveVariation, canRequestUnapproveVariation, isRejected as checkRejected } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
 import { prepareVariationPrintDocumentLayout } from "../utils/variationPdfExport";
-import { appendWrappedVariationAttachments } from "../utils/wrapVariationAttachments";
+import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "../utils/wrapVariationAttachments";
 import { fetchFileWithAuth, buildFileUrl } from "../../../../../utils/helpers/file";
 import "./VariationViewPage.css";
 import useTenantNavigate from '../../../../../hooks/useTenantNavigate';
@@ -80,6 +80,10 @@ export default function VariationViewPage() {
   const [returnEditDialogOpen, setReturnEditDialogOpen] = useState(false);
   const [returnEditReason, setReturnEditReason] = useState('');
   const [returnEditBusy, setReturnEditBusy] = useState(false);
+  const [unapproveBusy, setUnapproveBusy] = useState(false);
+  const [requestUnapproveDialogOpen, setRequestUnapproveDialogOpen] = useState(false);
+  const [requestUnapproveReason, setRequestUnapproveReason] = useState('');
+  const [requestUnapproveBusy, setRequestUnapproveBusy] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [consultantStampUrl, setConsultantStampUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -162,6 +166,10 @@ export default function VariationViewPage() {
     user?.role?.name === 'company_super_admin'
   );
   const isCompanyGeneralManager = !!(user?.is_superuser || user?.role?.name === 'company_super_admin');
+  const isProjectManager = user?.role?.name === 'Manager';
+  const isSupervisor = user?.role?.name === 'Supervisor';
+  const canDirectUnapprove = canDirectUnapproveVariation(variation, user);
+  const canRequestUnapprove = canRequestUnapproveVariation(variation, user);
   const canEditVariationContent = isAdmin ||
     isCompanyGeneralManager ||
     hasPermission("variations.create") ||
@@ -189,9 +197,13 @@ export default function VariationViewPage() {
   );
   const editBlockedMessageKey = !canEditVariationContent
     ? "variation_edit_no_permission_desc"
-    : (variationStatus === 'pending_supervisor' || variationStatus === 'pending_gm_initial') && !hasAcceptedEditRequest
-      ? "variation_edit_requires_alteration_request_desc"
-      : "variation_edit_not_allowed_desc";
+    : canDirectUnapprove
+      ? "variation_edit_use_unapprove_desc"
+      : canRequestUnapprove
+        ? "variation_edit_use_request_unapprove_desc"
+        : (variationStatus === 'pending_supervisor' || variationStatus === 'pending_gm_initial') && !hasAcceptedEditRequest
+          ? "variation_edit_requires_alteration_request_desc"
+          : "variation_edit_not_allowed_desc";
   const isRejected = checkRejected(variation);
 
   const handleReturnForEdit = async () => {
@@ -210,6 +222,44 @@ export default function VariationViewPage() {
       showError(error?.message || t('return_for_edit_error'));
     } finally {
       setReturnEditBusy(false);
+    }
+  };
+
+  const handleUnapproveVariation = async () => {
+    if (!variation?.id || !project?.id) return;
+    setUnapproveBusy(true);
+    try {
+      if (isProjectManager) {
+        await projectApi.unapproveVariationProjectManager(project.id, variation.id);
+      } else if (isSupervisor) {
+        await projectApi.unapproveVariationSupervisor(project.id, variation.id);
+      }
+      success(t('variation_unapproved', 'Variation approval removed'));
+      await loadVariation();
+    } catch (error) {
+      showError(error?.response?.data?.error || error?.message || t('error_generic'));
+    } finally {
+      setUnapproveBusy(false);
+    }
+  };
+
+  const handleSubmitRequestUnapprove = async () => {
+    if (!variation?.id || !project?.id || !requestUnapproveReason.trim()) return;
+    setRequestUnapproveBusy(true);
+    try {
+      await projectApi.createAlterationRequest(project.id, variation.id, {
+        request_type: 'unapprove',
+        reason: requestUnapproveReason.trim(),
+      });
+      const sentToKey = isProjectManager ? 'alteration_request_sent_to_supervisor' : 'alteration_request_sent';
+      success(`${t('request_unapprove', 'Request Unapprove')} - ${t(sentToKey)}`);
+      setRequestUnapproveDialogOpen(false);
+      setRequestUnapproveReason('');
+      await loadVariation();
+    } catch (error) {
+      showError(error?.response?.data?.error || error?.message || t('error_generic'));
+    } finally {
+      setRequestUnapproveBusy(false);
     }
   };
 
@@ -394,12 +444,14 @@ export default function VariationViewPage() {
         }
       }
 
+      // Load into pdf-lib (even with no attachments) so we can stamp page
+      // numbers on the main Variation Order pages too, not just attachments.
+      const { PDFDocument } = await import('pdf-lib');
+      const mainPdfBytes = pdf.output('arraybuffer');
+      const mergedDoc = await PDFDocument.load(mainPdfBytes);
+
       // Merge variation_attachments (PDFs/images) as header/footer attachment pages.
       if (attachments.length > 0) {
-        const { PDFDocument } = await import('pdf-lib');
-        const mainPdfBytes = pdf.output('arraybuffer');
-        const mergedDoc = await PDFDocument.load(mainPdfBytes);
-
         await appendWrappedVariationAttachments(mergedDoc, {
           attachments,
           variation,
@@ -408,22 +460,20 @@ export default function VariationViewPage() {
           noticeData,
           logger,
         });
-
-        const mergedBytes = await mergedDoc.save();
-        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-        if (!download) return blob;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
-        a.download = fname;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        if (!download) return pdf.output('blob');
-        const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
-        pdf.save(fname);
       }
+
+      await stampVariationPageNumbers(mergedDoc);
+
+      const mergedBytes = await mergedDoc.save();
+      const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+      if (!download) return blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const fname = generatePDFFilename(variation, noticeData).replace(/\.pdf$/i, `${filenameSuffix}.pdf`);
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
 
       if (download) success(t("pdf_exported_successfully"));
     } catch (error) {
@@ -698,7 +748,8 @@ export default function VariationViewPage() {
               permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
               permissions.canRejectOwnerConsultant ||
               permissions.canReturnForEdit ||
-              permissions.canApproveGeneralManagerFinal) && (
+              permissions.canApproveGeneralManagerFinal ||
+              canDirectUnapprove || canRequestUnapprove) && (
                 <div className="var-toolbar__actions">
                   {activeTab === "edit" && permissions.canEdit && (
                     <>
@@ -728,7 +779,8 @@ export default function VariationViewPage() {
                     permissions.canConfirmOwnerApproval || permissions.canConfirmConsultantApproval ||
                     permissions.canRejectOwnerConsultant ||
                     permissions.canReturnForEdit ||
-                    permissions.canApproveGeneralManagerFinal) && (
+                    permissions.canApproveGeneralManagerFinal ||
+                    canDirectUnapprove || canRequestUnapprove) && (
                     <>
                       <span className="var-toolbar__actions-label">{t("available_actions")}</span>
                       {permissions.canApproveProjectManager && (
@@ -784,6 +836,16 @@ export default function VariationViewPage() {
                       {permissions.canReturnForEdit && (
                         <Button variant="secondary" size="sm" onClick={() => setReturnEditDialogOpen(true)}>
                           <FaEdit /> {t('return_for_edit')}
+                        </Button>
+                      )}
+                      {canDirectUnapprove && (
+                        <Button variant="secondary" size="sm" onClick={handleUnapproveVariation} disabled={unapproveBusy}>
+                          <FaExchangeAlt /> {t('unapprove', 'Unapprove')}
+                        </Button>
+                      )}
+                      {!canDirectUnapprove && canRequestUnapprove && (
+                        <Button variant="secondary" size="sm" onClick={() => setRequestUnapproveDialogOpen(true)}>
+                          <FaExchangeAlt /> {t('request_unapprove', 'Request Unapprove')}
                         </Button>
                       )}
                     </>
@@ -1304,6 +1366,17 @@ export default function VariationViewPage() {
           cancelLabel={null}
           onClose={() => setBlockEditDialogOpen(false)}
           onConfirm={() => setBlockEditDialogOpen(false)}
+        />
+
+        <Dialog
+          open={requestUnapproveDialogOpen}
+          title={t('request_unapprove', 'Request Unapprove')}
+          desc={<div><p>{t('request_unapprove_desc', 'This will send an unapprove request to the approver responsible for the current approval step.')}</p><label className="var-dialog-label">{t('reason')} <span className="var-required">*</span></label><textarea className="var-dialog-textarea" rows={4} value={requestUnapproveReason} onChange={(e) => setRequestUnapproveReason(e.target.value)} /></div>}
+          confirmLabel={t('submit', 'Submit')}
+          cancelLabel={t('cancel')}
+          onClose={() => { if (!requestUnapproveBusy) { setRequestUnapproveDialogOpen(false); setRequestUnapproveReason(''); } }}
+          onConfirm={handleSubmitRequestUnapprove}
+          busy={requestUnapproveBusy}
         />
 
         <Dialog

@@ -240,6 +240,8 @@
   "sending": "جارٍ الإرسال...",
   "alteration_request_sent": "تم إرسال الطلب إلى مدير المشروع",
   "alteration_request_sent_to_supervisor": "تم إرسال الطلب إلى المشرف",
+  "unapprove": "إلغاء الاعتماد",
+  "variation_unapproved": "تم إلغاء اعتماد أمر التغيير",
   "request_unapprove": "طلب إلغاء الاعتماد",
   "request_unapprove_desc": "سيتم إرسال طلب إلغاء الاعتماد إلى المعتمد المسؤول عن المرحلة الحالية.",
   "alteration_request_accepted": "تم قبول الطلب وتحديث حالة أمر التغيير",

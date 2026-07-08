@@ -1225,6 +1225,8 @@
   "variation_edit_not_allowed_desc": "لا يمكن تعديل أمر تغيير بعد الاعتماد النهائي من الإدارة العليا.",
   "variation_edit_no_permission_desc": "ليس لديك صلاحية تعديل أوامر التغيير.",
   "variation_edit_requires_alteration_request_desc": "أمر التغيير قيد الاعتماد بالفعل. يرجى إرسال طلب تعديل لتعديله.",
+  "variation_edit_use_unapprove_desc": "لقد اعتمدت هذا التغيير مسبقاً. استخدم إلغاء الاعتماد لإعادة فتحه للتعديل.",
+  "variation_edit_use_request_unapprove_desc": "أمر التغيير قيد الاعتماد بالفعل. يرجى إرسال طلب إلغاء اعتماد إلى المعتمِد الحالي لإعادة فتحه للتعديل.",
   "currency_aed_short": "د.إ",
   "project_source_placeholder": "أدخل مصدر المشروع...",
   "contract_attach_appendix": "ملحق عقد",

@@ -9,7 +9,7 @@ import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
 import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
-import { appendWrappedVariationAttachments } from "../features/projects/entries/variations/utils/wrapVariationAttachments";
+import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "../features/projects/entries/variations/utils/wrapVariationAttachments";
 
 const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
@@ -239,22 +239,26 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     }
 
     const attachments = variation?.variation_attachments || [];
-    if (attachments.length === 0) {
-      return pdf.output("blob");
-    }
 
-    // Merge PDF/image attachments as header/footer attachment pages.
+    // Load into pdf-lib (even with no attachments) so we can stamp page
+    // numbers on the main Variation Order pages too, not just attachments.
     const { PDFDocument } = await import("pdf-lib");
     const mainBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainBytes);
-    await appendWrappedVariationAttachments(mergedDoc, {
-      attachments,
-      variation,
-      project,
-      companyInfo,
-      noticeData,
-      logger: console,
-    });
+
+    if (attachments.length > 0) {
+      // Merge PDF/image attachments as header/footer attachment pages.
+      await appendWrappedVariationAttachments(mergedDoc, {
+        attachments,
+        variation,
+        project,
+        companyInfo,
+        noticeData,
+        logger: console,
+      });
+    }
+
+    await stampVariationPageNumbers(mergedDoc);
 
     const mergedBytes = await mergedDoc.save();
     return new Blob([mergedBytes], { type: "application/pdf" });

@@ -240,6 +240,8 @@
   "sending": "Sending...",
   "alteration_request_sent": "Request sent to project manager",
   "alteration_request_sent_to_supervisor": "Request sent to supervisor",
+  "unapprove": "Unapprove",
+  "variation_unapproved": "Variation approval removed",
   "request_unapprove": "Request Unapprove",
   "request_unapprove_desc": "This will send an unapprove request to the approver responsible for the current approval step.",
   "alteration_request_accepted": "Request accepted and variation status updated",

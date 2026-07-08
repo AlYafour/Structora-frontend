@@ -144,11 +144,30 @@ async function getPdfjsLib() {
   return pdfjsLibPromise;
 }
 
+function truncateToWidth(text, font, size, maxWidth) {
+  const value = safeText(text);
+  if (!value) return value;
+  if (font.widthOfTextAtSize(value, size) <= maxWidth) return value;
+
+  const ellipsis = "...";
+  let lo = 0;
+  let hi = value.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    const candidate = `${value.slice(0, mid).trim()}${ellipsis}`;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return lo > 0 ? `${value.slice(0, lo).trim()}${ellipsis}` : ellipsis;
+}
+
 function drawTextClipped(page, text, x, y, width, options = {}) {
   const font = options.font;
   const size = options.size || 8;
-  const maxChars = Math.max(4, Math.floor(width / (size * 0.48)));
-  page.drawText(truncate(text, maxChars), {
+  page.drawText(truncateToWidth(text, font, size, width), {
     x,
     y,
     size,
@@ -224,15 +243,27 @@ function drawCompactHeader(page, fonts, { variation, project, noticeData }, page
     valueSize: 7.4,
   });
 
+  // Project Name usually needs the most room; Project No. is almost always a
+  // short code, so give the name column extra width taken from that column
+  // instead of splitting the row into four equal parts.
   const colW = w / 4;
-  for (let i = 1; i < 4; i += 1) {
-    page.drawLine({ start: { x: x + (colW * i), y }, end: { x: x + (colW * i), y: topRowY }, thickness: 0.55, color: BORDER });
-  }
+  const nameW = colW * 1.6;
+  const refW = colW * 1.0;
+  const projNoW = colW * 0.6;
+  const timeW = colW * 0.8;
+  const col1X = x;
+  const col2X = col1X + nameW;
+  const col3X = col2X + refW;
+  const col4X = col3X + projNoW;
 
-  drawLabelValue(page, fonts, "Project Name", getProjectName(project), x + 6, y + 8, colW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Reference No.", getReferenceNo(variation, noticeData) || "-", x + colW + 6, y + 8, colW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Project No.", getProjectNumber(project) || "-", x + (colW * 2) + 6, y + 8, colW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Additional Time", noticeData?.additional_time || "-", x + (colW * 3) + 6, y + 8, colW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
+  [col2X, col3X, col4X].forEach((lineX) => {
+    page.drawLine({ start: { x: lineX, y }, end: { x: lineX, y: topRowY }, thickness: 0.55, color: BORDER });
+  });
+
+  drawLabelValue(page, fonts, "Project Name", getProjectName(project), col1X + 6, y + 8, nameW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
+  drawLabelValue(page, fonts, "Reference No.", getReferenceNo(variation, noticeData) || "-", col2X + 6, y + 8, refW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
+  drawLabelValue(page, fonts, "Project No.", getProjectNumber(project) || "-", col3X + 6, y + 8, projNoW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
+  drawLabelValue(page, fonts, "Additional Time", noticeData?.additional_time || "-", col4X + 6, y + 8, timeW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
 }
 
 function getContentBox(pageSize = DEFAULT_PAGE_SIZE) {
@@ -250,15 +281,37 @@ function getContentBox(pageSize = DEFAULT_PAGE_SIZE) {
 
 function drawPageNumber(page, fonts, pageNo, totalPages) {
   const { width: pageWidth } = normalizePageSize(page.getSize());
-  const text = `Page ${pageNo} of ${totalPages}`;
-  const size = 10;
-  const width = fonts.regular.widthOfTextAtSize(text, size);
+  const text = `Page ${pageNo}/${totalPages}`;
+  const size = 8;
+  const textWidth = fonts.bold.widthOfTextAtSize(text, size);
+
+  // Main content pages can have full-bleed content (e.g. the credentials
+  // banner) sitting right at the page bottom. Draw the number as an opaque
+  // chip in the bottom-right corner so it stays legible over anything
+  // underneath instead of being centered on top of it.
+  const paddingX = 6;
+  const paddingY = 4;
+  const boxWidth = textWidth + (paddingX * 2);
+  const boxHeight = size + (paddingY * 2);
+  const x = pageWidth - SIDE_MARGIN - boxWidth;
+  const y = 10;
+
+  page.drawRectangle({
+    x,
+    y,
+    width: boxWidth,
+    height: boxHeight,
+    color: rgb(1, 1, 1),
+    opacity: 0.9,
+    borderColor: BORDER,
+    borderWidth: 0.6,
+  });
   page.drawText(text, {
-    x: (pageWidth - width) / 2,
-    y: 22,
+    x: x + paddingX,
+    y: y + paddingY,
     size,
-    font: fonts.regular,
-    color: MUTED,
+    font: fonts.bold,
+    color: rgb(0.25, 0.25, 0.25),
   });
 }
 
@@ -427,11 +480,16 @@ export async function appendWrappedVariationAttachments(pdfDoc, {
     }
   }
 
-  const totalPages = pdfDoc.getPageCount();
-  appendedPageIndexes.forEach((pageIndex) => {
-    const page = pdfDoc.getPage(pageIndex);
-    drawPageNumber(page, fonts, pageIndex + 1, totalPages);
-  });
-
   return appendedPageIndexes;
+}
+
+// Stamps "Page X of Y" on every page of the document (main content + any
+// appended attachment pages). Call this once, after all pages exist, so the
+// main Variation Order pages get numbered too, not just the attachments.
+export async function stampVariationPageNumbers(pdfDoc) {
+  const fonts = await getFonts(pdfDoc);
+  const totalPages = pdfDoc.getPageCount();
+  for (let i = 0; i < totalPages; i += 1) {
+    drawPageNumber(pdfDoc.getPage(i), fonts, i + 1, totalPages);
+  }
 }

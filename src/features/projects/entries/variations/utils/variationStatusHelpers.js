@@ -83,6 +83,50 @@ export const isRejected = (variation) => {
          status === 'rejected';
 };
 
+const getRoleFlags = (user) => {
+  const isProjectManager = user?.role?.name === 'Manager';
+  const isSupervisor = user?.role?.name === 'Supervisor';
+  const isCompanySuperAdmin = user?.role?.name === 'company_super_admin';
+  const isGeneralManager = isCompanySuperAdmin || !!user?.is_superuser;
+  const isStaff = !isProjectManager && !isSupervisor && !isGeneralManager;
+  return { isProjectManager, isSupervisor, isGeneralManager, isStaff };
+};
+
+/**
+ * Whether the current user can unapprove this variation immediately (no request needed).
+ */
+export const canDirectUnapproveVariation = (variation, user) => {
+  const status = variation?.status || variation?.workflow_status || 'draft';
+  if (status === 'approved' || status === 'final_approved') return false;
+  const { isProjectManager, isSupervisor } = getRoleFlags(user);
+
+  if (isProjectManager) {
+    return status === 'pending_gm_initial' && !!variation?.project_manager_initial_approved_by;
+  }
+  if (isSupervisor) {
+    return (status === 'pending_owner_consultant' || status === 'pending_general_manager_final') &&
+      !!variation?.general_manager_initial_approved_by;
+  }
+  return false;
+};
+
+/**
+ * Whether the current user must send an unapprove request (rather than unapprove directly).
+ */
+export const canRequestUnapproveVariation = (variation, user) => {
+  const status = variation?.status || variation?.workflow_status || 'draft';
+  if (status === 'approved' || status === 'final_approved') return false;
+  const { isProjectManager, isStaff } = getRoleFlags(user);
+
+  if (isStaff) {
+    return status === 'pending_supervisor' || status === 'pending_gm_initial';
+  }
+  if (isProjectManager) {
+    return status === 'pending_supervisor' || status === 'pending_owner_consultant' || status === 'pending_general_manager_final';
+  }
+  return false;
+};
+
 /**
  * Calculates permission flags for variation actions
  * @param {Object} variation - Variation object
@@ -107,8 +151,9 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
     (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
   );
   const hasVariationEditPermission = options.hasVariationEditPermission === true;
+  // Staff may edit freely until the Project Manager gives initial approval;
+  // once it moves past that stage, only a General Manager can edit.
   const approvalStageStatuses = [
-    'pending_project_manager',
     'pending_gm_initial',
     'pending_supervisor',
     'pending_owner_consultant',
