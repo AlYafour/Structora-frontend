@@ -1,4 +1,4 @@
-import { PDFDocument, PDFName, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, StandardFonts, degrees, rgb } from "pdf-lib";
 import { buildFileUrl, fetchFileWithAuth } from "../../../../../utils/helpers/file";
 import { logger as defaultLogger } from "../../../../../utils/logger";
 
@@ -111,6 +111,25 @@ function getSourcePageSize(sourcePage, embeddedPage) {
   } catch {
     return normalizePageSize(embeddedPage);
   }
+}
+
+function getSourcePageRotationAngle(sourcePage) {
+  try {
+    const angle = Number(sourcePage?.getRotation?.()?.angle || 0);
+    const normalized = ((angle % 360) + 360) % 360;
+    return [90, 180, 270].includes(normalized) ? normalized : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function getSourcePageDisplaySize(sourcePage, embeddedPage) {
+  const pageSize = getSourcePageSize(sourcePage, embeddedPage);
+  const rotationAngle = getSourcePageRotationAngle(sourcePage);
+  if (rotationAngle === 90 || rotationAngle === 270) {
+    return { width: pageSize.height, height: pageSize.width };
+  }
+  return pageSize;
 }
 
 async function drawWatermark(page, pdfDoc, companyInfo, cache, pageSize = DEFAULT_PAGE_SIZE) {
@@ -359,9 +378,70 @@ function scaleToFit(srcW, srcH, boxW, boxH) {
   };
 }
 
+function getRotatedPageDrawOptions(embeddedPage, box, rotationAngle, inset = 10) {
+  const displaySize = rotationAngle === 90 || rotationAngle === 270
+    ? { width: embeddedPage.height, height: embeddedPage.width }
+    : { width: embeddedPage.width, height: embeddedPage.height };
+  const fit = scaleToFit(
+    displaySize.width,
+    displaySize.height,
+    box.width - (inset * 2),
+    box.height - (inset * 2)
+  );
+  const scale = Math.min(fit.width / displaySize.width, fit.height / displaySize.height);
+  const drawW = embeddedPage.width * scale;
+  const drawH = embeddedPage.height * scale;
+  const x = box.x + ((box.width - fit.width) / 2);
+  const y = box.y + ((box.height - fit.height) / 2);
+
+  if (rotationAngle === 90) {
+    return {
+      x: x + fit.width,
+      y,
+      width: drawW,
+      height: drawH,
+      rotate: degrees(90),
+    };
+  }
+  if (rotationAngle === 180) {
+    return {
+      x: x + fit.width,
+      y: y + fit.height,
+      width: drawW,
+      height: drawH,
+      rotate: degrees(180),
+    };
+  }
+  if (rotationAngle === 270) {
+    return {
+      x,
+      y: y + fit.height,
+      width: drawW,
+      height: drawH,
+      rotate: degrees(270),
+    };
+  }
+
+  return {
+    x,
+    y,
+    width: drawW,
+    height: drawH,
+  };
+}
+
 function sourcePageHasContents(sourcePage) {
   try {
     return !!sourcePage?.node?.Contents?.();
+  } catch {
+    return false;
+  }
+}
+
+function sourcePageHasAnnotations(sourcePage) {
+  try {
+    const annots = sourcePage?.node?.Annots?.();
+    return !!annots && typeof annots.size === "function" && annots.size() > 0;
   } catch {
     return false;
   }
@@ -397,7 +477,11 @@ async function renderSourcePdfPageImage(bytes, pageIndex) {
     canvas.height = Math.ceil(viewport.height);
 
     const ctx = canvas.getContext("2d");
-    await sourcePage.render({ canvasContext: ctx, viewport }).promise;
+    await sourcePage.render({
+      canvasContext: ctx,
+      viewport,
+      annotationMode: pdfjsLib.AnnotationMode?.ENABLE,
+    }).promise;
 
     return {
       dataUrl: canvas.toDataURL("image/png"),
@@ -426,7 +510,9 @@ async function drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex) {
 async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
   const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const sourcePages = srcDoc.getPages();
-  const rasterFallbackPages = sourcePages.map((sourcePage) => !sourcePageHasContents(sourcePage));
+  const rasterFallbackPages = sourcePages.map((sourcePage) => (
+    !sourcePageHasContents(sourcePage) || sourcePageHasAnnotations(sourcePage)
+  ));
   sourcePages.forEach((sourcePage) => ensureSourcePageContents(sourcePage, srcDoc));
   const embeddedPages = sourcePages.length > 0 ? await pdfDoc.embedPages(sourcePages) : [];
   const appendedIndexes = [];
@@ -435,7 +521,9 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
     const embeddedPage = embeddedPages[sourceIndex];
     if (!embeddedPage) continue;
 
-    const pageSize = getSourcePageSize(sourcePages[sourceIndex], embeddedPage);
+    const sourcePage = sourcePages[sourceIndex];
+    const rotationAngle = getSourcePageRotationAngle(sourcePage);
+    const pageSize = getSourcePageDisplaySize(sourcePage, embeddedPage);
     const { page, box } = await createAttachmentPage(pdfDoc, fonts, opts, pageSize);
     appendedIndexes.push(pdfDoc.getPageCount() - 1);
 
@@ -444,19 +532,7 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
       continue;
     }
 
-    const inset = 10;
-    const fit = scaleToFit(
-      embeddedPage.width,
-      embeddedPage.height,
-      box.width - (inset * 2),
-      box.height - (inset * 2)
-    );
-    page.drawPage(embeddedPage, {
-      x: box.x + ((box.width - fit.width) / 2),
-      y: box.y + ((box.height - fit.height) / 2),
-      width: fit.width,
-      height: fit.height,
-    });
+    page.drawPage(embeddedPage, getRotatedPageDrawOptions(embeddedPage, box, rotationAngle));
   }
 
   return appendedIndexes;
