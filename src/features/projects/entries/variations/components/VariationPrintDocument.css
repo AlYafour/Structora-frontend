@@ -371,12 +371,22 @@
   margin-bottom: 14px;
 }
 
-/* Index page */
+/* Index */
 .vpd-index-page {
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: #fbf8f2;
+  margin: 14px 0;
+}
+
+.vpd-index-title {
+  margin: 0 0 6px;
+  color: #17202f;
+  font-size: 11pt;
+  font-weight: 850;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .vpd-index-header {
@@ -450,11 +460,12 @@
 .vpd-index-table th {
   background: #f0eadf;
   color: #17202f;
-  padding: 12px 14px;
+  padding: 9px 12px;
   border: 1px solid #d8c9b3;
-  font-size: 11pt;
+  font-size: 9.5pt;
   font-weight: 850;
   text-align: left;
+  line-height: 1.2;
 }
 
 .vpd-index-table th:nth-child(1) {
@@ -492,9 +503,10 @@
 }
 
 .vpd-index-ack {
-  margin: auto 0 0;
+  margin: 0;
   padding: 14px 16px;
   border: 1px solid #d8c9b3;
+  border-top: 0;
   background: #fff;
   color: #17202f;
   font-size: 10pt;
@@ -1069,11 +1081,15 @@
 }
 
 .vpd-print-mode .vpd-index-page {
-  min-height: 1122px;
   box-sizing: border-box;
-  padding: 10px;
-  break-before: page;
-  page-break-before: always;
+  margin: 8px 0 5px;
+  padding: 0;
+}
+
+.vpd-print-mode .vpd-index-title {
+  margin: 0 0 4px;
+  font-size: 8pt;
+  line-height: 1.15;
 }
 
 .vpd-print-mode .vpd-index-header {
@@ -1107,8 +1123,9 @@
 }
 
 .vpd-print-mode .vpd-index-table th {
-  padding: 7px 9px;
-  font-size: 8pt;
+  padding: 5px 8px;
+  font-size: 7pt;
+  line-height: 1.15;
 }
 
 .vpd-print-mode .vpd-index-table td {
@@ -1117,9 +1134,9 @@
 }
 
 .vpd-print-mode .vpd-index-ack {
-  padding: 10px 12px;
-  font-size: 8.5pt;
-  line-height: 1.45;
+  padding: 7px 9px;
+  font-size: 7.5pt;
+  line-height: 1.35;
 }
 
 /* Header */
