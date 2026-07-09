@@ -4,6 +4,7 @@ import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
 import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
+import { formatIndexDate } from "../utils/formatIndexDate";
 import "./VariationPrintDocument.css";
 
 const EMPTY = "—";
@@ -494,7 +495,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               )}
 
               {hasIndexItems && (
-                <section className="vpd-index-page">
+                <section className="vpd-index-page" data-vpd-page-part>
                   <h3 className="vpd-index-title">Attachments Index</h3>
                   <div className="vpd-index-grid" role="table">
                     <div className="vpd-index-grid__row vpd-index-grid__row--head" role="row">
@@ -510,7 +511,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         <div role="cell">{item.serial_no || index + 1}</div>
                         <div role="cell">{item.attachment || EMPTY}</div>
                         <div role="cell">{item.ref_no || EMPTY}</div>
-                        <div role="cell">{item.date || EMPTY}</div>
+                        <div role="cell">{formatIndexDate(item.date) || EMPTY}</div>
                         <div role="cell">{item.page_numbers || EMPTY}</div>
                         <div role="cell">{item.purpose || EMPTY}</div>
                       </div>

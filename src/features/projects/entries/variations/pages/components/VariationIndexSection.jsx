@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
+import { formatIndexDate } from '../../utils/formatIndexDate';
 
 const createIndexRow = (index = 0) => ({
   serial_no: String(index + 1),
@@ -158,7 +159,7 @@ const VariationIndexSection = memo(({
                       onChange={(e) => handleUpdateRow(index, 'date', e.target.value)}
                     />
                   ) : (
-                    renderCell(row.date)
+                    renderCell(formatIndexDate(row.date))
                   )}
                 </td>
                 <td className="nvc-index-td nvc-index-td--pages">

@@ -378,6 +378,8 @@
   min-height: 0;
   background: #fbf8f2;
   margin: 14px 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .vpd-index-title {
@@ -395,11 +397,15 @@
   border-top: 1px solid #d8c9b3;
   border-left: 1px solid #d8c9b3;
   background: #fff;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .vpd-index-grid__row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 2.05fr) minmax(0, 0.62fr) minmax(0, 0.5fr) minmax(0, 0.48fr) minmax(0, 1.82fr);
+  grid-template-columns: 34px minmax(0, 1.95fr) minmax(0, 0.58fr) minmax(82px, 0.72fr) minmax(0, 0.42fr) minmax(0, 1.74fr);
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .vpd-index-grid__row > div {
@@ -419,6 +425,10 @@
   font-weight: 750;
 }
 
+.vpd-index-grid__row > div:nth-child(4) {
+  white-space: nowrap;
+}
+
 .vpd-index-grid__row--head > div {
   padding: 9px 8px;
   background: #f0eadf;
@@ -428,6 +438,7 @@
   text-align: center;
 }
 
+.vpd-index-grid__row--head > div:nth-child(4),
 .vpd-index-grid__row--head > div:nth-child(5) {
   white-space: nowrap;
 }
@@ -449,6 +460,8 @@
   line-height: 1.5;
   text-align: center;
   text-transform: uppercase;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .vpd-index-ack__en,
@@ -1039,7 +1052,7 @@
 }
 
 .vpd-print-mode .vpd-index-grid__row {
-  grid-template-columns: 26px minmax(0, 2.04fr) minmax(0, 0.56fr) minmax(0, 0.44fr) minmax(0, 0.46fr) minmax(0, 1.78fr);
+  grid-template-columns: 26px minmax(0, 1.92fr) minmax(0, 0.52fr) minmax(66px, 0.7fr) minmax(0, 0.4fr) minmax(0, 1.7fr);
 }
 
 .vpd-print-mode .vpd-index-grid__row > div {
