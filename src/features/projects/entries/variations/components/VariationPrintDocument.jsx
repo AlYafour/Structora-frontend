@@ -3,6 +3,8 @@ import { QRCodeCanvas } from "qrcode.react";
 import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
+import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
+import { formatIndexDate } from "../utils/formatIndexDate";
 import "./VariationPrintDocument.css";
 
 const EMPTY = "—";
@@ -88,6 +90,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const addedItems = data.added_items || [];
   const indexItems = getIndexItems(data);
   const hasIndexItems = indexItems.length > 0;
+  const indexDiscrepancyNote = getIndexDiscrepancyNote(data);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
@@ -492,37 +495,36 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               )}
 
               {hasIndexItems && (
-                <section className="vpd-index-page">
+                <section className="vpd-index-page" data-vpd-page-part>
                   <h3 className="vpd-index-title">Attachments Index</h3>
-                  <div className="vpd-index-table-wrap">
-                    <table className="vpd-index-table">
-                      <thead>
-                        <tr>
-                          <th>No.</th>
-                          <th>Attachment</th>
-                          <th>Ref. No.</th>
-                          <th>Date</th>
-                          <th>Attachment Pages</th>
-                          <th>Remark</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {indexItems.map((item, index) => (
-                          <tr key={`${item.serial_no}-${index}`}>
-                            <td>{item.serial_no || index + 1}</td>
-                            <td>{item.attachment || EMPTY}</td>
-                            <td>{item.ref_no || EMPTY}</td>
-                            <td>{item.date || EMPTY}</td>
-                            <td>{item.page_numbers || EMPTY}</td>
-                            <td>{item.purpose || EMPTY}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="vpd-index-grid" role="table">
+                    <div className="vpd-index-grid__row vpd-index-grid__row--head" role="row">
+                      <div role="columnheader">No.</div>
+                      <div role="columnheader">Attachment</div>
+                      <div role="columnheader">Ref. No.</div>
+                      <div role="columnheader">Date</div>
+                      <div role="columnheader">Pages</div>
+                      <div role="columnheader">Remark</div>
+                    </div>
+                    {indexItems.map((item, index) => (
+                      <div className="vpd-index-grid__row" role="row" key={`${item.serial_no}-${index}`}>
+                        <div role="cell">{item.serial_no || index + 1}</div>
+                        <div role="cell">{item.attachment || EMPTY}</div>
+                        <div role="cell">{item.ref_no || EMPTY}</div>
+                        <div role="cell">{formatIndexDate(item.date) || EMPTY}</div>
+                        <div role="cell">{item.page_numbers || EMPTY}</div>
+                        <div role="cell">{item.purpose || EMPTY}</div>
+                      </div>
+                    ))}
                   </div>
 
                   <p className="vpd-index-ack">
-                    In case of any discrepancy between the main Variation Order page and the attachments, the approved amount, scope, exclusions, and conditions stated in the main Variation Order page shall prevail, unless expressly agreed otherwise in writing by the authorized signatories.
+                    <span className="vpd-index-ack__en">
+                      {indexDiscrepancyNote.en}
+                    </span>
+                    <span className="vpd-index-ack__ar" dir="rtl">
+                      {indexDiscrepancyNote.ar}
+                    </span>
                   </p>
                 </section>
               )}

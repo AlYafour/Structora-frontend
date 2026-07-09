@@ -378,9 +378,13 @@
 }
 
 .nvc-index-th--ref,
-.nvc-index-th--date,
 .nvc-index-th--pages {
-  width: 14%;
+  width: 13%;
+}
+
+.nvc-index-th--date {
+  width: 16%;
+  white-space: nowrap;
 }
 
 .nvc-index-th--purpose {
@@ -411,6 +415,10 @@
 .nvc-index-td--pages,
 .nvc-index-td--action {
   text-align: center;
+}
+
+.nvc-index-td--date {
+  white-space: nowrap;
 }
 
 .nvc-index-input {
@@ -446,6 +454,39 @@
   padding: 18px;
   text-align: center;
   background: var(--gray-50, #f9fafb);
+}
+
+.nvc-index-note-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.nvc-index-note-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-primary, #374151);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nvc-index-note-textarea {
+  min-height: 78px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.nvc-index-note-textarea--ar {
+  font-family: Cairo, "Noto Sans Arabic", Arial, sans-serif;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .nvc-index-note-editor {
+    grid-template-columns: 1fr;
+  }
 }
 
 .nvc-notice-page-measure {

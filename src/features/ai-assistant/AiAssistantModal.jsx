@@ -144,6 +144,9 @@ export default function AiAssistantModal({ projectId = null }) {
   // Tool action confirmation
   const [pendingAction, setPendingAction] = useState(null);
 
+  // Assistant-suggested navigation (e.g. "take me to create a variation")
+  const [pendingNavigate, setPendingNavigate] = useState(null);
+
   // Excel import
   const [excelPreview, setExcelPreview] = useState(null);
   const [attachedExcelFile, setAttachedExcelFile] = useState(null);
@@ -221,6 +224,7 @@ export default function AiAssistantModal({ projectId = null }) {
   const clearActionState = () => {
     setPendingAction(null);
     setExcelPreview(null);
+    setPendingNavigate(null);
   };
 
   // ── Send chat message ───────────────────────────────────────────────────
@@ -257,6 +261,9 @@ export default function AiAssistantModal({ projectId = null }) {
           }
           if (data.pending_action) {
             setPendingAction(data.pending_action);
+          }
+          if (data.navigate) {
+            setPendingNavigate(data.navigate);
           }
         })
         .catch(() => pushMessage("ai", t("ai_assistant_error")))
@@ -429,6 +436,14 @@ export default function AiAssistantModal({ projectId = null }) {
     navigate("/wizard/new", { state: { aiPreviewData, aiFiles: files, aiValidationIssues } });
   };
 
+  const handleGoToNavigate = () => {
+    if (!pendingNavigate) return;
+    const { url } = pendingNavigate;
+    setPendingNavigate(null);
+    setIsOpen(false);
+    navigate(url);
+  };
+
   if (!isOpen) {
     return (
       <div className={`ai-float-btn-wrap ${isAR ? "rtl" : "ltr"}`}>
@@ -519,6 +534,13 @@ export default function AiAssistantModal({ projectId = null }) {
               loading={loading}
               language={lang}
             />
+          )}
+
+          {/* Assistant-suggested navigation (e.g. take user to create/view a variation) */}
+          {pendingNavigate && !loading && uploadInsertIndex === -1 && (
+            <button className="ai-view-project-btn" onClick={handleGoToNavigate}>
+              {pendingNavigate.label || (isAR ? "الانتقال" : "Go")}
+            </button>
           )}
 
           {/* Project creation file slots — rendered in-flow so responses appear below */}

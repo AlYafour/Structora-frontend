@@ -104,7 +104,7 @@ function createContinuationHeaderRow(table) {
   return row;
 }
 
-export function applyPrintPagePartBreaks(root, pageHeight) {
+export function applyPrintPagePartBreaks(root, pageHeight, { continuationTopGap = 14 } = {}) {
   if (!root || !pageHeight) return () => {};
 
   clearPreviousBreaks(root);
@@ -121,7 +121,7 @@ export function applyPrintPagePartBreaks(root, pageHeight) {
 
     if (height > remaining) {
       const computedMarginTop = parsePx(window.getComputedStyle(part).marginTop);
-      const pushToNextPage = remaining + computedMarginTop;
+      const pushToNextPage = remaining + continuationTopGap + computedMarginTop;
       part.dataset.vpdOriginalMarginTop = part.style.marginTop || "";
       part.dataset.vpdAutoMarginTop = String(pushToNextPage);
       part.style.marginTop = `${pushToNextPage}px`;
