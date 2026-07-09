@@ -12,7 +12,7 @@ const BORDER = rgb(0.78, 0.72, 0.64);
 const HEADER_BG = rgb(1, 1, 1);
 
 const HEADER_TOP = 14;
-const HEADER_HEIGHT = 58;
+const HEADER_HEIGHT = 64;
 const FOOTER_HEIGHT = 34;
 const SIDE_MARGIN = 16;
 const CONTENT_GAP = 8;
@@ -183,6 +183,38 @@ function truncateToWidth(text, font, size, maxWidth) {
   return lo > 0 ? `${value.slice(0, lo).trim()}${ellipsis}` : ellipsis;
 }
 
+function wrapTextToLines(text, font, size, maxWidth, maxLines = 2) {
+  const value = safeText(text);
+  if (!value) return [];
+
+  const words = value.split(" ");
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) lines.push(current);
+    current = word;
+
+    if (lines.length === maxLines) break;
+  }
+
+  if (lines.length < maxLines && current) lines.push(current);
+  if (lines.length > maxLines) lines.length = maxLines;
+
+  const usedWords = lines.join(" ").split(" ").filter(Boolean).length;
+  if (usedWords < words.length && lines.length > 0) {
+    lines[lines.length - 1] = truncateToWidth(`${lines[lines.length - 1]}...`, font, size, maxWidth);
+  }
+
+  return lines.map((line) => truncateToWidth(line, font, size, maxWidth));
+}
+
 function drawTextClipped(page, text, x, y, width, options = {}) {
   const font = options.font;
   const size = options.size || 8;
@@ -195,6 +227,22 @@ function drawTextClipped(page, text, x, y, width, options = {}) {
   });
 }
 
+function drawTextWrapped(page, text, x, y, width, options = {}) {
+  const font = options.font;
+  const size = options.size || 8;
+  const lineHeight = options.lineHeight || size + 2;
+  const lines = wrapTextToLines(text, font, size, width, options.maxLines || 2);
+  lines.forEach((line, index) => {
+    page.drawText(line, {
+      x,
+      y: y - (index * lineHeight),
+      size,
+      font,
+      color: options.color || TEXT,
+    });
+  });
+}
+
 function drawLabelValue(page, fonts, label, value, x, y, width, options = {}) {
   page.drawText(safeText(label).toUpperCase(), {
     x,
@@ -203,6 +251,16 @@ function drawLabelValue(page, fonts, label, value, x, y, width, options = {}) {
     font: fonts.bold,
     color: MUTED,
   });
+  if (options.wrap) {
+    drawTextWrapped(page, value || "-", x, y, width, {
+      size: options.valueSize || 9,
+      font: fonts.bold,
+      color: TEXT,
+      lineHeight: options.lineHeight,
+      maxLines: options.maxLines,
+    });
+    return;
+  }
   drawTextClipped(page, value || "-", x, y, width, {
     size: options.valueSize || 9,
     font: fonts.bold,
@@ -228,7 +286,7 @@ function drawCompactHeader(page, fonts, { variation, project, noticeData }, page
   const topY = height - HEADER_TOP;
   const y = topY - HEADER_HEIGHT;
   const w = width - (SIDE_MARGIN * 2);
-  const topRowH = 28;
+  const topRowH = 34;
   const topRowY = topY - topRowH;
 
   page.drawRectangle({ x, y, width: w, height: HEADER_HEIGHT, color: HEADER_BG, borderColor: BORDER, borderWidth: 0.7 });
@@ -249,7 +307,10 @@ function drawCompactHeader(page, fonts, { variation, project, noticeData }, page
   drawLabelValue(page, fonts, "Variation Description", getVariationDescription(noticeData), descX + 6, topY - 19, descW - 12, {
     labelSize: 5,
     labelGap: 11,
-    valueSize: 7.6,
+    valueSize: 6.7,
+    wrap: true,
+    maxLines: 2,
+    lineHeight: 8,
   });
   drawLabelValue(page, fonts, "Date", formatDate(noticeData?.document_date || variation?.created_at), dateX + 6, topY - 19, metaW - 12, {
     labelSize: 5,

@@ -491,6 +491,42 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 </section>
               )}
 
+              {hasIndexItems && (
+                <section className="vpd-index-page">
+                  <h3 className="vpd-index-title">Attachments Index</h3>
+                  <div className="vpd-index-table-wrap">
+                    <table className="vpd-index-table">
+                      <thead>
+                        <tr>
+                          <th>No.</th>
+                          <th>Attachment</th>
+                          <th>Ref. No.</th>
+                          <th>Date</th>
+                          <th>Attachment Pages</th>
+                          <th>Remark</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {indexItems.map((item, index) => (
+                          <tr key={`${item.serial_no}-${index}`}>
+                            <td>{item.serial_no || index + 1}</td>
+                            <td>{item.attachment || EMPTY}</td>
+                            <td>{item.ref_no || EMPTY}</td>
+                            <td>{item.date || EMPTY}</td>
+                            <td>{item.page_numbers || EMPTY}</td>
+                            <td>{item.purpose || EMPTY}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p className="vpd-index-ack">
+                    In case of any discrepancy between the main Variation Order page and the attachments, the approved amount, scope, exclusions, and conditions stated in the main Variation Order page shall prevail, unless expressly agreed otherwise in writing by the authorized signatories.
+                  </p>
+                </section>
+              )}
+
               <div className="vpd-pinned-bottom">
                 {!hideSignatures && pmInitialApproved && pmSignatureResolved && (
                   <div className="vpd-pm-signature-row">
@@ -573,61 +609,6 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
           </div>
         </div>
 
-        {hasIndexItems && (
-          <section className="vpd-index-page">
-            <div className="vpd-index-header">
-              <div className="vpd-index-header__title">
-                <strong>VARIATION ORDER</strong>
-                <span>INDEX</span>
-              </div>
-              <div className="vpd-index-header__meta">
-                <div>
-                  <span>VAR. NO.</span>
-                  <strong>{variation?.variation_number || data.reference_no || EMPTY}</strong>
-                </div>
-                <div>
-                  <span>DATE</span>
-                  <strong>{formatDate(data.document_date || variation?.created_at) || EMPTY}</strong>
-                </div>
-                <div>
-                  <span>REFERENCE NO.</span>
-                  <strong>{data.reference_no || variation?.variation_number || EMPTY}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="vpd-index-table-wrap">
-              <table className="vpd-index-table">
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>Attachment</th>
-                    <th>Ref. No.</th>
-                    <th>Date</th>
-                    <th>Attachment Pages</th>
-                    <th>Remark</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {indexItems.map((item, index) => (
-                    <tr key={`${item.serial_no}-${index}`}>
-                      <td>{item.serial_no || index + 1}</td>
-                      <td>{item.attachment || EMPTY}</td>
-                      <td>{item.ref_no || EMPTY}</td>
-                      <td>{item.date || EMPTY}</td>
-                      <td>{item.page_numbers || EMPTY}</td>
-                      <td>{item.purpose || EMPTY}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="vpd-index-ack">
-              In case of any discrepancy between the main Variation Order page and the attachments, the approved amount, scope, exclusions, and conditions stated in the main Variation Order shall prevail, unless expressly agreed otherwise in writing by the authorized signatories.
-            </p>
-          </section>
-        )}
       </article>
     </div>
   );
