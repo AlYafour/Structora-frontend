@@ -399,7 +399,7 @@
 
 .vpd-index-grid__row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 2fr) minmax(0, 0.68fr) minmax(0, 0.52fr) minmax(0, 0.68fr) minmax(0, 1.7fr);
+  grid-template-columns: 34px minmax(0, 2.05fr) minmax(0, 0.62fr) minmax(0, 0.5fr) minmax(0, 0.48fr) minmax(0, 1.82fr);
 }
 
 .vpd-index-grid__row > div {
@@ -425,6 +425,11 @@
   font-size: 9.5pt;
   font-weight: 850;
   line-height: 1.2;
+  text-align: center;
+}
+
+.vpd-index-grid__row--head > div:nth-child(5) {
+  white-space: nowrap;
 }
 
 .vpd-index-grid__row--head > div:first-child {
@@ -1034,7 +1039,7 @@
 }
 
 .vpd-print-mode .vpd-index-grid__row {
-  grid-template-columns: 26px minmax(0, 2fr) minmax(0, 0.62fr) minmax(0, 0.48fr) minmax(0, 0.62fr) minmax(0, 1.7fr);
+  grid-template-columns: 26px minmax(0, 2.04fr) minmax(0, 0.56fr) minmax(0, 0.44fr) minmax(0, 0.46fr) minmax(0, 1.78fr);
 }
 
 .vpd-print-mode .vpd-index-grid__row > div {

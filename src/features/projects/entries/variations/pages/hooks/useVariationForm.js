@@ -5,6 +5,10 @@
  */
 
 import { useState, useCallback } from 'react';
+import {
+  DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
+  DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
+} from '../../utils/discrepancyNoteDefaults';
 
 const defaultFormData = {
   document_date: new Date().toISOString().split('T')[0],
@@ -18,6 +22,8 @@ const defaultFormData = {
   item_description: '',
   project_description: '',
   index_items: [],
+  index_discrepancy_note: DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
+  index_discrepancy_note_ar: DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
   remarks: '',
   remarks_ar: '',
   vat_percentage: '15',

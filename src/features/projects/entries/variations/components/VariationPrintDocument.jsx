@@ -3,6 +3,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
+import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
 import "./VariationPrintDocument.css";
 
 const EMPTY = "—";
@@ -88,6 +89,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
   const addedItems = data.added_items || [];
   const indexItems = getIndexItems(data);
   const hasIndexItems = indexItems.length > 0;
+  const indexDiscrepancyNote = getIndexDiscrepancyNote(data);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
@@ -500,7 +502,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       <div role="columnheader">Attachment</div>
                       <div role="columnheader">Ref. No.</div>
                       <div role="columnheader">Date</div>
-                      <div role="columnheader">Attachment Pages</div>
+                      <div role="columnheader">Pages</div>
                       <div role="columnheader">Remark</div>
                     </div>
                     {indexItems.map((item, index) => (
@@ -517,10 +519,10 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
                   <p className="vpd-index-ack">
                     <span className="vpd-index-ack__en">
-                      In case of any discrepancy between the main Variation Order page and the attachments, the approved amount, scope, exclusions, and conditions stated in the main Variation Order shall prevail, unless expressly agreed otherwise in writing by the authorized signatories.
+                      {indexDiscrepancyNote.en}
                     </span>
                     <span className="vpd-index-ack__ar" dir="rtl">
-                      في حال وجود أي تعارض بين صفحة أمر التغيير الرئيسية والمرفقات، فإن المبلغ المعتمد والنطاق والاستثناءات والشروط المذكورة في أمر التغيير الرئيسي هي التي تسود، ما لم يتم الاتفاق صراحةً على خلاف ذلك كتابةً من قبل المفوضين بالتوقيع.
+                      {indexDiscrepancyNote.ar}
                     </span>
                   </p>
                 </section>

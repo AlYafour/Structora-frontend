@@ -39,6 +39,10 @@ import VariationPrintDocument from '../components/VariationPrintDocument';
 import { validateVariationSubmit } from './utils/variationValidation';
 import { round2 } from './utils/variationCalculations';
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from '../utils/printPagination';
+import {
+  DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
+  DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
+} from '../utils/discrepancyNoteDefaults';
 
 import { getProjectName } from '../../../utils/projectNameUtils.jsx';
 import './NoticeOfVariationPage.css';
@@ -89,6 +93,8 @@ const buildNoticeData = (formData, omittedItems, addedItems, calculations, { inc
     item_description: formData.item_description,
     project_description: formData.project_description,
     index_items: includeIndex ? normalizeIndexItems(formData.index_items) : [],
+    index_discrepancy_note: formData.index_discrepancy_note ?? DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
+    index_discrepancy_note_ar: formData.index_discrepancy_note_ar ?? DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
     remarks: formData.remarks,
     remarks_ar: formData.remarks_ar,
     omitted_items: omittedItems,
@@ -377,6 +383,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         item_description: noticeData.item_description ?? '',
         project_description: noticeData.project_description ?? '',
         index_items: Array.isArray(noticeData.index_items) ? noticeData.index_items : [],
+        index_discrepancy_note: noticeData.index_discrepancy_note ?? DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
+        index_discrepancy_note_ar: noticeData.index_discrepancy_note_ar ?? DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
         remarks: noticeData.remarks ?? '',
         remarks_ar: noticeData.remarks_ar ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',

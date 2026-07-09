@@ -69,6 +69,13 @@ const VariationIndexSection = memo(({
     updateRows(indexItems.filter((_, index) => index !== rowIndex));
   };
 
+  const handleUpdateNote = (field, value) => {
+    onFormDataChange(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const rowsToRender = isEditMode ? indexItems : visibleRows;
 
   return (
@@ -205,6 +212,30 @@ const VariationIndexSection = memo(({
           </tbody>
         </table>
       </div>
+
+      {isEditMode && (
+        <div className="nvc-index-note-editor">
+          <label className="nvc-index-note-field">
+            <span>{t('index_discrepancy_note_en', 'Discrepancy note (English)')}</span>
+            <textarea
+              className="nvc-input nvc-index-note-textarea"
+              value={formData.index_discrepancy_note ?? ''}
+              onChange={(e) => handleUpdateNote('index_discrepancy_note', e.target.value)}
+              rows={3}
+            />
+          </label>
+          <label className="nvc-index-note-field">
+            <span>{t('index_discrepancy_note_ar', 'Discrepancy note (Arabic)')}</span>
+            <textarea
+              className="nvc-input nvc-index-note-textarea nvc-index-note-textarea--ar"
+              dir="rtl"
+              value={formData.index_discrepancy_note_ar ?? ''}
+              onChange={(e) => handleUpdateNote('index_discrepancy_note_ar', e.target.value)}
+              rows={3}
+            />
+          </label>
+        </div>
+      )}
     </section>
   );
 });
