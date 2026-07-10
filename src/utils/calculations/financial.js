@@ -102,9 +102,16 @@ export function computeContractSummary(contract) {
   }
 
   // Break down fees from totals - each part uses its own percentage only
-  const total = feeInclusive(grossTotal, totalPct);
   const bank = feeInclusive(grossBank, bankPct); // Use bankPct directly only
   const owner = feeInclusive(grossOwner, ownerPct); // Use ownerPct directly only
+  // Total must always equal the sum of the bank and owner shares (never
+  // recomputed independently from totalPct), otherwise the "Total Consultant
+  // Fees" row won't reconcile with the bank + owner fee rows above it -
+  // this previously broke whenever only one side had a percentage, since
+  // that percentage was applied to the full grossTotal instead of just
+  // that side's share.
+  const totalFee = bank.fee + owner.fee;
+  const total = { fee: totalFee, net: grossTotal - totalFee };
 
   // Calculate design and supervision fees separately (for owner only)
   // Use proportional distribution from total fee to avoid math error
