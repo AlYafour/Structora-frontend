@@ -517,17 +517,19 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                       </div>
                     ))}
                   </div>
-
-                  <p className="vpd-index-ack">
-                    <span className="vpd-index-ack__en">
-                      {indexDiscrepancyNote.en}
-                    </span>
-                    <span className="vpd-index-ack__ar" dir="rtl">
-                      {indexDiscrepancyNote.ar}
-                    </span>
-                  </p>
                 </section>
               )}
+
+              <section className="vpd-index-note-page" data-vpd-page-part>
+                <p className="vpd-index-ack">
+                  <span className="vpd-index-ack__en">
+                    {indexDiscrepancyNote.en}
+                  </span>
+                  <span className="vpd-index-ack__ar" dir="rtl">
+                    {indexDiscrepancyNote.ar}
+                  </span>
+                </p>
+              </section>
 
               <div className="vpd-pinned-bottom">
                 {!hideSignatures && pmInitialApproved && pmSignatureResolved && (
