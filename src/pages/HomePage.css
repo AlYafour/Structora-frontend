@@ -345,6 +345,60 @@ button.dash-kpi { cursor: pointer; }
   color: var(--muted, #6b7280);
 }
 
+.dash-tasks__empty--group {
+  margin-top: 12px;
+}
+
+.dash-tasks__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dash-tasks__tab {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--surface, #ffffff);
+  color: var(--text, #374151);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dash-tasks__tab:hover {
+  border-color: var(--color-primary, #14213D);
+  background: var(--gray-50, #f9fafb);
+}
+
+.dash-tasks__tab--active {
+  border-color: var(--color-primary, #14213D);
+  background: var(--primary-50, #EDF2F7);
+  color: var(--color-primary, #14213D);
+}
+
+.dash-tasks__tab-count {
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 33, 61, 0.08);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .dash-tasks__list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1030,6 +1084,26 @@ html.theme-dark .dash-task {
   border-color: var(--border, #374151);
 }
 
+html.theme-dark .dash-tasks__tab {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border, #374151);
+  color: var(--text, #d1d5db);
+}
+
+html.theme-dark .dash-tasks__tab:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+html.theme-dark .dash-tasks__tab--active {
+  background: rgba(147, 197, 253, 0.12);
+  border-color: var(--accent-400, #93c5fd);
+  color: var(--accent-400, #93c5fd);
+}
+
+html.theme-dark .dash-tasks__tab-count {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 html.theme-dark .dash-task:hover {
   background: rgba(255, 255, 255, 0.07);
 }
@@ -1141,6 +1215,11 @@ html.theme-dark .dash-fin-table-section__title {
     display: none;
   }
 
+  .dash-tasks__tab {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: space-between;
+  }
+
   .dash__welcome {
     flex-direction: column;
     align-items: flex-start;
@@ -1159,6 +1238,10 @@ html.theme-dark .dash-fin-table-section__title {
 
   .dash-tasks__list {
     grid-template-columns: 1fr;
+  }
+
+  .dash-tasks__tab {
+    flex-basis: 100%;
   }
 
   .dash__welcome-title {
