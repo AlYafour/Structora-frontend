@@ -377,7 +377,13 @@
   flex-direction: column;
   min-height: 0;
   background: #fbf8f2;
-  margin: 14px 0;
+  margin: 14px 0 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.vpd-index-note-page {
+  margin: 10px 0 14px;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -452,7 +458,6 @@
   margin: 0;
   padding: 14px 16px;
   border: 1px solid #d8c9b3;
-  border-top: 0;
   background: #fff;
   color: #17202f;
   font-size: 10pt;
@@ -1041,8 +1046,12 @@
 
 .vpd-print-mode .vpd-index-page {
   box-sizing: border-box;
-  margin: 8px 0 5px;
+  margin: 8px 0 0;
   padding: 0;
+}
+
+.vpd-print-mode .vpd-index-note-page {
+  margin: 6px 0 5px;
 }
 
 .vpd-print-mode .vpd-index-title {

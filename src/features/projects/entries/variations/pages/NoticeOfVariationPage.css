@@ -1604,10 +1604,11 @@ html.theme-dark .nvc-remarks-split-view-grid {
 
 /* ==================== DISCOUNT SECTION (DiscountSection component) ==================== */
 .nvc-discount-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  background: var(--surface, #fff);
 }
 
 .nvc-discount-section__controls {
@@ -1617,36 +1618,168 @@ html.theme-dark .nvc-remarks-split-view-grid {
   flex-wrap: wrap;
 }
 
+.nvc-discount-section__label {
+  color: var(--ink, #111827);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.nvc-discount-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  background: var(--bg-muted, #f9fafb);
+  flex-wrap: wrap;
+}
+
+.nvc-discount-mode__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted, #6b7280);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.nvc-discount-mode__btn:hover {
+  background: var(--surface, #fff);
+  color: var(--ink, #111827);
+}
+
+.nvc-discount-mode__btn--active {
+  background: var(--primary-500, #3D5A80);
+  color: #fff;
+}
+
+.nvc-discount-section__value {
+  display: flex;
+  align-items: stretch;
+}
+
+.nvc-discount-value {
+  display: flex;
+  align-items: center;
+  width: 124px;
+  min-height: 34px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+
+.nvc-discount-value--wide {
+  width: 150px;
+}
+
+.nvc-discount-value:focus-within {
+  border-color: var(--primary-500, #3D5A80);
+  box-shadow: 0 0 0 2px rgba(61, 90, 128, 0.12);
+}
+
+.nvc-discount-value__input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--ink, #111827);
+  font-family: 'SF Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  direction: ltr;
+  text-align: end;
+}
+
+.nvc-discount-value__suffix {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 0 7px;
+  border-inline-start: 1px solid var(--border, #e5e7eb);
+  background: var(--bg-muted, #f3f4f6);
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .nvc-discount-section__tags {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 8px 12px;
-  background: var(--gray-50, #f5f5f5);
-  border-radius: 6px;
-  font-size: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border, #e5e7eb);
+  font-size: 11px;
 }
 
 .nvc-discount-section__tags-label {
   font-weight: 600;
   color: var(--text-secondary, #666);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .nvc-discount-tag {
-  padding: 4px 8px;
-  background: var(--primary-50, #e3f2fd);
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  background: var(--bg-muted, #f3f4f6);
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--primary-700, #1B2D52);
+  font-weight: 600;
+  color: var(--text, #374151);
 }
 
 .nvc-discount-section__error {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fef2f2;
   color: var(--error-600, #d32f2f);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .nvc-discount-section__controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nvc-discount-section__value,
+  .nvc-discount-value,
+  .nvc-discount-value--wide {
+    width: 100%;
+  }
+
+  .nvc-discount-mode {
+    width: 100%;
+  }
+
+  .nvc-discount-mode__btn {
+    flex: 1 1 120px;
+  }
 }
 
 /* ==================== FINANCIAL SUMMARY CHECKBOXES ==================== */
@@ -3006,6 +3139,13 @@ html.theme-dark .nvc-remarks-split-view-grid {
 
 .nfs-flow-row--net-pos { }
 .nfs-flow-row--net-neg .nfs-flow-row__value--bold { color:#dc2626; }
+
+.nfs-standard-fees {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
 
 /* Fee rows */
 .nfs-fee-row {
@@ -4381,10 +4521,22 @@ html.theme-dark .nvt-toggle,
 html.theme-dark .nvt-header,
 html.theme-dark .nfs-wrapper,
 html.theme-dark .nfs-fee-row,
-html.theme-dark .nfs-flow-row {
+html.theme-dark .nfs-flow-row,
+html.theme-dark .nvc-discount-section,
+html.theme-dark .nvc-discount-mode,
+html.theme-dark .nvc-discount-value {
   background: var(--surface-primary);
   color: var(--text-primary);
   border-color: var(--border-primary);
+}
+
+html.theme-dark .nvc-discount-value__input {
+  color: var(--text-primary);
+}
+
+html.theme-dark .nvc-discount-value__suffix {
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
 }
 
 html.theme-dark .nvt-thead--omit,

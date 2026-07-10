@@ -219,6 +219,69 @@ const FinancialSummary = memo(({
   };
 
   const isPositive = totalVariationAmount >= 0;
+  const showAdditionalFeesBlock = customFees.length > 0 || isEditMode || hasDiscount;
+  const standardFeeCards = [
+    <FeeCard
+      key="contractor-ohp"
+      label={<>
+        {t('contractor_ohp')}
+        {formData.contractor_ohp_type === 'percentage' && formData.contractor_ohp_percentage && (
+          <span className="nfs-fee-row__pct">{formData.contractor_ohp_percentage}%</span>
+        )}
+      </>}
+      typeValue={formData.contractor_ohp_type}
+      inputValue={formData.contractor_ohp_type === 'percentage' ? (formData.contractor_ohp_percentage ?? '') : (formData.contractor_ohp_amount ?? '')}
+      onTypeChange={handleContractorOHPTypeChange}
+      onInputChange={val => onFormDataChange({ ...formData, [formData.contractor_ohp_type === 'percentage' ? 'contractor_ohp_percentage' : 'contractor_ohp_amount']: val })}
+      displayAmount={contractorEngineeringOHP}
+      afterDiscountAmount={hasDiscount ? contractorOHPAfterDiscount : null}
+      afterDiscountLabel={t('contractor_ohp_after_discount')}
+      extras={[
+        isEditMode && formData.discount_type !== 'none' && (
+          <label key="disc" className="nfs-check">
+            <input type="checkbox" checked={formData.discount_applies_to_contractor_ohp} onChange={e => handleDiscountCheckbox('discount_applies_to_contractor_ohp', e.target.checked)} />
+            <span>{t('apply_discount')}</span>
+          </label>
+        ),
+      ].filter(Boolean)}
+      isEditMode={isEditMode}
+      lang={lang}
+      renderAmount={renderAmount}
+    />,
+    <FeeCard
+      key="consultant-fees"
+      label={<>
+        {t('consultant_fees')}
+        {formData.consultant_fees_type === 'percentage' && formData.consultant_fees_percentage && (
+          <span className="nfs-fee-row__pct">{formData.consultant_fees_percentage}%</span>
+        )}
+      </>}
+      typeValue={formData.consultant_fees_type}
+      inputValue={formData.consultant_fees_type === 'percentage' ? (formData.consultant_fees_percentage ?? '') : (formData.consultant_fees_amount ?? '')}
+      onTypeChange={handleConsultantFeesTypeChange}
+      onInputChange={val => onFormDataChange({ ...formData, [formData.consultant_fees_type === 'percentage' ? 'consultant_fees_percentage' : 'consultant_fees_amount']: val })}
+      displayAmount={consultantFees}
+      afterDiscountAmount={hasDiscount ? consultantFeesAfterDiscount : null}
+      afterDiscountLabel={t('consultant_fees_after_discount')}
+      extras={[
+        isEditMode && formData.discount_type !== 'none' && (
+          <label key="disc" className="nfs-check">
+            <input type="checkbox" checked={formData.discount_applies_to_consultant_fees} onChange={e => handleDiscountCheckbox('discount_applies_to_consultant_fees', e.target.checked)} />
+            <span>{t('apply_discount')}</span>
+          </label>
+        ),
+        isEditMode && (
+          <label key="on-added" className="nfs-check">
+            <input type="checkbox" checked={formData.consultant_fee_on_total_added} onChange={e => onFormDataChange({ ...formData, consultant_fee_on_total_added: e.target.checked })} />
+            <span>{t('consultant_fee_on_total_added')}</span>
+          </label>
+        ),
+      ].filter(Boolean)}
+      isEditMode={isEditMode}
+      lang={lang}
+      renderAmount={renderAmount}
+    />,
+  ];
 
   return (
     <div className="nfs-wrapper nvc-section">
@@ -283,6 +346,11 @@ const FinancialSummary = memo(({
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="nfs-block__title">{t('fees')}</div>
+            <div className="nfs-standard-fees">
+              {standardFeeCards}
             </div>
           </div>
 
@@ -479,73 +547,12 @@ const FinancialSummary = memo(({
 
         </div>
 
+        {showAdditionalFeesBlock && (
         <div className="nfs-fees-row">
           <div className="nfs-block nfs-block--fees">
-            <div className="nfs-block__title">{t('fees')}</div>
+            <div className="nfs-block__title">{t('custom_fees', 'Custom Fees')}</div>
 
             <div className="nfs-fees-grid">
-
-              {/* Contractor OHP */}
-              <FeeCard
-                label={<>
-                  {t('contractor_ohp')}
-                  {formData.contractor_ohp_type === 'percentage' && formData.contractor_ohp_percentage && (
-                    <span className="nfs-fee-row__pct">{formData.contractor_ohp_percentage}%</span>
-                  )}
-                </>}
-                typeValue={formData.contractor_ohp_type}
-                inputValue={formData.contractor_ohp_type === 'percentage' ? (formData.contractor_ohp_percentage ?? '') : (formData.contractor_ohp_amount ?? '')}
-                onTypeChange={handleContractorOHPTypeChange}
-                onInputChange={val => onFormDataChange({ ...formData, [formData.contractor_ohp_type === 'percentage' ? 'contractor_ohp_percentage' : 'contractor_ohp_amount']: val })}
-                displayAmount={contractorEngineeringOHP}
-                afterDiscountAmount={hasDiscount ? contractorOHPAfterDiscount : null}
-                afterDiscountLabel={t('contractor_ohp_after_discount')}
-                extras={[
-                  isEditMode && formData.discount_type !== 'none' && (
-                    <label key="disc" className="nfs-check">
-                      <input type="checkbox" checked={formData.discount_applies_to_contractor_ohp} onChange={e => handleDiscountCheckbox('discount_applies_to_contractor_ohp', e.target.checked)} />
-                      <span>{t('apply_discount')}</span>
-                    </label>
-                  ),
-                ].filter(Boolean)}
-                isEditMode={isEditMode}
-                lang={lang}
-                renderAmount={renderAmount}
-              />
-
-              {/* Consultant Fees */}
-              <FeeCard
-                label={<>
-                  {t('consultant_fees')}
-                  {formData.consultant_fees_type === 'percentage' && formData.consultant_fees_percentage && (
-                    <span className="nfs-fee-row__pct">{formData.consultant_fees_percentage}%</span>
-                  )}
-                </>}
-                typeValue={formData.consultant_fees_type}
-                inputValue={formData.consultant_fees_type === 'percentage' ? (formData.consultant_fees_percentage ?? '') : (formData.consultant_fees_amount ?? '')}
-                onTypeChange={handleConsultantFeesTypeChange}
-                onInputChange={val => onFormDataChange({ ...formData, [formData.consultant_fees_type === 'percentage' ? 'consultant_fees_percentage' : 'consultant_fees_amount']: val })}
-                displayAmount={consultantFees}
-                afterDiscountAmount={hasDiscount ? consultantFeesAfterDiscount : null}
-                afterDiscountLabel={t('consultant_fees_after_discount')}
-                extras={[
-                  isEditMode && formData.discount_type !== 'none' && (
-                    <label key="disc" className="nfs-check">
-                      <input type="checkbox" checked={formData.discount_applies_to_consultant_fees} onChange={e => handleDiscountCheckbox('discount_applies_to_consultant_fees', e.target.checked)} />
-                      <span>{t('apply_discount')}</span>
-                    </label>
-                  ),
-                  isEditMode && (
-                    <label key="on-added" className="nfs-check">
-                      <input type="checkbox" checked={formData.consultant_fee_on_total_added} onChange={e => onFormDataChange({ ...formData, consultant_fee_on_total_added: e.target.checked })} />
-                      <span>{t('consultant_fee_on_total_added')}</span>
-                    </label>
-                  ),
-                ].filter(Boolean)}
-                isEditMode={isEditMode}
-                lang={lang}
-                renderAmount={renderAmount}
-              />
 
               {/* Custom Fees */}
               {customFees.map(fee => {
@@ -618,6 +625,7 @@ const FinancialSummary = memo(({
           </div>
 
         </div>
+        )}
       </div>
     </div>
   );
