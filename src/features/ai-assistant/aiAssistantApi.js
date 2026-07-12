@@ -11,6 +11,20 @@ export const aiAssistantApi = {
     return response.data;
   },
 
+  async sendMessageWithImage(query, language = "ar", history = [], projectId = null, imageFile) {
+    const form = new FormData();
+    form.append("query", query || "");
+    form.append("language", language);
+    form.append("history", JSON.stringify(history));
+    if (projectId) form.append("project_id", projectId);
+    form.append("image", imageFile);
+
+    const response = await api.post("ai-assistant/message/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
   async createProject(files, language = "ar") {
     const form = new FormData();
     form.append("language", language);

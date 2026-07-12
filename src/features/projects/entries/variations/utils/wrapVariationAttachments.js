@@ -11,11 +11,14 @@ const MUTED = rgb(0.47, 0.42, 0.36);
 const BORDER = rgb(0.78, 0.72, 0.64);
 const HEADER_BG = rgb(1, 1, 1);
 
-const HEADER_TOP = 14;
-const HEADER_HEIGHT = 64;
-const FOOTER_HEIGHT = 34;
-const SIDE_MARGIN = 16;
-const CONTENT_GAP = 8;
+// Baseline (A4-tuned) header/footer geometry in PDF points. Actual per-page
+// values are these multiplied by getLayoutScale() so larger sheets (A3, A2, ...)
+// keep a proportionate, legible header/footer instead of a fixed-size band.
+const BASE_HEADER_TOP = 14;
+const BASE_HEADER_HEIGHT = 64;
+const BASE_FOOTER_HEIGHT = 34;
+const BASE_SIDE_MARGIN = 16;
+const BASE_CONTENT_GAP = 8;
 
 let pdfjsLibPromise = null;
 
@@ -103,6 +106,18 @@ function normalizePageSize(size) {
     return DEFAULT_PAGE_SIZE;
   }
   return { width, height };
+}
+
+// Scales header/footer geometry and font sizes relative to the A4 baseline so
+// larger attachment sheets (A3, A2, ...) get a more legible header/footer
+// instead of the same fixed-size band shrinking into the page. Growth is
+// damped (4th root of area ratio, not the full linear ratio) so the header
+// doesn't eat into the attachment content area on bigger sheets - e.g. A3
+// gets ~1.19x (not 1.41x), A2 ~1.41x, A0 ~2x.
+function getLayoutScale(pageSize) {
+  const { width, height } = normalizePageSize(pageSize);
+  const areaRatio = (width * height) / (DEFAULT_PAGE_SIZE.width * DEFAULT_PAGE_SIZE.height);
+  return Math.min(2.2, Math.max(1, Math.pow(areaRatio, 0.25)));
 }
 
 function getSourcePageSize(sourcePage, embeddedPage) {
@@ -282,45 +297,55 @@ function drawCenteredText(page, text, x, y, width, font, size, color = TEXT) {
 
 function drawCompactHeader(page, fonts, { variation, project, noticeData }, pageSize = DEFAULT_PAGE_SIZE) {
   const { width, height } = normalizePageSize(pageSize);
-  const x = SIDE_MARGIN;
+  const scale = getLayoutScale(pageSize);
+  const HEADER_TOP = BASE_HEADER_TOP * scale;
+  const HEADER_HEIGHT = BASE_HEADER_HEIGHT * scale;
+  const SIDE_MARGIN = BASE_SIDE_MARGIN * scale;
+
+  // On oversized sheets (A3+), the header's own content only needs so much
+  // width to stay readable - stretching it edge-to-edge would just leave the
+  // columns awkwardly spaced out. Cap its width and center it instead.
+  const availableWidth = width - (SIDE_MARGIN * 2);
+  const maxHeaderWidth = (DEFAULT_PAGE_SIZE.width - (BASE_SIDE_MARGIN * 2)) * scale;
+  const w = Math.min(availableWidth, maxHeaderWidth);
+  const x = SIDE_MARGIN + ((availableWidth - w) / 2);
   const topY = height - HEADER_TOP;
   const y = topY - HEADER_HEIGHT;
-  const w = width - (SIDE_MARGIN * 2);
-  const topRowH = 34;
+  const topRowH = 34 * scale;
   const topRowY = topY - topRowH;
 
-  page.drawRectangle({ x, y, width: w, height: HEADER_HEIGHT, color: HEADER_BG, borderColor: BORDER, borderWidth: 0.7 });
-  page.drawLine({ start: { x, y: topRowY }, end: { x: x + w, y: topRowY }, thickness: 0.55, color: BORDER });
+  page.drawRectangle({ x, y, width: w, height: HEADER_HEIGHT, color: HEADER_BG, borderColor: BORDER, borderWidth: 0.7 * scale });
+  page.drawLine({ start: { x, y: topRowY }, end: { x: x + w, y: topRowY }, thickness: 0.55 * scale, color: BORDER });
 
-  const titleW = 158;
-  const metaW = 86;
+  const titleW = 158 * scale;
+  const metaW = 86 * scale;
   const descX = x + titleW;
   const descW = w - titleW - (metaW * 2);
   const dateX = x + titleW + descW;
   const varX = dateX + metaW;
-  page.drawLine({ start: { x: descX, y: topRowY }, end: { x: descX, y: topY }, thickness: 0.55, color: BORDER });
-  page.drawLine({ start: { x: dateX, y: topRowY }, end: { x: dateX, y: topY }, thickness: 0.55, color: BORDER });
-  page.drawLine({ start: { x: varX, y: topRowY }, end: { x: varX, y: topY }, thickness: 0.55, color: BORDER });
+  page.drawLine({ start: { x: descX, y: topRowY }, end: { x: descX, y: topY }, thickness: 0.55 * scale, color: BORDER });
+  page.drawLine({ start: { x: dateX, y: topRowY }, end: { x: dateX, y: topY }, thickness: 0.55 * scale, color: BORDER });
+  page.drawLine({ start: { x: varX, y: topRowY }, end: { x: varX, y: topY }, thickness: 0.55 * scale, color: BORDER });
 
-  drawCenteredText(page, "VARIATION ORDER", x, topY - 15, titleW, fonts.bold, 10.5);
-  drawCenteredText(page, "ATTACHMENT", x, topY - 25, titleW, fonts.regular, 5.5, MUTED);
-  drawLabelValue(page, fonts, "Variation Description", getVariationDescription(noticeData), descX + 6, topY - 19, descW - 12, {
-    labelSize: 5,
-    labelGap: 11,
-    valueSize: 6.7,
+  drawCenteredText(page, "VARIATION ORDER", x, topY - (15 * scale), titleW, fonts.bold, 10.5 * scale);
+  drawCenteredText(page, "ATTACHMENT", x, topY - (25 * scale), titleW, fonts.regular, 5.5 * scale, MUTED);
+  drawLabelValue(page, fonts, "Variation Description", getVariationDescription(noticeData), descX + (6 * scale), topY - (19 * scale), descW - (12 * scale), {
+    labelSize: 5 * scale,
+    labelGap: 11 * scale,
+    valueSize: 6.7 * scale,
     wrap: true,
     maxLines: 2,
-    lineHeight: 8,
+    lineHeight: 8 * scale,
   });
-  drawLabelValue(page, fonts, "Date", formatDate(noticeData?.document_date || variation?.created_at), dateX + 6, topY - 19, metaW - 12, {
-    labelSize: 5,
-    labelGap: 11,
-    valueSize: 7.4,
+  drawLabelValue(page, fonts, "Date", formatDate(noticeData?.document_date || variation?.created_at), dateX + (6 * scale), topY - (19 * scale), metaW - (12 * scale), {
+    labelSize: 5 * scale,
+    labelGap: 11 * scale,
+    valueSize: 7.4 * scale,
   });
-  drawLabelValue(page, fonts, "Var. No.", variation?.variation_number || "-", varX + 6, topY - 19, metaW - 12, {
-    labelSize: 5,
-    labelGap: 11,
-    valueSize: 7.4,
+  drawLabelValue(page, fonts, "Var. No.", variation?.variation_number || "-", varX + (6 * scale), topY - (19 * scale), metaW - (12 * scale), {
+    labelSize: 5 * scale,
+    labelGap: 11 * scale,
+    valueSize: 7.4 * scale,
   });
 
   // Project Name usually needs the most room; Project No. is almost always a
@@ -337,20 +362,22 @@ function drawCompactHeader(page, fonts, { variation, project, noticeData }, page
   const col4X = col3X + projNoW;
 
   [col2X, col3X, col4X].forEach((lineX) => {
-    page.drawLine({ start: { x: lineX, y }, end: { x: lineX, y: topRowY }, thickness: 0.55, color: BORDER });
+    page.drawLine({ start: { x: lineX, y }, end: { x: lineX, y: topRowY }, thickness: 0.55 * scale, color: BORDER });
   });
 
-  drawLabelValue(page, fonts, "Project Name", getProjectName(project), col1X + 6, y + 8, nameW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Reference No.", getReferenceNo(variation, noticeData) || "-", col2X + 6, y + 8, refW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Project No.", getProjectNumber(project) || "-", col3X + 6, y + 8, projNoW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
-  drawLabelValue(page, fonts, "Additional Time", noticeData?.additional_time || "-", col4X + 6, y + 8, timeW - 12, { labelSize: 5, labelGap: 11, valueSize: 7.2 });
+  drawLabelValue(page, fonts, "Project Name", getProjectName(project), col1X + (6 * scale), y + (8 * scale), nameW - (12 * scale), { labelSize: 5 * scale, labelGap: 11 * scale, valueSize: 7.2 * scale });
+  drawLabelValue(page, fonts, "Reference No.", getReferenceNo(variation, noticeData) || "-", col2X + (6 * scale), y + (8 * scale), refW - (12 * scale), { labelSize: 5 * scale, labelGap: 11 * scale, valueSize: 7.2 * scale });
+  drawLabelValue(page, fonts, "Project No.", getProjectNumber(project) || "-", col3X + (6 * scale), y + (8 * scale), projNoW - (12 * scale), { labelSize: 5 * scale, labelGap: 11 * scale, valueSize: 7.2 * scale });
+  drawLabelValue(page, fonts, "Additional Time", noticeData?.additional_time || "-", col4X + (6 * scale), y + (8 * scale), timeW - (12 * scale), { labelSize: 5 * scale, labelGap: 11 * scale, valueSize: 7.2 * scale });
 }
 
 function getContentBox(pageSize = DEFAULT_PAGE_SIZE) {
   const { width, height } = normalizePageSize(pageSize);
+  const scale = getLayoutScale(pageSize);
+  const SIDE_MARGIN = BASE_SIDE_MARGIN * scale;
   const x = SIDE_MARGIN;
-  const top = height - HEADER_TOP - HEADER_HEIGHT - CONTENT_GAP;
-  const bottom = FOOTER_HEIGHT + 30;
+  const top = height - (BASE_HEADER_TOP * scale) - (BASE_HEADER_HEIGHT * scale) - (BASE_CONTENT_GAP * scale);
+  const bottom = (BASE_FOOTER_HEIGHT * scale) + (30 * scale);
   return {
     x,
     y: bottom,
@@ -365,29 +392,31 @@ function drawPageNumber(page, fonts, pageNo, totalPages, {
   noticeData = {},
   showDetails = false,
 } = {}) {
-  const { width: pageWidth } = normalizePageSize(page.getSize());
+  const { width: pageWidth, height: pageHeight } = normalizePageSize(page.getSize());
+  const scale = getLayoutScale({ width: pageWidth, height: pageHeight });
+  const SIDE_MARGIN = BASE_SIDE_MARGIN * scale;
   const pageText = `Page ${pageNo} / ${totalPages}`;
-  const size = showDetails ? 8 : 7;
-  const maxTextWidth = pageWidth - (SIDE_MARGIN * 2) - 12;
+  const size = (showDetails ? 8 : 7) * scale;
+  const maxTextWidth = pageWidth - (SIDE_MARGIN * 2) - (12 * scale);
 
   // Attachment pages can have varied source content, so they keep an opaque
   // chip. Notice pages already reserve a footer band, so they use plain text.
-  const paddingX = 6;
-  const paddingY = 4;
+  const paddingX = 6 * scale;
+  const paddingY = 4 * scale;
   const x = SIDE_MARGIN;
-  const y = showDetails ? 10 : 2;
+  const y = (showDetails ? 10 : 2) * scale;
 
-  const sectionGap = showDetails ? 3 : 10;
+  const sectionGap = (showDetails ? 3 : 10) * scale;
   const separator = "|";
   const referenceText = getReferenceNo(variation, noticeData) || "-";
   const projectName = getProjectName(project) || "-";
   const pageWidthText = fonts.bold.widthOfTextAtSize(pageText, size);
   const separatorWidth = fonts.bold.widthOfTextAtSize(separator, size);
-  const referenceMaxWidth = Math.min(120, maxTextWidth * 0.28);
+  const referenceMaxWidth = Math.min(120 * scale, maxTextWidth * 0.28);
   const clippedReference = truncateToWidth(referenceText, fonts.bold, size, referenceMaxWidth);
   const referenceWidth = fonts.bold.widthOfTextAtSize(clippedReference, size);
   const usedWidth = pageWidthText + (separatorWidth * 2) + referenceWidth + (sectionGap * 4);
-  const projectMaxWidth = Math.max(40, maxTextWidth - usedWidth);
+  const projectMaxWidth = Math.max(40 * scale, maxTextWidth - usedWidth);
   const clippedProject = truncateToWidth(projectName, fonts.bold, size, projectMaxWidth);
   const projectWidth = fonts.bold.widthOfTextAtSize(clippedProject, size);
   const textWidth = usedWidth + projectWidth;
@@ -403,7 +432,7 @@ function drawPageNumber(page, fonts, pageNo, totalPages, {
       color: rgb(1, 1, 1),
       opacity: 0.9,
       borderColor: BORDER,
-      borderWidth: 0.6,
+      borderWidth: 0.6 * scale,
     });
   }
 

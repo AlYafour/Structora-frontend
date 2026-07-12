@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import { aiAssistantApi } from "./aiAssistantApi";
 import useTenantNavigate from "../../hooks/useTenantNavigate";
+import { useDownloadVariationPDFs } from "../../hooks/useDownloadVariationPDFs";
 import FileUpload from "../../components/file-upload/FileUpload";
 import "./AiAssistantModal.css";
 
@@ -15,6 +16,10 @@ const EXCEL_TYPES = [
   "application/vnd.ms-excel",
   "text/csv",
 ].join(",");
+
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const IMAGE_ACCEPT = IMAGE_TYPES.join(",");
+const MAX_IMAGE_MB = 10;
 
 function FileSlot({ label, required, file, onChange, disabled }) {
   const { t } = useTranslation();
@@ -147,10 +152,18 @@ export default function AiAssistantModal({ projectId = null }) {
   // Assistant-suggested navigation (e.g. "take me to create a variation")
   const [pendingNavigate, setPendingNavigate] = useState(null);
 
+  // Assistant-suggested variation PDF download
+  const [pendingDownload, setPendingDownload] = useState(null); // { project_id, variation_id, hide_signatures, label }
+  const { downloadSingle, singleLoading } = useDownloadVariationPDFs(pendingDownload?.project_id || projectId);
+
   // Excel import
   const [excelPreview, setExcelPreview] = useState(null);
   const [attachedExcelFile, setAttachedExcelFile] = useState(null);
   const excelInputRef = useRef(null);
+
+  // Image attachment (paste or click-to-browse screenshot)
+  const [attachedImage, setAttachedImage] = useState(null); // { file, previewUrl }
+  const imageInputRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const lastMsgRef = useRef(null);
@@ -163,10 +176,12 @@ export default function AiAssistantModal({ projectId = null }) {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist messages to sessionStorage so they survive remounts
+  // Persist messages to sessionStorage so they survive remounts.
+  // Blob preview URLs die with the page, so strip them rather than persist dead references.
   useEffect(() => {
     try {
-      sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+      const toStore = messages.map(({ imageUrl, ...rest }) => rest);
+      sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(toStore));
     } catch {}
   }, [messages]);
 
@@ -225,13 +240,26 @@ export default function AiAssistantModal({ projectId = null }) {
     setPendingAction(null);
     setExcelPreview(null);
     setPendingNavigate(null);
+    setPendingDownload(null);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!pendingDownload || singleLoading) return;
+    const { variation_id, hide_signatures } = pendingDownload;
+    // Keep pendingDownload set while the download runs so the button stays visible
+    // showing its "Downloading..." state; only clear it once finished.
+    try {
+      await downloadSingle({ id: variation_id }, { hideSignatures: hide_signatures });
+    } finally {
+      setPendingDownload(null);
+    }
   };
 
   // ── Send chat message ───────────────────────────────────────────────────
   const handleSend = async (e) => {
     e?.preventDefault();
     const query = input.trim();
-    if ((!query && !attachedExcelFile) || loading) return;
+    if ((!query && !attachedExcelFile && !attachedImage) || loading) return;
 
     clearActionState();
     setInput("");
@@ -241,6 +269,14 @@ export default function AiAssistantModal({ projectId = null }) {
       const file = attachedExcelFile;
       setAttachedExcelFile(null);
       await processExcelAttachment(file, query);
+      return;
+    }
+
+    // If an image is attached, process it (vision chat flow)
+    if (attachedImage) {
+      const staged = attachedImage;
+      setAttachedImage(null);
+      await processImageAttachment(staged, query);
       return;
     }
 
@@ -264,6 +300,9 @@ export default function AiAssistantModal({ projectId = null }) {
           }
           if (data.navigate) {
             setPendingNavigate(data.navigate);
+          }
+          if (data.download) {
+            setPendingDownload(data.download);
           }
         })
         .catch(() => pushMessage("ai", t("ai_assistant_error")))
@@ -301,9 +340,50 @@ export default function AiAssistantModal({ projectId = null }) {
     if (!file) return;
     e.target.value = "";
     setAttachedExcelFile(file);
+    setAttachedImage((prev) => {
+      if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
   };
 
   const handleRemoveAttachment = () => setAttachedExcelFile(null);
+
+  // ── Image staged for the vision chat flow — shared by click-to-browse and paste ──
+  const stageImageFile = (file) => {
+    if (!file || !IMAGE_TYPES.includes(file.type)) {
+      pushMessage("ai", isAR ? "نوع الصورة غير مدعوم." : "Unsupported image type.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      pushMessage("ai", isAR ? `حجم الصورة كبير جداً (الحد ${MAX_IMAGE_MB} ميجابايت).` : `Image is too large (${MAX_IMAGE_MB}MB max).`);
+      return;
+    }
+    setAttachedExcelFile(null);
+    setAttachedImage((prev) => {
+      if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return { file, previewUrl: URL.createObjectURL(file) };
+    });
+  };
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) stageImageFile(file);
+  };
+
+  const handleRemoveImageAttachment = () => {
+    setAttachedImage((prev) => {
+      if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
+  };
+
+  const handlePaste = (e) => {
+    const item = Array.from(e.clipboardData?.items || []).find((i) => i.type.startsWith("image/"));
+    if (!item) return;
+    e.preventDefault();
+    stageImageFile(item.getAsFile());
+  };
 
   // ── Process attached Excel (called from handleSend) ─────────────────────
   const processExcelAttachment = async (file, userMessage) => {
@@ -342,6 +422,38 @@ export default function AiAssistantModal({ projectId = null }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Process attached image (called from handleSend) ─────────────────────
+  const processImageAttachment = async ({ file, previewUrl }, userMessage) => {
+    const newUserMsg = { role: "user", text: userMessage, imageUrl: previewUrl };
+    setMessages((prev) => {
+      const updated = [...prev, newUserMsg];
+      const history = buildHistory(prev);
+      setLoading(true);
+      aiAssistantApi
+        .sendMessageWithImage(userMessage, lang, history, projectId, file)
+        .then((data) => {
+          pushMessage("ai", data.message);
+          if (data.show_file_upload) {
+            setShowFileUpload(true);
+            setAiPreviewData(null);
+            setFiles({ site_plan: null, owner_id: null, build_permit: null, contract: null });
+          }
+          if (data.pending_action) {
+            setPendingAction(data.pending_action);
+          }
+          if (data.navigate) {
+            setPendingNavigate(data.navigate);
+          }
+          if (data.download) {
+            setPendingDownload(data.download);
+          }
+        })
+        .catch(() => pushMessage("ai", t("ai_assistant_error")))
+        .finally(() => setLoading(false));
+      return updated;
+    });
   };
 
   // ── Confirm Excel import ────────────────────────────────────────────────
@@ -415,6 +527,10 @@ export default function AiAssistantModal({ projectId = null }) {
     setFiles({ site_plan: null, owner_id: null, build_permit: null, contract: null });
     setInput("");
     setAttachedExcelFile(null);
+    setAttachedImage((prev) => {
+      if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
     clearActionState();
   };
 
@@ -473,6 +589,15 @@ export default function AiAssistantModal({ projectId = null }) {
         onChange={handleExcelFileChange}
       />
 
+      {/* Hidden image file input */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        style={{ display: "none" }}
+        onChange={handleImageFileChange}
+      />
+
       <div
         className={`ai-modal ${isAR ? "rtl" : "ltr"}`}
         role="dialog"
@@ -509,7 +634,8 @@ export default function AiAssistantModal({ projectId = null }) {
             <div key={i} className={`ai-msg ai-msg--${msg.role}`} ref={i === messages.length - 1 ? lastMsgRef : null}>
               {msg.role === "ai" && <span className="ai-msg-avatar">✦</span>}
               <div className="ai-msg-bubble">
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                {msg.imageUrl && <img src={msg.imageUrl} alt="" className="ai-msg-image" />}
+                {msg.text && <ReactMarkdown>{msg.text}</ReactMarkdown>}
               </div>
             </div>
           ))}
@@ -543,6 +669,15 @@ export default function AiAssistantModal({ projectId = null }) {
             </button>
           )}
 
+          {/* Assistant-offered variation PDF download */}
+          {pendingDownload && !loading && uploadInsertIndex === -1 && (
+            <button className="ai-view-project-btn" onClick={handleDownloadPdf} disabled={!!singleLoading}>
+              {singleLoading
+                ? (isAR ? "جاري التحميل..." : "Downloading...")
+                : (pendingDownload.label || (isAR ? "تحميل PDF" : "Download PDF"))}
+            </button>
+          )}
+
           {/* Project creation file slots — rendered in-flow so responses appear below */}
           {showFileUpload && !aiPreviewData && (
             <div className="ai-file-upload-block">
@@ -563,7 +698,8 @@ export default function AiAssistantModal({ projectId = null }) {
               <div key={globalIdx} className={`ai-msg ai-msg--${msg.role}`} ref={globalIdx === messages.length - 1 ? lastMsgRef : null}>
                 {msg.role === "ai" && <span className="ai-msg-avatar">✦</span>}
                 <div className="ai-msg-bubble">
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  {msg.imageUrl && <img src={msg.imageUrl} alt="" className="ai-msg-image" />}
+                  {msg.text && <ReactMarkdown>{msg.text}</ReactMarkdown>}
                 </div>
               </div>
             );
@@ -605,6 +741,20 @@ export default function AiAssistantModal({ projectId = null }) {
             </div>
           )}
 
+          {/* Attached image chip */}
+          {attachedImage && (
+            <div className="ai-attachment-chip ai-attachment-chip--image">
+              <img src={attachedImage.previewUrl} alt="" className="ai-attachment-thumb" />
+              <span className="ai-attachment-name">{attachedImage.file.name || (isAR ? "لقطة شاشة" : "Screenshot")}</span>
+              <button
+                type="button"
+                className="ai-attachment-remove"
+                onClick={handleRemoveImageAttachment}
+                aria-label="Remove"
+              >✕</button>
+            </div>
+          )}
+
           <div className="ai-input-row">
             <button
               type="button"
@@ -618,13 +768,30 @@ export default function AiAssistantModal({ projectId = null }) {
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
             </button>
+            <button
+              type="button"
+              className="ai-attach-btn"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={loading}
+              title={t("ai_assistant_attach_image")}
+              aria-label={t("ai_assistant_attach_image")}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+            </button>
             <input
               ref={inputRef}
               className="ai-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onPaste={handlePaste}
               placeholder={attachedExcelFile
                 ? (isAR ? "أضف ملاحظة أو اضغط إرسال..." : "Add a note or press Send...")
+                : attachedImage
+                ? (isAR ? "اسأل عن الصورة أو اضغط إرسال..." : "Ask about the image or press Send...")
                 : t("ai_assistant_placeholder")}
               disabled={loading}
               autoComplete="off"
@@ -632,7 +799,7 @@ export default function AiAssistantModal({ projectId = null }) {
             <button
               type="submit"
               className="ai-send-btn"
-              disabled={(!input.trim() && !attachedExcelFile) || loading}
+              disabled={(!input.trim() && !attachedExcelFile && !attachedImage) || loading}
               aria-label={t("ai_assistant_send")}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
