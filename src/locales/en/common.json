@@ -1,6 +1,7 @@
 {
   "ai_assistant_greeting": "Hello! How can I help you today?",
   "ai_assistant_placeholder": "Type your request here...",
+  "ai_assistant_attach_image": "Attach a screenshot",
   "ai_assistant_send": "Send",
   "ai_assistant_title": "AI Assistant",
   "ai_assistant_subtitle": "Powered by Structora · Always here to help",
