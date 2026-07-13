@@ -4,6 +4,8 @@ import ReactMarkdown from "react-markdown";
 import { aiAssistantApi } from "./aiAssistantApi";
 import useTenantNavigate from "../../hooks/useTenantNavigate";
 import { useDownloadVariationPDFs } from "../../hooks/useDownloadVariationPDFs";
+import { useDownloadFinancialPDFs } from "../../hooks/useDownloadFinancialPDFs";
+import { downloadFile } from "../../utils/helpers/file";
 import FileUpload from "../../components/file-upload/FileUpload";
 import "./AiAssistantModal.css";
 
@@ -152,9 +154,14 @@ export default function AiAssistantModal({ projectId = null }) {
   // Assistant-suggested navigation (e.g. "take me to create a variation")
   const [pendingNavigate, setPendingNavigate] = useState(null);
 
-  // Assistant-suggested variation PDF download
-  const [pendingDownload, setPendingDownload] = useState(null); // { project_id, variation_id, hide_signatures, label }
+  // Assistant-suggested download — either a generated variation PDF
+  // ({ project_id, variation_id, hide_signatures, label }), a stored project
+  // document ({ project_id, file_url, file_name, label }), or an invoice/payment/
+  // receipt-voucher PDF ({ project_id, invoice_id|payment_id|voucher_id, label })
+  const [pendingDownload, setPendingDownload] = useState(null);
+  const [docDownloading, setDocDownloading] = useState(false);
   const { downloadSingle, singleLoading } = useDownloadVariationPDFs(pendingDownload?.project_id || projectId);
+  const { downloadSingle: downloadFinancialSingle, singleLoading: financialSingleLoading } = useDownloadFinancialPDFs(pendingDownload?.project_id || projectId);
 
   // Excel import
   const [excelPreview, setExcelPreview] = useState(null);
@@ -244,10 +251,36 @@ export default function AiAssistantModal({ projectId = null }) {
   };
 
   const handleDownloadPdf = async () => {
-    if (!pendingDownload || singleLoading) return;
-    const { variation_id, hide_signatures } = pendingDownload;
+    if (!pendingDownload || singleLoading || docDownloading || financialSingleLoading) return;
     // Keep pendingDownload set while the download runs so the button stays visible
     // showing its "Downloading..." state; only clear it once finished.
+    if (pendingDownload.file_url) {
+      setDocDownloading(true);
+      try {
+        await downloadFile(pendingDownload.file_url, pendingDownload.file_name);
+      } finally {
+        setDocDownloading(false);
+        setPendingDownload(null);
+      }
+      return;
+    }
+    if (pendingDownload.invoice_id || pendingDownload.payment_id || pendingDownload.voucher_id || pendingDownload.tax_invoice_id) {
+      const documentType = pendingDownload.invoice_id
+        ? "invoice"
+        : pendingDownload.payment_id
+        ? "payment"
+        : pendingDownload.voucher_id
+        ? "receiptVoucher"
+        : "taxInvoice";
+      const itemId = pendingDownload.invoice_id || pendingDownload.payment_id || pendingDownload.voucher_id || pendingDownload.tax_invoice_id;
+      try {
+        await downloadFinancialSingle(itemId, { documentType });
+      } finally {
+        setPendingDownload(null);
+      }
+      return;
+    }
+    const { variation_id, hide_signatures } = pendingDownload;
     try {
       await downloadSingle({ id: variation_id }, { hideSignatures: hide_signatures });
     } finally {
@@ -669,10 +702,11 @@ export default function AiAssistantModal({ projectId = null }) {
             </button>
           )}
 
-          {/* Assistant-offered variation PDF download */}
+          {/* Assistant-offered download — variation PDF, a stored project document, or an
+              invoice/payment/receipt-voucher PDF */}
           {pendingDownload && !loading && uploadInsertIndex === -1 && (
-            <button className="ai-view-project-btn" onClick={handleDownloadPdf} disabled={!!singleLoading}>
-              {singleLoading
+            <button className="ai-view-project-btn" onClick={handleDownloadPdf} disabled={!!singleLoading || docDownloading || !!financialSingleLoading}>
+              {(singleLoading || docDownloading || financialSingleLoading)
                 ? (isAR ? "جاري التحميل..." : "Downloading...")
                 : (pendingDownload.label || (isAR ? "تحميل PDF" : "Download PDF"))}
             </button>
