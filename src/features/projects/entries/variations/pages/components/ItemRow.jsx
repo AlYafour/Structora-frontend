@@ -24,6 +24,12 @@ const ItemRow = memo(
   }) => {
     const { i18n } = useTranslation();
 
+    const { translating: translatingDescription } = useAutoTranslate(
+      item.description,
+      (ar) => onUpdate?.(item.id, 'description_ar', ar),
+      { enabled: isEditMode && !item.description_ar }
+    );
+
     const { translating: translatingRemark } = useAutoTranslate(
       item.remarks,
       (ar) => onUpdate?.(item.id, 'remarks_ar', ar),
@@ -60,16 +66,25 @@ const ItemRow = memo(
           <td className="nvi-td nvi-td--desc">
             {isEditMode ? (
               <div className="nvi-desc-wrap">
-                <input
-                  type="text"
-                  className="nvi-input nvi-input--text"
-                  value={item.description ?? ''}
-                  onChange={(e) =>
-                    onUpdate?.(item.id, 'description', e.target.value)
-                  }
-                  placeholder={t('item_description')}
-                  autoComplete="off"
-                />
+                <div className="nvi-desc-editor">
+                  <input
+                    type="text"
+                    className="nvi-input nvi-input--text"
+                    value={item.description ?? ''}
+                    onChange={(e) =>
+                      onUpdate?.(item.id, 'description', e.target.value)
+                    }
+                    autoComplete="off"
+                  />
+
+                  {(item.description_ar || translatingDescription) && (
+                    <div className="nvi-desc-ar-preview" dir="rtl">
+                      {translatingDescription && !item.description_ar
+                        ? `${t('translating', 'Translating')}...`
+                        : item.description_ar}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"
@@ -97,6 +112,12 @@ const ItemRow = memo(
                   {item.description || '—'}
                 </span>
 
+                {item.description_ar && (
+                  <span className="nvi-desc-text-ar" dir="rtl">
+                    {item.description_ar}
+                  </span>
+                )}
+
                 {hasRemarks && (
                   <button
                     type="button"
@@ -121,7 +142,6 @@ const ItemRow = memo(
               onChange={(e) =>
                 onUpdate?.(item.id, 'qty', e.target.value)
               }
-              placeholder="1"
               disabled={!isEditMode}
               autoComplete="off"
             />
@@ -136,7 +156,6 @@ const ItemRow = memo(
               onChange={(e) =>
                 onUpdate?.(item.id, 'unit', e.target.value)
               }
-              placeholder="LS"
               disabled={!isEditMode}
               autoComplete="off"
             />
@@ -152,7 +171,6 @@ const ItemRow = memo(
               onChange={(e) =>
                 onUpdate?.(item.id, 'rate', e.target.value)
               }
-              placeholder="0.00"
               disabled={!isEditMode}
               autoComplete="off"
             />
@@ -294,6 +312,7 @@ const ItemRow = memo(
   (p, n) =>
     p.item.id === n.item.id &&
     p.item.description === n.item.description &&
+    p.item.description_ar === n.item.description_ar &&
     p.item.qty === n.item.qty &&
     p.item.unit === n.item.unit &&
     p.item.rate === n.item.rate &&

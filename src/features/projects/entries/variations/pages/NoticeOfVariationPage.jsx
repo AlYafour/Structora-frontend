@@ -87,6 +87,7 @@ const buildNoticeData = (formData, omittedItems, addedItems, calculations, { inc
     reference_no: formData.reference_no || '',
     first_variation_date: formData.first_variation_date,
     variation_description: formData.variation_description,
+    variation_description_ar: formData.variation_description_ar,
     variation_cause: formData.variation_cause,
     additional_time: formData.additional_time,
     trade_discipline: formData.trade_discipline,
@@ -97,6 +98,7 @@ const buildNoticeData = (formData, omittedItems, addedItems, calculations, { inc
     index_discrepancy_note_ar: formData.index_discrepancy_note_ar ?? DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
     remarks: formData.remarks,
     remarks_ar: formData.remarks_ar,
+    hidden_consultant_fee_description: formData.hidden_consultant_fee_description,
     omitted_items: omittedItems,
     added_items: addedItems,
     total_omitted: calculations.totalOmitted,
@@ -367,6 +369,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           : 'excluded';
       const customFeesForForm = (noticeData.custom_fees ?? []).map(fee => ({
         ...fee,
+        description: fee.description ?? '',
         percentage: fee.type === 'percentage' ? fee.percentage : '',
         amount: fee.type === 'amount' ? fee.amount : '',
       }));
@@ -377,6 +380,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         reference_no: noticeData.reference_no ?? '',
         first_variation_date: noticeData.first_variation_date ?? '',
         variation_description: noticeData.variation_description ?? '',
+        variation_description_ar: noticeData.variation_description_ar ?? '',
         variation_cause: noticeData.variation_cause ?? '',
         additional_time: noticeData.additional_time ?? '',
         trade_discipline: noticeData.trade_discipline ?? '',
@@ -403,6 +407,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         discount_applies_to_contractor_ohp: noticeData.discount_applies_to_contractor_ohp !== undefined ? noticeData.discount_applies_to_contractor_ohp : true,
         discount_applies_to_consultant_fees: noticeData.discount_applies_to_consultant_fees !== undefined ? noticeData.discount_applies_to_consultant_fees : true,
         hidden_consultant_fee: variationData.hidden_consultant_fee ?? '',
+        hidden_consultant_fee_description: noticeData.hidden_consultant_fee_description ?? '',
         hidden_consultant_fee_vat_mode: hiddenFeeVatMode,
         hidden_consultant_fee_vat_included: !!variationData.hidden_consultant_fee_vat_included,
         hidden_consultant_fee_vat_rate: variationData.hidden_consultant_fee_vat_rate ?? '5',
@@ -416,6 +421,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         const items = noticeData.omitted_items.map(item => ({
           ...item,
           description: item.description || '',
+          description_ar: item.description_ar || '',
           remarks: item.remarks || '',
           remarks_ar: item.remarks_ar || '',
           includesOverheadProfit: item.includesOverheadProfit ?? false
@@ -431,6 +437,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         const items = noticeData.added_items.map(item => ({
           ...item,
           description: item.description || '',
+          description_ar: item.description_ar || '',
           remarks: item.remarks || '',
           remarks_ar: item.remarks_ar || '',
         }));

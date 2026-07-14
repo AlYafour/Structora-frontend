@@ -1,0 +1,20 @@
+import { api } from "../api";
+
+export const aiTextApi = {
+  async suggestWording(text, language = "ar") {
+    const { data } = await api.post("suggest-wording/", { text, language });
+    return data; // { suggestions: string[], suggestion: string }
+  },
+
+  async transcribeAudio(audioBlob, { language, field, prompt } = {}) {
+    const formData = new FormData();
+    const extension = audioBlob?.type?.includes("wav") ? "wav" : "webm";
+    formData.append("audio", audioBlob, `voice-note.${extension}`);
+    if (language) formData.append("language", language);
+    if (field) formData.append("field", field);
+    if (prompt) formData.append("prompt", prompt);
+
+    const { data } = await api.post("transcribe-audio/", formData);
+    return data; // { text: string, model: string }
+  },
+};

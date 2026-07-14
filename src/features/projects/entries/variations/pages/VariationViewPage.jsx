@@ -189,6 +189,7 @@ export default function VariationViewPage() {
   const hiddenFeeStatus = variation?.hidden_consultant_fee_status || 'pending';
   const hiddenFeeAttachmentUrl = variation?.hidden_consultant_fee_attachment;
   const hiddenFeeAttachmentName = variation?.hidden_consultant_fee_attachment_name || (hiddenFeeAttachmentUrl || '').split('/').pop();
+  const hiddenFeeDescription = noticeData?.hidden_consultant_fee_description || '';
   const permissions = calculatePermissions(variation, user, alterationRequests, {
     hasVariationEditPermission: canEditVariationContent,
   });
@@ -685,6 +686,11 @@ export default function VariationViewPage() {
                 <div className="var-hidden-fee-alert__body">
                   {t("hidden_consultant_fee_alert_body", "This amount is paid by the contractor to the consultant and is not receivable from the owner/client.")}
                 </div>
+                {hiddenFeeDescription && (
+                  <div className="var-hidden-fee-alert__description">
+                    {hiddenFeeDescription}
+                  </div>
+                )}
                 <div className="var-hidden-fee-alert__meta">
                   <span className={`var-hidden-fee-status var-hidden-fee-status--${hiddenFeeStatus}`}>
                     {t(`hidden_fee_status_${hiddenFeeStatus}`, hiddenFeeStatus)}

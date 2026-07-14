@@ -278,11 +278,10 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 {legacyCode && (
                   <span
                     className="prj-view-header__legacy-code"
-                    data-tooltip={legacyCode}
                     tabIndex={0}
                     aria-label={`${t("legacy_project_code")}: ${legacyCode}`}
                   >
-                    {t("legacy_project_code")}
+                    <span className="prj-view-header__legacy-value">{legacyCode}</span>
                   </span>
                 )}
                 {statusInfo && (

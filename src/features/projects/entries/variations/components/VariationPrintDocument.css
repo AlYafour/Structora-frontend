@@ -318,6 +318,21 @@
   font-weight: 800;
 }
 
+.vpd-info-card--desc .vpd-info-card__desc-block {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.vpd-info-card--desc .vpd-info-card__desc-text--ar {
+  font-family: Cairo, Tahoma, Arial, sans-serif;
+  text-align: right;
+}
+
+.vpd-info-card--desc .vpd-info-card__desc-text--en {
+  text-align: left;
+}
+
 .vpd-info-card--desc .vpd-info-card__desc-cause {
   margin: 4px 0 0;
   font-size: 9.5pt;
@@ -409,7 +424,7 @@
 
 .vpd-index-grid__row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1.95fr) minmax(0, 0.58fr) minmax(82px, 0.72fr) minmax(0, 0.42fr) minmax(0, 1.74fr);
+  grid-template-columns: 34px minmax(0, 1.82fr) minmax(112px, 0.9fr) minmax(82px, 0.72fr) minmax(0, 0.42fr) minmax(0, 1.24fr);
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -431,6 +446,7 @@
   font-weight: 750;
 }
 
+.vpd-index-grid__row > div:nth-child(3),
 .vpd-index-grid__row > div:nth-child(4) {
   white-space: nowrap;
 }
@@ -444,6 +460,7 @@
   text-align: center;
 }
 
+.vpd-index-grid__row--head > div:nth-child(3),
 .vpd-index-grid__row--head > div:nth-child(4),
 .vpd-index-grid__row--head > div:nth-child(5) {
   white-space: nowrap;
@@ -575,6 +592,11 @@
   width: 44px;
 }
 
+.vpd-table th:nth-child(2),
+.vpd-table th.vpd-th--desc-ar {
+  width: 24%;
+}
+
 .vpd-table td {
   padding: 13px 10px;
   border-bottom: 1px solid #d8c9b3;
@@ -596,8 +618,19 @@
   font-weight: 650;
 }
 
+.vpd-td--desc-ar {
+  text-align: right !important;
+  font-family: "Cairo", Tahoma, Arial, sans-serif;
+  font-weight: 650 !important;
+  line-height: 1.55;
+}
+
 .vpd-table td:last-child {
   font-weight: 850;
+}
+
+.vpd-table td.vpd-td--desc-ar {
+  font-weight: 650;
 }
 
 /* ── Item remark row ── */
@@ -1061,7 +1094,7 @@
 }
 
 .vpd-print-mode .vpd-index-grid__row {
-  grid-template-columns: 26px minmax(0, 1.92fr) minmax(0, 0.52fr) minmax(66px, 0.7fr) minmax(0, 0.4fr) minmax(0, 1.7fr);
+  grid-template-columns: 26px minmax(0, 1.78fr) minmax(88px, 0.88fr) minmax(66px, 0.68fr) minmax(0, 0.38fr) minmax(0, 1.08fr);
 }
 
 .vpd-print-mode .vpd-index-grid__row > div {
@@ -1292,6 +1325,10 @@
   font-weight: 850;
   margin-top: 2px;
   line-height: 1.3;
+}
+
+.vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-block {
+  gap: 1px;
 }
 
 .vpd-print-mode .vpd-info-card--desc .vpd-info-card__desc-cause {

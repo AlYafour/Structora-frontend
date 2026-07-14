@@ -9,10 +9,11 @@ import { useState, useCallback } from 'react';
 const createNewItem = (id, includeOverheadProfit = false) => ({
   id,
   qty: '',
-  unit: 'LS',
+  unit: '',
   rate: '',
   amount: '',
   description: '',
+  description_ar: '',
   remarks: '',
   remarks_ar: '',
   ...(includeOverheadProfit && { includesOverheadProfit: false })
@@ -42,6 +43,9 @@ export function useVariationItems() {
       return prev.map((item) => {
         if (item.id === id) {
           const newItem = { ...item, [field]: value };
+          if (field === 'description' && value !== item.description) {
+            newItem.description_ar = '';
+          }
           if (field === 'qty' || field === 'rate') {
             newItem.amount = calculateItemAmount(newItem.qty, newItem.rate);
           }
@@ -60,6 +64,9 @@ export function useVariationItems() {
       return prev.map((item) => {
         if (item.id === id) {
           const newItem = { ...item, [field]: value };
+          if (field === 'description' && value !== item.description) {
+            newItem.description_ar = '';
+          }
           if (field === 'qty' || field === 'rate') {
             newItem.amount = calculateItemAmount(newItem.qty, newItem.rate);
           }
