@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateProjectQueries } from '../../../hooks/useProjectData';
 import { projectApi } from '../../../../../services';
+import { api } from '../../../../../services/api';
 import { logger } from '../../../../../utils/logger';
 import PageLayout from '../../../../../components/layout/PageLayout';
 import Button from '../../../../../components/common/Button';
@@ -52,6 +53,7 @@ const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 
 const waitForRenderFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+const hasArabic = (text = '') => /[\u0600-\u06FF]/.test(String(text));
 
 const normalizeIndexItems = (indexItems = []) => (
   Array.isArray(indexItems)
@@ -134,6 +136,26 @@ const buildNoticeData = (formData, omittedItems, addedItems, calculations, { inc
     custom_fees: customFeesForSave,
   };
 };
+
+const translateItemDescription = async (item) => {
+  const description = String(item?.description ?? '').trim();
+  if (!description || item?.description_ar || hasArabic(description)) return item;
+
+  try {
+    const { data } = await api.post('translate/', {
+      text: description,
+      source: 'en',
+      target: 'ar',
+    });
+    return data?.translated ? { ...item, description_ar: data.translated } : item;
+  } catch {
+    return item;
+  }
+};
+
+const ensureItemDescriptionTranslations = async (items = []) => (
+  Promise.all(items.map(translateItemDescription))
+);
 
 const computeNextVariationNumber = async (projectId) => {
   try {
@@ -633,7 +655,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
 
     setSaving(true);
     try {
-      const noticeData = buildNoticeData(formData, omittedItems, addedItems, calculations);
+      const [translatedOmittedItems, translatedAddedItems] = await Promise.all([
+        ensureItemDescriptionTranslations(omittedItems),
+        ensureItemDescriptionTranslations(addedItems),
+      ]);
+      setOmittedItems(translatedOmittedItems);
+      setAddedItems(translatedAddedItems);
+
+      const noticeData = buildNoticeData(formData, translatedOmittedItems, translatedAddedItems, calculations);
 
       const MAX_VALUE = 999999999999.99;
       const cappedVariationAmount = Math.min(Math.abs(calculations.totalVariationAmount), MAX_VALUE);
