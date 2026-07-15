@@ -833,6 +833,45 @@
   word-break: break-word;
 }
 
+.vpd-rich-text {
+  color: #17202f;
+  font-size: 12.5pt;
+  line-height: 1.55;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.vpd-rich-text + .vpd-rich-text {
+  margin-top: 8px;
+}
+
+.vpd-rich-text--ar {
+  padding-top: 6px;
+  border-top: 1px solid rgba(216, 201, 179, 0.72);
+  font-family: Cairo, Tahoma, Arial, sans-serif;
+  text-align: right;
+}
+
+.vpd-rich-text p {
+  margin: 0 0 6px;
+}
+
+.vpd-rich-text ul,
+.vpd-rich-text ol {
+  margin: 0 0 6px;
+  padding-inline-start: 20px;
+}
+
+.vpd-rich-text[dir="rtl"] ul,
+.vpd-rich-text[dir="rtl"] ol {
+  padding-inline-start: 0;
+  padding-inline-end: 20px;
+}
+
+.vpd-rich-text li {
+  padding: 1px 0;
+}
+
 .vpd-notes p {
   display: flex;
   gap: 12px;
@@ -1481,6 +1520,21 @@
 
 .vpd-print-mode .vpd-notes__bullets li {
   padding: 1px 0;
+}
+
+.vpd-print-mode .vpd-rich-text {
+  font-size: 8.5pt;
+  line-height: 1.35;
+}
+
+.vpd-print-mode .vpd-rich-text + .vpd-rich-text {
+  margin-top: 4px;
+}
+
+.vpd-print-mode .vpd-rich-text p,
+.vpd-print-mode .vpd-rich-text ul,
+.vpd-print-mode .vpd-rich-text ol {
+  margin-bottom: 3px;
 }
 
 /* Signatures */

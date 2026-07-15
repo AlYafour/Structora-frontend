@@ -3,6 +3,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
+import { normalizeRichTextForRender } from "../../../../../utils/richText";
 import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
 import { formatIndexDate } from "../utils/formatIndexDate";
 import "./VariationPrintDocument.css";
@@ -29,6 +30,18 @@ function Amount({ value }) {
     <span className="vpd-amount" dir="ltr">
       {num} <DirhamsIcon size="1em" />
     </span>
+  );
+}
+
+function PrintRichText({ value, className = "", dir = "ltr" }) {
+  const html = normalizeRichTextForRender(value);
+  if (!html) return null;
+  return (
+    <div
+      className={`vpd-rich-text ${className}`.trim()}
+      dir={dir}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
@@ -492,16 +505,19 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
             {/* Signatures + creds are pinned by preparePrintDocumentLayout */}
             <div className="vpd-bottom-group">
-              {data.remarks && (
+              {(data.remarks || data.remarks_ar) && (
                 <section className="vpd-notes">
                   <strong className="vpd-notes__label">
                     <BilingualText ar="ملاحظات" en="Remarks" />
                   </strong>
-                  <ul className="vpd-notes__bullets">
-                    {data.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
-                      <li key={i}>{line.trim()}</li>
-                    ))}
-                  </ul>
+                  <PrintRichText value={data.remarks} />
+                  {data.remarks_ar && (
+                    <PrintRichText
+                      value={data.remarks_ar}
+                      className="vpd-rich-text--ar"
+                      dir="rtl"
+                    />
+                  )}
                 </section>
               )}
 

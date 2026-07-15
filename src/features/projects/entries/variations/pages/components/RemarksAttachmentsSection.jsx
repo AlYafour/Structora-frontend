@@ -1,8 +1,23 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { FaPaperclip, FaTrash, FaPlus } from 'react-icons/fa';
 import FileUpload from '../../../../../../components/file-upload/FileUpload';
 import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
+import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
+import { htmlToPlainText, normalizeRichTextForRender } from '../../../../../../utils/richText';
+
+function RichRemarksView({ value, className = '', dir = 'ltr' }) {
+  const html = normalizeRichTextForRender(value);
+  if (!html) return null;
+
+  return (
+    <div
+      className={`nvc-rich-remarks-view ${className}`.trim()}
+      dir={dir}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 
 const RemarksAttachmentsSection = memo(({
   formData,
@@ -15,8 +30,13 @@ const RemarksAttachmentsSection = memo(({
   project,
   t
 }) => {
+  const remarksPlainText = useMemo(
+    () => htmlToPlainText(formData.remarks).trim(),
+    [formData.remarks]
+  );
+
   const { translating } = useAutoTranslate(
-    formData.remarks,
+    remarksPlainText,
     (ar) => onFormDataChange(prev => ({ ...prev, remarks_ar: ar })),
     { enabled: isEditMode }
   );
@@ -56,12 +76,13 @@ const RemarksAttachmentsSection = memo(({
                   <span className="nvc-remarks-split-pane__lang">EN</span>
                   <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
                 </div>
-                <textarea
-                  className="nvc-remarks-split-input"
+                <RichTextEditor
+                  className="nvc-remarks-rich-editor"
                   value={formData.remarks ?? ''}
-                  onChange={(e) => onFormDataChange({ ...formData, remarks: e.target.value })}
+                  onChange={(html) => onFormDataChange({ ...formData, remarks: html })}
                   placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
                   dir="ltr"
+                  t={t}
                 />
               </div>
 
@@ -92,11 +113,7 @@ const RemarksAttachmentsSection = memo(({
             formData.remarks_ar ? (
               <div className="nvc-remarks-split-view-grid">
                 <div className="nvc-remarks-split-view-col">
-                  <ul className="nvc-remarks-bullets">
-                    {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
-                      <li key={i}>{line.trim()}</li>
-                    ))}
-                  </ul>
+                  <RichRemarksView value={formData.remarks} />
                 </div>
                 <div className="nvc-remarks-split-view-divider" />
                 <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
@@ -108,11 +125,7 @@ const RemarksAttachmentsSection = memo(({
                 </div>
               </div>
             ) : (
-              <ul className="nvc-remarks-bullets">
-                {formData.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
-                  <li key={i}>{line.trim()}</li>
-                ))}
-              </ul>
+              <RichRemarksView value={formData.remarks} />
             )
           ) : null}
         </div>
