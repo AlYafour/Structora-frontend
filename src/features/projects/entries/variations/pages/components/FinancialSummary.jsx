@@ -13,6 +13,7 @@ import FileAttachmentView from '../../../../../../components/file-upload/FileAtt
 // Shared card used for every fee row (contractor, consultant, custom)
 function FeeCard({
   label, nameInput, removeBtn,
+  descriptionInput, description,
   typeValue, inputValue, onTypeChange, onInputChange,
   displayAmount, afterDiscountAmount, afterDiscountLabel,
   extras, isEditMode, lang, renderAmount,
@@ -27,6 +28,12 @@ function FeeCard({
         ))}
         {removeBtn}
       </div>
+
+      {(descriptionInput || description) && (
+        <div className="nfs-custom-fee-card__description">
+          {descriptionInput || <span>{description}</span>}
+        </div>
+      )}
 
       {/* Controls + computed amount */}
       <div className="nfs-custom-fee-card__bottom">
@@ -171,7 +178,7 @@ const FinancialSummary = memo(({
   };
 
   const addCustomFee = () => {
-    const newFee = { id: Date.now(), name: '', type: 'amount', percentage: '', amount: '' };
+    const newFee = { id: Date.now(), name: '', description: '', type: 'amount', percentage: '', amount: '' };
     onFormDataChange({ ...formData, custom_fees: [...customFees, newFee] });
   };
 
@@ -492,6 +499,24 @@ const FinancialSummary = memo(({
                   </span>
                 </div>
 
+                {(isEditMode || formData.hidden_consultant_fee_description) && (
+                  <div className="nfs-hidden-fee-description">
+                    {isEditMode ? (
+                      <textarea
+                        className="nvc-input nfs-fee-description-input"
+                        value={formData.hidden_consultant_fee_description ?? ''}
+                        onChange={e => onFormDataChange({ ...formData, hidden_consultant_fee_description: e.target.value })}
+                        placeholder={t('fee_description', 'Description')}
+                        rows={2}
+                      />
+                    ) : (
+                      <div className="nfs-fee-description-text">
+                        {formData.hidden_consultant_fee_description}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="nfs-hidden-fee-breakdown">
                   <div className="nfs-hidden-fee-breakdown__item">
                     <span>{t('pf_net_amount', 'Net Amount')}</span>
@@ -576,6 +601,16 @@ const FinancialSummary = memo(({
                         onChange={e => updateCustomFee(fee.id, 'name', e.target.value)}
                       />
                     )}
+                    descriptionInput={isEditMode && (
+                      <textarea
+                        className="nvc-input nfs-fee-description-input"
+                        value={fee.description ?? ''}
+                        onChange={e => updateCustomFee(fee.id, 'description', e.target.value)}
+                        placeholder={t('fee_description', 'Description')}
+                        rows={2}
+                      />
+                    )}
+                    description={!isEditMode ? fee.description : ''}
                     removeBtn={isEditMode && (
                       <button type="button" className="nfs-custom-fee-remove no-print" onClick={() => removeCustomFee(fee.id)} title={t('remove') || 'Remove'}>
                         <FaTimes size={11} />

@@ -96,6 +96,7 @@ const projectDisplayName = isAR
   projectSchedule={projectSchedule}
   extensions={extensions}
   />
+ </div>
 
   {/* Tabs Navigation */}
   <ProjectTabsNavigation
@@ -103,7 +104,6 @@ const projectDisplayName = isAR
   onTabChange={setActiveTab}
   auth={tabAuth}
   />
- </div>
 
  {/* Main Content Card */}
  <Card className="prj-main-card">

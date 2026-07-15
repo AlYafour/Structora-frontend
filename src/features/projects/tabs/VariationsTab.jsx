@@ -279,7 +279,14 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     });
 
     const variationStats = useMemo(() => {
-        if (!variations) return { total: 0, approved: 0, rejected: 0, pending: 0, totalAmount: 0 };
+        const emptyPendingBreakdown = {
+            projectManager: 0,
+            supervisor: 0,
+            gmInitial: 0,
+            ownerConsultant: 0,
+            finalApproval: 0,
+        };
+        if (!variations) return { total: 0, approved: 0, rejected: 0, pending: 0, pendingBreakdown: emptyPendingBreakdown, totalAmount: 0 };
 
         const approved = variations.filter((v) => {
             const status = getVariationStatus(v);
@@ -296,6 +303,16 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             return status?.includes("pending") || status === "pending" || status === "draft";
         });
 
+        const pendingBreakdown = variations.reduce((counts, variation) => {
+            const status = getVariationStatus(variation);
+            if (status === "pending_project_manager") counts.projectManager += 1;
+            if (status === "pending_supervisor") counts.supervisor += 1;
+            if (status === "pending_gm_initial") counts.gmInitial += 1;
+            if (status === "pending_owner_consultant") counts.ownerConsultant += 1;
+            if (status === "pending_general_manager_final") counts.finalApproval += 1;
+            return counts;
+        }, { ...emptyPendingBreakdown });
+
         const totalAmount = approved.reduce((sum, variation) => {
             const totalForVariation = parseFloat(getVariationTotalAmount(variation));
             return sum + (isNaN(totalForVariation) ? 0 : totalForVariation);
@@ -306,9 +323,23 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             approved: approved.length,
             rejected: rejected.length,
             pending: pending.length,
+            pendingBreakdown,
             totalAmount,
         };
     }, [variations]);
+
+    const pendingMetricPrimary = useMemo(() => ({
+        key: "finalApproval",
+        label: t("pending_metric_final_approval"),
+        value: variationStats.pendingBreakdown.finalApproval,
+    }), [t, variationStats.pendingBreakdown.finalApproval]);
+
+    const pendingMetricItems = useMemo(() => ([
+        { key: "projectManager", label: t("pending_metric_project_manager"), value: variationStats.pendingBreakdown.projectManager },
+        { key: "supervisor", label: t("pending_metric_supervisor"), value: variationStats.pendingBreakdown.supervisor },
+        { key: "gmInitial", label: t("pending_metric_gm_initial"), value: variationStats.pendingBreakdown.gmInitial },
+        { key: "ownerConsultant", label: t("pending_metric_owner_consultant"), value: variationStats.pendingBreakdown.ownerConsultant },
+    ]), [t, variationStats.pendingBreakdown]);
 
     const showToast = (type, msg) => (type === "success" ? success(msg) : showError(msg));
 
@@ -1193,8 +1224,26 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                             value={renderMoney(v(variationStats.totalAmount))}
                         />
 
-                        <MetricCard variant="emerald" icon="check" label={t("approved")} value={variationStats.approved} />
-                        <MetricCard variant="amber" icon="clock" label={t("pending")} value={variationStats.pending} />
+                        <MetricCard variant="emerald" icon="check" label={t("total_approved")} value={variationStats.approved} />
+                        <MetricCard
+                            variant="amber"
+                            icon="clock"
+                            label={t("pending_approvals")}
+                            value={
+                                <div className="variations-tab__pending-metric">
+                                    <div className="variations-tab__pending-mini-card variations-tab__pending-mini-card--primary">
+                                        <span className="variations-tab__pending-mini-label">{pendingMetricPrimary.label}</span>
+                                        <span className="variations-tab__pending-mini-value">{pendingMetricPrimary.value}</span>
+                                    </div>
+                                    {pendingMetricItems.map((item) => (
+                                        <div className="variations-tab__pending-mini-card" key={item.key}>
+                                            <span className="variations-tab__pending-mini-label">{item.label}</span>
+                                            <span className="variations-tab__pending-mini-value">{item.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            }
+                        />
                         <MetricCard variant="danger" icon="x" label={t("cancelled")} value={variationStats.rejected} />
                     </MetricGrid>
 

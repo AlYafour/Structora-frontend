@@ -3,6 +3,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
+import { normalizeRichTextForRender } from "../../../../../utils/richText";
 import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
 import { formatIndexDate } from "../utils/formatIndexDate";
 import "./VariationPrintDocument.css";
@@ -29,6 +30,18 @@ function Amount({ value }) {
     <span className="vpd-amount" dir="ltr">
       {num} <DirhamsIcon size="1em" />
     </span>
+  );
+}
+
+function PrintRichText({ value, className = "", dir = "ltr" }) {
+  const html = normalizeRichTextForRender(value);
+  if (!html) return null;
+  return (
+    <div
+      className={`vpd-rich-text ${className}`.trim()}
+      dir={dir}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
@@ -293,15 +306,26 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
             <div className="vpd-info-card vpd-info-card--sm vpd-info-card--desc">
               <BilingualText ar="وصف التغيير" en="VARIATION DESCRIPTION" className="vpd-info-card__label" />
-              {data.variation_description && (
-                <p className="vpd-info-card__desc-text">{data.variation_description}</p>
+              {(data.variation_description || data.variation_description_ar) && (
+                <div className="vpd-info-card__desc-block">
+                  {data.variation_description && (
+                    <p className="vpd-info-card__desc-text vpd-info-card__desc-text--en" dir="ltr">
+                      {data.variation_description}
+                    </p>
+                  )}
+                  {data.variation_description_ar && (
+                    <p className="vpd-info-card__desc-text vpd-info-card__desc-text--ar" dir="rtl">
+                      {data.variation_description_ar}
+                    </p>
+                  )}
+                </div>
               )}
               {data.variation_cause && data.variation_cause !== data.variation_description && (
                 <p className="vpd-info-card__desc-cause">
                   <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {data.variation_cause}
                 </p>
               )}
-              {!data.variation_description && !data.variation_cause && (
+              {!data.variation_description && !data.variation_description_ar && !data.variation_cause && (
                 <span className="vpd-info-card__value vpd-info-card__value--plain">{EMPTY}</span>
               )}
             </div>
@@ -357,7 +381,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                     <th><BilingualText ar="الوحدة" en="Unit" /></th>
                     <th><BilingualText ar="السعر" en="Rate" /></th>
                     <th><BilingualText ar="المبلغ" en="Amount" /></th>
-                    <th className="vpd-th--section-title vpd-th--added">
+                    <th className="vpd-th--section-title vpd-th--desc-ar vpd-th--added">
                       <BilingualText ar="البنود المضافة" en="ADDED ITEMS" />
                       <span className="vpd-th--section-count">{String(addedItems.length).padStart(2, "0")} lines</span>
                     </th>
@@ -373,7 +397,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         <td>{item.unit || EMPTY}</td>
                         <td><Amount value={item.rate || 0} /></td>
                         <td><Amount value={item.amount || 0} /></td>
-                        <td />
+                        <td className="vpd-td--desc-ar" dir="rtl">{item.description_ar || EMPTY}</td>
                       </tr>
                       {item.remarks?.trim() && (
                         <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
@@ -405,7 +429,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                     <th><BilingualText ar="الوحدة" en="Unit" /></th>
                     <th><BilingualText ar="السعر" en="Rate" /></th>
                     <th><BilingualText ar="المبلغ" en="Amount" /></th>
-                    <th className="vpd-th--section-title vpd-th--omitted">
+                    <th className="vpd-th--section-title vpd-th--desc-ar vpd-th--omitted">
                       <BilingualText ar="البنود المحذوفة" en="OMITTED ITEMS" />
                       <span className="vpd-th--section-count">{String(omittedItems.length).padStart(2, "0")} lines</span>
                     </th>
@@ -421,7 +445,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                         <td>{item.unit || EMPTY}</td>
                         <td><Amount value={item.rate || 0} /></td>
                         <td><Amount value={item.amount || 0} /></td>
-                        <td />
+                        <td className="vpd-td--desc-ar" dir="rtl">{item.description_ar || EMPTY}</td>
                       </tr>
                       {item.remarks?.trim() && (
                         <tr className="vpd-item-remark-row" data-vpd-item-remark-row>
@@ -481,16 +505,19 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
             {/* Signatures + creds are pinned by preparePrintDocumentLayout */}
             <div className="vpd-bottom-group">
-              {data.remarks && (
+              {(data.remarks || data.remarks_ar) && (
                 <section className="vpd-notes">
                   <strong className="vpd-notes__label">
                     <BilingualText ar="ملاحظات" en="Remarks" />
                   </strong>
-                  <ul className="vpd-notes__bullets">
-                    {data.remarks.split('\n').filter(l => l.trim()).map((line, i) => (
-                      <li key={i}>{line.trim()}</li>
-                    ))}
-                  </ul>
+                  <PrintRichText value={data.remarks} />
+                  {data.remarks_ar && (
+                    <PrintRichText
+                      value={data.remarks_ar}
+                      className="vpd-rich-text--ar"
+                      dir="rtl"
+                    />
+                  )}
                 </section>
               )}
 

@@ -105,6 +105,62 @@
   gap: 4px;
 }
 
+.variations-tab__pending-metric {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.variations-tab__pending-mini-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+  min-height: 18px;
+  padding: 2px 5px;
+  border: 1px solid rgba(146, 64, 14, 0.12);
+  border-radius: 4px;
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--text-secondary, #4b5563);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.variations-tab__pending-mini-card--primary {
+  grid-column: 1 / -1;
+}
+
+.variations-tab__pending-mini-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variations-tab__pending-mini-value {
+  flex: 0 0 auto;
+  min-width: 14px;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+html.theme-dark .variations-tab__pending-mini-card {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.18);
+  color: var(--muted, rgba(240, 244, 255, 0.68));
+}
+
+html.theme-dark .variations-tab__pending-mini-value {
+  color: #fbbf24;
+}
+
 .variations-tab__hidden-fee-btn {
   min-width: 0;
   height: 20px;

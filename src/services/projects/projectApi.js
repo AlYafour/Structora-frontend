@@ -753,6 +753,33 @@ class ProjectService extends BaseService {
   }
 
   /**
+   * Find a payment by ID directly — flat, project-agnostic endpoint.
+   * @param {string|number} paymentId
+   */
+  async findPaymentById(paymentId) {
+    try {
+      const { data } = await api.get(`payments/${paymentId}/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.findPaymentById');
+    }
+  }
+
+  /**
+   * Get a receipt voucher by ID — nested under its project (no flat endpoint exists).
+   * @param {string|number} projectId
+   * @param {string|number} voucherId
+   */
+  async getReceiptVoucherById(projectId, voucherId) {
+    try {
+      const { data } = await api.get(`${this.basePath}${projectId}/receipt-vouchers/${voucherId}/`);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.getReceiptVoucherById');
+    }
+  }
+
+  /**
    * Find a variation by ID directly (for edit mode).
    * Returns variation data + project_id without looping through all projects.
    * @param {string|number} variationId - Variation ID
