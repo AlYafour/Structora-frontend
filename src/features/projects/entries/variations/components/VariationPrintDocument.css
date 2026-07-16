@@ -816,6 +816,14 @@
   margin-bottom: 6px;
 }
 
+.vpd-notes__split-col--ar .vpd-notes__label {
+  text-align: right;
+  font-family: Cairo, Tahoma, Arial, sans-serif;
+  /* Cairo reads visually lighter than the Latin label font at the same
+     numeric weight, so it needs bumping a step to look equally bold. */
+  font-weight: 900;
+}
+
 .vpd-notes__bullets {
   list-style: disc;
   columns: 2;
@@ -846,10 +854,24 @@
 }
 
 .vpd-rich-text--ar {
-  padding-top: 6px;
-  border-top: 1px solid rgba(216, 201, 179, 0.72);
   font-family: Cairo, Tahoma, Arial, sans-serif;
   text-align: right;
+}
+
+.vpd-notes__split {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.vpd-notes__split-col {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+.vpd-notes__split-divider {
+  flex: 0 0 1px;
+  background: rgba(216, 201, 179, 0.72);
 }
 
 .vpd-rich-text p {
@@ -1552,6 +1574,10 @@
 
 .vpd-print-mode .vpd-rich-text + .vpd-rich-text {
   margin-top: 4px;
+}
+
+.vpd-print-mode .vpd-notes__split {
+  gap: 10px;
 }
 
 .vpd-print-mode .vpd-rich-text p,

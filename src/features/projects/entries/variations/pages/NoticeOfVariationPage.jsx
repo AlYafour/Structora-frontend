@@ -481,9 +481,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   /**
    * Load project
    */
-  const loadProject = async (projectId) => {
+  const loadProject = async (projectId, { manageLoading = true } = {}) => {
     try {
-      setLoading(true);
+      if (manageLoading) setLoading(true);
       const data = await projectApi.getWithIncludes(projectId, ['siteplan', 'contract']);
       setProject(data);
       return data;
@@ -492,7 +492,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       showError(t('load_error'));
       throw e;
     } finally {
-      setLoading(false);
+      if (manageLoading) setLoading(false);
     }
   };
 
@@ -514,7 +514,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       }
 
       setVariation(foundVariation);
-      await loadProject(foundProjectId);
+      await loadProject(foundProjectId, { manageLoading: false });
 
       if (foundVariation?.variation_invoice_file) {
         setExistingVariationAttachment(foundVariation.variation_invoice_file);
@@ -1152,7 +1152,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     </div>
   );
 
-  if (isEmbeddedMode) return content;
+  // Wait for the embedded-mode hydration effect (setFormData with the real
+  // remarks/remarks_ar) to run before rendering — otherwise this mounts
+  // RemarksAttachmentsSection's translate-sync hook one render too early,
+  // against the still-empty default formData, which then misreads the real
+  // (already-synced) data landing a moment later as brand-new content and
+  // retranslates the whole remarks field for nothing.
+  if (isEmbeddedMode) return loading ? null : content;
 
   return (
     <PageLayout loading={loading} loadingText={t('loading')}>

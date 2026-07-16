@@ -33,8 +33,28 @@ function Amount({ value }) {
   );
 }
 
+// `.vpd-rich-text li` is `display: flex` so a manual bullet marker (::before)
+// can sit before the text and flip side correctly under RTL (see that rule's
+// comment). That means every *element* child of the <li> becomes its own
+// flex item — so a bolded word rendered as `<strong>` inside the line gets
+// squeezed into its own narrow flex box instead of flowing inline with the
+// rest of the sentence, wrapping letter-by-letter. Wrapping all of the li's
+// children in one <span> keeps the whole line a single flex item alongside
+// the marker.
+function wrapListItemChildren(html) {
+  if (typeof document === "undefined" || !html) return html;
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll("li").forEach((li) => {
+    const wrapper = document.createElement("span");
+    while (li.firstChild) wrapper.appendChild(li.firstChild);
+    li.appendChild(wrapper);
+  });
+  return template.innerHTML;
+}
+
 function PrintRichText({ value, className = "", dir = "ltr" }) {
-  const html = normalizeRichTextForRender(value);
+  const html = wrapListItemChildren(normalizeRichTextForRender(value));
   if (!html) return null;
   return (
     <div
@@ -510,16 +530,29 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             <div className="vpd-bottom-group">
               {(data.remarks || data.remarks_ar) && (
                 <section className="vpd-notes">
-                  <strong className="vpd-notes__label">
-                    <BilingualText ar="ملاحظات" en="Remarks" />
-                  </strong>
-                  <PrintRichText value={data.remarks} />
-                  {data.remarks_ar && (
-                    <PrintRichText
-                      value={data.remarks_ar}
-                      className="vpd-rich-text--ar"
-                      dir="rtl"
-                    />
+                  {data.remarks_ar ? (
+                    <div className="vpd-notes__split">
+                      <div className="vpd-notes__split-col">
+                        <strong className="vpd-notes__label">Remarks</strong>
+                        <PrintRichText value={data.remarks} />
+                      </div>
+                      <div className="vpd-notes__split-divider" />
+                      <div className="vpd-notes__split-col vpd-notes__split-col--ar" dir="rtl">
+                        <strong className="vpd-notes__label" dir="rtl">ملاحظات</strong>
+                        <PrintRichText
+                          value={data.remarks_ar}
+                          className="vpd-rich-text--ar"
+                          dir="rtl"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <strong className="vpd-notes__label">
+                        <BilingualText ar="ملاحظات" en="Remarks" />
+                      </strong>
+                      <PrintRichText value={data.remarks} />
+                    </>
                   )}
                 </section>
               )}
