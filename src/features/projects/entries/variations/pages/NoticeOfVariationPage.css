@@ -238,69 +238,288 @@
   color: #9ca3af;
   margin-left: 4px;
 }
-.nvc-attachment-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  align-items: start;
+
+.nvc-attachments-empty-hint {
+  margin: 4px 0 12px;
+  padding: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+  background: var(--surface, #f9fafb);
+  border: 1.5px dashed var(--border, #e5e7eb);
+  border-radius: 10px;
 }
-.nvc-attachment-list > .nvc-attachment-add-btn {
-  grid-column: 1 / -1;
-}
-.nvc-attachment-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.nvc-attachment-saved,
-.nvc-attachment-new {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-.nvc-attachment-new > :first-child {
-  flex: 1;
-  min-width: 0;
-}
-.nvc-attachment-remove {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid #fca5a5;
-  background: #fff1f2;
-  color: #ef4444;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.nvc-attachment-remove:hover {
-  background: #fee2e2;
-}
+
 .nvc-attachment-add-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-top: 4px;
-  padding: 7px 14px;
-  background: #f9fafb;
-  border: 1.5px dashed #d1d5db;
+  padding: 8px 16px;
+  background: var(--color-white, #fff);
+  border: 1.5px dashed var(--accent, #C8A84E);
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 600;
+  color: var(--accent, #C8A84E);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   width: fit-content;
 }
 .nvc-attachment-add-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #374151;
+  background: rgba(200, 168, 78, 0.08);
+}
+
+/* ── Attachments grouped into fixed sections, 4 boxes per row ── */
+.nvc-attachment-sections-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.nvc-attachment-section-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--surface, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  min-width: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.nvc-attachment-section-box:hover {
+  border-color: rgba(200, 168, 78, 0.35);
+  box-shadow: 0 2px 8px rgba(200, 168, 78, 0.08);
+}
+
+.nvc-attachment-section-box__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6b7280;
+}
+
+.nvc-attachment-section-box__icon {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--accent, #C8A84E);
+}
+
+.nvc-attachment-section-box__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nvc-attachment-section-box__count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent, #C8A84E);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.nvc-attachment-section-box__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Caps a box's height regardless of how many attachments it holds, so one
+     heavily-populated section never drags every other box in its grid row
+     taller — it scrolls internally instead. */
+  max-height: 148px;
+  overflow-y: auto;
+  padding-inline-end: 2px;
+}
+
+/* ── Individual attachment row — full-width file bar, short heading below ── */
+.nvc-attachment-row {
+  position: relative;
+  border-radius: 8px;
+}
+
+.nvc-attachment-row--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  padding-inline-end: 28px; /* room for the corner remove button */
+  background: var(--color-white, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.nvc-attachment-row__file-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.nvc-attachment-row__file-bar--action {
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.nvc-attachment-row__file-bar--action:hover {
+  background: var(--surface, #f9fafb);
+}
+
+.nvc-attachment-row__icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.nvc-attachment-row__icon--success {
+  color: #22c55e;
+}
+
+.nvc-attachment-row__filename {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink, #111827);
+}
+
+.nvc-attachment-row__icon-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nvc-attachment-row__icon-btn:hover {
+  background: var(--surface, #f3f4f6);
+  color: var(--accent, #C8A84E);
+}
+
+.nvc-attachment-row__file-input-hidden {
+  display: none;
+}
+
+/* Shorter/thinner than a normal text input, since this sits directly under
+   the file bar rather than as a standalone field. */
+.nvc-attachment-row__heading-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s;
+}
+.nvc-attachment-row__heading-input:hover {
+  border-color: var(--border-primary, #d1d5db);
+}
+.nvc-attachment-row__heading-input:focus {
+  outline: none;
+  border-color: var(--accent, #C8A84E);
+  background: var(--color-white, #fff);
+  box-shadow: 0 0 0 2px rgba(200, 168, 78, 0.12);
+}
+
+.nvc-attachment-row__heading-text {
+  font-size: 11px;
+  color: var(--text-tertiary, #9ca3af);
+  padding: 2px 6px;
+}
+
+.nvc-attachment-row__error {
+  font-size: 10.5px;
+  color: #ef4444;
+}
+
+.nvc-attachment-row-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nvc-attachment-row__corner-remove {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface, #f3f4f6);
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  z-index: 1;
+}
+.nvc-attachment-row__corner-remove:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.nvc-attachment-row__heading-select {
+  width: 100%;
+}
+
+/* Brand-new attachment awaiting a section choice — a tile inside the same
+   sections grid (next to the existing boxes), showing just the heading
+   picker until one is chosen. */
+.nvc-attachment-row--pending {
+  justify-content: center;
+  background: var(--surface, #f9fafb);
+  border: 1.5px dashed var(--accent, #C8A84E);
+  padding: 12px;
+  padding-inline-end: 32px;
+  min-height: 76px;
+}
+
+.nvc-attachment-row__pending-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #9ca3af;
+}
+
+@media (max-width: 1100px) {
+  .nvc-attachment-sections-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .nvc-attachment-sections-grid { grid-template-columns: 1fr; }
 }
 
 /* ==================== VARIATION INDEX ==================== */
@@ -1071,19 +1290,6 @@
   word-wrap: break-word;
 }
 
-.nvc-remarks-bullets {
-  list-style: disc;
-  padding-left: 20px;
-  margin: 0;
-  font-size: 9.5pt;
-  color: var(--text-primary, #212529);
-  line-height: 1.7;
-}
-
-.nvc-remarks-bullets li {
-  padding: 1px 0;
-}
-
 .nvc-remarks-empty {
   color: var(--text-tertiary, #999);
   font-style: italic;
@@ -1244,6 +1450,106 @@
   background: var(--border-primary, #e9ecef);
 }
 
+.rich-text-editor__color-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+}
+
+.rich-text-editor__color-tool {
+  position: relative;
+}
+
+.rich-text-editor__tool-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+}
+
+.rich-text-editor__color-bar {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.rich-text-editor__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  padding: 10px;
+  min-width: 168px;
+  background: var(--surface-primary, #ffffff);
+  border: 1px solid var(--border-primary, #e9ecef);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.rich-text-editor__swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.rich-text-editor__swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+
+.rich-text-editor__swatch:hover {
+  outline: 2px solid rgba(200, 168, 78, 0.72);
+  outline-offset: 1px;
+}
+
+.rich-text-editor__custom-color {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-primary, #e9ecef);
+  font-size: 11px;
+  color: var(--text-secondary, #495057);
+  cursor: pointer;
+}
+
+.rich-text-editor__custom-color input[type="color"] {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-primary, #ced4da);
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+
+.rich-text-editor__no-color {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-primary, #e9ecef);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #495057);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.rich-text-editor__no-color:hover {
+  background: var(--gray-50, #f8f9fa);
+  color: var(--text-primary, #212529);
+}
+
 .rich-text-editor__surface {
   flex: 1;
   min-height: 86px;
@@ -1287,6 +1593,9 @@
   overflow-wrap: anywhere;
 }
 
+/* Still used by ItemRow.jsx's per-item remarks (plain-text, not rich-text
+   editable) — kept even though the main Remarks section above no longer
+   uses it. */
 .nvc-remarks-split-ar-view {
   flex: 1;
   padding: 10px 14px;
@@ -1331,11 +1640,6 @@
   width: 1.5px;
   background: var(--border-primary, #e9ecef);
   align-self: stretch;
-}
-
-.nvc-remarks-bullets--ar {
-  padding-right: 20px;
-  padding-left: 0;
 }
 
 @media (max-width: 640px) {
@@ -4313,7 +4617,7 @@ html.theme-dark .nvc-remarks-split-view-grid {
 /* ──────────── COLUMN STRUCTURE (NEW) ──────────── */
 .nvt-col-desc { min-width: 220px; }
 .nvt-col-qty  { min-width: 120px; }
-.nvt-col-unit { min-width: 120px; }
+.nvt-col-unit { min-width: 90px; }
 .nvt-col-rate { min-width: 140px; }
 .nvt-col-ohp  { min-width: 140px; }
 .nvt-col-amount { min-width: 130px; }
@@ -4365,7 +4669,6 @@ html.theme-dark .nvc-remarks-split-view-grid {
 
 /* ──────────── FIX: QUANTITY / UNIT / RATE ──────────── */
 .nvt-td--qty,
-.nvt-td--unit,
 .nvt-td--rate {
   min-width: 120px;
   white-space: normal;         /* allow wrapping */
@@ -4373,10 +4676,17 @@ html.theme-dark .nvc-remarks-split-view-grid {
   overflow: visible;           /* prevent clipping */
 }
 
+/* Unit is now a compact dropdown, not a plain numeric input — doesn't need
+   the 120px floor qty/rate use. */
+.nvt-td--unit {
+  min-width: 90px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+}
+
 /* Inputs inside those cells */
 .nvt-td--qty input,
-.nvt-td--unit input,
-.nvt-td--unit select,
 .nvt-td--rate input {
   width: 100%;
   min-width: 110px;
@@ -4385,6 +4695,14 @@ html.theme-dark .nvc-remarks-split-view-grid {
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
+}
+
+/* Unit is now a compact dropdown (SinglePresetSelectField), not a plain
+   input — it doesn't need the 110px minimum the qty/rate inputs above do. */
+.nvi-unit-select .MuiOutlinedInput-input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Force remove ellipsis anywhere inside */
@@ -4512,7 +4830,7 @@ html.theme-dark .nvc-remarks-split-view-grid {
 
 .nvi-td--desc { min-width: 180px; }
 .nvi-td--num  { width: 80px; text-align: end; }
-.nvi-td--unit { width: 60px; }
+.nvi-td--unit { min-width: 90px; }
 .nvi-td--ohp  { width: 120px; }
 .nvi-td--amount { width: 100px; text-align: end; }
 .nvi-td--action { width: 36px; text-align: center; }

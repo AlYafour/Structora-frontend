@@ -1,10 +1,15 @@
-import { memo, useMemo } from 'react';
-import { FaPaperclip, FaTrash, FaPlus } from 'react-icons/fa';
-import FileUpload from '../../../../../../components/file-upload/FileUpload';
-import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
+import { memo, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
-import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
-import { htmlToPlainText, normalizeRichTextForRender } from '../../../../../../utils/richText';
+import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
+import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
+import { normalizeRichTextForRender } from '../../../../../../utils/richText';
+import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
+import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
+
+const ACCEPTED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
+const MAX_ATTACHMENT_SIZE_MB = 50;
 
 function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   const html = normalizeRichTextForRender(value);
@@ -19,6 +24,217 @@ function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   );
 }
 
+// A brand-new (never-saved) attachment with no heading chosen yet renders as
+// just the heading picker — the file picker/heading-label input only appear
+// once one is chosen, matching the "dropdown first" flow.
+function PendingAttachmentRow({ att, t, onFieldChange, onRemove }) {
+  return (
+    <div className="nvc-attachment-row nvc-attachment-row--pending">
+      <button
+        type="button"
+        className="nvc-attachment-row__corner-remove"
+        onClick={onRemove}
+        title={t('remove')}
+      >
+        <FaTimes />
+      </button>
+      <span className="nvc-attachment-row__pending-label">{t('attachment_choose_section', 'Choose a heading...')}</span>
+      <SinglePresetSelectField
+        value={att.section || ''}
+        onChange={(val) => onFieldChange('section', val)}
+        options={ATTACHMENT_SECTIONS}
+        optionLabelsAr={ATTACHMENT_SECTIONS_AR}
+        placeholder={t('attachment_choose_section', 'Choose a heading...')}
+        className="nvc-attachment-row__heading-select"
+      />
+    </div>
+  );
+}
+
+// Saved attachment — a full-width file bar (icon + filename + view action)
+// on top, with a short heading input directly below it. Deliberately doesn't
+// use <FileAttachmentView> (a fixed icon+filename+view+download block) since
+// that leaves no room to add the heading input under it.
+function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
+  const fileUrl = att.url || att.file;
+  const displayName = att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
+
+  const handleView = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (fileUrl) await openFileInNewWindow(fileUrl, displayName);
+  };
+
+  return (
+    <div className="nvc-attachment-row nvc-attachment-row--stacked">
+      {isEditMode && (
+        <button
+          type="button"
+          className="nvc-attachment-row__corner-remove"
+          onClick={onRemove}
+          title={t('remove')}
+        >
+          <FaTimes />
+        </button>
+      )}
+      <div className="nvc-attachment-row__file-bar">
+        <FaFile className="nvc-attachment-row__icon" />
+        <span className="nvc-attachment-row__filename" title={displayName}>{displayName}</span>
+        <button
+          type="button"
+          className="nvc-attachment-row__icon-btn"
+          onClick={handleView}
+          title={t('view_file')}
+        >
+          <FaRegEye />
+        </button>
+      </div>
+      {isEditMode ? (
+        <input
+          type="text"
+          className="nvc-attachment-row__heading-input"
+          value={att.heading ?? ''}
+          onChange={(e) => onFieldChange('heading', e.target.value)}
+          placeholder={t('attachment_heading', 'Heading')}
+        />
+      ) : (
+        att.heading && <div className="nvc-attachment-row__heading-text">{att.heading}</div>
+      )}
+    </div>
+  );
+}
+
+// Brand-new, not-yet-uploaded attachment — a full-width "choose file" bar on
+// top (not the full-page <FileUpload> dropzone, which is far taller), with a
+// short heading input directly below it.
+function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
+  const fileInputRef = useRef(null);
+  const [error, setError] = useState('');
+  const hasFile = att.newFile instanceof File;
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!validateFileSize(file, MAX_ATTACHMENT_SIZE_MB)) {
+      setError(t('file_upload_too_large', { name: file.name, maxSize: MAX_ATTACHMENT_SIZE_MB }));
+      return;
+    }
+    const ext = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
+    if (!ACCEPTED_ATTACHMENT_TYPES.includes(ext)) {
+      setError(t('file_upload_invalid_file_type', { types: ACCEPTED_ATTACHMENT_TYPES.join(', ') }));
+      return;
+    }
+    setError('');
+    onFileChange(file);
+  };
+
+  // The picked file lives only in memory until saved — open it from a local
+  // blob URL so the user can confirm it's the right one right away, without
+  // waiting for an actual upload.
+  const handleViewSelected = (e) => {
+    e.stopPropagation();
+    if (!hasFile) return;
+    const blobUrl = URL.createObjectURL(att.newFile);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  return (
+    <div className="nvc-attachment-row nvc-attachment-row--stacked">
+      <button
+        type="button"
+        className="nvc-attachment-row__corner-remove"
+        onClick={onRemove}
+        title={t('remove')}
+      >
+        <FaTimes />
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_ATTACHMENT_TYPES.join(',')}
+        onChange={handleFileSelect}
+        className="nvc-attachment-row__file-input-hidden"
+      />
+      <div
+        className="nvc-attachment-row__file-bar nvc-attachment-row__file-bar--action"
+        role="button"
+        tabIndex={0}
+        onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+      >
+        {hasFile
+          ? <FaCheckCircle className="nvc-attachment-row__icon nvc-attachment-row__icon--success" />
+          : <FaFile className="nvc-attachment-row__icon" />}
+        <span className="nvc-attachment-row__filename">
+          {hasFile ? att.newFile.name : t('file_upload_select_file', 'Choose file')}
+        </span>
+        {hasFile && (
+          <button
+            type="button"
+            className="nvc-attachment-row__icon-btn"
+            onClick={handleViewSelected}
+            title={t('view_file')}
+          >
+            <FaRegEye />
+          </button>
+        )}
+      </div>
+      <input
+        type="text"
+        className="nvc-attachment-row__heading-input"
+        value={att.heading ?? ''}
+        onChange={(e) => onFieldChange('heading', e.target.value)}
+        placeholder={t('attachment_heading', 'Heading')}
+      />
+      {error && <span className="nvc-attachment-row__error">{error}</span>}
+    </div>
+  );
+}
+
+function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove }) {
+  const isSaved = !!(att.url || att.file);
+  const isLegacyUnfiled = isEditMode && !ATTACHMENT_SECTIONS.includes(att.section);
+
+  const row = isSaved ? (
+    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFieldChange={onFieldChange} onRemove={onRemove} />
+  ) : isEditMode ? (
+    <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} />
+  ) : null;
+
+  // Already-categorized attachments show their section via the box title
+  // above. Legacy/"Other" items still need a way to be filed into a proper
+  // section, so they get an extra picker below the compact row.
+  if (!isLegacyUnfiled) return row;
+
+  return (
+    <div className="nvc-attachment-row-group">
+      {row}
+      <SinglePresetSelectField
+        value=""
+        onChange={(val) => onFieldChange('section', val)}
+        options={ATTACHMENT_SECTIONS}
+        optionLabelsAr={ATTACHMENT_SECTIONS_AR}
+        placeholder={t('attachment_section', 'Section')}
+        className="nvc-attachment-row__heading-select"
+      />
+    </div>
+  );
+}
+
 const RemarksAttachmentsSection = memo(({
   formData,
   isEditMode,
@@ -27,26 +243,53 @@ const RemarksAttachmentsSection = memo(({
   // new multi-attachment props
   variationAttachments,
   setVariationAttachments,
-  project,
   t
 }) => {
-  const remarksPlainText = useMemo(
-    () => htmlToPlainText(formData.remarks).trim(),
-    [formData.remarks]
-  );
+  const { i18n } = useTranslation();
+  const isRTL = /^ar\b/i.test(i18n.language || '');
+  const getSectionLabel = (section) => (isRTL && ATTACHMENT_SECTIONS_AR[section]) || section;
 
-  const { translating } = useAutoTranslate(
-    remarksPlainText,
-    (ar) => onFormDataChange(prev => ({ ...prev, remarks_ar: ar })),
+  // Arabic remarks stay in line-level sync with English: only lines that were
+  // actually added/edited get (re)translated, plainly (no styling). Lines the
+  // user hasn't touched in English are left completely alone in Arabic, so
+  // any manual wording/styling applied there directly (via the Arabic
+  // editor's own toolbar) persists indefinitely — see useLineSyncTranslate.
+  const { translating } = useLineSyncTranslate(
+    formData.remarks,
+    formData.remarks_ar,
+    (html) => onFormDataChange(prev => ({ ...prev, remarks_ar: html })),
     { enabled: isEditMode }
   );
+
+  const handleArabicRemarksChange = (html) => {
+    onFormDataChange(prev => ({ ...prev, remarks_ar: html }));
+  };
+
+  // Group attachments by section for display, keeping each item's original
+  // index in `variationAttachments` so mutation handlers below stay index-based
+  // regardless of which box/list renders it.
+  //  - sectionGroups: any attachment (new or saved) with a matching section.
+  //  - otherItems: already-saved (has an id) attachments with no/unrecognized
+  //    section — legacy data from before this feature existed.
+  //  - pendingItems: brand-new, not-yet-saved attachments with no section chosen
+  //    yet — rendered as a bare "choose a heading" prompt, not inside a box.
+  const { sectionGroups, otherItems, pendingItems } = useMemo(() => {
+    const indexed = (variationAttachments || []).map((att, i) => ({ att, i }));
+    const groups = ATTACHMENT_SECTIONS.map((section) => ({
+      key: section,
+      items: indexed.filter(({ att }) => att.section === section),
+    }));
+    const others = indexed.filter(({ att }) => att.id && !ATTACHMENT_SECTIONS.includes(att.section));
+    const pending = indexed.filter(({ att }) => !att.id && !ATTACHMENT_SECTIONS.includes(att.section));
+    return { sectionGroups: groups, otherItems: others, pendingItems: pending };
+  }, [variationAttachments]);
 
   if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
   }
 
   const handleAddAttachment = () => {
-    setVariationAttachments(prev => [...prev, { id: null, url: null, name: '', newFile: null }]);
+    setVariationAttachments(prev => [...prev, { id: null, url: null, name: '', newFile: null, section: '', heading: '' }]);
   };
 
   const handleRemoveAttachment = (index) => {
@@ -58,6 +301,38 @@ const RemarksAttachmentsSection = memo(({
       i === index ? { ...item, newFile: file, name: file?.name || item.name } : item
     ));
   };
+
+  const handleAttachmentFieldChange = (index, field, value) => {
+    setVariationAttachments(prev => prev.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const renderBox = (key, items) => (
+    <div key={key} className="nvc-attachment-section-box">
+      <div className="nvc-attachment-section-box__header">
+        <FaPaperclip className="nvc-attachment-section-box__icon" />
+        <span className="nvc-attachment-section-box__title">{getSectionLabel(key)}</span>
+        <span className="nvc-attachment-section-box__count">{items.length}</span>
+      </div>
+      <div className="nvc-attachment-section-box__list">
+        {items.map(({ att, i }) => (
+          <AttachmentRow
+            key={att.id ?? `new-${i}`}
+            att={att}
+            isEditMode={isEditMode}
+            t={t}
+            onFileChange={(file) => handleAttachmentFileChange(i, file)}
+            onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
+            onRemove={() => handleRemoveAttachment(i)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  const hasAnyBoxContent = otherItems.length > 0 || sectionGroups.some(g => g.items.length > 0);
+  const isCompletelyEmpty = !hasAnyBoxContent && pendingItems.length === 0;
 
   return (
     <div className="nvc-section nvc-section--remarks">
@@ -88,7 +363,10 @@ const RemarksAttachmentsSection = memo(({
 
               <div className="nvc-remarks-split-divider" />
 
-              {/* Arabic pane — auto-translated, read-only */}
+              {/* Arabic pane — auto-translated + auto-formatted to mirror
+                  English by default, but freely editable/stylable on its own;
+                  editing it here stops the auto-mirroring for this field (see
+                  handleArabicRemarksChange) so manual work is never undone. */}
               <div className="nvc-remarks-split-pane nvc-remarks-split-pane--ar">
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">ع</span>
@@ -101,12 +379,14 @@ const RemarksAttachmentsSection = memo(({
                     ) : t('arabic', 'Arabic')}
                   </span>
                 </div>
-                <div className="nvc-remarks-split-ar-view" dir="rtl">
-                  {formData.remarks_ar
-                    ? formData.remarks_ar
-                    : <span className="nvc-remarks-split-placeholder">{t('auto_translated_arabic', 'ترجمة تلقائية...')}</span>
-                  }
-                </div>
+                <RichTextEditor
+                  className="nvc-remarks-rich-editor"
+                  value={formData.remarks_ar ?? ''}
+                  onChange={handleArabicRemarksChange}
+                  placeholder={t('auto_translated_arabic', 'ترجمة تلقائية...')}
+                  dir="rtl"
+                  t={t}
+                />
               </div>
             </div>
           ) : formData.remarks ? (
@@ -117,11 +397,7 @@ const RemarksAttachmentsSection = memo(({
                 </div>
                 <div className="nvc-remarks-split-view-divider" />
                 <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
-                  <ul className="nvc-remarks-bullets nvc-remarks-bullets--ar">
-                    {formData.remarks_ar.split('\n').filter(l => l.trim()).map((line, i) => (
-                      <li key={i}>{line.trim()}</li>
-                    ))}
-                  </ul>
+                  <RichRemarksView value={formData.remarks_ar} dir="rtl" />
                 </div>
               </div>
             ) : (
@@ -130,7 +406,7 @@ const RemarksAttachmentsSection = memo(({
           ) : null}
         </div>
 
-        {/* Multi-file PDF attachments */}
+        {/* Multi-file attachments, grouped into fixed sections */}
         <div className="nvc-field nvc-field--full no-print">
           {(isEditMode || variationAttachments?.length > 0) && (
             <label className="nvc-attachments-label">
@@ -140,75 +416,44 @@ const RemarksAttachmentsSection = memo(({
             </label>
           )}
 
-          {/* Existing saved attachments (view mode) */}
-          {!isEditMode && variationAttachments?.length > 0 && (
-            <div className="nvc-attachment-list">
-              {variationAttachments.map((att, i) => (
-                <div key={att.id || i} className="nvc-attachment-row">
-                  <FileAttachmentView
-                    fileUrl={att.url || att.file}
-                    fileName={att.file_name || att.name || (att.url || att.file || '').split('/').pop()}
-                    projectId={project?.id}
-                  />
-                </div>
+          {(hasAnyBoxContent || (isEditMode && pendingItems.length > 0)) && (
+            <div className="nvc-attachment-sections-grid">
+              {sectionGroups
+                .filter(({ items }) => items.length > 0)
+                .map(({ key, items }) => renderBox(key, items))}
+
+              {otherItems.length > 0 && renderBox(
+                t('attachment_other_section', OTHER_ATTACHMENT_SECTION),
+                otherItems
+              )}
+
+              {isEditMode && pendingItems.map(({ att, i }) => (
+                <PendingAttachmentRow
+                  key={`pending-${i}`}
+                  att={att}
+                  t={t}
+                  onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
+                  onRemove={() => handleRemoveAttachment(i)}
+                />
               ))}
             </div>
           )}
 
-          {/* Edit mode: new + existing */}
-          {isEditMode && (
-            <div className="nvc-attachment-list">
-              {variationAttachments.map((att, i) => (
-                <div key={i} className="nvc-attachment-row">
-                  {att.url || att.file ? (
-                    /* Already saved on server */
-                    <div className="nvc-attachment-saved">
-                      <FileAttachmentView
-                        fileUrl={att.url || att.file}
-                        fileName={att.file_name || att.name || (att.url || att.file || '').split('/').pop()}
-                        projectId={project?.id}
-                      />
-                      <button
-                        type="button"
-                        className="nvc-attachment-remove"
-                        onClick={() => handleRemoveAttachment(i)}
-                        title={t('remove')}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  ) : (
-                    /* New slot — not yet uploaded */
-                    <div className="nvc-attachment-new">
-                      <FileUpload
-                        value={att.newFile}
-                        onChange={(file) => handleAttachmentFileChange(i, file)}
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        maxSizeMB={50}
-                        showPreview={false}
-                      />
-                      <button
-                        type="button"
-                        className="nvc-attachment-remove"
-                        onClick={() => handleRemoveAttachment(i)}
-                        title={t('remove')}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {isEditMode && isCompletelyEmpty && (
+            <p className="nvc-attachments-empty-hint">
+              {t('attachment_empty_hint', 'No attachments yet — click "Add Attachment" to get started.')}
+            </p>
+          )}
 
-              <button
-                type="button"
-                className="nvc-attachment-add-btn"
-                onClick={handleAddAttachment}
-              >
-                <FaPlus style={{ marginRight: 6 }} />
-                {t('add_attachment')}
-              </button>
-            </div>
+          {isEditMode && (
+            <button
+              type="button"
+              className="nvc-attachment-add-btn"
+              onClick={handleAddAttachment}
+            >
+              <FaPlus style={{ marginRight: 6 }} />
+              {t('add_attachment')}
+            </button>
           )}
         </div>
       </div>

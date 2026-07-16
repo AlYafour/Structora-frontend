@@ -4,10 +4,12 @@
 
 import { memo } from 'react';
 import { FaHashtag, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaAlignLeft, FaRobot } from 'react-icons/fa';
-import PresetSelectField from '../../../../../../components/common/PresetSelectField';
+import MultiPresetSelectField from '../../../../../../components/common/MultiPresetSelectField';
+import AdditionalTimeSelectField from '../../../../../../components/common/AdditionalTimeSelectField';
 import Button from '../../../../../../components/common/Button';
 import VoiceNoteButton from '../../../../../../components/common/VoiceNoteButton';
-import { VARIATION_CAUSE_OPTIONS } from '../../utils/variationCauseOptions';
+import { VARIATION_CAUSE_OPTIONS, VARIATION_CAUSE_OPTIONS_AR } from '../../utils/variationCauseOptions';
+import { BOQ_OPTIONS, BOQ_OPTIONS_AR } from '../../utils/boqOptions';
 import { useLanguage } from '../../../../../../hooks/useLanguage';
 import { useMachineAutoTranslate } from '../../../../../../hooks/useMachineAutoTranslate';
 import { useVoiceTranscription } from '../../../../../../hooks/useVoiceTranscription';
@@ -177,42 +179,51 @@ const VariationHeaderInfo = memo(({
         <div className="nvh-strip__item">
           <span className="nvh-strip__label">{t('trade_discipline')}</span>
           {isEditMode ? (
-            <input
-              type="text"
-              value={formData.trade_discipline ?? ''}
-              onChange={(e) => onFormDataChange({ ...formData, trade_discipline: e.target.value })}
-              className="nvc-input"
-              placeholder={t('trade_discipline')}
+            <MultiPresetSelectField
+              value={Array.isArray(formData.trade_discipline) ? formData.trade_discipline : (formData.trade_discipline ? [formData.trade_discipline] : [])}
+              onChange={(val) => onFormDataChange({ ...formData, trade_discipline: val })}
+              options={BOQ_OPTIONS}
+              optionLabelsAr={BOQ_OPTIONS_AR}
+              placeholder={t('search_from_list')}
+              className="nvh-boq-select"
             />
           ) : (
-            <span className="nvh-strip__value">{formData.trade_discipline || '—'}</span>
+            <span className="nvh-strip__value">
+              {(Array.isArray(formData.trade_discipline)
+                ? formData.trade_discipline.map(item => (isArabicPrimary ? (BOQ_OPTIONS_AR[item] || item) : item)).join(', ')
+                : formData.trade_discipline) || '—'}
+            </span>
           )}
         </div>
 
         <div className="nvh-strip__item">
           <span className="nvh-strip__label">{t('variation_cause')}</span>
           {isEditMode ? (
-            <PresetSelectField
-              value={formData.variation_cause ?? ''}
+            <MultiPresetSelectField
+              value={Array.isArray(formData.variation_cause) ? formData.variation_cause : (formData.variation_cause ? [formData.variation_cause] : [])}
               onChange={(val) => onFormDataChange({ ...formData, variation_cause: val })}
               options={VARIATION_CAUSE_OPTIONS}
-              placeholder={t('variation_cause')}
+              optionLabelsAr={VARIATION_CAUSE_OPTIONS_AR}
+              placeholder={t('search_from_list')}
               className="nvh-variation-cause-select"
             />
           ) : (
-            <span className="nvh-strip__value">{formData.variation_cause || '—'}</span>
+            <span className="nvh-strip__value">
+              {(Array.isArray(formData.variation_cause)
+                ? formData.variation_cause.map(cause => (isArabicPrimary ? (VARIATION_CAUSE_OPTIONS_AR[cause] || cause) : cause)).join(', ')
+                : formData.variation_cause) || '—'}
+            </span>
           )}
         </div>
 
         <div className="nvh-strip__item">
           <span className="nvh-strip__label">{t('additional_time')}</span>
           {isEditMode ? (
-            <input
-              type="text"
+            <AdditionalTimeSelectField
               value={formData.additional_time ?? ''}
-              onChange={(e) => onFormDataChange({ ...formData, additional_time: e.target.value })}
-              className="nvc-input"
-              placeholder={t('additional_time')}
+              onChange={(val) => onFormDataChange({ ...formData, additional_time: val })}
+              placeholder={t('search_from_list')}
+              className="nvh-additional-time-select"
             />
           ) : (
             <span className="nvh-strip__value">{formData.additional_time || '—'}</span>

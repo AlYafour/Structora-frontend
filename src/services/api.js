@@ -3,7 +3,9 @@ import axios from "axios";
 import i18n from "../config/i18n";
 import { getCsrfToken } from "../utils/cookies";
 import { toastEmitter } from "../utils/toastEmitter";
+import { sessionEmitter } from "../utils/sessionEmitter";
 import { formatError } from "../utils/errorHandler";
+import { refreshAccessTokenCoordinated } from "./authRefreshLock";
 
 const isDev = import.meta.env.DEV;
 // In development, use proxy => /api/
@@ -122,12 +124,10 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Refresh token is sent automatically via httpOnly cookie
-        await axios.post(
-          `${API_BASE_URL}auth/token/refresh/`,
-          {},
-          { withCredentials: true }
-        );
+        // Refresh token is sent automatically via httpOnly cookie.
+        // Coordinated across tabs so only one tab's request actually hits
+        // the network when the rotate-and-blacklist refresh token is used.
+        await refreshAccessTokenCoordinated(API_BASE_URL);
 
         // Notify all queued requests that refresh succeeded
         onRefreshSuccess();
@@ -148,14 +148,12 @@ api.interceptors.response.use(
         if (originalRequest._skipAuthRedirect) {
           return Promise.reject(refreshError);
         }
-        // If refresh fails, clear auth state and redirect to tenant login
+        // Refresh genuinely failed. Don't nuke the page immediately — a
+        // background poller's failure shouldn't destroy work in progress
+        // in an active tab. Let AuthContext surface a dismissable modal
+        // and handle cleanup/navigation once the user acknowledges it.
         const tenantSlug = localStorage.getItem('tenant_slug');
-        localStorage.removeItem('user');
-        localStorage.removeItem('permissions');
-        localStorage.removeItem('tenant_theme');
-        // Redirect to tenant-specific login page (preserving tenant context)
-        // so user doesn't have to re-enter the company code
-        window.location.href = tenantSlug ? `/login/${tenantSlug}` : '/';
+        sessionEmitter.emit({ tenantSlug });
         return Promise.reject(refreshError);
       }
     }

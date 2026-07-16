@@ -403,9 +403,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         first_variation_date: noticeData.first_variation_date ?? '',
         variation_description: noticeData.variation_description ?? '',
         variation_description_ar: noticeData.variation_description_ar ?? '',
-        variation_cause: noticeData.variation_cause ?? '',
+        variation_cause: Array.isArray(noticeData.variation_cause)
+          ? noticeData.variation_cause
+          : (noticeData.variation_cause ? [noticeData.variation_cause] : []),
         additional_time: noticeData.additional_time ?? '',
-        trade_discipline: noticeData.trade_discipline ?? '',
+        trade_discipline: Array.isArray(noticeData.trade_discipline)
+          ? noticeData.trade_discipline
+          : (noticeData.trade_discipline ? [noticeData.trade_discipline] : []),
         item_description: noticeData.item_description ?? '',
         project_description: noticeData.project_description ?? '',
         index_items: Array.isArray(noticeData.index_items) ? noticeData.index_items : [],
@@ -522,7 +526,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       }
       if (foundVariation?.variation_attachments?.length) {
         setVariationAttachments(foundVariation.variation_attachments.map(a => ({
-          id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null
+          id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null,
+          section: a.section ?? '', heading: a.heading ?? ''
         })));
       }
 
@@ -554,7 +559,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         }
         if (variationProp.variation_attachments?.length) {
           setVariationAttachments(variationProp.variation_attachments.map(a => ({
-            id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null
+            id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null,
+            section: a.section ?? '', heading: a.heading ?? ''
           })));
         }
       } else {
@@ -718,6 +724,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const hasNewHiddenFeeAttachment = hiddenFeeAttachment instanceof File;
       const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
       const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
+      // Section/heading for already-saved attachments — sent on every edit-save so
+      // edits to an existing attachment's grouping/label persist even without a new file.
+      const attachmentsMeta = JSON.stringify(
+        variationAttachments
+          .filter(a => a.id)
+          .map(a => ({ id: a.id, section: a.section || '', heading: a.heading || '' }))
+      );
       const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0;
 
       const safeVal = (v) => {
@@ -733,9 +746,15 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
         if (hiddenFeeAttachmentCleared) fd.append('clear_hidden_consultant_fee_attachment', 'true');
         // Upload new attachment files (only once — never re-call buildFormData for these)
-        newAttachmentFiles.forEach((a, i) => fd.append(`variation_attachments[${i}]`, a.newFile));
+        newAttachmentFiles.forEach((a, i) => {
+          fd.append(`variation_attachments[${i}]`, a.newFile);
+          fd.append(`variation_attachments_section[${i}]`, a.section || '');
+          fd.append(`variation_attachments_heading[${i}]`, a.heading || '');
+        });
         // Tell backend which saved IDs to keep; it will delete the rest
         fd.append('keep_attachment_ids', currentSavedIds.join(','));
+        // Section/heading edits on already-saved attachments
+        fd.append('variation_attachments_meta', attachmentsMeta);
         return fd;
       };
 
@@ -759,6 +778,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const fd = new FormData();
           Object.keys(saveData).forEach(key => fd.append(key, safeVal(saveData[key])));
           fd.append('keep_attachment_ids', currentSavedIds.join(','));
+          fd.append('variation_attachments_meta', attachmentsMeta);
           if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
           if (hiddenFeeAttachmentCleared) fd.append('clear_hidden_consultant_fee_attachment', 'true');
           await projectApi.updateVariation(project.id, variationId, fd);

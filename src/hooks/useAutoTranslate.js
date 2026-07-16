@@ -4,6 +4,21 @@ import { api } from '../services/api';
 const hasArabic = (text) => /[؀-ۿ]/.test(text);
 
 /**
+ * One-shot call to the /translate/ endpoint. Returns '' on failure (silent —
+ * translation is always treated as best-effort, never a hard requirement).
+ */
+export async function translateText(text, source = 'en', target = 'ar') {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return '';
+  try {
+    const { data } = await api.post('translate/', { text: trimmed, source, target });
+    return data?.translated || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Debounced auto-translation hook.
  * Translates `text` to Arabic via the /translate/ endpoint.
  * Calls onTranslated(ar) when a result arrives, or onTranslated('') when text is cleared.
