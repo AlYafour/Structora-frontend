@@ -111,6 +111,8 @@
   "pdf_attachments_hint": "ستُضاف إلى نهاية ملف PDF المُصدَّر",
   "add_attachment": "إضافة مرفق",
   "attachment_heading": "العنوان",
+  "attachment_ai_extracting": "جارٍ قراءة المستند...",
+  "attachment_ai_extract_incomplete": "تعذّر استخراج رقم المرجع/التاريخ تلقائياً — يرجى المراجعة في جدول الفهرس أدناه.",
   "attachment_section": "القسم",
   "attachment_other_section": "أخرى",
   "attachment_choose_section": "اختر عنوانًا...",

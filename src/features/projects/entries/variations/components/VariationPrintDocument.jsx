@@ -353,40 +353,43 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               )}
             </div>
 
-            {/* Row 2+: Ref No, optional fields */}
-            <div className="vpd-info-card vpd-info-card--sm">
-              <BilingualText ar="رقم المرجع" en="REFERENCE NO." className="vpd-info-card__label" />
-              <span className="vpd-info-card__value vpd-info-card__value--plain">
-                {data.reference_no || variation?.variation_number || EMPTY}
-              </span>
+            {/* Row 2: Ref No + optional fields — always one row, split into
+                however many of these are actually present. */}
+            <div className="vpd-cards__meta-row">
+              <div className="vpd-info-card vpd-info-card--sm">
+                <BilingualText ar="رقم المرجع" en="REFERENCE NO." className="vpd-info-card__label" />
+                <span className="vpd-info-card__value vpd-info-card__value--plain">
+                  {data.reference_no || variation?.variation_number || EMPTY}
+                </span>
+              </div>
+
+              {data.first_variation_date && (
+                <div className="vpd-info-card vpd-info-card--sm">
+                  <BilingualText ar="تاريخ أول تغيير" en="FIRST VAR. DATE" className="vpd-info-card__label" />
+                  <span className="vpd-info-card__value vpd-info-card__value--plain">
+                    {formatDate(data.first_variation_date)}
+                  </span>
+                </div>
+              )}
+
+              {tradeDisciplineText && (
+                <div className="vpd-info-card vpd-info-card--sm">
+                  <BilingualText ar="BOQ" en="BOQ" className="vpd-info-card__label" />
+                  <span className="vpd-info-card__value vpd-info-card__value--plain">
+                    {tradeDisciplineText}
+                  </span>
+                </div>
+              )}
+
+              {data.additional_time && (
+                <div className="vpd-info-card vpd-info-card--sm">
+                  <BilingualText ar="وقت إضافي" en="ADDITIONAL TIME" className="vpd-info-card__label" />
+                  <span className="vpd-info-card__value vpd-info-card__value--plain">
+                    {data.additional_time}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {data.first_variation_date && (
-              <div className="vpd-info-card vpd-info-card--sm">
-                <BilingualText ar="تاريخ أول تغيير" en="FIRST VAR. DATE" className="vpd-info-card__label" />
-                <span className="vpd-info-card__value vpd-info-card__value--plain">
-                  {formatDate(data.first_variation_date)}
-                </span>
-              </div>
-            )}
-
-            {tradeDisciplineText && (
-              <div className="vpd-info-card vpd-info-card--sm">
-                <BilingualText ar="BOQ" en="BOQ" className="vpd-info-card__label" />
-                <span className="vpd-info-card__value vpd-info-card__value--plain">
-                  {tradeDisciplineText}
-                </span>
-              </div>
-            )}
-
-            {data.additional_time && (
-              <div className="vpd-info-card vpd-info-card--sm">
-                <BilingualText ar="وقت إضافي" en="ADDITIONAL TIME" className="vpd-info-card__label" />
-                <span className="vpd-info-card__value vpd-info-card__value--plain">
-                  {data.additional_time}
-                </span>
-              </div>
-            )}
           </section>
         </div>
 

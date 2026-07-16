@@ -461,6 +461,24 @@
   color: #ef4444;
 }
 
+.nvc-attachment-row__icon--spin {
+  animation: nvc-attachment-spin 0.9s linear infinite;
+  color: var(--accent, #C8A84E);
+}
+@keyframes nvc-attachment-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.nvc-attachment-row__ai-warning {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #b45309;
+  padding: 2px 6px;
+}
+
 .nvc-attachment-row-group {
   display: flex;
   flex-direction: column;

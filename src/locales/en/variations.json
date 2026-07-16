@@ -111,6 +111,8 @@
   "pdf_attachments_hint": "will be appended to the exported PDF",
   "add_attachment": "Add Attachment",
   "attachment_heading": "Heading",
+  "attachment_ai_extracting": "Reading document...",
+  "attachment_ai_extract_incomplete": "Couldn't detect ref no/date automatically — please check the Index table below.",
   "attachment_section": "Section",
   "attachment_other_section": "Other",
   "attachment_choose_section": "Choose a heading...",

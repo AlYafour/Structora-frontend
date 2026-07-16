@@ -65,6 +65,8 @@ const normalizeIndexItems = (indexItems = []) => (
           date: String(item?.date ?? '').trim(),
           page_numbers: String(item?.page_numbers ?? '').trim(),
           purpose: String(item?.purpose ?? item?.remark ?? item?.supplier_name ?? '').trim(),
+          linked_attachment_id: item?.linked_attachment_id ?? null,
+          page_count: item?.page_count ?? null,
         }))
         .filter(item =>
           item.serial_no ||
@@ -1103,6 +1105,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             setVariationFileCleared={setVariationFileCleared}
             variationAttachments={variationAttachments}
             setVariationAttachments={setVariationAttachments}
+            estimatedNoticePages={estimatedNoticePages}
             project={project}
             variationId={variationId}
             variation={variation}
