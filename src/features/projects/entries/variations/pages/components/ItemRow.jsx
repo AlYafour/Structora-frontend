@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
+import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
+import { UNIT_OPTIONS } from '../../utils/unitOptions';
 
 const ItemRow = memo(
   ({
@@ -149,15 +151,12 @@ const ItemRow = memo(
 
           {/* Unit */}
           <td className="nvi-td nvi-td--unit nvt-td--unit">
-            <input
-              type="text"
-              className="nvi-input nvi-input--unit"
+            <SinglePresetSelectField
               value={item.unit ?? ''}
-              onChange={(e) =>
-                onUpdate?.(item.id, 'unit', e.target.value)
-              }
+              onChange={(val) => onUpdate?.(item.id, 'unit', val)}
+              options={UNIT_OPTIONS}
               disabled={!isEditMode}
-              autoComplete="off"
+              className="nvi-unit-select"
             />
           </td>
 

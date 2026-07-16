@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaCheckCircle, FaClipboardList, FaExternalLinkAlt, FaFileAlt, FaRandom } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
+import useVisibilityPolling from "../hooks/useVisibilityPolling";
 import PageLayout from "../components/layout/PageLayout";
 import DashboardKPIs from "./dashboard/DashboardKPIs";
 import DashboardStatusChart from "./dashboard/DashboardStatusChart";
@@ -86,7 +87,6 @@ export default function HomePage() {
   const [activeTaskGroup, setActiveTaskGroup] = useState("all");
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [loading, setLoading] = useState(true);
-  const intervalRef = useRef(null);
 
   const fetchStats = useCallback(() => {
     api
@@ -117,17 +117,20 @@ export default function HomePage() {
       .catch(() => setPendingTasks([]));
   }, []);
 
-  useEffect(() => {
+  const pollDashboard = useCallback(() => {
     fetchStats();
     fetchProjectFinancials();
     fetchPendingTasks();
-    intervalRef.current = setInterval(() => {
-      fetchStats();
-      fetchProjectFinancials();
-      fetchPendingTasks();
-    }, REFRESH_INTERVAL);
-    return () => clearInterval(intervalRef.current);
   }, [fetchStats, fetchProjectFinancials, fetchPendingTasks]);
+
+  useEffect(() => {
+    pollDashboard();
+  }, [pollDashboard]);
+
+  // Pauses while the tab is hidden and stops entirely when logged out —
+  // reduces background 401 traffic that used to race token refreshes
+  // against the active tab.
+  useVisibilityPolling(pollDashboard, REFRESH_INTERVAL, Boolean(user));
 
   useEffect(() => {
     setShowAllTasks(false);

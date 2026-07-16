@@ -5,6 +5,7 @@ import { notificationApi } from '../services/notifications';
 import { toastEmitter } from '../utils/toastEmitter';
 import { useAuth } from './AuthContext';
 import useNotificationSound from '../hooks/useNotificationSound';
+import useVisibilityPolling from '../hooks/useVisibilityPolling';
 import IncomingNotificationPopup from '../components/notifications/IncomingNotificationPopup';
 
 const NotificationContext = createContext(null);
@@ -50,6 +51,7 @@ export function NotificationProvider({ children }) {
   const seenNotificationIds = useRef(new Set());
   const notificationsInitialized = useRef(false);
   const fetchInFlight = useRef(false);
+  const cancelledRef = useRef(false);
 
   const processIncomingPopupQueue = useCallback(() => {
     if (incomingPopupQueue.current.length > 0 && !isProcessingIncomingPopup.current) {
@@ -72,62 +74,67 @@ export function NotificationProvider({ children }) {
     }, 300);
   }, [processIncomingPopupQueue]);
 
+  const fetchNotifications = useCallback(async () => {
+    if (!authenticatedUserId || fetchInFlight.current) return;
+    fetchInFlight.current = true;
+
+    try {
+      const { data } = await notificationApi.getAll();
+      if (cancelledRef.current) return;
+      const items = Array.isArray(data) ? data : data?.results || [];
+
+      const normalized = items.map((n) => ({
+        id: n.id,
+
+        // Arabic
+        title: n.title,
+        message: n.message,
+
+        // English
+        titleEn: n.title_en || n.title,
+        messageEn: n.message_en || n.message,
+
+        type: n.notification_type || n.type || 'info',
+        link: n.link,
+        read: n.is_read,
+        createdAt: n.created_at,
+      }));
+
+      if (notificationsInitialized.current) {
+        const newUnreadNotifications = normalized.filter(
+          (notification) => !notification.read && !seenNotificationIds.current.has(notification.id)
+        );
+        if (newUnreadNotifications.length > 0) {
+          playNotificationSound();
+          newUnreadNotifications
+            .slice()
+            .reverse()
+            .forEach(enqueueIncomingPopup);
+        }
+      } else {
+        notificationsInitialized.current = true;
+      }
+
+      normalized.forEach((notification) => seenNotificationIds.current.add(notification.id));
+      setNotifications(normalized);
+    } catch {
+      // silent
+    } finally {
+      fetchInFlight.current = false;
+    }
+  }, [authenticatedUserId, enqueueIncomingPopup, playNotificationSound]);
+
+  // Pauses while the tab is hidden and stops entirely when logged out —
+  // reduces background 401 traffic that used to race token refreshes
+  // against the active tab.
+  useVisibilityPolling(fetchNotifications, 15000, Boolean(authenticatedUserId));
+
   useEffect(() => {
-    let cancelled = false;
+    cancelledRef.current = false;
     let sse = null;
 
     seenNotificationIds.current = new Set();
     notificationsInitialized.current = false;
-
-    const fetchNotifications = async () => {
-      if (!authenticatedUserId || fetchInFlight.current) return;
-      fetchInFlight.current = true;
-
-      try {
-        const { data } = await notificationApi.getAll();
-        if (cancelled) return;
-        const items = Array.isArray(data) ? data : data?.results || [];
-
-        const normalized = items.map((n) => ({
-          id: n.id,
-
-          // Arabic
-          title: n.title,
-          message: n.message,
-
-          // English
-          titleEn: n.title_en || n.title,
-          messageEn: n.message_en || n.message,
-
-          type: n.notification_type || n.type || 'info',
-          link: n.link,
-          read: n.is_read,
-          createdAt: n.created_at,
-        }));
-
-        if (notificationsInitialized.current) {
-          const newUnreadNotifications = normalized.filter(
-            (notification) => !notification.read && !seenNotificationIds.current.has(notification.id)
-          );
-          if (newUnreadNotifications.length > 0) {
-            playNotificationSound();
-            newUnreadNotifications
-              .slice()
-              .reverse()
-              .forEach(enqueueIncomingPopup);
-          }
-        } else {
-          notificationsInitialized.current = true;
-        }
-
-        normalized.forEach((notification) => seenNotificationIds.current.add(notification.id));
-        setNotifications(normalized);
-      } catch {
-        // silent
-      } finally {
-        fetchInFlight.current = false;
-      }
-    };
 
     if (!authenticatedUserId) {
       setNotifications([]);
@@ -135,7 +142,6 @@ export function NotificationProvider({ children }) {
     }
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
 
     if (typeof EventSource !== 'undefined') {
       try {
@@ -168,15 +174,14 @@ export function NotificationProvider({ children }) {
     }
 
     return () => {
-      cancelled = true;
-      clearInterval(interval);
+      cancelledRef.current = true;
       if (sse) sse.close();
       fetchInFlight.current = false;
       incomingPopupQueue.current = [];
       isProcessingIncomingPopup.current = false;
       setIncomingPopup({ open: false, notification: null });
     };
-  }, [authenticatedUserId, enqueueIncomingPopup, playNotificationSound]);
+  }, [authenticatedUserId, fetchNotifications]);
 
   const processQueue = useCallback(() => {
     if (toastQueue.current.length > 0 && !isProcessing.current) {

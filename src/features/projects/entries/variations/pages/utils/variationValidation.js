@@ -79,7 +79,10 @@ export function validateVariationSubmit(formData, calculations, omittedItems, ad
     return t('variation_description_required') || 'Variation description is required';
   }
 
-  if (!hasText(formData.variation_cause)) {
+  const hasCause = Array.isArray(formData.variation_cause)
+    ? formData.variation_cause.length > 0
+    : hasText(formData.variation_cause);
+  if (!hasCause) {
     return t('variation_cause_required') || 'Variation cause is required';
   }
 

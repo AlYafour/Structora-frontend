@@ -74,6 +74,9 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     catch { return {}; }
   }, [noticeData, variation?.description]);
 
+  const causeText = Array.isArray(data.variation_cause) ? data.variation_cause.join(', ') : data.variation_cause;
+  const tradeDisciplineText = Array.isArray(data.trade_discipline) ? data.trade_discipline.join(', ') : data.trade_discipline;
+
   // Financial values
   const totalOmitted = parseFloat(data.total_omitted || 0);
   const totalAdded = parseFloat(data.total_added || 0);
@@ -320,12 +323,12 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   )}
                 </div>
               )}
-              {data.variation_cause && data.variation_cause !== data.variation_description && (
+              {causeText && causeText !== data.variation_description && (
                 <p className="vpd-info-card__desc-cause">
-                  <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {data.variation_cause}
+                  <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {causeText}
                 </p>
               )}
-              {!data.variation_description && !data.variation_description_ar && !data.variation_cause && (
+              {!data.variation_description && !data.variation_description_ar && !causeText && (
                 <span className="vpd-info-card__value vpd-info-card__value--plain">{EMPTY}</span>
               )}
             </div>
@@ -347,11 +350,11 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               </div>
             )}
 
-            {data.trade_discipline && (
+            {tradeDisciplineText && (
               <div className="vpd-info-card vpd-info-card--sm">
-                <BilingualText ar="التخصص" en="TRADE / DISCIPLINE" className="vpd-info-card__label" />
+                <BilingualText ar="BOQ" en="BOQ" className="vpd-info-card__label" />
                 <span className="vpd-info-card__value vpd-info-card__value--plain">
-                  {data.trade_discipline}
+                  {tradeDisciplineText}
                 </span>
               </div>
             )}

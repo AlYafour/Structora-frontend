@@ -1,19 +1,25 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { api, API_BASE_URL } from '../services/api';
 import { logger } from '../utils/logger';
 import { isLoggedIn } from '../utils/cookies';
+import { sessionEmitter } from '../utils/sessionEmitter';
 import useThemeManager from '../hooks/useThemeManager';
 import useAdminSessionGuard from '../hooks/useAdminSessionGuard';
+import SessionExpiredModal from '../components/auth/SessionExpiredModal';
 
 const AuthContext = createContext(null);
 
 const apiClient = api;
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const sessionExpiredTenantRef = useRef(null);
 
   // Use useRef to store the latest user value without causing re-render
   const userRef = useRef(null);
@@ -22,6 +28,26 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  // A refresh failure (api.js) surfaces here instead of an immediate hard
+  // redirect, so an active tab never silently discards in-progress work.
+  useEffect(() => {
+    return sessionEmitter.subscribe(({ tenantSlug } = {}) => {
+      sessionExpiredTenantRef.current = tenantSlug;
+      setSessionExpired(true);
+    });
+  }, []);
+
+  const confirmSessionExpired = () => {
+    const tenantSlug = sessionExpiredTenantRef.current || localStorage.getItem('tenant_slug');
+    localStorage.removeItem('user');
+    localStorage.removeItem('permissions');
+    localStorage.removeItem('tenant_theme');
+    setUser(null);
+    setPermissions([]);
+    setSessionExpired(false);
+    navigate(tenantSlug ? `/login/${tenantSlug}` : '/', { replace: true });
+  };
 
   // Extract theme management into dedicated hook
   const { tenantTheme, setTenantTheme, loadTenantTheme, applyAdminTheme, resetTheme } = useThemeManager(userRef);
@@ -337,6 +363,8 @@ const canManageUsers = isAdmin || hasPermission('users.view');
     permissions,
     loading,
     tenantTheme,
+    sessionExpired,
+    confirmSessionExpired,
     login,
     logout,
     refreshUser,
@@ -354,7 +382,12 @@ const canManageUsers = isAdmin || hasPermission('users.view');
     apiClient,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionExpiredModal open={sessionExpired} onConfirm={confirmSessionExpired} />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

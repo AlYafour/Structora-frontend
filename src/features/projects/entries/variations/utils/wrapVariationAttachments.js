@@ -68,7 +68,9 @@ function getReferenceNo(variation, noticeData) {
 }
 
 function getVariationDescription(noticeData) {
-  return noticeData?.variation_description || noticeData?.variation_cause || "";
+  const cause = noticeData?.variation_cause;
+  const causeText = Array.isArray(cause) ? cause.join(', ') : cause;
+  return noticeData?.variation_description || causeText || "";
 }
 
 async function getFonts(pdfDoc) {
