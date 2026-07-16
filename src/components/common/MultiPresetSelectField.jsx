@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -67,52 +66,25 @@ export default function MultiPresetSelectField({
           {getLabel(option)}
         </li>
       )}
-      renderTags={(selected, getTagProps) => {
+      renderTags={(selected) => {
         if (!selected.length) return null;
-        const [first, ...rest] = selected;
+        const joined = selected.map(getLabel).join(isRTL ? '، ' : ', ');
         return (
-          <>
-            <Chip
-              {...getTagProps({ index: 0 })}
-              key={first}
-              label={getLabel(first)}
-              size="small"
-              sx={{
-                // Shrinks to whatever space is left once the "+N" chip (fixed-size,
-                // below) and the input's own icons claim their share — without this,
-                // a long first label can push "+N" past the clipped edge, hiding it.
+          <Tooltip arrow title={<span dir={isRTL ? 'rtl' : 'ltr'}>{joined}</span>}>
+            <span
+              dir={isRTL ? 'rtl' : 'ltr'}
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
                 minWidth: 0,
                 flex: '1 1 auto',
-                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                // MUI's Chip deleteIcon margins are hardcoded physical left/right (not
-                // logical), so they never flip for RTL — in RTL, flexbox visually swaps
-                // the label/icon order, so the icon's default negative left margin (meant
-                // to hug it snugly against the label on its inner side in LTR) ends up on
-                // its outer edge instead, pushing it outside the chip. Swap them for RTL.
-                ...(isRTL && {
-                  '& .MuiChip-deleteIcon': { marginLeft: '4px', marginRight: '-4px' },
-                }),
+                fontSize: '10pt',
               }}
-            />
-            {rest.length > 0 && (
-              <Tooltip
-                arrow
-                title={<span dir={isRTL ? 'rtl' : 'ltr'}>{rest.map(getLabel).join(isRTL ? '، ' : ', ')}</span>}
-              >
-                <Chip
-                  label={`+${rest.length}`}
-                  size="small"
-                  sx={{
-                    flexShrink: 0,
-                    backgroundColor: 'var(--accent, #C8A84E)',
-                    color: '#fff',
-                    fontWeight: 600,
-                    cursor: 'default',
-                  }}
-                />
-              </Tooltip>
-            )}
-          </>
+            >
+              {joined}
+            </span>
+          </Tooltip>
         );
       }}
       renderInput={(params) => (
