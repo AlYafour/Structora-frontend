@@ -856,20 +856,43 @@
   margin: 0 0 6px;
 }
 
+/* html2canvas (used to rasterize this document into the exported PDF)
+   ignores `direction`/`dir` when drawing native <ul>/<ol> markers — it
+   always draws them on the left, producing "bullet on the left, RTL text on
+   the right" for Arabic lists. Markers are drawn manually with flexbox +
+   `::before` instead, which html2canvas renders correctly and which
+   naturally flips side with `direction` (no separate [dir="rtl"] override
+   needed — flexbox row layout already reverses for rtl). */
 .vpd-rich-text ul,
 .vpd-rich-text ol {
   margin: 0 0 6px;
-  padding-inline-start: 20px;
+  padding: 0;
+  list-style: none;
 }
 
-.vpd-rich-text[dir="rtl"] ul,
-.vpd-rich-text[dir="rtl"] ol {
-  padding-inline-start: 0;
-  padding-inline-end: 20px;
+.vpd-rich-text ol {
+  counter-reset: vpd-ol-counter;
 }
 
 .vpd-rich-text li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   padding: 1px 0;
+}
+
+.vpd-rich-text ul > li::before {
+  content: "•";
+  flex-shrink: 0;
+}
+
+.vpd-rich-text ol > li {
+  counter-increment: vpd-ol-counter;
+}
+
+.vpd-rich-text ol > li::before {
+  content: counter(vpd-ol-counter) ".";
+  flex-shrink: 0;
 }
 
 .vpd-notes p {
