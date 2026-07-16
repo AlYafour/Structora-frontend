@@ -14,7 +14,7 @@ import {
   FaUnderline,
   FaUndo,
 } from 'react-icons/fa';
-import { normalizeRichTextForRender, sanitizeRichText } from '../../utils/richText';
+import { normalizeRichTextForRender, sanitizeRichText, escapeHtml } from '../../utils/richText';
 
 const tools = [
   { command: 'bold', icon: <FaBold />, label: 'Bold' },
@@ -250,7 +250,16 @@ export default function RichTextEditor({
   const handlePaste = (event) => {
     event.preventDefault();
     const text = event.clipboardData?.getData('text/plain') || '';
-    document.execCommand('insertText', false, text);
+    // Build the exact markup with real <br> line breaks and insert it in one
+    // atomic insertHTML call — a single insertText call with embedded \n
+    // characters doesn't reliably turn into real line breaks, so a
+    // multi-line paste would otherwise collapse into one unbroken line
+    // (visually and for line-based Arabic sync alike).
+    const html = text
+      .split(/\r\n|\r|\n/)
+      .map((line) => escapeHtml(line))
+      .join('<br>');
+    document.execCommand('insertHTML', false, html);
     emitChange();
   };
 

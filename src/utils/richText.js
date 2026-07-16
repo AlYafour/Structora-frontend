@@ -122,13 +122,37 @@ export function normalizeRichTextForRender(value = '') {
   return sanitizeRichText(isHtmlLike(raw) ? raw : plainTextToHtml(raw));
 }
 
-// Reads line boundaries the way a browser already renders them (innerText
-// inserts a break between any block-level siblings — <p>, <div>, <li> alike),
-// rather than relying on DOM block-tag boundaries. This makes line diffing
-// immune to pure structural/formatting changes that don't alter the actual
-// text — e.g. converting several <p> lines into a <ul><li> bullet list (or
-// back) yields the identical line array, so it's correctly seen as
-// unchanged instead of being misread as "lines deleted, one new line added".
+const LINE_BREAK_TAGS = new Set(['P', 'DIV', 'LI']);
+
+// Walks the DOM directly to build a newline-separated string: <br> is an
+// explicit break, and P/DIV/LI each open and close their own line. Deliberately
+// avoids `innerText`, which depends on the element having layout — unreliable
+// here since `holder` (below) is a detached, off-document node. Being purely
+// structural (nodeType/tagName/textContent only) makes this immune to
+// whether a given browser bothers computing render-based line breaks for a
+// detached node, and it treats <ul>/<ol> bullet items the same as separate
+// <p> lines, so toggling bullet-list formatting on unchanged text yields an
+// identical line array before and after.
+function collectLineText(node) {
+  let out = '';
+  node.childNodes.forEach((child) => {
+    if (child.nodeType === Node.TEXT_NODE) {
+      out += child.textContent;
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      if (child.tagName === 'BR') {
+        out += '\n';
+      } else if (LINE_BREAK_TAGS.has(child.tagName)) {
+        out += `\n${collectLineText(child)}\n`;
+      } else {
+        out += collectLineText(child);
+      }
+    }
+  });
+  return out;
+}
+
+// Reads line boundaries for diffing purposes — see collectLineText above for
+// why this doesn't just use `innerText`.
 export function getPlainTextLines(value = '') {
   const raw = String(value || '').trim();
   if (!raw) return [];
@@ -137,7 +161,7 @@ export function getPlainTextLines(value = '') {
   }
   const holder = document.createElement('div');
   holder.innerHTML = sanitizeRichText(raw);
-  return (holder.innerText || holder.textContent || '')
+  return collectLineText(holder)
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
