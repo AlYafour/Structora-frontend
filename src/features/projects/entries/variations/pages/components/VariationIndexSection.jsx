@@ -2,13 +2,18 @@ import { memo } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import { formatIndexDate } from '../../utils/formatIndexDate';
 
-const createIndexRow = (index = 0) => ({
+// Exported so attachment-upload code (RemarksAttachmentsSection) can create
+// index rows using the exact same shape when auto-filling from an upload.
+export const createIndexRow = (index = 0, overrides = {}) => ({
   serial_no: String(index + 1),
   attachment: '',
   ref_no: '',
   date: '',
   page_numbers: '',
   purpose: '',
+  linked_attachment_id: null,
+  page_count: null,
+  ...overrides,
 });
 
 const normalizeIndexRow = (row = {}, index = 0) => ({
@@ -18,6 +23,8 @@ const normalizeIndexRow = (row = {}, index = 0) => ({
   date: row.date ?? '',
   page_numbers: row.page_numbers ?? '',
   purpose: row.purpose ?? row.remark ?? row.supplier_name ?? '',
+  linked_attachment_id: row.linked_attachment_id ?? null,
+  page_count: row.page_count ?? null,
 });
 
 const getIndexRows = (formData) => (

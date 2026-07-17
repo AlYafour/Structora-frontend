@@ -304,6 +304,23 @@ class ProjectService extends BaseService {
   }
 
   /**
+   * Auto-extract ref no / date / page count from a variation attachment,
+   * to pre-fill a Notice of Variation Index row.
+   * @param {File} file - The attachment file
+   * @returns {Promise<{ref_no: string, date: string, page_count: number}>}
+   */
+  async extractVariationIndexData(file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await api.post('extract-variation-index-data/', formData);
+      return data?.data || { ref_no: '', date: '', page_count: 1 };
+    } catch (error) {
+      throw handleError(error, 'ProjectService.extractVariationIndexData');
+    }
+  }
+
+  /**
    * Update variation
    * @param {string|number} projectId - Project ID
    * @param {string|number} variationId - Variation ID

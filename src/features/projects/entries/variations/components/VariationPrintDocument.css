@@ -268,6 +268,19 @@
   grid-column: 1 / -1;
 }
 
+/* Ref No / First Var. Date / BOQ / Additional Time — always one row, split
+   evenly across however many of these fields are actually present (1-4). */
+.vpd-cards__meta-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+}
+
+.vpd-cards__meta-row > .vpd-info-card {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 /* Row layout: label left · value right · same line */
 .vpd-info-card--sm {
   padding: 8px 12px;
@@ -1356,7 +1369,8 @@
 
 /* Info cards — 6-column base:
    row 1: Project Name (span 3) | Description (span 3)
-   row 2: Ref No (span 2) | Trade (span 2) | Additional Time (span 2) */
+   row 2: Ref No / First Var. Date / BOQ / Additional Time — one row,
+   split evenly across however many of these are actually present. */
 .vpd-print-mode .vpd-cards {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0;
@@ -1368,8 +1382,15 @@
   grid-column: span 3;
 }
 
-.vpd-print-mode .vpd-cards > .vpd-info-card:nth-child(n+3) {
-  grid-column: span 2;
+.vpd-print-mode .vpd-cards__meta-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0;
+}
+
+.vpd-print-mode .vpd-cards__meta-row > .vpd-info-card {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .vpd-print-mode .vpd-info-card {

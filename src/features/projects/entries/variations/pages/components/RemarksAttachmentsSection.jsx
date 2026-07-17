@@ -1,15 +1,24 @@
-import { memo, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
 import { normalizeRichTextForRender } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
 import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
+import { createIndexRow } from './VariationIndexSection';
+import { recalculatePageRanges } from '../../utils/pageRange';
+import { projectApi } from '../../../../../../services';
 
 const ACCEPTED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
 const MAX_ATTACHMENT_SIZE_MB = 50;
+
+const generateLocalId = () => (
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
+);
 
 function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   const html = normalizeRichTextForRender(value);
@@ -182,7 +191,12 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
         <span className="nvc-attachment-row__filename">
           {hasFile ? att.newFile.name : t('file_upload_select_file', 'Choose file')}
         </span>
-        {hasFile && (
+        {att.aiExtracting && (
+          <span className="nvc-attachment-row__ai-status" title={t('attachment_ai_extracting', 'Reading document...')}>
+            <FaSpinner className="nvc-attachment-row__icon nvc-attachment-row__icon--spin" />
+          </span>
+        )}
+        {hasFile && !att.aiExtracting && (
           <button
             type="button"
             className="nvc-attachment-row__icon-btn"
@@ -193,6 +207,12 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
           </button>
         )}
       </div>
+      {att.aiChecked && (!att.ai_ref_no || !att.ai_date) && (
+        <span className="nvc-attachment-row__ai-warning">
+          <FaExclamationTriangle />
+          {t('attachment_ai_extract_incomplete', "Couldn't detect ref no/date automatically — please check the Index table below.")}
+        </span>
+      )}
       <input
         type="text"
         className="nvc-attachment-row__heading-input"
@@ -243,6 +263,7 @@ const RemarksAttachmentsSection = memo(({
   // new multi-attachment props
   variationAttachments,
   setVariationAttachments,
+  estimatedNoticePages,
   t
 }) => {
   const { i18n } = useTranslation();
@@ -284,22 +305,113 @@ const RemarksAttachmentsSection = memo(({
     return { sectionGroups: groups, otherItems: others, pendingItems: pending };
   }, [variationAttachments]);
 
+  // Keeps each auto-created Index row in sync with its linked attachment:
+  //  - "Attachment" mirrors the heading, however it's later edited (in either
+  //    order — before or after the file is picked).
+  //  - "Attachment Pages" is recalculated to start right after the Notice +
+  //    Index pages (estimatedNoticePages) plus every earlier row's page span,
+  //    so attachment numbering always reflects where each file actually lands
+  //    in the exported PDF instead of restarting at page 1. Runs whenever the
+  //    notice's own page count changes too, since that shifts every attachment
+  //    after it. Only rows tagged with linked_attachment_id are touched —
+  //    manually added rows keep whatever the user typed.
+  useEffect(() => {
+    if (!isEditMode) return;
+    const items = Array.isArray(formData.index_items) ? formData.index_items : [];
+    if (!items.length) return;
+
+    const headingSynced = items.map(row => {
+      if (!row.linked_attachment_id) return row;
+      const att = variationAttachments?.find(a => a.localId === row.linked_attachment_id);
+      if (!att) return row;
+      const heading = att.heading || '';
+      return row.attachment === heading ? row : { ...row, attachment: heading };
+    });
+
+    const rangeSynced = recalculatePageRanges(headingSynced, estimatedNoticePages);
+
+    const changed = rangeSynced.some((row, i) => row !== items[i]);
+    if (changed) {
+      onFormDataChange(prev => ({ ...prev, index_items: rangeSynced }));
+    }
+  }, [variationAttachments, formData.index_items, estimatedNoticePages, isEditMode, onFormDataChange]);
+
   if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
   }
 
   const handleAddAttachment = () => {
-    setVariationAttachments(prev => [...prev, { id: null, url: null, name: '', newFile: null, section: '', heading: '' }]);
+    setVariationAttachments(prev => [
+      ...prev,
+      { id: null, url: null, name: '', newFile: null, section: '', heading: '', localId: generateLocalId() },
+    ]);
   };
 
   const handleRemoveAttachment = (index) => {
+    const removed = variationAttachments?.[index];
     setVariationAttachments(prev => prev.filter((_, i) => i !== index));
+    // Drop the linked Index row along with its attachment so nothing orphans.
+    // Rows the user added manually (no link) are never touched here.
+    if (removed?.localId) {
+      onFormDataChange(prev => ({
+        ...prev,
+        index_items: (Array.isArray(prev.index_items) ? prev.index_items : [])
+          .filter(row => row.linked_attachment_id !== removed.localId),
+      }));
+    }
   };
 
-  const handleAttachmentFileChange = (index, file) => {
-    setVariationAttachments(prev => prev.map((item, i) =>
-      i === index ? { ...item, newFile: file, name: file?.name || item.name } : item
+  const handleAttachmentFileChange = async (index, file) => {
+    const localId = variationAttachments?.[index]?.localId;
+
+    setVariationAttachments(prev => prev.map((item) =>
+      item.localId === localId
+        ? { ...item, newFile: file, name: file?.name || item.name, aiExtracting: true, aiChecked: false }
+        : item
     ));
+
+    if (!file || !localId) return;
+
+    let result = null;
+    try {
+      result = await projectApi.extractVariationIndexData(file);
+    } catch (_error) {
+      result = null;
+    }
+
+    const refNo = result?.ref_no || '';
+    const date = result?.date || '';
+    const pageCount = result?.page_count || 1;
+
+    setVariationAttachments(prev => prev.map((item) =>
+      item.localId === localId
+        ? { ...item, aiExtracting: false, aiChecked: true, ai_ref_no: refNo, ai_date: date, ai_page_count: pageCount }
+        : item
+    ));
+
+    onFormDataChange(prev => {
+      const items = Array.isArray(prev.index_items) ? [...prev.index_items] : [];
+      const existingRowIndex = items.findIndex(row => row.linked_attachment_id === localId);
+      if (existingRowIndex >= 0) {
+        items[existingRowIndex] = {
+          ...items[existingRowIndex],
+          ref_no: refNo,
+          date,
+          page_count: pageCount,
+        };
+      } else {
+        items.push(createIndexRow(items.length, {
+          ref_no: refNo,
+          date,
+          page_count: pageCount,
+          linked_attachment_id: localId,
+        }));
+      }
+      // page_numbers (the displayed range, e.g. "3-5") is derived from
+      // page_count + estimatedNoticePages by the sync effect above — not set
+      // directly here, so it always reflects the notice's current page count.
+      return { ...prev, index_items: recalculatePageRanges(items, estimatedNoticePages) };
+    });
   };
 
   const handleAttachmentFieldChange = (index, field, value) => {

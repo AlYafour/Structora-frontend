@@ -1,6 +1,6 @@
 import { generatePDFFilename } from "./pdfFilenameGenerator";
 import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "./printPagination";
-import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "./wrapVariationAttachments";
+import { stampVariationPageNumbers } from "./wrapVariationAttachments";
 import { fetchFileWithAuth } from "../../../../../utils/helpers/file";
 
 const PRINT_A4_WIDTH_PX = 794;
@@ -92,7 +92,6 @@ export async function exportVariationPdf({
     const el = ref.current;
     cleanupPrintLayout = await prepareVariationPrintDocumentLayout(el);
 
-    const attachments = variation?.variation_attachments || [];
     watermarkEl = el.querySelector(".vpd-watermark");
     const logoSrc = watermarkEl?.src || null;
     if (watermarkEl) watermarkEl.style.display = "none";
@@ -220,30 +219,15 @@ export async function exportVariationPdf({
       }
     }
 
-    // Load into pdf-lib (even with no attachments) so we can stamp page
-    // numbers on the main Variation Order pages too, not just attachments.
+    // Load into pdf-lib so we can stamp page numbers on the Variation Order
+    // pages. Attachments are intentionally not merged into this snapshot -
+    // it's an auto-generated upload on approval, not a user-facing download,
+    // and attachments can push it past the storage provider's size limit.
     const { PDFDocument } = await import("pdf-lib");
     const mainPdfBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainPdfBytes);
 
-    let attachmentPageIndexes = [];
-    if (attachments.length > 0) {
-      attachmentPageIndexes = await appendWrappedVariationAttachments(mergedDoc, {
-        attachments,
-        variation,
-        project,
-        companyInfo,
-        noticeData,
-        logger,
-      });
-    }
-
-    await stampVariationPageNumbers(mergedDoc, {
-      variation,
-      project,
-      noticeData,
-      detailedPageIndexes: attachmentPageIndexes,
-    });
+    await stampVariationPageNumbers(mergedDoc, { variation, project, noticeData });
 
     const mergedBytes = await mergedDoc.save();
     const blob = new Blob([mergedBytes], { type: "application/pdf" });
