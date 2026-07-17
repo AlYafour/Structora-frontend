@@ -295,6 +295,28 @@
   box-shadow: 0 2px 8px rgba(200, 168, 78, 0.08);
 }
 
+.nvc-attachment-section-box--dragging {
+  opacity: 0.45;
+}
+
+.nvc-attachment-section-box--drag-over {
+  border-color: var(--accent, #C8A84E);
+  box-shadow: 0 0 0 2px rgba(200, 168, 78, 0.25);
+}
+
+.nvc-attachment-section-box__drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 10px;
+}
+.nvc-attachment-section-box__drag-handle:active {
+  cursor: grabbing;
+}
+
 .nvc-attachment-section-box__header {
   display: flex;
   align-items: center;
@@ -347,6 +369,19 @@
   padding-inline-end: 2px;
 }
 
+.nvc-attachment-row-dropzone {
+  border-radius: 8px;
+  transition: box-shadow 0.15s;
+}
+.nvc-attachment-row-dropzone--dragging,
+.nvc-attachment-row-group.nvc-attachment-row-dropzone--dragging {
+  opacity: 0.45;
+}
+.nvc-attachment-row-dropzone--drag-over,
+.nvc-attachment-row-group.nvc-attachment-row-dropzone--drag-over {
+  box-shadow: 0 -2px 0 0 var(--accent, #C8A84E);
+}
+
 /* ── Individual attachment row — full-width file bar, short heading below ── */
 .nvc-attachment-row {
   position: relative;
@@ -358,9 +393,26 @@
   flex-direction: column;
   gap: 2px;
   padding: 6px;
+  padding-inline-start: 24px; /* room for the drag handle */
   padding-inline-end: 28px; /* room for the corner remove button */
   background: var(--color-white, #fff);
   border: 1px solid var(--border, #e5e7eb);
+}
+
+.nvc-attachment-row__drag-handle {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 11px;
+  z-index: 1;
+}
+.nvc-attachment-row__drag-handle:active {
+  cursor: grabbing;
 }
 
 .nvc-attachment-row__file-bar {

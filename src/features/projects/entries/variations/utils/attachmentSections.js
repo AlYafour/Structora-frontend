@@ -8,6 +8,8 @@ export const ATTACHMENT_SECTIONS = [
   'EXTENSION OF TIME',
   'ARCHITECTURAL DRAWING',
   'STRUCTURAL DRAWING',
+  'LOCAL PURCHASE ORDER',
+  'MINUTES OF MEETING',
 ];
 
 // Arabic display labels, keyed by the canonical English section (the stored
@@ -22,6 +24,8 @@ export const ATTACHMENT_SECTIONS_AR = {
   'EXTENSION OF TIME': 'تمديد الوقت',
   'ARCHITECTURAL DRAWING': 'مخطط معماري',
   'STRUCTURAL DRAWING': 'مخطط إنشائي',
+  'LOCAL PURCHASE ORDER': 'أمر شراء محلي',
+  'MINUTES OF MEETING': 'محضر اجتماع',
 };
 
 // Catch-all display bucket for attachments saved before this feature existed

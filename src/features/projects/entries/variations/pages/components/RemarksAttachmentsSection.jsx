@@ -1,24 +1,27 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
 import { normalizeRichTextForRender } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
 import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
+import {
+  getOrderedAttachmentSections,
+  partitionAttachmentsBySection,
+  getAttachmentDisplayOrder,
+  reorderAttachmentsWithinSection,
+  reorderIndexItemsForAttachmentOrder,
+  moveArrayItem,
+  generateLocalId,
+} from '../../utils/attachmentOrder';
 import { createIndexRow } from './VariationIndexSection';
 import { recalculatePageRanges } from '../../utils/pageRange';
 import { projectApi } from '../../../../../../services';
 
 const ACCEPTED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
 const MAX_ATTACHMENT_SIZE_MB = 50;
-
-const generateLocalId = () => (
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
-);
 
 function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   const html = normalizeRichTextForRender(value);
@@ -64,7 +67,7 @@ function PendingAttachmentRow({ att, t, onFieldChange, onRemove }) {
 // on top, with a short heading input directly below it. Deliberately doesn't
 // use <FileAttachmentView> (a fixed icon+filename+view+download block) since
 // that leaves no room to add the heading input under it.
-function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
+function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove, dragHandleProps }) {
   const fileUrl = att.url || att.file;
   const displayName = att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
 
@@ -85,6 +88,16 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
         >
           <FaTimes />
         </button>
+      )}
+      {isEditMode && dragHandleProps && (
+        <span
+          className="nvc-attachment-row__drag-handle"
+          draggable
+          {...dragHandleProps}
+          title={t('drag_to_reorder', 'Drag to reorder')}
+        >
+          <FaGripVertical />
+        </span>
       )}
       <div className="nvc-attachment-row__file-bar">
         <FaFile className="nvc-attachment-row__icon" />
@@ -116,7 +129,7 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
 // Brand-new, not-yet-uploaded attachment — a full-width "choose file" bar on
 // top (not the full-page <FileUpload> dropzone, which is far taller), with a
 // short heading input directly below it.
-function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
+function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
   const fileInputRef = useRef(null);
   const [error, setError] = useState('');
   const hasFile = att.newFile instanceof File;
@@ -166,6 +179,16 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
       >
         <FaTimes />
       </button>
+      {dragHandleProps && (
+        <span
+          className="nvc-attachment-row__drag-handle"
+          draggable
+          {...dragHandleProps}
+          title={t('drag_to_reorder', 'Drag to reorder')}
+        >
+          <FaGripVertical />
+        </span>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -225,23 +248,34 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
   );
 }
 
-function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove }) {
+function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove, dragHandleProps, rowDropProps, isDragging, isDragOver }) {
   const isSaved = !!(att.url || att.file);
   const isLegacyUnfiled = isEditMode && !ATTACHMENT_SECTIONS.includes(att.section);
 
   const row = isSaved ? (
-    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFieldChange={onFieldChange} onRemove={onRemove} />
+    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : isEditMode ? (
-    <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} />
+    <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : null;
+
+  const dropClass = [
+    isDragging ? 'nvc-attachment-row-dropzone--dragging' : '',
+    isDragOver ? 'nvc-attachment-row-dropzone--drag-over' : '',
+  ].filter(Boolean).join(' ');
 
   // Already-categorized attachments show their section via the box title
   // above. Legacy/"Other" items still need a way to be filed into a proper
   // section, so they get an extra picker below the compact row.
-  if (!isLegacyUnfiled) return row;
+  if (!isLegacyUnfiled) {
+    return rowDropProps ? (
+      <div className={`nvc-attachment-row-dropzone ${dropClass}`.trim()} {...rowDropProps}>
+        {row}
+      </div>
+    ) : row;
+  }
 
   return (
-    <div className="nvc-attachment-row-group">
+    <div className={`nvc-attachment-row-group ${dropClass}`.trim()} {...(rowDropProps || {})}>
       {row}
       <SinglePresetSelectField
         value=""
@@ -286,26 +320,101 @@ const RemarksAttachmentsSection = memo(({
     onFormDataChange(prev => ({ ...prev, remarks_ar: html }));
   };
 
+  // Every known section, in this variation's own drag-customized order
+  // (falls back to the catalog order until the user reorders the boxes).
+  const orderedSections = useMemo(
+    () => getOrderedAttachmentSections(formData.attachment_section_order),
+    [formData.attachment_section_order]
+  );
+
   // Group attachments by section for display, keeping each item's original
   // index in `variationAttachments` so mutation handlers below stay index-based
   // regardless of which box/list renders it.
-  //  - sectionGroups: any attachment (new or saved) with a matching section.
+  //  - sectionGroups: any attachment (new or saved) with a matching section,
+  //    in `orderedSections` order (drag-and-drop reorders the boxes below).
   //  - otherItems: already-saved (has an id) attachments with no/unrecognized
   //    section — legacy data from before this feature existed.
   //  - pendingItems: brand-new, not-yet-saved attachments with no section chosen
   //    yet — rendered as a bare "choose a heading" prompt, not inside a box.
-  const { sectionGroups, otherItems, pendingItems } = useMemo(() => {
-    const indexed = (variationAttachments || []).map((att, i) => ({ att, i }));
-    const groups = ATTACHMENT_SECTIONS.map((section) => ({
-      key: section,
-      items: indexed.filter(({ att }) => att.section === section),
-    }));
-    const others = indexed.filter(({ att }) => att.id && !ATTACHMENT_SECTIONS.includes(att.section));
-    const pending = indexed.filter(({ att }) => !att.id && !ATTACHMENT_SECTIONS.includes(att.section));
-    return { sectionGroups: groups, otherItems: others, pendingItems: pending };
-  }, [variationAttachments]);
+  const { sectionGroups, otherItems, pendingItems } = useMemo(
+    () => partitionAttachmentsBySection(variationAttachments, orderedSections),
+    [variationAttachments, orderedSections]
+  );
+
+  // Drag-and-drop state — two independent interactions, both native HTML5 DnD:
+  //  - row-level: reorder attachments inside a single section box. Dropping
+  //    outside the section the drag started in is ignored (cross-section
+  //    re-filing already exists via the heading dropdown, so drag is kept to
+  //    reordering only).
+  //  - section-level: reorder the boxes themselves, persisted as
+  //    formData.attachment_section_order.
+  const [draggingRowIndex, setDraggingRowIndex] = useState(null);
+  const [dragOverRowIndex, setDragOverRowIndex] = useState(null);
+  const rowDragSectionRef = useRef(null);
+
+  const handleRowDragStart = (sectionKey, index) => (e) => {
+    rowDragSectionRef.current = sectionKey;
+    setDraggingRowIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleRowDragEnd = () => {
+    rowDragSectionRef.current = null;
+    setDraggingRowIndex(null);
+    setDragOverRowIndex(null);
+  };
+
+  const handleRowDragOver = (sectionKey, index) => (e) => {
+    if (rowDragSectionRef.current !== sectionKey) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverRowIndex !== index) setDragOverRowIndex(index);
+  };
+
+  const handleRowDrop = (sectionKey, index) => (e) => {
+    if (rowDragSectionRef.current !== sectionKey || draggingRowIndex === null) return;
+    e.preventDefault();
+    const fromIndex = draggingRowIndex;
+    setVariationAttachments(prev => reorderAttachmentsWithinSection(prev, fromIndex, index));
+    handleRowDragEnd();
+  };
+
+  const [draggingSection, setDraggingSection] = useState(null);
+  const [dragOverSection, setDragOverSection] = useState(null);
+
+  const handleSectionDragStart = (sectionKey) => (e) => {
+    setDraggingSection(sectionKey);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', sectionKey);
+  };
+
+  const handleSectionDragEnd = () => {
+    setDraggingSection(null);
+    setDragOverSection(null);
+  };
+
+  const handleSectionDragOver = (sectionKey) => (e) => {
+    if (!draggingSection || draggingSection === sectionKey) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverSection !== sectionKey) setDragOverSection(sectionKey);
+  };
+
+  const handleSectionDrop = (sectionKey) => (e) => {
+    if (!draggingSection || draggingSection === sectionKey) return;
+    e.preventDefault();
+    const fromIdx = orderedSections.indexOf(draggingSection);
+    const toIdx = orderedSections.indexOf(sectionKey);
+    const nextOrder = moveArrayItem(orderedSections, fromIdx, toIdx);
+    onFormDataChange(prev => ({ ...prev, attachment_section_order: nextOrder }));
+    handleSectionDragEnd();
+  };
 
   // Keeps each auto-created Index row in sync with its linked attachment:
+  //  - "Order" follows the attachment's current on-screen position (box order,
+  //    then drag order within the box) — dragging an attachment reorders its
+  //    linked Index row the same way, without moving manually-added rows.
   //  - "Attachment" mirrors the heading, however it's later edited (in either
   //    order — before or after the file is picked).
   //  - "Attachment Pages" is recalculated to start right after the Notice +
@@ -328,13 +437,18 @@ const RemarksAttachmentsSection = memo(({
       return row.attachment === heading ? row : { ...row, attachment: heading };
     });
 
-    const rangeSynced = recalculatePageRanges(headingSynced, estimatedNoticePages);
+    const displayOrderIds = getAttachmentDisplayOrder(variationAttachments, orderedSections)
+      .map(att => att.localId)
+      .filter(Boolean);
+    const orderSynced = reorderIndexItemsForAttachmentOrder(headingSynced, displayOrderIds);
+
+    const rangeSynced = recalculatePageRanges(orderSynced, estimatedNoticePages);
 
     const changed = rangeSynced.some((row, i) => row !== items[i]);
     if (changed) {
       onFormDataChange(prev => ({ ...prev, index_items: rangeSynced }));
     }
-  }, [variationAttachments, formData.index_items, estimatedNoticePages, isEditMode, onFormDataChange]);
+  }, [variationAttachments, orderedSections, formData.index_items, estimatedNoticePages, isEditMode, onFormDataChange]);
 
   if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
@@ -420,28 +534,60 @@ const RemarksAttachmentsSection = memo(({
     ));
   };
 
-  const renderBox = (key, items) => (
-    <div key={key} className="nvc-attachment-section-box">
-      <div className="nvc-attachment-section-box__header">
-        <FaPaperclip className="nvc-attachment-section-box__icon" />
-        <span className="nvc-attachment-section-box__title">{getSectionLabel(key)}</span>
-        <span className="nvc-attachment-section-box__count">{items.length}</span>
+  const renderBox = (key, items, { orderable = false } = {}) => {
+    const boxDragProps = (isEditMode && orderable) ? {
+      onDragOver: handleSectionDragOver(key),
+      onDrop: handleSectionDrop(key),
+    } : {};
+    const boxDragClass = orderable ? [
+      draggingSection === key ? 'nvc-attachment-section-box--dragging' : '',
+      dragOverSection === key && draggingSection !== key ? 'nvc-attachment-section-box--drag-over' : '',
+    ].filter(Boolean).join(' ') : '';
+
+    return (
+      <div key={key} className={`nvc-attachment-section-box ${boxDragClass}`.trim()} {...boxDragProps}>
+        <div className="nvc-attachment-section-box__header">
+          {isEditMode && orderable && (
+            <span
+              className="nvc-attachment-section-box__drag-handle"
+              draggable
+              onDragStart={handleSectionDragStart(key)}
+              onDragEnd={handleSectionDragEnd}
+              title={t('drag_to_reorder_section', 'Drag to reorder section')}
+            >
+              <FaGripVertical />
+            </span>
+          )}
+          <FaPaperclip className="nvc-attachment-section-box__icon" />
+          <span className="nvc-attachment-section-box__title">{getSectionLabel(key)}</span>
+          <span className="nvc-attachment-section-box__count">{items.length}</span>
+        </div>
+        <div className="nvc-attachment-section-box__list">
+          {items.map(({ att, i }) => (
+            <AttachmentRow
+              key={att.id ?? `new-${i}`}
+              att={att}
+              isEditMode={isEditMode}
+              t={t}
+              onFileChange={(file) => handleAttachmentFileChange(i, file)}
+              onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
+              onRemove={() => handleRemoveAttachment(i)}
+              dragHandleProps={isEditMode ? {
+                onDragStart: handleRowDragStart(key, i),
+                onDragEnd: handleRowDragEnd,
+              } : null}
+              rowDropProps={isEditMode ? {
+                onDragOver: handleRowDragOver(key, i),
+                onDrop: handleRowDrop(key, i),
+              } : null}
+              isDragging={draggingRowIndex === i}
+              isDragOver={dragOverRowIndex === i && draggingRowIndex !== i}
+            />
+          ))}
+        </div>
       </div>
-      <div className="nvc-attachment-section-box__list">
-        {items.map(({ att, i }) => (
-          <AttachmentRow
-            key={att.id ?? `new-${i}`}
-            att={att}
-            isEditMode={isEditMode}
-            t={t}
-            onFileChange={(file) => handleAttachmentFileChange(i, file)}
-            onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
-            onRemove={() => handleRemoveAttachment(i)}
-          />
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const hasAnyBoxContent = otherItems.length > 0 || sectionGroups.some(g => g.items.length > 0);
   const isCompletelyEmpty = !hasAnyBoxContent && pendingItems.length === 0;
@@ -532,7 +678,7 @@ const RemarksAttachmentsSection = memo(({
             <div className="nvc-attachment-sections-grid">
               {sectionGroups
                 .filter(({ items }) => items.length > 0)
-                .map(({ key, items }) => renderBox(key, items))}
+                .map(({ key, items }) => renderBox(key, items, { orderable: true }))}
 
               {otherItems.length > 0 && renderBox(
                 t('attachment_other_section', OTHER_ATTACHMENT_SECTION),

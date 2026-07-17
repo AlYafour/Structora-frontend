@@ -68,8 +68,7 @@ function PrintRichText({ value, className = "", dir = "ltr" }) {
 function getIndexItems(data) {
   if (!Array.isArray(data?.index_items)) return [];
   return data.index_items
-    .map((item, index) => ({
-      serial_no: String(item?.serial_no || index + 1).trim(),
+    .map(item => ({
       attachment: String(item?.attachment || item?.content || item?.content_type || "").trim(),
       ref_no: String(item?.ref_no || item?.quotation_reference_number || item?.drawing_reference || "").trim(),
       date: String(item?.date || "").trim(),
@@ -77,13 +76,15 @@ function getIndexItems(data) {
       purpose: String(item?.purpose || item?.remark || item?.supplier_name || "").trim(),
     }))
     .filter(item =>
-      item.serial_no ||
       item.attachment ||
       item.ref_no ||
       item.date ||
       item.page_numbers ||
       item.purpose
-    );
+    )
+    // "No." is always the row's current position among the printed rows —
+    // not a stored value — so it can never go stale after a drag reorder.
+    .map((item, index) => ({ ...item, serial_no: String(index + 1) }));
 }
 
 const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }, ref) => {
@@ -574,7 +575,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                     </div>
                     {indexItems.map((item, index) => (
                       <div className="vpd-index-grid__row" role="row" key={`${item.serial_no}-${index}`}>
-                        <div role="cell">{item.serial_no || index + 1}</div>
+                        <div role="cell">{item.serial_no}</div>
                         <div role="cell">{item.attachment || EMPTY}</div>
                         <div role="cell">{item.ref_no || EMPTY}</div>
                         <div role="cell">{formatIndexDate(item.date) || EMPTY}</div>
