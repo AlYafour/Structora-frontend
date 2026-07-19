@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { projectApi } from "../services";
 import { downloadBlob, fetchFileWithAuth, buildFileUrl } from "../utils/helpers/file";
 import VariationPrintDocument from "../features/projects/entries/variations/components/VariationPrintDocument";
-import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "../features/projects/entries/variations/utils/printPagination";
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup, forceElementToPageStart } from "../features/projects/entries/variations/utils/printPagination";
 import { generatePDFFilename } from "../features/projects/entries/variations/utils/pdfFilenameGenerator";
 import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "../features/projects/entries/variations/utils/wrapVariationAttachments";
 
@@ -88,6 +88,11 @@ async function preparePrintDocumentLayout(el) {
     continuationPageHeight: PRINT_A4_HEIGHT_PX,
   });
   await waitForFrame();
+
+  // Append General Remarks only after the normal variation content has been
+  // paginated, keeping it on a dedicated final sheet.
+  forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_A4_HEIGHT_PX);
+  await waitForFrame();
 }
 
 async function renderVariationPrintPdfBlob({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }) {
@@ -119,6 +124,8 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
         consultantStampUrl={consultantStampUrl}
         gmSignatureUrl={gmSignatureUrl}
         hideSignatures={hideSignatures}
+        generalRemarksEn={companyInfo?.general_remarks_en}
+        generalRemarksAr={companyInfo?.general_remarks_ar}
       />
     );
 
@@ -242,9 +249,17 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
 
     // Load into pdf-lib (even with no attachments) so we can stamp page
     // numbers on the main Variation Order pages too, not just attachments.
-    const { PDFDocument } = await import("pdf-lib");
+    const { PDFDocument, PDFName } = await import("pdf-lib");
     const mainBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainBytes);
+
+    // Hint compliant PDF viewers to pre-select duplex printing, so General
+    // Remarks (forced onto page 2) lands on the physical back of page 1
+    // when printed double-sided. A hint only, not a guarantee.
+    mergedDoc.catalog.set(
+      PDFName.of("ViewerPreferences"),
+      mergedDoc.context.obj({ Duplex: PDFName.of("DuplexFlipLongEdge") })
+    );
 
     if (attachments.length > 0) {
       // Merge PDF/image attachments as header/footer attachment pages.
@@ -289,6 +304,8 @@ async function fetchProjectAndCompanyInfo(projectId) {
     email:   settingsData.company_email      || settingsData.contractor_email || "",
     address: settingsData.company_address    || settingsData.contractor_address || "",
     company_stamp_url: settingsData.company_stamp_url || null,
+    general_remarks_en: settingsData.general_remarks_en || "",
+    general_remarks_ar: settingsData.general_remarks_ar || "",
   };
 
   const license = Array.isArray(licenseData) ? licenseData[0] : licenseData;

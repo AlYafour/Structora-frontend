@@ -1,24 +1,33 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
+import Button from '../../../../../../components/common/Button';
+import VoiceNoteButton from '../../../../../../components/common/VoiceNoteButton';
 import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
-import { normalizeRichTextForRender } from '../../../../../../utils/richText';
+import { useVoiceTranscription } from '../../../../../../hooks/useVoiceTranscription';
+import useCompanySettings from '../../../../../../hooks/useCompanySettings';
+import { useSuggestWording } from '../hooks/useSuggestWording';
+import { useRemarksOverlapCheck } from '../hooks/useRemarksOverlapCheck';
+import { normalizeRichTextForRender, htmlToPlainText, plainTextToHtml } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
 import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
+import {
+  getOrderedAttachmentSections,
+  partitionAttachmentsBySection,
+  getAttachmentDisplayOrder,
+  reorderAttachmentsWithinSection,
+  reorderIndexItemsForAttachmentOrder,
+  moveArrayItem,
+  generateLocalId,
+} from '../../utils/attachmentOrder';
 import { createIndexRow } from './VariationIndexSection';
 import { recalculatePageRanges } from '../../utils/pageRange';
 import { projectApi } from '../../../../../../services';
 
 const ACCEPTED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
 const MAX_ATTACHMENT_SIZE_MB = 50;
-
-const generateLocalId = () => (
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
-);
 
 function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   const html = normalizeRichTextForRender(value);
@@ -64,14 +73,49 @@ function PendingAttachmentRow({ att, t, onFieldChange, onRemove }) {
 // on top, with a short heading input directly below it. Deliberately doesn't
 // use <FileAttachmentView> (a fixed icon+filename+view+download block) since
 // that leaves no room to add the heading input under it.
-function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
+function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
+  const fileInputRef = useRef(null);
+  const [error, setError] = useState('');
   const fileUrl = att.url || att.file;
-  const displayName = att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
+  const hasReplacement = att.replacementFile instanceof File;
+  const displayName = hasReplacement
+    ? att.replacementFile.name
+    : att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
 
   const handleView = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (hasReplacement) {
+      const blobUrl = URL.createObjectURL(att.replacementFile);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      return;
+    }
     if (fileUrl) await openFileInNewWindow(fileUrl, displayName);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!validateFileSize(file, MAX_ATTACHMENT_SIZE_MB)) {
+      setError(t('file_upload_too_large', { name: file.name, maxSize: MAX_ATTACHMENT_SIZE_MB }));
+      return;
+    }
+    const ext = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
+    if (!ACCEPTED_ATTACHMENT_TYPES.includes(ext)) {
+      setError(t('file_upload_invalid_file_type', { types: ACCEPTED_ATTACHMENT_TYPES.join(', ') }));
+      return;
+    }
+    setError('');
+    onFileChange(file);
   };
 
   return (
@@ -86,9 +130,49 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
           <FaTimes />
         </button>
       )}
+      {isEditMode && dragHandleProps && (
+        <span
+          className="nvc-attachment-row__drag-handle"
+          draggable
+          {...dragHandleProps}
+          title={t('drag_to_reorder', 'Drag to reorder')}
+        >
+          <FaGripVertical />
+        </span>
+      )}
+      {isEditMode && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_ATTACHMENT_TYPES.join(',')}
+          onChange={handleFileSelect}
+          className="nvc-attachment-row__file-input-hidden"
+        />
+      )}
       <div className="nvc-attachment-row__file-bar">
-        <FaFile className="nvc-attachment-row__icon" />
+        {hasReplacement
+          ? <FaCheckCircle className="nvc-attachment-row__icon nvc-attachment-row__icon--success" />
+          : <FaFile className="nvc-attachment-row__icon" />}
         <span className="nvc-attachment-row__filename" title={displayName}>{displayName}</span>
+        {att.aiExtracting && (
+          <span className="nvc-attachment-row__ai-status" title={t('attachment_ai_extracting', 'Reading document...')}>
+            <FaSpinner className="nvc-attachment-row__icon nvc-attachment-row__icon--spin" />
+          </span>
+        )}
+        {isEditMode && (
+          <button
+            type="button"
+            className="nvc-attachment-row__icon-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            title={t('replace_file', 'Replace file')}
+          >
+            <FaExchangeAlt />
+          </button>
+        )}
         <button
           type="button"
           className="nvc-attachment-row__icon-btn"
@@ -98,6 +182,12 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
           <FaRegEye />
         </button>
       </div>
+      {att.aiChecked && (!att.ai_ref_no || !att.ai_date) && (
+        <span className="nvc-attachment-row__ai-warning">
+          <FaExclamationTriangle />
+          {t('attachment_ai_extract_incomplete', "Couldn't detect ref no/date automatically - please check the Index table below.")}
+        </span>
+      )}
       {isEditMode ? (
         <input
           type="text"
@@ -109,6 +199,7 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
       ) : (
         att.heading && <div className="nvc-attachment-row__heading-text">{att.heading}</div>
       )}
+      {error && <span className="nvc-attachment-row__error">{error}</span>}
     </div>
   );
 }
@@ -116,7 +207,7 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove }) {
 // Brand-new, not-yet-uploaded attachment — a full-width "choose file" bar on
 // top (not the full-page <FileUpload> dropzone, which is far taller), with a
 // short heading input directly below it.
-function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
+function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
   const fileInputRef = useRef(null);
   const [error, setError] = useState('');
   const hasFile = att.newFile instanceof File;
@@ -166,6 +257,16 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
       >
         <FaTimes />
       </button>
+      {dragHandleProps && (
+        <span
+          className="nvc-attachment-row__drag-handle"
+          draggable
+          {...dragHandleProps}
+          title={t('drag_to_reorder', 'Drag to reorder')}
+        >
+          <FaGripVertical />
+        </span>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -225,23 +326,34 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove }) {
   );
 }
 
-function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove }) {
+function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove, dragHandleProps, rowDropProps, isDragging, isDragOver }) {
   const isSaved = !!(att.url || att.file);
   const isLegacyUnfiled = isEditMode && !ATTACHMENT_SECTIONS.includes(att.section);
 
   const row = isSaved ? (
-    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFieldChange={onFieldChange} onRemove={onRemove} />
+    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : isEditMode ? (
-    <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} />
+    <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : null;
+
+  const dropClass = [
+    isDragging ? 'nvc-attachment-row-dropzone--dragging' : '',
+    isDragOver ? 'nvc-attachment-row-dropzone--drag-over' : '',
+  ].filter(Boolean).join(' ');
 
   // Already-categorized attachments show their section via the box title
   // above. Legacy/"Other" items still need a way to be filed into a proper
   // section, so they get an extra picker below the compact row.
-  if (!isLegacyUnfiled) return row;
+  if (!isLegacyUnfiled) {
+    return rowDropProps ? (
+      <div className={`nvc-attachment-row-dropzone ${dropClass}`.trim()} {...rowDropProps}>
+        {row}
+      </div>
+    ) : row;
+  }
 
   return (
-    <div className="nvc-attachment-row-group">
+    <div className={`nvc-attachment-row-group ${dropClass}`.trim()} {...(rowDropProps || {})}>
       {row}
       <SinglePresetSelectField
         value=""
@@ -270,6 +382,63 @@ const RemarksAttachmentsSection = memo(({
   const isRTL = /^ar\b/i.test(i18n.language || '');
   const getSectionLabel = (section) => (isRTL && ATTACHMENT_SECTIONS_AR[section]) || section;
 
+  // Company-wide General Remarks — always shown read-only, above the
+  // per-variation Remarks editor below. Fetched once and cached/shared via
+  // React Query, not stored per-variation.
+  const { data: companySettings } = useCompanySettings();
+  const generalRemarksEn = companySettings?.general_remarks_en || '';
+  const generalRemarksAr = companySettings?.general_remarks_ar || '';
+
+  // Suggest Wording + Voice Note for the English remarks pane — mirrors the
+  // same two AI affordances on the Variation Description field. The English
+  // pane is always the authored source of truth (unrelated to UI locale), so
+  // both hooks are fixed to 'en'. Neither ever touches formData.remarks_ar —
+  // the useLineSyncTranslate effect below reacts to any formData.remarks
+  // change and re-syncs Arabic on its own.
+  const {
+    suggestions: remarksSuggestions,
+    busy: remarksSuggestBusy,
+    error: remarksSuggestError,
+    requestSuggestion: requestRemarksSuggestion,
+    discard: discardRemarksSuggestions,
+  } = useSuggestWording({ language: 'en' });
+
+  const handleSuggestRemarksWording = async () => {
+    await requestRemarksSuggestion(htmlToPlainText(formData.remarks));
+  };
+
+  const handleApplyRemarksSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    onFormDataChange(prev => ({ ...prev, remarks: plainTextToHtml(suggestion) }));
+    discardRemarksSuggestions();
+  };
+
+  const handleRemarksChange = (html) => {
+    discardRemarksSuggestions();
+    onFormDataChange(prev => ({ ...prev, remarks: html }));
+  };
+
+  // Remarks are incremental bullet points, so voice notes append as a new
+  // paragraph rather than replacing existing content.
+  const appendRemarksTranscript = (transcript) => {
+    discardRemarksSuggestions();
+    onFormDataChange(prev => ({
+      ...prev,
+      remarks: `${prev.remarks || ''}${plainTextToHtml(transcript)}`,
+    }));
+  };
+
+  const {
+    recording: remarksRecording,
+    transcribing: remarksTranscribing,
+    error: remarksVoiceError,
+    toggleRecording: toggleRemarksRecording,
+  } = useVoiceTranscription({
+    language: 'en',
+    field: 'variation remarks',
+    onTranscribed: appendRemarksTranscript,
+  });
+
   // Arabic remarks stay in line-level sync with English: only lines that were
   // actually added/edited get (re)translated, plainly (no styling). Lines the
   // user hasn't touched in English are left completely alone in Arabic, so
@@ -286,26 +455,109 @@ const RemarksAttachmentsSection = memo(({
     onFormDataChange(prev => ({ ...prev, remarks_ar: html }));
   };
 
+  // Soft, dismissible warning if a new/edited English remark line looks like
+  // it already means the same thing as something in General Remarks above.
+  // Never blocks saving — see useRemarksOverlapCheck.
+  const {
+    warnings: remarksOverlapWarnings,
+    dismissWarning: dismissRemarksOverlapWarning,
+  } = useRemarksOverlapCheck(formData.remarks, generalRemarksEn, { enabled: isEditMode });
+
+  // Every known section, in this variation's own drag-customized order
+  // (falls back to the catalog order until the user reorders the boxes).
+  const orderedSections = useMemo(
+    () => getOrderedAttachmentSections(formData.attachment_section_order),
+    [formData.attachment_section_order]
+  );
+
   // Group attachments by section for display, keeping each item's original
   // index in `variationAttachments` so mutation handlers below stay index-based
   // regardless of which box/list renders it.
-  //  - sectionGroups: any attachment (new or saved) with a matching section.
+  //  - sectionGroups: any attachment (new or saved) with a matching section,
+  //    in `orderedSections` order (drag-and-drop reorders the boxes below).
   //  - otherItems: already-saved (has an id) attachments with no/unrecognized
   //    section — legacy data from before this feature existed.
   //  - pendingItems: brand-new, not-yet-saved attachments with no section chosen
   //    yet — rendered as a bare "choose a heading" prompt, not inside a box.
-  const { sectionGroups, otherItems, pendingItems } = useMemo(() => {
-    const indexed = (variationAttachments || []).map((att, i) => ({ att, i }));
-    const groups = ATTACHMENT_SECTIONS.map((section) => ({
-      key: section,
-      items: indexed.filter(({ att }) => att.section === section),
-    }));
-    const others = indexed.filter(({ att }) => att.id && !ATTACHMENT_SECTIONS.includes(att.section));
-    const pending = indexed.filter(({ att }) => !att.id && !ATTACHMENT_SECTIONS.includes(att.section));
-    return { sectionGroups: groups, otherItems: others, pendingItems: pending };
-  }, [variationAttachments]);
+  const { sectionGroups, otherItems, pendingItems } = useMemo(
+    () => partitionAttachmentsBySection(variationAttachments, orderedSections),
+    [variationAttachments, orderedSections]
+  );
+
+  // Drag-and-drop state — two independent interactions, both native HTML5 DnD:
+  //  - row-level: reorder attachments inside a single section box. Dropping
+  //    outside the section the drag started in is ignored (cross-section
+  //    re-filing already exists via the heading dropdown, so drag is kept to
+  //    reordering only).
+  //  - section-level: reorder the boxes themselves, persisted as
+  //    formData.attachment_section_order.
+  const [draggingRowIndex, setDraggingRowIndex] = useState(null);
+  const [dragOverRowIndex, setDragOverRowIndex] = useState(null);
+  const rowDragSectionRef = useRef(null);
+
+  const handleRowDragStart = (sectionKey, index) => (e) => {
+    rowDragSectionRef.current = sectionKey;
+    setDraggingRowIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleRowDragEnd = () => {
+    rowDragSectionRef.current = null;
+    setDraggingRowIndex(null);
+    setDragOverRowIndex(null);
+  };
+
+  const handleRowDragOver = (sectionKey, index) => (e) => {
+    if (rowDragSectionRef.current !== sectionKey) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverRowIndex !== index) setDragOverRowIndex(index);
+  };
+
+  const handleRowDrop = (sectionKey, index) => (e) => {
+    if (rowDragSectionRef.current !== sectionKey || draggingRowIndex === null) return;
+    e.preventDefault();
+    const fromIndex = draggingRowIndex;
+    setVariationAttachments(prev => reorderAttachmentsWithinSection(prev, fromIndex, index));
+    handleRowDragEnd();
+  };
+
+  const [draggingSection, setDraggingSection] = useState(null);
+  const [dragOverSection, setDragOverSection] = useState(null);
+
+  const handleSectionDragStart = (sectionKey) => (e) => {
+    setDraggingSection(sectionKey);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', sectionKey);
+  };
+
+  const handleSectionDragEnd = () => {
+    setDraggingSection(null);
+    setDragOverSection(null);
+  };
+
+  const handleSectionDragOver = (sectionKey) => (e) => {
+    if (!draggingSection || draggingSection === sectionKey) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverSection !== sectionKey) setDragOverSection(sectionKey);
+  };
+
+  const handleSectionDrop = (sectionKey) => (e) => {
+    if (!draggingSection || draggingSection === sectionKey) return;
+    e.preventDefault();
+    const fromIdx = orderedSections.indexOf(draggingSection);
+    const toIdx = orderedSections.indexOf(sectionKey);
+    const nextOrder = moveArrayItem(orderedSections, fromIdx, toIdx);
+    onFormDataChange(prev => ({ ...prev, attachment_section_order: nextOrder }));
+    handleSectionDragEnd();
+  };
 
   // Keeps each auto-created Index row in sync with its linked attachment:
+  //  - "Order" follows the attachment's current on-screen position (box order,
+  //    then drag order within the box) — dragging an attachment reorders its
+  //    linked Index row the same way, without moving manually-added rows.
   //  - "Attachment" mirrors the heading, however it's later edited (in either
   //    order — before or after the file is picked).
   //  - "Attachment Pages" is recalculated to start right after the Notice +
@@ -328,13 +580,18 @@ const RemarksAttachmentsSection = memo(({
       return row.attachment === heading ? row : { ...row, attachment: heading };
     });
 
-    const rangeSynced = recalculatePageRanges(headingSynced, estimatedNoticePages);
+    const displayOrderIds = getAttachmentDisplayOrder(variationAttachments, orderedSections)
+      .map(att => att.localId)
+      .filter(Boolean);
+    const orderSynced = reorderIndexItemsForAttachmentOrder(headingSynced, displayOrderIds);
+
+    const rangeSynced = recalculatePageRanges(orderSynced, estimatedNoticePages);
 
     const changed = rangeSynced.some((row, i) => row !== items[i]);
     if (changed) {
       onFormDataChange(prev => ({ ...prev, index_items: rangeSynced }));
     }
-  }, [variationAttachments, formData.index_items, estimatedNoticePages, isEditMode, onFormDataChange]);
+  }, [variationAttachments, orderedSections, formData.index_items, estimatedNoticePages, isEditMode, onFormDataChange]);
 
   if (!isEditMode && !formData.remarks && !existingVariationAttachment && !variationAttachments?.length) {
     return null;
@@ -363,10 +620,18 @@ const RemarksAttachmentsSection = memo(({
 
   const handleAttachmentFileChange = async (index, file) => {
     const localId = variationAttachments?.[index]?.localId;
+    const isSavedAttachment = !!variationAttachments?.[index]?.id;
 
     setVariationAttachments(prev => prev.map((item) =>
       item.localId === localId
-        ? { ...item, newFile: file, name: file?.name || item.name, aiExtracting: true, aiChecked: false }
+        ? {
+          ...item,
+          ...(isSavedAttachment
+            ? { replacementFile: file, replacementName: file?.name || item.replacementName }
+            : { newFile: file, name: file?.name || item.name }),
+          aiExtracting: true,
+          aiChecked: false,
+        }
         : item
     ));
 
@@ -420,34 +685,83 @@ const RemarksAttachmentsSection = memo(({
     ));
   };
 
-  const renderBox = (key, items) => (
-    <div key={key} className="nvc-attachment-section-box">
-      <div className="nvc-attachment-section-box__header">
-        <FaPaperclip className="nvc-attachment-section-box__icon" />
-        <span className="nvc-attachment-section-box__title">{getSectionLabel(key)}</span>
-        <span className="nvc-attachment-section-box__count">{items.length}</span>
+  const renderBox = (key, items, { orderable = false } = {}) => {
+    const boxDragProps = (isEditMode && orderable) ? {
+      onDragOver: handleSectionDragOver(key),
+      onDrop: handleSectionDrop(key),
+    } : {};
+    const boxDragClass = orderable ? [
+      draggingSection === key ? 'nvc-attachment-section-box--dragging' : '',
+      dragOverSection === key && draggingSection !== key ? 'nvc-attachment-section-box--drag-over' : '',
+    ].filter(Boolean).join(' ') : '';
+
+    return (
+      <div key={key} className={`nvc-attachment-section-box ${boxDragClass}`.trim()} {...boxDragProps}>
+        <div className="nvc-attachment-section-box__header">
+          {isEditMode && orderable && (
+            <span
+              className="nvc-attachment-section-box__drag-handle"
+              draggable
+              onDragStart={handleSectionDragStart(key)}
+              onDragEnd={handleSectionDragEnd}
+              title={t('drag_to_reorder_section', 'Drag to reorder section')}
+            >
+              <FaGripVertical />
+            </span>
+          )}
+          <FaPaperclip className="nvc-attachment-section-box__icon" />
+          <span className="nvc-attachment-section-box__title">{getSectionLabel(key)}</span>
+          <span className="nvc-attachment-section-box__count">{items.length}</span>
+        </div>
+        <div className="nvc-attachment-section-box__list">
+          {items.map(({ att, i }) => (
+            <AttachmentRow
+              key={att.id ?? `new-${i}`}
+              att={att}
+              isEditMode={isEditMode}
+              t={t}
+              onFileChange={(file) => handleAttachmentFileChange(i, file)}
+              onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
+              onRemove={() => handleRemoveAttachment(i)}
+              dragHandleProps={isEditMode ? {
+                onDragStart: handleRowDragStart(key, i),
+                onDragEnd: handleRowDragEnd,
+              } : null}
+              rowDropProps={isEditMode ? {
+                onDragOver: handleRowDragOver(key, i),
+                onDrop: handleRowDrop(key, i),
+              } : null}
+              isDragging={draggingRowIndex === i}
+              isDragOver={dragOverRowIndex === i && draggingRowIndex !== i}
+            />
+          ))}
+        </div>
       </div>
-      <div className="nvc-attachment-section-box__list">
-        {items.map(({ att, i }) => (
-          <AttachmentRow
-            key={att.id ?? `new-${i}`}
-            att={att}
-            isEditMode={isEditMode}
-            t={t}
-            onFileChange={(file) => handleAttachmentFileChange(i, file)}
-            onFieldChange={(field, value) => handleAttachmentFieldChange(i, field, value)}
-            onRemove={() => handleRemoveAttachment(i)}
-          />
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const hasAnyBoxContent = otherItems.length > 0 || sectionGroups.some(g => g.items.length > 0);
   const isCompletelyEmpty = !hasAnyBoxContent && pendingItems.length === 0;
 
   return (
     <div className="nvc-section nvc-section--remarks">
+      {(generalRemarksEn || generalRemarksAr) && (
+        <div className="nvc-field nvc-field--full nvc-general-remarks">
+          <div className="nvc-section-header">
+            <h3>{t('general_remarks_title', 'General Remarks')}</h3>
+          </div>
+          <div className="nvc-remarks-split-view-grid">
+            <div className="nvc-remarks-split-view-col" style={{ whiteSpace: 'pre-wrap' }}>
+              {generalRemarksEn}
+            </div>
+            <div className="nvc-remarks-split-view-divider" />
+            <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" style={{ whiteSpace: 'pre-wrap' }} dir="rtl">
+              {generalRemarksAr}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(isEditMode || formData.remarks) && (
         <div className="nvc-section-header">
           <h3>{t('remarks')}</h3>
@@ -456,17 +770,39 @@ const RemarksAttachmentsSection = memo(({
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
           {isEditMode ? (
+            <>
             <div className="nvc-remarks-split-card">
               {/* English pane — original input */}
-              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en">
+              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en" dir="ltr">
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">EN</span>
                   <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                  {isEditMode && (
+                    <div className="nvh-desc-row__actions">
+                      <VoiceNoteButton
+                        recording={remarksRecording}
+                        transcribing={remarksTranscribing}
+                        disabled={remarksSuggestBusy}
+                        onClick={toggleRemarksRecording}
+                        t={t}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={remarksSuggestBusy}
+                        disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing}
+                        startIcon={<FaRobot />}
+                        onClick={handleSuggestRemarksWording}
+                      >
+                        {t('suggest_wording')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <RichTextEditor
                   className="nvc-remarks-rich-editor"
                   value={formData.remarks ?? ''}
-                  onChange={(html) => onFormDataChange({ ...formData, remarks: html })}
+                  onChange={handleRemarksChange}
                   placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
                   dir="ltr"
                   t={t}
@@ -501,6 +837,65 @@ const RemarksAttachmentsSection = memo(({
                 />
               </div>
             </div>
+
+            {remarksSuggestError && (
+              <p className="nvh-suggest-error">
+                {t(remarksSuggestError) !== remarksSuggestError ? t(remarksSuggestError) : remarksSuggestError}
+              </p>
+            )}
+
+            {remarksVoiceError && (
+              <p className="nvh-suggest-error">
+                {t(remarksVoiceError) !== remarksVoiceError ? t(remarksVoiceError) : remarksVoiceError}
+              </p>
+            )}
+
+            {remarksOverlapWarnings.length > 0 && (
+              <div className="nvh-remarks-overlap-warnings">
+                <div className="nvh-remarks-overlap-warnings__heading">
+                  <FaExclamationTriangle /> {t('remarks_overlap_heading', 'May already be covered in General Remarks')}
+                </div>
+                {remarksOverlapWarnings.map((w) => (
+                  <div key={w.line} className="nvh-remarks-overlap-warning">
+                    <div className="nvh-remarks-overlap-warning__text">
+                      <span className="nvh-remarks-overlap-warning__line">&ldquo;{w.line}&rdquo;</span>
+                      {' '}{t('remarks_overlap_matches', 'matches General Remarks:')}{' '}
+                      <span className="nvh-remarks-overlap-warning__matched">&ldquo;{w.matchedPoint}&rdquo;</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="nvh-remarks-overlap-warning__dismiss"
+                      onClick={() => dismissRemarksOverlapWarning(w.line)}
+                      title={t('dismiss', 'Dismiss')}
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {remarksSuggestions.length > 0 && (
+              <div className="nvh-ai-suggestions">
+                <div className="nvh-ai-suggestions__heading">
+                  <FaRobot /> {t('ai_suggestions')}
+                </div>
+                <div className="nvh-ai-suggestions__list">
+                  {remarksSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion}-${index}`}
+                      type="button"
+                      className="nvh-inline-suggestion"
+                      onClick={() => handleApplyRemarksSuggestion(suggestion)}
+                    >
+                      <span className="nvh-inline-suggestion__badge">{index + 1}</span>
+                      <span className="nvh-inline-suggestion__text">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            </>
           ) : formData.remarks ? (
             formData.remarks_ar ? (
               <div className="nvc-remarks-split-view-grid">
@@ -532,7 +927,7 @@ const RemarksAttachmentsSection = memo(({
             <div className="nvc-attachment-sections-grid">
               {sectionGroups
                 .filter(({ items }) => items.length > 0)
-                .map(({ key, items }) => renderBox(key, items))}
+                .map(({ key, items }) => renderBox(key, items, { orderable: true }))}
 
               {otherItems.length > 0 && renderBox(
                 t('attachment_other_section', OTHER_ATTACHMENT_SECTION),

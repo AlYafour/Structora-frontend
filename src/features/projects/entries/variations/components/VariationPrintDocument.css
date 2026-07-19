@@ -376,6 +376,18 @@
   display: block;
 }
 
+/* Reference identifiers are frequently slash/hyphen separated, but can also
+   arrive as one long unbroken token. Allow either form to wrap inside the
+   header/card instead of being clipped by the fixed-width PDF layout. */
+.vpd-reference-number {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
 .vpd-info-card__lines {
   display: flex;
   flex-direction: column;
@@ -1566,6 +1578,13 @@
 
 .vpd-print-mode .vpd-notes {
   padding: 5px 0;
+}
+
+/* Forced to occupy its own full page — see forceElementToPageStart() in
+   printPagination.js, which sets marginTop/minHeight on this element. */
+.vpd-print-mode .vpd-general-remarks-page {
+  box-sizing: border-box;
+  padding: 10px 0;
 }
 
 .vpd-print-mode .vpd-notes p {

@@ -122,16 +122,11 @@ const VariationIndexSection = memo(({
             {rowsToRender.map((row, index) => (
               <tr key={index}>
                 <td className="nvc-index-td nvc-index-td--serial">
-                  {isEditMode ? (
-                    <input
-                      className="nvc-input nvc-index-input nvc-index-input--serial"
-                      value={row.serial_no ?? ''}
-                      onChange={(e) => handleUpdateRow(index, 'serial_no', e.target.value)}
-                      placeholder={String(index + 1)}
-                    />
-                  ) : (
-                    renderCell(row.serial_no || String(index + 1))
-                  )}
+                  {/* Always the row's current position — not freely editable —
+                      so it stays correct after reordering/adding/removing rows
+                      (dragging attachments included) instead of getting stuck
+                      at whatever number it had when the row was created. */}
+                  {renderCell(String(index + 1))}
                 </td>
                 <td className="nvc-index-td nvc-index-td--attachment">
                   {isEditMode ? (

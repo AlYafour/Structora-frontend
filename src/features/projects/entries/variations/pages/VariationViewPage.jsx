@@ -14,7 +14,7 @@ import FileAttachmentView from "../../../../../components/file-upload/FileAttach
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { useLanguage } from "../../../../../hooks";
 import { useNotifications } from "../../../../../contexts/NotificationContext";
-import { FaPrint, FaFilePdf, FaCheckCircle, FaTimesCircle, FaClock, FaEdit, FaFileAlt, FaFilePdf as FaFilePdfIcon, FaPaperclip, FaExchangeAlt } from "react-icons/fa";
+import { FaPrint, FaFilePdf, FaCheckCircle, FaTimesCircle, FaClock, FaEdit, FaFileAlt, FaFilePdf as FaFilePdfIcon, FaPaperclip, FaExchangeAlt, FaTrash } from "react-icons/fa";
 import { FiFile, FiDownload } from "react-icons/fi";
 import { useVariationData } from "../hooks/useVariationData";
 import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandlers";
@@ -85,6 +85,8 @@ export default function VariationViewPage() {
   const [requestUnapproveDialogOpen, setRequestUnapproveDialogOpen] = useState(false);
   const [requestUnapproveReason, setRequestUnapproveReason] = useState('');
   const [requestUnapproveBusy, setRequestUnapproveBusy] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [consultantStampUrl, setConsultantStampUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -131,6 +133,8 @@ export default function VariationViewPage() {
           website: data.company_website || "",
           address: data.company_address || "",
           company_stamp_url: data.company_stamp_url || null,
+          general_remarks_en: data.general_remarks_en || "",
+          general_remarks_ar: data.general_remarks_ar || "",
         });
       } catch (e) {
         logger.warn("Could not load company info", e);
@@ -176,6 +180,12 @@ export default function VariationViewPage() {
     isCompanyGeneralManager ||
     hasPermission("variations.create") ||
     (variationStatus === 'returned_for_edit' && canManageReturnedVariation);
+  const canDeleteDraftVariation = !!(
+    project?.id &&
+    variation?.id &&
+    variationStatus === 'draft' &&
+    (isAdmin || isCompanyGeneralManager || hasPermission("variations.create"))
+  );
   const canManageHiddenFees = !!(
     user?.is_superuser ||
     user?.role?.name === 'Manager' ||
@@ -263,6 +273,21 @@ export default function VariationViewPage() {
       showError(error?.response?.data?.error || error?.message || t('error_generic'));
     } finally {
       setRequestUnapproveBusy(false);
+    }
+  };
+
+  const handleDeleteDraftVariation = async () => {
+    if (!variation?.id || !project?.id) return;
+    setDeleteBusy(true);
+    try {
+      await projectApi.deleteVariation(project.id, variation.id);
+      success(t('variation_deleted_successfully', 'Variation deleted successfully'));
+      navigate(`/projects/${project.id}?tab=variations`);
+    } catch (error) {
+      showError(error?.response?.data?.error || error?.message || t('variation_delete_error', 'Could not delete variation'));
+    } finally {
+      setDeleteBusy(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -592,6 +617,8 @@ export default function VariationViewPage() {
                 noticeData={noticeData}
                 consultantStampUrl={consultantStampUrl}
                 gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+                generalRemarksEn={companyInfo?.general_remarks_en}
+                generalRemarksAr={companyInfo?.general_remarks_ar}
               />
             </div>
           </div>
@@ -611,6 +638,8 @@ export default function VariationViewPage() {
               noticeData={noticeData}
               consultantStampUrl={consultantStampUrl}
               gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+              generalRemarksEn={companyInfo?.general_remarks_en}
+              generalRemarksAr={companyInfo?.general_remarks_ar}
             />
           </div>
         )}
@@ -628,6 +657,8 @@ export default function VariationViewPage() {
               consultantStampUrl={consultantStampUrl}
               gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
               hideSignatures={true}
+              generalRemarksEn={companyInfo?.general_remarks_en}
+              generalRemarksAr={companyInfo?.general_remarks_ar}
             />
           </div>
         )}
@@ -771,7 +802,7 @@ export default function VariationViewPage() {
               permissions.canRejectOwnerConsultant ||
               permissions.canReturnForEdit ||
               permissions.canApproveGeneralManagerFinal ||
-              canDirectUnapprove || canRequestUnapprove) && (
+              canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation) && (
                 <div className="var-toolbar__actions">
                   {activeTab === "edit" && permissions.canEdit && (
                     <>
@@ -802,9 +833,14 @@ export default function VariationViewPage() {
                     permissions.canRejectOwnerConsultant ||
                     permissions.canReturnForEdit ||
                     permissions.canApproveGeneralManagerFinal ||
-                    canDirectUnapprove || canRequestUnapprove) && (
+                    canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation) && (
                     <>
                       <span className="var-toolbar__actions-label">{t("available_actions")}</span>
+                      {canDeleteDraftVariation && (
+                        <Button variant="danger" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                          <FaTrash /> {t('delete_variation', 'Delete Variation')}
+                        </Button>
+                      )}
                       {permissions.canApproveProjectManager && (
                         <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
                           <FaCheckCircle /> {t("approve_project_manager_initial")}
@@ -1388,6 +1424,17 @@ export default function VariationViewPage() {
           cancelLabel={null}
           onClose={() => setBlockEditDialogOpen(false)}
           onConfirm={() => setBlockEditDialogOpen(false)}
+        />
+
+        <Dialog
+          open={deleteDialogOpen}
+          title={t('delete_variation', 'Delete Variation')}
+          desc={t('confirm_delete_draft_variation', 'This draft variation will be permanently deleted. This action cannot be undone.')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('cancel')}
+          onClose={() => { if (!deleteBusy) setDeleteDialogOpen(false); }}
+          onConfirm={handleDeleteDraftVariation}
+          busy={deleteBusy}
         />
 
         <Dialog

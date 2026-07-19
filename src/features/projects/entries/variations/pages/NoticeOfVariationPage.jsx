@@ -21,6 +21,7 @@ import { formatMoney } from '../../../../../utils/formatters';
 import DirhamsIcon from '../../../../../components/common/DirhamsIcon';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import { useNotifications } from '../../../../../contexts/NotificationContext';
+import useCompanySettings from '../../../../../hooks/useCompanySettings';
 
 // Custom hooks
 import { useVariationForm } from './hooks/useVariationForm';
@@ -39,11 +40,12 @@ import VariationPrintDocument from '../components/VariationPrintDocument';
 // Utilities
 import { validateVariationSubmit } from './utils/variationValidation';
 import { round2 } from './utils/variationCalculations';
-import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from '../utils/printPagination';
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup, forceElementToPageStart } from '../utils/printPagination';
 import {
   DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
   DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
 } from '../utils/discrepancyNoteDefaults';
+import { getOrderedAttachmentSections, getAttachmentDisplayOrder, relinkAttachmentsToIndexItems } from '../utils/attachmentOrder';
 
 import { getProjectName } from '../../../utils/projectNameUtils.jsx';
 import './NoticeOfVariationPage.css';
@@ -100,6 +102,7 @@ const buildNoticeData = (formData, omittedItems, addedItems, calculations, { inc
     index_items: includeIndex ? normalizeIndexItems(formData.index_items) : [],
     index_discrepancy_note: formData.index_discrepancy_note ?? DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
     index_discrepancy_note_ar: formData.index_discrepancy_note_ar ?? DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
+    attachment_section_order: Array.isArray(formData.attachment_section_order) ? formData.attachment_section_order : [],
     remarks: formData.remarks,
     remarks_ar: formData.remarks_ar,
     hidden_consultant_fee_description: formData.hidden_consultant_fee_description,
@@ -260,6 +263,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     toggleAddedItemExpand
   } = useVariationItems();
 
+  // Company-wide General Remarks — needed here so the off-screen page-count
+  // measurement below reflects the forced General Remarks page too.
+  const { data: companySettingsForPrint } = useCompanySettings();
+  const generalRemarksEn = companySettingsForPrint?.general_remarks_en || '';
+  const generalRemarksAr = companySettingsForPrint?.general_remarks_ar || '';
+
   // Calculate financials
   const calculations = useVariationCalculations(formData, omittedItems, addedItems);
   const liveNoticeData = useMemo(
@@ -329,6 +338,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         return;
       }
 
+      let cleanupForcedGeneralRemarks = null;
       let cleanupTablePagination = null;
       let cleanupPageBreaks = null;
       let cleanupPinnedBottom = null;
@@ -351,10 +361,16 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         });
         await waitForRenderFrame();
 
+        // Measure the normal notice first, then append General Remarks as its
+        // own final sheet so attachment page numbering matches the PDF.
+        cleanupForcedGeneralRemarks = forceElementToPageStart(el, '[data-vpd-general-remarks-page]', 1, PRINT_A4_HEIGHT_PX);
+        await waitForRenderFrame();
+
         const height = Math.max(el.scrollHeight || 0, el.getBoundingClientRect().height || 0);
         const pages = Math.max(1, Math.ceil(height / PRINT_A4_HEIGHT_PX));
         if (!cancelled) setEstimatedNoticePages(pages);
       } finally {
+        cleanupForcedGeneralRemarks?.();
         cleanupPinnedBottom?.();
         cleanupPageBreaks?.();
         cleanupTablePagination?.();
@@ -368,7 +384,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     return () => {
       cancelled = true;
     };
-  }, [liveNoticeData, project]);
+  }, [liveNoticeData, project, generalRemarksEn, generalRemarksAr]);
 
   /**
    * Load variation data into form
@@ -398,6 +414,15 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         amount: fee.type === 'amount' ? fee.amount : '',
       }));
 
+      // The attachment<->Index-row link (`linked_attachment_id`) uses a
+      // client-generated id that only survives a reload via the backend's
+      // `client_ref` field; attachments saved before that field existed fall
+      // back to a positional repair here — see relinkAttachmentsToIndexItems.
+      const { attachments: relinkedAttachments, indexItems: relinkedIndexItems } = relinkAttachmentsToIndexItems(
+        variationData.variation_attachments,
+        Array.isArray(noticeData.index_items) ? noticeData.index_items : []
+      );
+
       setFormData({
         document_date: noticeData.document_date || variationData.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
         variation_number: variationData.variation_number ?? '',
@@ -414,9 +439,10 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           : (noticeData.trade_discipline ? [noticeData.trade_discipline] : []),
         item_description: noticeData.item_description ?? '',
         project_description: noticeData.project_description ?? '',
-        index_items: Array.isArray(noticeData.index_items) ? noticeData.index_items : [],
+        index_items: relinkedIndexItems,
         index_discrepancy_note: noticeData.index_discrepancy_note ?? DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
         index_discrepancy_note_ar: noticeData.index_discrepancy_note_ar ?? DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
+        attachment_section_order: Array.isArray(noticeData.attachment_section_order) ? noticeData.attachment_section_order : [],
         remarks: noticeData.remarks ?? '',
         remarks_ar: noticeData.remarks_ar ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',
@@ -444,6 +470,13 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         hidden_consultant_fee_gross_amount: variationData.hidden_consultant_fee_gross_amount ?? 0,
         custom_fees: customFeesForForm
       });
+
+      if (relinkedAttachments.length) {
+        setVariationAttachments(relinkedAttachments.map(a => ({
+          id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null,
+          section: a.section ?? '', heading: a.heading ?? '', localId: a.localId,
+        })));
+      }
 
       if (noticeData.omitted_items?.length > 0) {
         const items = noticeData.omitted_items.map(item => ({
@@ -526,13 +559,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         setExistingHiddenFeeAttachment(foundVariation.hidden_consultant_fee_attachment);
         setExistingHiddenFeeAttachmentName(foundVariation.hidden_consultant_fee_attachment_name || null);
       }
-      if (foundVariation?.variation_attachments?.length) {
-        setVariationAttachments(foundVariation.variation_attachments.map(a => ({
-          id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null,
-          section: a.section ?? '', heading: a.heading ?? ''
-        })));
-      }
-
+      // loadVariationData hydrates variationAttachments too — it needs
+      // index_items and variation_attachments together to repair the
+      // attachment<->Index-row link (see relinkAttachmentsToIndexItems).
       loadVariationData(foundVariation);
     } catch (e) {
       logger.error('Error loading variation', e);
@@ -559,12 +588,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           setExistingHiddenFeeAttachment(variationProp.hidden_consultant_fee_attachment);
           setExistingHiddenFeeAttachmentName(variationProp.hidden_consultant_fee_attachment_name || null);
         }
-        if (variationProp.variation_attachments?.length) {
-          setVariationAttachments(variationProp.variation_attachments.map(a => ({
-            id: a.id, url: a.file, file: a.file, file_name: a.file_name, name: a.file_name, newFile: null,
-            section: a.section ?? '', heading: a.heading ?? ''
-          })));
-        }
+        // loadVariationData (above) hydrates variationAttachments too — see
+        // relinkAttachmentsToIndexItems.
       } else {
         computeNextVariationNumber(projectProp.id).then(nextNum => {
           const padded = String(nextNum).padStart(4, '0');
@@ -725,6 +750,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const hasNewFile = variationAttachment instanceof File;
       const hasNewHiddenFeeAttachment = hiddenFeeAttachment instanceof File;
       const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
+      const replacementAttachmentFiles = variationAttachments.filter(a => a.id && a.replacementFile instanceof File);
       const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
       // Section/heading for already-saved attachments — sent on every edit-save so
       // edits to an existing attachment's grouping/label persist even without a new file.
@@ -733,7 +759,18 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           .filter(a => a.id)
           .map(a => ({ id: a.id, section: a.section || '', heading: a.heading || '' }))
       );
-      const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0;
+      // Final on-screen order (section-box drag order, then in-box drag order)
+      // as backend-resolvable tokens — "id:<id>" for a kept attachment, or
+      // "new:<i>" matching its index among newAttachmentFiles below — so a
+      // drag-and-drop reorder actually persists to VariationAttachment.order.
+      const orderedSections = getOrderedAttachmentSections(formData.attachment_section_order);
+      const newFileIndexByLocalId = new Map(newAttachmentFiles.map((a, i) => [a.localId, i]));
+      const attachmentsOrder = JSON.stringify(
+        getAttachmentDisplayOrder(variationAttachments, orderedSections).map(a => (
+          a.id ? `id:${a.id}` : `new:${newFileIndexByLocalId.get(a.localId)}`
+        ))
+      );
+      const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0 || replacementAttachmentFiles.length > 0;
 
       const safeVal = (v) => {
         const s = String(v ?? '0');
@@ -752,11 +789,17 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           fd.append(`variation_attachments[${i}]`, a.newFile);
           fd.append(`variation_attachments_section[${i}]`, a.section || '');
           fd.append(`variation_attachments_heading[${i}]`, a.heading || '');
+          fd.append(`variation_attachments_client_ref[${i}]`, a.localId || '');
+        });
+        replacementAttachmentFiles.forEach((a) => {
+          fd.append(`variation_attachments_replace[${a.id}]`, a.replacementFile);
         });
         // Tell backend which saved IDs to keep; it will delete the rest
         fd.append('keep_attachment_ids', currentSavedIds.join(','));
         // Section/heading edits on already-saved attachments
         fd.append('variation_attachments_meta', attachmentsMeta);
+        // Final drag-and-drop order (section-box order + in-box order)
+        fd.append('variation_attachments_order', attachmentsOrder);
         return fd;
       };
 
@@ -781,6 +824,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           Object.keys(saveData).forEach(key => fd.append(key, safeVal(saveData[key])));
           fd.append('keep_attachment_ids', currentSavedIds.join(','));
           fd.append('variation_attachments_meta', attachmentsMeta);
+          fd.append('variation_attachments_order', attachmentsOrder);
           if (variationFileCleared) fd.append('clear_variation_invoice_file', 'true');
           if (hiddenFeeAttachmentCleared) fd.append('clear_hidden_consultant_fee_attachment', 'true');
           await projectApi.updateVariation(project.id, variationId, fd);
@@ -1134,6 +1178,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             consultantStampUrl={null}
             gmSignatureUrl={null}
             hideSignatures={true}
+            generalRemarksEn={generalRemarksEn}
+            generalRemarksAr={generalRemarksAr}
           />
         </div>
       )}

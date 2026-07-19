@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { companyApi, authApi } from '../../../services';
 import { logger } from '../../../utils/logger';
@@ -29,6 +30,7 @@ export default function CompanySettingsPage() {
   const isRTL = i18n.language === 'ar';
   const lang = i18n.language;
   const navigate = useTenantNavigate();
+  const queryClient = useQueryClient();
   const { success, error: showError } = useNotifications();
 
   const [activeTab, setActiveTab] = useState('company');
@@ -45,6 +47,8 @@ export default function CompanySettingsPage() {
     company_country: '',
     company_city: '',
     company_description: '',
+    general_remarks_en: '',
+    general_remarks_ar: '',
     company_activity_type: 'construction',
     company_logo: null,
     background_image: null,
@@ -98,6 +102,8 @@ export default function CompanySettingsPage() {
         company_country: settings.company_country || '',
         company_city: settings.company_city || '',
         company_description: settings.company_description || '',
+        general_remarks_en: settings.general_remarks_en || '',
+        general_remarks_ar: settings.general_remarks_ar || '',
         company_activity_type: settings.company_activity_type || 'construction',
         company_logo: null,
         background_image: null,
@@ -165,27 +171,37 @@ export default function CompanySettingsPage() {
       const textFields = [
         'company_name','company_license_number','company_phone','company_address',
         'company_country','company_city','company_description','company_activity_type',
+        'general_remarks_en','general_remarks_ar',
         'primary_color','secondary_color','contractor_name','contractor_name_en',
         'contractor_license_no','contractor_phone','contractor_email','contractor_address',
         'contractor_registration_number', 'company_trn',
       ];
       const fileFields = ['company_logo','background_image','contractor_signature','letter_head_template','company_stamp'];
+      const clearableTextFields = new Set(['general_remarks_en', 'general_remarks_ar']);
       const hasFiles = fileFields.some(f => companyData[f] instanceof File) || removedFields.size > 0;
 
       let payload;
       const isValidValue = (v) => v !== undefined && v !== null && v !== '' && v !== 'undefined';
+      const shouldIncludeTextField = (field) => (
+        clearableTextFields.has(field) || isValidValue(companyData[field])
+      );
       if (hasFiles) {
         payload = new FormData();
-        textFields.forEach(f => { if (isValidValue(companyData[f])) payload.append(f, companyData[f]); });
+        textFields.forEach(f => {
+          if (shouldIncludeTextField(f)) payload.append(f, companyData[f] ?? '');
+        });
         fileFields.forEach(f => {
           if (companyData[f] instanceof File) payload.append(f, companyData[f]);
           else if (removedFields.has(f)) payload.append(`remove_${f}`, 'true');
         });
       } else {
         payload = {};
-        textFields.forEach(f => { if (isValidValue(companyData[f])) payload[f] = companyData[f]; });
+        textFields.forEach(f => {
+          if (shouldIncludeTextField(f)) payload[f] = companyData[f] ?? '';
+        });
       }
       await companyApi.updateCurrentSettings(payload);
+      await queryClient.invalidateQueries({ queryKey: ['company-settings'] });
       await loadTenantTheme(false);
       setRemovedFields(new Set());
       await loadData();
@@ -375,6 +391,32 @@ export default function CompanySettingsPage() {
                 </div>
 
                 <p className="cs-readonly-note"><FaLock /> {t('company_admin_readonly_note')}</p>
+
+                {/* General Remarks — shown read-only on every Variation Notice */}
+                <div className="cs-divider" />
+                <div className="cs-grid">
+                  <Field
+                    label={t('general_remarks_en_label', 'General Remarks (English)')}
+                    className="cs-grid__full"
+                    textarea
+                    rows={4}
+                    name="general_remarks_en"
+                    value={companyData.general_remarks_en}
+                    onChange={handleCompanyChange}
+                    placeholder={t('general_remarks_placeholder', 'Standard remarks shown on every Variation Notice...')}
+                  />
+                  <Field
+                    label={t('general_remarks_ar_label', 'General Remarks (Arabic)')}
+                    className="cs-grid__full"
+                    textarea
+                    rows={4}
+                    name="general_remarks_ar"
+                    value={companyData.general_remarks_ar}
+                    onChange={handleCompanyChange}
+                    dir="rtl"
+                  />
+                </div>
+                <p className="cs-readonly-note">{t('general_remarks_hint', 'Shown read-only on every Variation Notice, in both languages.')}</p>
 
                 {/* Company Signature */}
                 <div className="cs-divider" />
