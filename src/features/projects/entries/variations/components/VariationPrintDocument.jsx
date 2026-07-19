@@ -87,7 +87,7 @@ function getIndexItems(data) {
     .map((item, index) => ({ ...item, serial_no: String(index + 1) }));
 }
 
-const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }, ref) => {
+const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false, generalRemarksEn, generalRemarksAr }, ref) => {
   const data = useMemo(() => {
     if (noticeData) return noticeData;
     if (!variation?.description) return {};
@@ -97,6 +97,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
 
   const causeText = Array.isArray(data.variation_cause) ? data.variation_cause.join(', ') : data.variation_cause;
   const tradeDisciplineText = Array.isArray(data.trade_discipline) ? data.trade_discipline.join(', ') : data.trade_discipline;
+  const hasGeneralRemarks = Boolean(generalRemarksEn?.trim() || generalRemarksAr?.trim());
 
   // Financial values
   const totalOmitted = parseFloat(data.total_omitted || 0);
@@ -295,7 +296,9 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 <div className="vpd-meta__varno-group">
                   <div>
                     <BilingualText ar="رقم التغيير" en="VAR. NO." className="vpd-meta__label" />
-                    <strong>{variation?.variation_number || data.reference_no || EMPTY}</strong>
+                    <strong className="vpd-reference-number">
+                      {variation?.variation_number || data.reference_no || EMPTY}
+                    </strong>
                   </div>
                   <div>
                     <BilingualText ar="رقم المشروع" en="PROJECT NO." className="vpd-meta__label" />
@@ -359,7 +362,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             <div className="vpd-cards__meta-row">
               <div className="vpd-info-card vpd-info-card--sm">
                 <BilingualText ar="رقم المرجع" en="REFERENCE NO." className="vpd-info-card__label" />
-                <span className="vpd-info-card__value vpd-info-card__value--plain">
+                <span className="vpd-info-card__value vpd-info-card__value--plain vpd-reference-number">
                   {data.reference_no || variation?.variation_number || EMPTY}
                 </span>
               </div>
@@ -679,6 +682,31 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             </div>
           </div>
         </div>
+
+        {/* Keep the variation content in normal flow. General Remarks is
+            appended as a dedicated final sheet so a one-page notice prints
+            with these remarks on its physical reverse side. */}
+        {hasGeneralRemarks && (
+          <section
+            className="vpd-general-remarks-page vpd-notes"
+            data-vpd-general-remarks-page
+          >
+            <strong className="vpd-notes__label">
+              <BilingualText ar="ملاحظات عامة" en="GENERAL REMARKS" />
+            </strong>
+            <div className="vpd-notes__split">
+              <div className="vpd-notes__split-col">
+                <strong className="vpd-notes__label">Remarks</strong>
+                <PrintRichText value={generalRemarksEn} />
+              </div>
+              <div className="vpd-notes__split-divider" />
+              <div className="vpd-notes__split-col vpd-notes__split-col--ar" dir="rtl">
+                <strong className="vpd-notes__label" dir="rtl">ملاحظات</strong>
+                <PrintRichText value={generalRemarksAr} className="vpd-rich-text--ar" dir="rtl" />
+              </div>
+            </div>
+          </section>
+        )}
 
       </article>
     </div>

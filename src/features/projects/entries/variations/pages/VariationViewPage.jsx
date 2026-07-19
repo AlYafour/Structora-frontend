@@ -133,6 +133,8 @@ export default function VariationViewPage() {
           website: data.company_website || "",
           address: data.company_address || "",
           company_stamp_url: data.company_stamp_url || null,
+          general_remarks_en: data.general_remarks_en || "",
+          general_remarks_ar: data.general_remarks_ar || "",
         });
       } catch (e) {
         logger.warn("Could not load company info", e);
@@ -615,6 +617,8 @@ export default function VariationViewPage() {
                 noticeData={noticeData}
                 consultantStampUrl={consultantStampUrl}
                 gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+                generalRemarksEn={companyInfo?.general_remarks_en}
+                generalRemarksAr={companyInfo?.general_remarks_ar}
               />
             </div>
           </div>
@@ -634,6 +638,8 @@ export default function VariationViewPage() {
               noticeData={noticeData}
               consultantStampUrl={consultantStampUrl}
               gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
+              generalRemarksEn={companyInfo?.general_remarks_en}
+              generalRemarksAr={companyInfo?.general_remarks_ar}
             />
           </div>
         )}
@@ -651,6 +657,8 @@ export default function VariationViewPage() {
               consultantStampUrl={consultantStampUrl}
               gmSignatureUrl={variation?.general_manager_final_approved_by?.signature_url || null}
               hideSignatures={true}
+              generalRemarksEn={companyInfo?.general_remarks_en}
+              generalRemarksAr={companyInfo?.general_remarks_ar}
             />
           </div>
         )}

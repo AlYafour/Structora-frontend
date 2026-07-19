@@ -17,4 +17,12 @@ export const aiTextApi = {
     const { data } = await api.post("transcribe-audio/", formData);
     return data; // { text: string, model: string }
   },
+
+  async checkRemarksOverlap(newLines, generalRemarks) {
+    const { data } = await api.post("check-remarks-overlap/", {
+      new_lines: newLines,
+      general_remarks: generalRemarks,
+    });
+    return data; // { overlaps: [{ line, matched_point, reason }] }
+  },
 };

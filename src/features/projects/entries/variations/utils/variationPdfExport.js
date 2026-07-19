@@ -1,5 +1,5 @@
 import { generatePDFFilename } from "./pdfFilenameGenerator";
-import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from "./printPagination";
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup, forceElementToPageStart } from "./printPagination";
 import { stampVariationPageNumbers } from "./wrapVariationAttachments";
 import { fetchFileWithAuth } from "../../../../../utils/helpers/file";
 
@@ -38,6 +38,7 @@ async function createPdfWatermarkImage(src) {
 
 export async function prepareVariationPrintDocumentLayout(el) {
   const prevWidth = el?.style.width || "";
+  let cleanupForcedGeneralRemarks = null;
   let cleanupTablePagination = null;
   let cleanupPageBreaks = null;
   let cleanupPinnedBottom = null;
@@ -58,7 +59,13 @@ export async function prepareVariationPrintDocumentLayout(el) {
   });
   await new Promise(resolve => requestAnimationFrame(resolve));
 
+  // Run last: the normal variation content is fully paginated and pinned
+  // first, then General Remarks starts on and occupies its own final sheet.
+  cleanupForcedGeneralRemarks = forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_A4_HEIGHT_PX);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
   return () => {
+    cleanupForcedGeneralRemarks?.();
     cleanupPinnedBottom?.();
     cleanupPageBreaks?.();
     cleanupTablePagination?.();
@@ -223,11 +230,21 @@ export async function exportVariationPdf({
     // pages. Attachments are intentionally not merged into this snapshot -
     // it's an auto-generated upload on approval, not a user-facing download,
     // and attachments can push it past the storage provider's size limit.
-    const { PDFDocument } = await import("pdf-lib");
+    const { PDFDocument, PDFName } = await import("pdf-lib");
     const mainPdfBytes = pdf.output("arraybuffer");
     const mergedDoc = await PDFDocument.load(mainPdfBytes);
 
     await stampVariationPageNumbers(mergedDoc, { variation, project, noticeData });
+
+    // Hint compliant PDF viewers (e.g. Adobe Acrobat) to pre-select duplex
+    // printing, so General Remarks (forced onto page 2 above) lands on the
+    // physical back of page 1 when the user prints double-sided. A hint
+    // only — depends on the viewer honoring it and the printer supporting
+    // duplex; does not affect the separate browser-print (react-to-print) path.
+    mergedDoc.catalog.set(
+      PDFName.of("ViewerPreferences"),
+      mergedDoc.context.obj({ Duplex: PDFName.of("DuplexFlipLongEdge") })
+    );
 
     const mergedBytes = await mergedDoc.save();
     const blob = new Blob([mergedBytes], { type: "application/pdf" });

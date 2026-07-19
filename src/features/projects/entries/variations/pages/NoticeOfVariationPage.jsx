@@ -21,6 +21,7 @@ import { formatMoney } from '../../../../../utils/formatters';
 import DirhamsIcon from '../../../../../components/common/DirhamsIcon';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import { useNotifications } from '../../../../../contexts/NotificationContext';
+import useCompanySettings from '../../../../../hooks/useCompanySettings';
 
 // Custom hooks
 import { useVariationForm } from './hooks/useVariationForm';
@@ -39,7 +40,7 @@ import VariationPrintDocument from '../components/VariationPrintDocument';
 // Utilities
 import { validateVariationSubmit } from './utils/variationValidation';
 import { round2 } from './utils/variationCalculations';
-import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup } from '../utils/printPagination';
+import { applyPrintPagePartBreaks, applyPrintTablePagination, pinPrintBottomGroup, forceElementToPageStart } from '../utils/printPagination';
 import {
   DEFAULT_INDEX_DISCREPANCY_NOTE_AR,
   DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
@@ -262,6 +263,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     toggleAddedItemExpand
   } = useVariationItems();
 
+  // Company-wide General Remarks — needed here so the off-screen page-count
+  // measurement below reflects the forced General Remarks page too.
+  const { data: companySettingsForPrint } = useCompanySettings();
+  const generalRemarksEn = companySettingsForPrint?.general_remarks_en || '';
+  const generalRemarksAr = companySettingsForPrint?.general_remarks_ar || '';
+
   // Calculate financials
   const calculations = useVariationCalculations(formData, omittedItems, addedItems);
   const liveNoticeData = useMemo(
@@ -331,6 +338,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         return;
       }
 
+      let cleanupForcedGeneralRemarks = null;
       let cleanupTablePagination = null;
       let cleanupPageBreaks = null;
       let cleanupPinnedBottom = null;
@@ -353,10 +361,16 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         });
         await waitForRenderFrame();
 
+        // Measure the normal notice first, then append General Remarks as its
+        // own final sheet so attachment page numbering matches the PDF.
+        cleanupForcedGeneralRemarks = forceElementToPageStart(el, '[data-vpd-general-remarks-page]', 1, PRINT_A4_HEIGHT_PX);
+        await waitForRenderFrame();
+
         const height = Math.max(el.scrollHeight || 0, el.getBoundingClientRect().height || 0);
         const pages = Math.max(1, Math.ceil(height / PRINT_A4_HEIGHT_PX));
         if (!cancelled) setEstimatedNoticePages(pages);
       } finally {
+        cleanupForcedGeneralRemarks?.();
         cleanupPinnedBottom?.();
         cleanupPageBreaks?.();
         cleanupTablePagination?.();
@@ -370,7 +384,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     return () => {
       cancelled = true;
     };
-  }, [liveNoticeData, project]);
+  }, [liveNoticeData, project, generalRemarksEn, generalRemarksAr]);
 
   /**
    * Load variation data into form
@@ -1164,6 +1178,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             consultantStampUrl={null}
             gmSignatureUrl={null}
             hideSignatures={true}
+            generalRemarksEn={generalRemarksEn}
+            generalRemarksAr={generalRemarksAr}
           />
         </div>
       )}

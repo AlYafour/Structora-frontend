@@ -2,6 +2,7 @@ const PAGE_PART_SELECTOR = "[data-vpd-page-part]";
 const PINNED_BOTTOM_SELECTOR = ".vpd-pinned-bottom";
 const TABLE_SECTION_SELECTOR = "[data-vpd-print-table-section]";
 const INSERTED_TABLE_BREAK_SELECTOR = "[data-vpd-inserted-table-break]";
+const GENERAL_REMARKS_PAGE_SELECTOR = "[data-vpd-general-remarks-page]";
 
 function getTopWithin(root, el) {
   return el.getBoundingClientRect().top - root.getBoundingClientRect().top;
@@ -44,6 +45,21 @@ function clearPinnedBottom(root) {
       el.style.marginTop = el.dataset.vpdOriginalPinMarginTop || "";
       delete el.dataset.vpdOriginalPinMarginTop;
       delete el.dataset.vpdAutoPinMarginTop;
+    }
+  });
+}
+
+function clearForcedPageStart(root) {
+  root.querySelectorAll(GENERAL_REMARKS_PAGE_SELECTOR).forEach((el) => {
+    if (el.dataset.vpdAutoForcedMarginTop !== undefined) {
+      el.style.marginTop = el.dataset.vpdOriginalForcedMarginTop || "";
+      delete el.dataset.vpdOriginalForcedMarginTop;
+      delete el.dataset.vpdAutoForcedMarginTop;
+    }
+    if (el.dataset.vpdAutoForcedMinHeight !== undefined) {
+      el.style.minHeight = el.dataset.vpdOriginalForcedMinHeight || "";
+      delete el.dataset.vpdOriginalForcedMinHeight;
+      delete el.dataset.vpdAutoForcedMinHeight;
     }
   });
 }
@@ -102,6 +118,51 @@ function createContinuationHeaderRow(table) {
   row.classList.add("vpd-table-continuation-head");
   row.dataset.vpdInsertedTableBreak = "true";
   return row;
+}
+
+// Unconditionally pushes the element matching `selector` so its top lands at
+// or after `minPageIndex * pageHeight` (0-indexed: minPageIndex=1 => "page
+// 2"), then (by default) forces it to occupy exactly one full page via
+// minHeight, so whatever follows in the DOM starts no earlier than the next
+// page boundary. Unlike applyPrintPagePartBreaks below, this is NOT
+// conditional on "does it fit" — it always pushes.
+//
+// Uses Math.ceil(naturalTop / pageHeight) rather than a hardcoded target so
+// it degrades safely if content before it already overflows past
+// minPageIndex (e.g. an unusually long header): the element lands on the
+// next real page boundary at or after wherever the header actually ends,
+// instead of a hardcoded target producing a negative margin and visually
+// overlapping the still-flowing header.
+//
+// Must run BEFORE applyPrintTablePagination/applyPrintPagePartBreaks/
+// pinPrintBottomGroup in every caller — it defines how much of page 1 is
+// consumed, which those functions' own remaining-space math depends on.
+export function forceElementToPageStart(root, selector, minPageIndex, pageHeight, { fillFullPage = true } = {}) {
+  if (!root || !pageHeight) return () => {};
+
+  clearForcedPageStart(root); // undo any stale push from a previous measurement pass first
+
+  const el = root.querySelector(selector);
+  if (!el) return () => clearForcedPageStart(root);
+
+  const naturalTop = getTopWithin(root, el);
+  const targetPageIndex = Math.max(minPageIndex, Math.ceil(naturalTop / pageHeight));
+  const targetTop = targetPageIndex * pageHeight;
+
+  const computedMarginTop = parsePx(window.getComputedStyle(el).marginTop);
+  const forcedMarginTop = Math.max(0, computedMarginTop + (targetTop - naturalTop));
+
+  el.dataset.vpdOriginalForcedMarginTop = el.style.marginTop || "";
+  el.dataset.vpdAutoForcedMarginTop = String(forcedMarginTop);
+  el.style.marginTop = `${forcedMarginTop}px`;
+
+  if (fillFullPage) {
+    el.dataset.vpdOriginalForcedMinHeight = el.style.minHeight || "";
+    el.dataset.vpdAutoForcedMinHeight = String(pageHeight);
+    el.style.minHeight = `${pageHeight}px`;
+  }
+
+  return () => clearForcedPageStart(root);
 }
 
 export function applyPrintPagePartBreaks(root, pageHeight, { continuationTopGap = 14 } = {}) {

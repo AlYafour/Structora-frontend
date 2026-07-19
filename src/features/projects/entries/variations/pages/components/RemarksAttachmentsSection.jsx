@@ -1,10 +1,16 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
+import Button from '../../../../../../components/common/Button';
+import VoiceNoteButton from '../../../../../../components/common/VoiceNoteButton';
 import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
-import { normalizeRichTextForRender } from '../../../../../../utils/richText';
+import { useVoiceTranscription } from '../../../../../../hooks/useVoiceTranscription';
+import useCompanySettings from '../../../../../../hooks/useCompanySettings';
+import { useSuggestWording } from '../hooks/useSuggestWording';
+import { useRemarksOverlapCheck } from '../hooks/useRemarksOverlapCheck';
+import { normalizeRichTextForRender, htmlToPlainText, plainTextToHtml } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
 import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
 import {
@@ -376,6 +382,63 @@ const RemarksAttachmentsSection = memo(({
   const isRTL = /^ar\b/i.test(i18n.language || '');
   const getSectionLabel = (section) => (isRTL && ATTACHMENT_SECTIONS_AR[section]) || section;
 
+  // Company-wide General Remarks — always shown read-only, above the
+  // per-variation Remarks editor below. Fetched once and cached/shared via
+  // React Query, not stored per-variation.
+  const { data: companySettings } = useCompanySettings();
+  const generalRemarksEn = companySettings?.general_remarks_en || '';
+  const generalRemarksAr = companySettings?.general_remarks_ar || '';
+
+  // Suggest Wording + Voice Note for the English remarks pane — mirrors the
+  // same two AI affordances on the Variation Description field. The English
+  // pane is always the authored source of truth (unrelated to UI locale), so
+  // both hooks are fixed to 'en'. Neither ever touches formData.remarks_ar —
+  // the useLineSyncTranslate effect below reacts to any formData.remarks
+  // change and re-syncs Arabic on its own.
+  const {
+    suggestions: remarksSuggestions,
+    busy: remarksSuggestBusy,
+    error: remarksSuggestError,
+    requestSuggestion: requestRemarksSuggestion,
+    discard: discardRemarksSuggestions,
+  } = useSuggestWording({ language: 'en' });
+
+  const handleSuggestRemarksWording = async () => {
+    await requestRemarksSuggestion(htmlToPlainText(formData.remarks));
+  };
+
+  const handleApplyRemarksSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    onFormDataChange(prev => ({ ...prev, remarks: plainTextToHtml(suggestion) }));
+    discardRemarksSuggestions();
+  };
+
+  const handleRemarksChange = (html) => {
+    discardRemarksSuggestions();
+    onFormDataChange(prev => ({ ...prev, remarks: html }));
+  };
+
+  // Remarks are incremental bullet points, so voice notes append as a new
+  // paragraph rather than replacing existing content.
+  const appendRemarksTranscript = (transcript) => {
+    discardRemarksSuggestions();
+    onFormDataChange(prev => ({
+      ...prev,
+      remarks: `${prev.remarks || ''}${plainTextToHtml(transcript)}`,
+    }));
+  };
+
+  const {
+    recording: remarksRecording,
+    transcribing: remarksTranscribing,
+    error: remarksVoiceError,
+    toggleRecording: toggleRemarksRecording,
+  } = useVoiceTranscription({
+    language: 'en',
+    field: 'variation remarks',
+    onTranscribed: appendRemarksTranscript,
+  });
+
   // Arabic remarks stay in line-level sync with English: only lines that were
   // actually added/edited get (re)translated, plainly (no styling). Lines the
   // user hasn't touched in English are left completely alone in Arabic, so
@@ -391,6 +454,14 @@ const RemarksAttachmentsSection = memo(({
   const handleArabicRemarksChange = (html) => {
     onFormDataChange(prev => ({ ...prev, remarks_ar: html }));
   };
+
+  // Soft, dismissible warning if a new/edited English remark line looks like
+  // it already means the same thing as something in General Remarks above.
+  // Never blocks saving — see useRemarksOverlapCheck.
+  const {
+    warnings: remarksOverlapWarnings,
+    dismissWarning: dismissRemarksOverlapWarning,
+  } = useRemarksOverlapCheck(formData.remarks, generalRemarksEn, { enabled: isEditMode });
 
   // Every known section, in this variation's own drag-customized order
   // (falls back to the catalog order until the user reorders the boxes).
@@ -674,6 +745,23 @@ const RemarksAttachmentsSection = memo(({
 
   return (
     <div className="nvc-section nvc-section--remarks">
+      {(generalRemarksEn || generalRemarksAr) && (
+        <div className="nvc-field nvc-field--full nvc-general-remarks">
+          <div className="nvc-section-header">
+            <h3>{t('general_remarks_title', 'General Remarks')}</h3>
+          </div>
+          <div className="nvc-remarks-split-view-grid">
+            <div className="nvc-remarks-split-view-col" style={{ whiteSpace: 'pre-wrap' }}>
+              {generalRemarksEn}
+            </div>
+            <div className="nvc-remarks-split-view-divider" />
+            <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" style={{ whiteSpace: 'pre-wrap' }} dir="rtl">
+              {generalRemarksAr}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(isEditMode || formData.remarks) && (
         <div className="nvc-section-header">
           <h3>{t('remarks')}</h3>
@@ -682,17 +770,39 @@ const RemarksAttachmentsSection = memo(({
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
           {isEditMode ? (
+            <>
             <div className="nvc-remarks-split-card">
               {/* English pane — original input */}
-              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en">
+              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en" dir="ltr">
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">EN</span>
                   <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                  {isEditMode && (
+                    <div className="nvh-desc-row__actions">
+                      <VoiceNoteButton
+                        recording={remarksRecording}
+                        transcribing={remarksTranscribing}
+                        disabled={remarksSuggestBusy}
+                        onClick={toggleRemarksRecording}
+                        t={t}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={remarksSuggestBusy}
+                        disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing}
+                        startIcon={<FaRobot />}
+                        onClick={handleSuggestRemarksWording}
+                      >
+                        {t('suggest_wording')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <RichTextEditor
                   className="nvc-remarks-rich-editor"
                   value={formData.remarks ?? ''}
-                  onChange={(html) => onFormDataChange({ ...formData, remarks: html })}
+                  onChange={handleRemarksChange}
                   placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
                   dir="ltr"
                   t={t}
@@ -727,6 +837,65 @@ const RemarksAttachmentsSection = memo(({
                 />
               </div>
             </div>
+
+            {remarksSuggestError && (
+              <p className="nvh-suggest-error">
+                {t(remarksSuggestError) !== remarksSuggestError ? t(remarksSuggestError) : remarksSuggestError}
+              </p>
+            )}
+
+            {remarksVoiceError && (
+              <p className="nvh-suggest-error">
+                {t(remarksVoiceError) !== remarksVoiceError ? t(remarksVoiceError) : remarksVoiceError}
+              </p>
+            )}
+
+            {remarksOverlapWarnings.length > 0 && (
+              <div className="nvh-remarks-overlap-warnings">
+                <div className="nvh-remarks-overlap-warnings__heading">
+                  <FaExclamationTriangle /> {t('remarks_overlap_heading', 'May already be covered in General Remarks')}
+                </div>
+                {remarksOverlapWarnings.map((w) => (
+                  <div key={w.line} className="nvh-remarks-overlap-warning">
+                    <div className="nvh-remarks-overlap-warning__text">
+                      <span className="nvh-remarks-overlap-warning__line">&ldquo;{w.line}&rdquo;</span>
+                      {' '}{t('remarks_overlap_matches', 'matches General Remarks:')}{' '}
+                      <span className="nvh-remarks-overlap-warning__matched">&ldquo;{w.matchedPoint}&rdquo;</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="nvh-remarks-overlap-warning__dismiss"
+                      onClick={() => dismissRemarksOverlapWarning(w.line)}
+                      title={t('dismiss', 'Dismiss')}
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {remarksSuggestions.length > 0 && (
+              <div className="nvh-ai-suggestions">
+                <div className="nvh-ai-suggestions__heading">
+                  <FaRobot /> {t('ai_suggestions')}
+                </div>
+                <div className="nvh-ai-suggestions__list">
+                  {remarksSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion}-${index}`}
+                      type="button"
+                      className="nvh-inline-suggestion"
+                      onClick={() => handleApplyRemarksSuggestion(suggestion)}
+                    >
+                      <span className="nvh-inline-suggestion__badge">{index + 1}</span>
+                      <span className="nvh-inline-suggestion__text">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            </>
           ) : formData.remarks ? (
             formData.remarks_ar ? (
               <div className="nvc-remarks-split-view-grid">
