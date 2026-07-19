@@ -1075,7 +1075,7 @@
     "permitYes": "نعم — رخصة بناء",
     "permitYesDesc": "يتطلب رخصة",
     "permitNo": "لا — بدون رخصة",
-    "permitNoDesc": "صيانة، فت أوت",
+    "permitNoDesc": "صيانة، تجهيز داخلي",
     "catLabel": "فئة المشروع",
     "catConstruction": "إنشاءات",
     "catConDesc": "بناء جديد",
@@ -1084,7 +1084,7 @@
     "catRenovation": "تجديد وتأهيل",
     "catRenDesc": "إعادة تأهيل",
     "catFitout": "تجهيز داخلي",
-    "catFitDesc": "Fit-Out",
+    "catFitDesc": "أعمال تجهيز داخلي",
     "buildingLabel": "نوع المبنى",
     "subClassLabel": "التصنيف الفرعي للمبنى",
     "subClassInfra": "التصنيف الفرعي",
@@ -1093,7 +1093,7 @@
     "no": "✗ لا",
     "extraMnt": "صيانة",
     "extraRen": "تجديد",
-    "extraFit": "فت أوت",
+    "extraFit": "تجهيز داخلي",
     "contractLabel": "نوع العقد",
     "scopeMnt": "نطاق الصيانة",
     "scopeRen": "نطاق التأهيل",
@@ -1132,7 +1132,7 @@
     "constrTabs": {
       "maintenance": "صيانة",
       "renovation": "تجديد",
-      "fitout": "فت أوت",
+      "fitout": "تجهيز داخلي",
       "construction": "إنشاءات"
     }
   },

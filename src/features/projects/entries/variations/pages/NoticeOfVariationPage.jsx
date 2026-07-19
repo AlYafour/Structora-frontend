@@ -736,6 +736,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const hasNewFile = variationAttachment instanceof File;
       const hasNewHiddenFeeAttachment = hiddenFeeAttachment instanceof File;
       const newAttachmentFiles = variationAttachments.filter(a => a.newFile instanceof File);
+      const replacementAttachmentFiles = variationAttachments.filter(a => a.id && a.replacementFile instanceof File);
       const currentSavedIds = variationAttachments.filter(a => a.id).map(a => a.id);
       // Section/heading for already-saved attachments — sent on every edit-save so
       // edits to an existing attachment's grouping/label persist even without a new file.
@@ -755,7 +756,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           a.id ? `id:${a.id}` : `new:${newFileIndexByLocalId.get(a.localId)}`
         ))
       );
-      const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0;
+      const needsFormData = hasNewFile || hasNewHiddenFeeAttachment || hiddenFeeAttachmentCleared || newAttachmentFiles.length > 0 || replacementAttachmentFiles.length > 0;
 
       const safeVal = (v) => {
         const s = String(v ?? '0');
@@ -775,6 +776,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           fd.append(`variation_attachments_section[${i}]`, a.section || '');
           fd.append(`variation_attachments_heading[${i}]`, a.heading || '');
           fd.append(`variation_attachments_client_ref[${i}]`, a.localId || '');
+        });
+        replacementAttachmentFiles.forEach((a) => {
+          fd.append(`variation_attachments_replace[${a.id}]`, a.replacementFile);
         });
         // Tell backend which saved IDs to keep; it will delete the rest
         fd.append('keep_attachment_ids', currentSavedIds.join(','));

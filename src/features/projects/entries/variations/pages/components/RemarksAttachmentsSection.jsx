@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTranslate';
@@ -67,14 +67,49 @@ function PendingAttachmentRow({ att, t, onFieldChange, onRemove }) {
 // on top, with a short heading input directly below it. Deliberately doesn't
 // use <FileAttachmentView> (a fixed icon+filename+view+download block) since
 // that leaves no room to add the heading input under it.
-function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove, dragHandleProps }) {
+function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
+  const fileInputRef = useRef(null);
+  const [error, setError] = useState('');
   const fileUrl = att.url || att.file;
-  const displayName = att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
+  const hasReplacement = att.replacementFile instanceof File;
+  const displayName = hasReplacement
+    ? att.replacementFile.name
+    : att.file_name || att.name || extractFileNameFromUrl(fileUrl) || t('file');
 
   const handleView = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (hasReplacement) {
+      const blobUrl = URL.createObjectURL(att.replacementFile);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      return;
+    }
     if (fileUrl) await openFileInNewWindow(fileUrl, displayName);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!validateFileSize(file, MAX_ATTACHMENT_SIZE_MB)) {
+      setError(t('file_upload_too_large', { name: file.name, maxSize: MAX_ATTACHMENT_SIZE_MB }));
+      return;
+    }
+    const ext = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
+    if (!ACCEPTED_ATTACHMENT_TYPES.includes(ext)) {
+      setError(t('file_upload_invalid_file_type', { types: ACCEPTED_ATTACHMENT_TYPES.join(', ') }));
+      return;
+    }
+    setError('');
+    onFileChange(file);
   };
 
   return (
@@ -99,9 +134,39 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove, dragH
           <FaGripVertical />
         </span>
       )}
+      {isEditMode && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_ATTACHMENT_TYPES.join(',')}
+          onChange={handleFileSelect}
+          className="nvc-attachment-row__file-input-hidden"
+        />
+      )}
       <div className="nvc-attachment-row__file-bar">
-        <FaFile className="nvc-attachment-row__icon" />
+        {hasReplacement
+          ? <FaCheckCircle className="nvc-attachment-row__icon nvc-attachment-row__icon--success" />
+          : <FaFile className="nvc-attachment-row__icon" />}
         <span className="nvc-attachment-row__filename" title={displayName}>{displayName}</span>
+        {att.aiExtracting && (
+          <span className="nvc-attachment-row__ai-status" title={t('attachment_ai_extracting', 'Reading document...')}>
+            <FaSpinner className="nvc-attachment-row__icon nvc-attachment-row__icon--spin" />
+          </span>
+        )}
+        {isEditMode && (
+          <button
+            type="button"
+            className="nvc-attachment-row__icon-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            title={t('replace_file', 'Replace file')}
+          >
+            <FaExchangeAlt />
+          </button>
+        )}
         <button
           type="button"
           className="nvc-attachment-row__icon-btn"
@@ -111,6 +176,12 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove, dragH
           <FaRegEye />
         </button>
       </div>
+      {att.aiChecked && (!att.ai_ref_no || !att.ai_date) && (
+        <span className="nvc-attachment-row__ai-warning">
+          <FaExclamationTriangle />
+          {t('attachment_ai_extract_incomplete', "Couldn't detect ref no/date automatically - please check the Index table below.")}
+        </span>
+      )}
       {isEditMode ? (
         <input
           type="text"
@@ -122,6 +193,7 @@ function SavedAttachmentRow({ att, isEditMode, t, onFieldChange, onRemove, dragH
       ) : (
         att.heading && <div className="nvc-attachment-row__heading-text">{att.heading}</div>
       )}
+      {error && <span className="nvc-attachment-row__error">{error}</span>}
     </div>
   );
 }
@@ -253,7 +325,7 @@ function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemo
   const isLegacyUnfiled = isEditMode && !ATTACHMENT_SECTIONS.includes(att.section);
 
   const row = isSaved ? (
-    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
+    <SavedAttachmentRow att={att} isEditMode={isEditMode} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : isEditMode ? (
     <NewAttachmentRow att={att} t={t} onFileChange={onFileChange} onFieldChange={onFieldChange} onRemove={onRemove} dragHandleProps={dragHandleProps} />
   ) : null;
@@ -477,10 +549,18 @@ const RemarksAttachmentsSection = memo(({
 
   const handleAttachmentFileChange = async (index, file) => {
     const localId = variationAttachments?.[index]?.localId;
+    const isSavedAttachment = !!variationAttachments?.[index]?.id;
 
     setVariationAttachments(prev => prev.map((item) =>
       item.localId === localId
-        ? { ...item, newFile: file, name: file?.name || item.name, aiExtracting: true, aiChecked: false }
+        ? {
+          ...item,
+          ...(isSavedAttachment
+            ? { replacementFile: file, replacementName: file?.name || item.replacementName }
+            : { newFile: file, name: file?.name || item.name }),
+          aiExtracting: true,
+          aiChecked: false,
+        }
         : item
     ));
 
