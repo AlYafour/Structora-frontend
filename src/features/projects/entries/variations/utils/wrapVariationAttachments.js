@@ -485,8 +485,12 @@ function getRotatedPageDrawOptions(embeddedPage, box, rotationAngle, inset = 10)
   const drawH = embeddedPage.height * scale;
   const x = box.x + ((box.width - fit.width) / 2);
   const y = box.y + ((box.height - fit.height) / 2);
+  // A PDF page's /Rotate value is clockwise, while pdf-lib's drawPage
+  // transform uses positive angles counterclockwise. Convert between the two
+  // conventions before applying the source page's display rotation.
+  const drawRotationAngle = (360 - rotationAngle) % 360;
 
-  if (rotationAngle === 90) {
+  if (drawRotationAngle === 90) {
     return {
       x: x + fit.width,
       y,
@@ -495,7 +499,7 @@ function getRotatedPageDrawOptions(embeddedPage, box, rotationAngle, inset = 10)
       rotate: degrees(90),
     };
   }
-  if (rotationAngle === 180) {
+  if (drawRotationAngle === 180) {
     return {
       x: x + fit.width,
       y: y + fit.height,
@@ -504,7 +508,7 @@ function getRotatedPageDrawOptions(embeddedPage, box, rotationAngle, inset = 10)
       rotate: degrees(180),
     };
   }
-  if (rotationAngle === 270) {
+  if (drawRotationAngle === 270) {
     return {
       x,
       y: y + fit.height,
@@ -606,16 +610,12 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
     !sourcePageHasContents(sourcePage) || sourcePageHasAnnotations(sourcePage)
   ));
   sourcePages.forEach((sourcePage) => ensureSourcePageContents(sourcePage, srcDoc));
-  const embeddedPages = sourcePages.length > 0 ? await pdfDoc.embedPages(sourcePages) : [];
   const appendedIndexes = [];
 
-  for (let sourceIndex = 0; sourceIndex < embeddedPages.length; sourceIndex += 1) {
-    const embeddedPage = embeddedPages[sourceIndex];
-    if (!embeddedPage) continue;
-
+  for (let sourceIndex = 0; sourceIndex < sourcePages.length; sourceIndex += 1) {
     const sourcePage = sourcePages[sourceIndex];
     const rotationAngle = getSourcePageRotationAngle(sourcePage);
-    const pageSize = getSourcePageDisplaySize(sourcePage, embeddedPage);
+    const pageSize = getSourcePageDisplaySize(sourcePage);
     const { page, box } = await createAttachmentPage(pdfDoc, fonts, opts, pageSize);
     appendedIndexes.push(pdfDoc.getPageCount() - 1);
 
@@ -624,7 +624,27 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
       continue;
     }
 
-    page.drawPage(embeddedPage, getRotatedPageDrawOptions(embeddedPage, box, rotationAngle));
+    try {
+      // Embed one page at a time so a malformed or unsupported content stream
+      // can fall back to PDF.js without aborting every attachment page.
+      const embeddedPage = await pdfDoc.embedPage(sourcePage);
+      // pdf-lib normally postpones stream decoding until PDFDocument.save().
+      // Force it here so decoding errors are caught by this fallback.
+      await embeddedPage.embed();
+      page.drawPage(embeddedPage, getRotatedPageDrawOptions(embeddedPage, box, rotationAngle));
+    } catch (embedErr) {
+      // A failed PDFEmbeddedPage remains queued for the next save/flush unless
+      // it is removed, which would otherwise reproduce the same deferred error.
+      pdfDoc.embeddedPages = pdfDoc.embeddedPages.filter(
+        (embeddedPage) => embeddedPage.alreadyEmbedded
+      );
+      opts.logger?.warn?.(
+        "Could not embed variation attachment PDF page; rasterizing it instead",
+        sourceIndex + 1,
+        embedErr
+      );
+      await drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex);
+    }
   }
 
   return appendedIndexes;
