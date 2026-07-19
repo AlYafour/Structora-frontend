@@ -11,6 +11,7 @@ export function useMachineAutoTranslate(
   const [translating, setTranslating] = useState(false);
   const onTranslatedRef = useRef(onTranslated);
   const debounceRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     onTranslatedRef.current = onTranslated;
@@ -18,17 +19,23 @@ export function useMachineAutoTranslate(
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
+    const requestId = ++requestIdRef.current;
 
-    if (!enabled) return;
+    if (!enabled) {
+      setTranslating(false);
+      return;
+    }
 
     const value = text?.trim() || '';
     if (!value) {
       onTranslatedRef.current?.('');
+      setTranslating(false);
       return;
     }
 
     if (target === 'ar' && hasArabic(value)) {
       onTranslatedRef.current?.(value);
+      setTranslating(false);
       return;
     }
 
@@ -40,17 +47,24 @@ export function useMachineAutoTranslate(
           source,
           target,
         });
-        if (data?.translated) {
+        if (requestId === requestIdRef.current && data?.translated) {
           onTranslatedRef.current?.(data.translated);
         }
       } catch {
         // Translation is a convenience; keep editing uninterrupted.
       } finally {
-        setTranslating(false);
+        if (requestId === requestIdRef.current) {
+          setTranslating(false);
+        }
       }
     }, debounceMs);
 
-    return () => clearTimeout(debounceRef.current);
+    return () => {
+      clearTimeout(debounceRef.current);
+      if (requestId === requestIdRef.current) {
+        requestIdRef.current += 1;
+      }
+    };
   }, [text, enabled, debounceMs, source, target]);
 
   return { translating };

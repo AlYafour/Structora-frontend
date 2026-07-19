@@ -1181,6 +1181,8 @@
   "general_remarks_ar_label": "ملاحظات عامة (عربي)",
   "general_remarks_placeholder": "ملاحظات معيارية تظهر في كل إشعار تغيير...",
   "general_remarks_hint": "تظهر للقراءة فقط في كل إشعار تغيير، باللغتين.",
+  "general_remarks_translating_en": "جارٍ الترجمة إلى الإنجليزية...",
+  "general_remarks_translating_ar": "جارٍ الترجمة إلى العربية...",
   "company_unified_info_hint": "بيانات شركتكم كما تظهر في الوثائق والتقارير الرسمية.",
   "company_name_en": "اسم الشركة (إنجليزي)",
   "company_registration_number": "رقم السجل التجاري",

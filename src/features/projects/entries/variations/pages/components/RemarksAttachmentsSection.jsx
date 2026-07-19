@@ -438,6 +438,12 @@ const RemarksAttachmentsSection = memo(({
     field: 'variation remarks',
     onTranscribed: appendRemarksTranscript,
   });
+  const remarksVoiceActionLabel = remarksRecording
+    ? t('stop_recording', 'Stop Recording')
+    : remarksTranscribing
+      ? t('transcribing_voice', 'Transcribing...')
+      : t('record_voice_note', 'Record Voice Note');
+  const remarksSuggestActionLabel = t('suggest_wording');
 
   // Arabic remarks stay in line-level sync with English: only lines that were
   // actually added/edited get (re)translated, plainly (no styling). Lines the
@@ -777,36 +783,47 @@ const RemarksAttachmentsSection = memo(({
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">EN</span>
                   <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
-                  {isEditMode && (
-                    <div className="nvh-desc-row__actions">
+                </div>
+                <div className="nvc-remarks-editor">
+                  <RichTextEditor
+                    className="nvc-remarks-rich-editor"
+                    value={formData.remarks ?? ''}
+                    onChange={handleRemarksChange}
+                    placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
+                    dir="ltr"
+                    t={t}
+                  />
+                  <div className="nvh-desc-row__actions">
+                    <span className="nvh-action-tooltip">
                       <VoiceNoteButton
                         recording={remarksRecording}
                         transcribing={remarksTranscribing}
                         disabled={remarksSuggestBusy}
                         onClick={toggleRemarksRecording}
                         t={t}
+                        iconOnly
+                        showNativeTooltip={false}
                       />
+                      <span className="nvh-action-tooltip__content" role="tooltip">
+                        {remarksVoiceActionLabel}
+                      </span>
+                    </span>
+                    <span className="nvh-action-tooltip">
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
                         loading={remarksSuggestBusy}
                         disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing}
                         startIcon={<FaRobot />}
                         onClick={handleSuggestRemarksWording}
-                      >
-                        {t('suggest_wording')}
-                      </Button>
-                    </div>
-                  )}
+                        aria-label={remarksSuggestActionLabel}
+                      />
+                      <span className="nvh-action-tooltip__content" role="tooltip">
+                        {remarksSuggestActionLabel}
+                      </span>
+                    </span>
+                  </div>
                 </div>
-                <RichTextEditor
-                  className="nvc-remarks-rich-editor"
-                  value={formData.remarks ?? ''}
-                  onChange={handleRemarksChange}
-                  placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
-                  dir="ltr"
-                  t={t}
-                />
               </div>
 
               <div className="nvc-remarks-split-divider" />

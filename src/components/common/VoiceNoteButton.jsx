@@ -8,6 +8,8 @@ export default function VoiceNoteButton({
   onClick,
   t,
   className = '',
+  iconOnly = false,
+  showNativeTooltip = true,
 }) {
   const label = recording
     ? t('stop_recording', 'Stop Recording')
@@ -18,15 +20,17 @@ export default function VoiceNoteButton({
   return (
     <Button
       type="button"
-      size="sm"
+      size={iconOnly ? 'icon' : 'sm'}
       variant={recording ? 'secondary' : 'ghost'}
       loading={transcribing}
       disabled={disabled || transcribing}
       startIcon={recording ? <FaStop /> : <FaMicrophone />}
       onClick={onClick}
-      className={`voice-note-btn ${recording ? 'voice-note-btn--recording' : ''} ${className}`.trim()}
+      className={`voice-note-btn ${iconOnly ? 'voice-note-btn--icon-only' : ''} ${recording ? 'voice-note-btn--recording' : ''} ${className}`.trim()}
+      aria-label={label}
+      title={showNativeTooltip ? label : undefined}
     >
-      {label}
+      {!iconOnly && label}
     </Button>
   );
 }

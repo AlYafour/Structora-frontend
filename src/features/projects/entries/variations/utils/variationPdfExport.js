@@ -8,6 +8,12 @@ const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_CANVAS_SCALE = 3;
 const PDF_JPEG_QUALITY = 0.97;
 const NOTICE_PDF_FOOTER_HEIGHT_PT = 11;
+const CONTINUATION_PAGE_TOP_GAP_PT = 12;
+// Pagination must use the same usable height as the PDF image slices. Using
+// the full A4 height lets content enter the footer band before it is stamped.
+const PRINT_CONTENT_HEIGHT_PX = Math.floor(
+  PRINT_A4_HEIGHT_PX * (1 - (NOTICE_PDF_FOOTER_HEIGHT_PT / 841.89))
+);
 
 async function createPdfWatermarkImage(src) {
   const blob = await fetchFileWithAuth(src);
@@ -47,21 +53,21 @@ export async function prepareVariationPrintDocumentLayout(el) {
   el.style.width = `${PRINT_A4_WIDTH_PX}px`;
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  cleanupTablePagination = applyPrintTablePagination(el, PRINT_A4_HEIGHT_PX);
+  cleanupTablePagination = applyPrintTablePagination(el, PRINT_CONTENT_HEIGHT_PX);
   await new Promise(resolve => requestAnimationFrame(resolve));
 
-  cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+  cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_CONTENT_HEIGHT_PX);
   await new Promise(resolve => requestAnimationFrame(resolve));
 
   cleanupPinnedBottom = pinPrintBottomGroup(el, {
-    pageHeight: PRINT_A4_HEIGHT_PX,
-    continuationPageHeight: PRINT_A4_HEIGHT_PX,
+    pageHeight: PRINT_CONTENT_HEIGHT_PX,
+    continuationPageHeight: PRINT_CONTENT_HEIGHT_PX,
   });
   await new Promise(resolve => requestAnimationFrame(resolve));
 
   // Run last: the normal variation content is fully paginated and pinned
   // first, then General Remarks starts on and occupies its own final sheet.
-  cleanupForcedGeneralRemarks = forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_A4_HEIGHT_PX);
+  cleanupForcedGeneralRemarks = forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_CONTENT_HEIGHT_PX);
   await new Promise(resolve => requestAnimationFrame(resolve));
 
   return () => {
@@ -137,7 +143,7 @@ export async function exportVariationPdf({
     const contentW = pageW;
     const contentH = pageH - NOTICE_PDF_FOOTER_HEIGHT_PT;
     const scale = contentW / canvas.width;
-    const pageCanvasH = Math.round(pageH / scale);
+    const pageCanvasH = Math.floor(contentH / scale);
     const pages = Math.ceil(canvas.height / pageCanvasH);
 
     let watermarkImage = null;
@@ -193,14 +199,15 @@ export async function exportVariationPdf({
       slice.width = canvas.width;
       slice.height = srcH;
       slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-      const drawScale = Math.min(contentW / canvas.width, contentH / srcH);
+      const topGap = i > 0 ? CONTINUATION_PAGE_TOP_GAP_PT : 0;
+      const drawScale = Math.min(contentW / canvas.width, (contentH - topGap) / srcH);
       const drawW = canvas.width * drawScale;
       const drawH = srcH * drawScale;
       pdf.addImage(
         slice.toDataURL("image/jpeg", PDF_JPEG_QUALITY),
         "JPEG",
         (pageW - drawW) / 2,
-        0,
+        topGap,
         drawW,
         drawH
       );

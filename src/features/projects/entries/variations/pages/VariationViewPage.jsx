@@ -34,6 +34,7 @@ const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_CANVAS_SCALE = 3;
 const PDF_JPEG_QUALITY = 0.97;
 const NOTICE_PDF_FOOTER_HEIGHT_PT = 11;
+const CONTINUATION_PAGE_TOP_GAP_PT = 12;
 
 async function createPdfWatermarkImage(src) {
   const blob = await fetchFileWithAuth(src);
@@ -391,7 +392,9 @@ export default function VariationViewPage() {
       const contentW = pageW;
       const contentH = pageH - NOTICE_PDF_FOOTER_HEIGHT_PT;
       const scale = contentW / canvas.width;
-      const pageCanvasH = Math.round(pageH / scale);
+      // Slice only the usable content area; the final band belongs exclusively
+      // to the stamped footer/page number.
+      const pageCanvasH = Math.floor(contentH / scale);
       const pages = Math.ceil(canvas.height / pageCanvasH);
 
       let watermarkImage = null;
@@ -447,14 +450,15 @@ export default function VariationViewPage() {
         slice.width = canvas.width;
         slice.height = srcH;
         slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-        const drawScale = Math.min(contentW / canvas.width, contentH / srcH);
+        const topGap = i > 0 ? CONTINUATION_PAGE_TOP_GAP_PT : 0;
+        const drawScale = Math.min(contentW / canvas.width, (contentH - topGap) / srcH);
         const drawW = canvas.width * drawScale;
         const drawH = srcH * drawScale;
         pdf.addImage(
           slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
           'JPEG',
           (pageW - drawW) / 2,
-          margin,
+          margin + topGap,
           drawW,
           drawH
         );
