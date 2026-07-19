@@ -92,6 +92,12 @@ const VariationHeaderInfo = memo(({
     field: primaryDescriptionField,
     onTranscribed: appendDescriptionTranscript,
   });
+  const voiceActionLabel = recording
+    ? t('stop_recording', 'Stop Recording')
+    : transcribing
+      ? t('transcribing_voice', 'Transcribing...')
+      : t('record_voice_note', 'Record Voice Note');
+  const suggestActionLabel = t('suggest_wording');
 
   return (
     <div className="nvh-wrapper">
@@ -240,38 +246,50 @@ const VariationHeaderInfo = memo(({
       <div className="nvh-desc-row">
         <div className="nvh-desc-row__header">
           <span className="nvh-desc-row__label"><FaAlignLeft />{t('variation_description')}</span>
-          {isEditMode && (
-            <div className="nvh-desc-row__actions">
-              <VoiceNoteButton
-                recording={recording}
-                transcribing={transcribing}
-                disabled={busy}
-                onClick={toggleRecording}
-                t={t}
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                loading={busy}
-                disabled={!primaryDescription?.trim() || recording || transcribing}
-                startIcon={<FaRobot />}
-                onClick={handleSuggestWording}
-              >
-                {t('suggest_wording')}
-              </Button>
-            </div>
-          )}
         </div>
 
         {isEditMode ? (
-          <textarea
-            value={primaryDescription}
-            onChange={handleDescriptionChange}
-            className="nvc-input nvc-textarea nvh-desc-row__textarea"
-            dir={isArabicPrimary ? 'rtl' : 'ltr'}
-            rows={2}
-            placeholder={t('variation_description')}
-          />
+          <div className="nvh-desc-row__editor" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+            <textarea
+              value={primaryDescription}
+              onChange={handleDescriptionChange}
+              className="nvc-input nvc-textarea nvh-desc-row__textarea"
+              dir={isArabicPrimary ? 'rtl' : 'ltr'}
+              rows={2}
+              placeholder={t('variation_description')}
+            />
+            <div className="nvh-desc-row__actions">
+              <span className="nvh-action-tooltip">
+                <VoiceNoteButton
+                  recording={recording}
+                  transcribing={transcribing}
+                  disabled={busy}
+                  onClick={toggleRecording}
+                  t={t}
+                  iconOnly
+                  showNativeTooltip={false}
+                />
+                <span className="nvh-action-tooltip__content" role="tooltip">
+                  {voiceActionLabel}
+                </span>
+              </span>
+              <span className="nvh-action-tooltip">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  loading={busy}
+                  disabled={!primaryDescription?.trim() || recording || transcribing}
+                  startIcon={<FaRobot />}
+                  onClick={handleSuggestWording}
+                  className="nvh-desc-row__action"
+                  aria-label={suggestActionLabel}
+                />
+                <span className="nvh-action-tooltip__content" role="tooltip">
+                  {suggestActionLabel}
+                </span>
+              </span>
+            </div>
+          </div>
         ) : (
           <div
             className="nvh-desc-row__text"

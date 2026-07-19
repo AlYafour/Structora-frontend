@@ -4,11 +4,61 @@ import { formatMoney } from "../../../../../utils/formatters";
 import DirhamsIcon from "../../../../../components/common/DirhamsIcon";
 import { buildFileUrl } from "../../../../../utils/helpers/file";
 import { normalizeRichTextForRender } from "../../../../../utils/richText";
+import i18n from "../../../../../config/i18n";
 import { getIndexDiscrepancyNote } from "../utils/discrepancyNoteDefaults";
 import { formatIndexDate } from "../utils/formatIndexDate";
+import { BOQ_OPTIONS_AR } from "../utils/boqOptions";
+import { VARIATION_CAUSE_OPTIONS_AR } from "../utils/variationCauseOptions";
 import "./VariationPrintDocument.css";
 
 const EMPTY = "—";
+const ADDITIONAL_TIME_SEPARATE = "To be submitted separately";
+
+function translateForPrint(key, language, fallback) {
+  return i18n.t(key, { lng: language, defaultValue: fallback });
+}
+
+function toValueList(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value ? [value] : [];
+}
+
+function CompactBilingualValue({ en, ar, className = "" }) {
+  if (!en && !ar) return <span className="vpd-info-card__value vpd-info-card__value--plain">{EMPTY}</span>;
+  if (!ar || ar === en) {
+    return (
+      <span className={`vpd-info-card__value vpd-info-card__value--plain ${className}`.trim()} dir="ltr">
+        {en || ar}
+      </span>
+    );
+  }
+  return (
+    <span className={`vpd-compact-bilingual ${className}`.trim()}>
+      <span className="vpd-compact-bilingual__en" dir="ltr">{en}</span>
+      <span className="vpd-compact-bilingual__ar" dir="rtl">{ar}</span>
+    </span>
+  );
+}
+
+function formatAdditionalTime(value) {
+  if (!value) return { en: "", ar: "" };
+  if (value === ADDITIONAL_TIME_SEPARATE) {
+    return {
+      en: translateForPrint("additional_time_default", "en", ADDITIONAL_TIME_SEPARATE),
+      ar: translateForPrint("additional_time_default", "ar", ""),
+    };
+  }
+
+  const daysMatch = String(value).match(/^(\d+)\s*days?$/i);
+  if (daysMatch) {
+    return {
+      en: `${daysMatch[1]} ${translateForPrint("days", "en", "days")}`,
+      ar: `${daysMatch[1]} ${translateForPrint("days", "ar", "يوم")}`,
+    };
+  }
+
+  return { en: String(value), ar: "" };
+}
 
 function BilingualText({ ar, en, className = "" }) {
   const arVal = ar || en || EMPTY;
@@ -95,8 +145,13 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
     catch { return {}; }
   }, [noticeData, variation?.description]);
 
-  const causeText = Array.isArray(data.variation_cause) ? data.variation_cause.join(', ') : data.variation_cause;
-  const tradeDisciplineText = Array.isArray(data.trade_discipline) ? data.trade_discipline.join(', ') : data.trade_discipline;
+  const causes = toValueList(data.variation_cause);
+  const causeText = causes.join(", ");
+  const causeTextAr = causes.map(cause => VARIATION_CAUSE_OPTIONS_AR[cause]).filter(Boolean).join("، ");
+  const tradeDisciplines = toValueList(data.trade_discipline);
+  const tradeDisciplineText = tradeDisciplines.join(", ");
+  const tradeDisciplineTextAr = tradeDisciplines.map(item => BOQ_OPTIONS_AR[item]).filter(Boolean).join("، ");
+  const additionalTimeText = formatAdditionalTime(data.additional_time);
   const hasGeneralRemarks = Boolean(generalRemarksEn?.trim() || generalRemarksAr?.trim());
 
   // Financial values
@@ -348,9 +403,16 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                 </div>
               )}
               {causeText && causeText !== data.variation_description && (
-                <p className="vpd-info-card__desc-cause">
-                  <strong><BilingualText ar="السبب:" en="Cause:" /></strong> {causeText}
-                </p>
+                <div className="vpd-info-card__desc-cause">
+                  <strong>
+                    <BilingualText
+                      ar={translateForPrint("variation_cause", "ar", "سبب التعديل")}
+                      en={translateForPrint("variation_cause", "en", "Variation Cause")}
+                      className="vpd-bilingual--inline"
+                    />
+                  </strong>
+                  <CompactBilingualValue en={causeText} ar={causeTextAr} />
+                </div>
               )}
               {!data.variation_description && !data.variation_description_ar && !causeText && (
                 <span className="vpd-info-card__value vpd-info-card__value--plain">{EMPTY}</span>
@@ -377,20 +439,24 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
               )}
 
               {tradeDisciplineText && (
-                <div className="vpd-info-card vpd-info-card--sm">
-                  <BilingualText ar="BOQ" en="BOQ" className="vpd-info-card__label" />
-                  <span className="vpd-info-card__value vpd-info-card__value--plain">
-                    {tradeDisciplineText}
-                  </span>
+                <div className="vpd-info-card vpd-info-card--sm vpd-info-card--boq">
+                  <BilingualText
+                    ar={translateForPrint("trade_discipline", "ar", "BOQ")}
+                    en={translateForPrint("trade_discipline", "en", "BOQ")}
+                    className="vpd-info-card__label vpd-bilingual--inline"
+                  />
+                  <CompactBilingualValue en={tradeDisciplineText} ar={tradeDisciplineTextAr} />
                 </div>
               )}
 
               {data.additional_time && (
-                <div className="vpd-info-card vpd-info-card--sm">
-                  <BilingualText ar="وقت إضافي" en="ADDITIONAL TIME" className="vpd-info-card__label" />
-                  <span className="vpd-info-card__value vpd-info-card__value--plain">
-                    {data.additional_time}
-                  </span>
+                <div className="vpd-info-card vpd-info-card--sm vpd-info-card--additional-time">
+                  <BilingualText
+                    ar={translateForPrint("additional_time", "ar", "الوقت الإضافي")}
+                    en={translateForPrint("additional_time", "en", "Additional Time")}
+                    className="vpd-info-card__label vpd-bilingual--inline"
+                  />
+                  <CompactBilingualValue en={additionalTimeText.en} ar={additionalTimeText.ar} />
                 </div>
               )}
             </div>
@@ -691,17 +757,14 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
             className="vpd-general-remarks-page vpd-notes"
             data-vpd-general-remarks-page
           >
-            <strong className="vpd-notes__label">
-              <BilingualText ar="ملاحظات عامة" en="GENERAL REMARKS" />
-            </strong>
             <div className="vpd-notes__split">
               <div className="vpd-notes__split-col">
-                <strong className="vpd-notes__label">Remarks</strong>
+                <strong className="vpd-notes__label">General Remarks</strong>
                 <PrintRichText value={generalRemarksEn} />
               </div>
               <div className="vpd-notes__split-divider" />
               <div className="vpd-notes__split-col vpd-notes__split-col--ar" dir="rtl">
-                <strong className="vpd-notes__label" dir="rtl">ملاحظات</strong>
+                <strong className="vpd-notes__label" dir="rtl">ملاحظات عامة</strong>
                 <PrintRichText value={generalRemarksAr} className="vpd-rich-text--ar" dir="rtl" />
               </div>
             </div>

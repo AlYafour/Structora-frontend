@@ -1158,6 +1158,8 @@
   "general_remarks_ar_label": "General Remarks (Arabic)",
   "general_remarks_placeholder": "Standard remarks shown on every Variation Notice...",
   "general_remarks_hint": "Shown read-only on every Variation Notice, in both languages.",
+  "general_remarks_translating_en": "Translating to English...",
+  "general_remarks_translating_ar": "Translating to Arabic...",
   "company_unified_info_hint": "Your company data as it appears on official documents and reports.",
   "company_name_en": "Company Name (English)",
   "company_registration_number": "Commercial Registration No.",

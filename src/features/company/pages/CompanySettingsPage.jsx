@@ -21,6 +21,7 @@ import { buildFileUrl } from '../../../utils/helpers/file';
 import PhoneInput from '../../../components/forms/PhoneInput';
 import RtlSelect from '../../../components/forms/RtlSelect';
 import { UAE_CITIES } from '../../../utils/constants';
+import { useMachineAutoTranslate } from '../../../hooks/useMachineAutoTranslate';
 import './CompanySettingsPage.css';
 import useTenantNavigate from '../../../hooks/useTenantNavigate';
 
@@ -38,6 +39,7 @@ export default function CompanySettingsPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [settingsData, setSettingsData] = useState(null);
   const [removedFields, setRemovedFields] = useState(new Set());
+  const [remarksSource, setRemarksSource] = useState(null);
 
   const [companyData, setCompanyData] = useState({
     company_name: '',
@@ -94,6 +96,7 @@ export default function CompanySettingsPage() {
     try {
       const settings = await companyApi.getCurrentSettings();
       setSettingsData(settings);
+      setRemarksSource(null);
       setCompanyData({
         company_name: settings.company_name || '',
         company_license_number: settings.company_license_number || '',
@@ -151,8 +154,30 @@ export default function CompanySettingsPage() {
       setRemovedFields(prev => { const n = new Set(prev); n.delete(name); return n; });
     } else {
       setCompanyData(prev => ({ ...prev, [name]: value }));
+      if (name === 'general_remarks_en') setRemarksSource('en');
+      if (name === 'general_remarks_ar') setRemarksSource('ar');
     }
   };
+
+  const { translating: translatingRemarksToArabic } = useMachineAutoTranslate(
+    companyData.general_remarks_en,
+    (translated) => setCompanyData(prev => ({ ...prev, general_remarks_ar: translated })),
+    {
+      enabled: remarksSource === 'en',
+      source: 'en',
+      target: 'ar',
+    }
+  );
+
+  const { translating: translatingRemarksToEnglish } = useMachineAutoTranslate(
+    companyData.general_remarks_ar,
+    (translated) => setCompanyData(prev => ({ ...prev, general_remarks_en: translated })),
+    {
+      enabled: remarksSource === 'ar',
+      source: 'ar',
+      target: 'en',
+    }
+  );
 
   const handleRemoveFile = (fieldName) => {
     setCompanyData(prev => ({ ...prev, [fieldName]: null }));
@@ -232,6 +257,12 @@ export default function CompanySettingsPage() {
       setLoading(false);
     }
   };
+
+  const cityOptions = useMemo(() =>
+    UAE_CITIES.map(c => ({ value: c.value, label: c.label[lang] || c.label.en })),
+    [lang]
+  );
+
   if (!isCompanySuperAdmin) {
     return (
       <div className="prj-alert" style={{ margin: 40 }}>
@@ -243,11 +274,6 @@ export default function CompanySettingsPage() {
 
   const companyNameAr = companyData.company_name || tenantTheme?.company_name || '';
   const companyNameEn = companyData.contractor_name_en || tenantTheme?.contractor_name_en || '';
-
-  const cityOptions = useMemo(() =>
-    UAE_CITIES.map(c => ({ value: c.value, label: c.label[lang] || c.label.en })),
-    [lang]
-  );
 
   const tabConfig = [
     { key: 'company',       icon: <FaBuilding />,     label: t('company_information') },
@@ -396,7 +422,17 @@ export default function CompanySettingsPage() {
                 <div className="cs-divider" />
                 <div className="cs-grid">
                   <Field
-                    label={t('general_remarks_en_label', 'General Remarks (English)')}
+                    label={
+                      <span className="cs-translation-label">
+                        {t('general_remarks_en_label', 'General Remarks (English)')}
+                        {translatingRemarksToEnglish && (
+                          <span className="cs-translation-status">
+                            <span className="cs-translation-status__dot" />
+                            {t('general_remarks_translating_en', 'Translating to English...')}
+                          </span>
+                        )}
+                      </span>
+                    }
                     className="cs-grid__full"
                     textarea
                     rows={4}
@@ -406,7 +442,17 @@ export default function CompanySettingsPage() {
                     placeholder={t('general_remarks_placeholder', 'Standard remarks shown on every Variation Notice...')}
                   />
                   <Field
-                    label={t('general_remarks_ar_label', 'General Remarks (Arabic)')}
+                    label={
+                      <span className="cs-translation-label">
+                        {t('general_remarks_ar_label', 'General Remarks (Arabic)')}
+                        {translatingRemarksToArabic && (
+                          <span className="cs-translation-status">
+                            <span className="cs-translation-status__dot" />
+                            {t('general_remarks_translating_ar', 'Translating to Arabic...')}
+                          </span>
+                        )}
+                      </span>
+                    }
                     className="cs-grid__full"
                     textarea
                     rows={4}

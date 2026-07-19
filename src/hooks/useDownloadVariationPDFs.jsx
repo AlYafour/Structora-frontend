@@ -15,6 +15,11 @@ const PRINT_A4_WIDTH_PX = 794;
 const PRINT_A4_HEIGHT_PX = Math.round(PRINT_A4_WIDTH_PX * Math.SQRT2);
 const PDF_RENDER_CONCURRENCY = 1;
 const PDF_CANVAS_SCALE = 3;
+const NOTICE_PDF_FOOTER_HEIGHT_PT = 11;
+const CONTINUATION_PAGE_TOP_GAP_PT = 12;
+const PRINT_CONTENT_HEIGHT_PX = Math.floor(
+  PRINT_A4_HEIGHT_PX * (1 - (NOTICE_PDF_FOOTER_HEIGHT_PT / 841.89))
+);
 
 async function createPdfWatermarkImage(src) {
   const blob = await fetchFileWithAuth(src);
@@ -77,21 +82,21 @@ async function preparePrintDocumentLayout(el) {
   el.style.width = `${PRINT_A4_WIDTH_PX}px`;
   await waitForFrame(2);
 
-  applyPrintTablePagination(el, PRINT_A4_HEIGHT_PX);
+  applyPrintTablePagination(el, PRINT_CONTENT_HEIGHT_PX);
   await waitForFrame();
 
-  applyPrintPagePartBreaks(el, PRINT_A4_HEIGHT_PX);
+  applyPrintPagePartBreaks(el, PRINT_CONTENT_HEIGHT_PX);
   await waitForFrame();
 
   pinPrintBottomGroup(el, {
-    pageHeight: PRINT_A4_HEIGHT_PX,
-    continuationPageHeight: PRINT_A4_HEIGHT_PX,
+    pageHeight: PRINT_CONTENT_HEIGHT_PX,
+    continuationPageHeight: PRINT_CONTENT_HEIGHT_PX,
   });
   await waitForFrame();
 
   // Append General Remarks only after the normal variation content has been
   // paginated, keeping it on a dedicated final sheet.
-  forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_A4_HEIGHT_PX);
+  forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_CONTENT_HEIGHT_PX);
   await waitForFrame();
 }
 
@@ -161,8 +166,9 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
     pdf.setDisplayMode("fullpage", "continuous", "UseNone");
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
+    const contentH = pageH - NOTICE_PDF_FOOTER_HEIGHT_PT;
     const scale = pageW / canvas.width;
-    const pageCanvasH = Math.round(pageH / scale);
+    const pageCanvasH = Math.floor(contentH / scale);
     const pages = Math.ceil(canvas.height / pageCanvasH);
 
     if (watermarkEl) watermarkEl.style.display = '';
@@ -220,14 +226,23 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
       slice.width = canvas.width;
       slice.height = srcH;
       slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+      const topGap = i > 0 ? CONTINUATION_PAGE_TOP_GAP_PT : 0;
+      const drawScale = Math.min(pageW / canvas.width, (contentH - topGap) / srcH);
+      const drawW = canvas.width * drawScale;
+      const drawH = srcH * drawScale;
       pdf.addImage(
         slice.toDataURL("image/jpeg", 0.97),
         "JPEG",
-        0,
-        0,
-        pageW,
-        srcH * scale
+        (pageW - drawW) / 2,
+        topGap,
+        drawW,
+        drawH
       );
+      pdf.setFillColor(251, 248, 242);
+      pdf.rect(0, contentH, pageW, NOTICE_PDF_FOOTER_HEIGHT_PT, "F");
+      pdf.setDrawColor(216, 201, 179);
+      pdf.setLineWidth(0.5);
+      pdf.line(0, contentH, pageW, contentH);
       if (watermarkImage) {
         const maxW = pageW * 0.55;
         const maxH = pageH * 0.55;
