@@ -1,8 +1,17 @@
-const PAGE_PART_SELECTOR = "[data-vpd-page-part]";
+const GENERAL_REMARKS_PAGE_SELECTOR = "[data-vpd-general-remarks-page]";
+
+// Rich-text blocks in General Remarks are generated through innerHTML, so
+// they cannot carry data-vpd-page-part in JSX. Include their top-level blocks
+// here to keep a PDF page boundary from slicing through a line of text.
+const PAGE_PART_SELECTOR = [
+  "[data-vpd-page-part]",
+  `${GENERAL_REMARKS_PAGE_SELECTOR} .vpd-rich-text > p`,
+  `${GENERAL_REMARKS_PAGE_SELECTOR} .vpd-rich-text > ul`,
+  `${GENERAL_REMARKS_PAGE_SELECTOR} .vpd-rich-text > ol`,
+].join(", ");
 const PINNED_BOTTOM_SELECTOR = ".vpd-pinned-bottom";
 const TABLE_SECTION_SELECTOR = "[data-vpd-print-table-section]";
 const INSERTED_TABLE_BREAK_SELECTOR = "[data-vpd-inserted-table-break]";
-const GENERAL_REMARKS_PAGE_SELECTOR = "[data-vpd-general-remarks-page]";
 
 function getTopWithin(root, el) {
   return el.getBoundingClientRect().top - root.getBoundingClientRect().top;

@@ -243,51 +243,50 @@ const VariationHeaderInfo = memo(({
       </div>
 
       {/* ── ROW 3: Description ── */}
-      <div className="nvh-desc-row">
-        <div className="nvh-desc-row__header">
-          <span className="nvh-desc-row__label"><FaAlignLeft />{t('variation_description')}</span>
+      <div className="nvh-desc-card">
+        <div className="nvh-desc-card__header">
+          <span className="nvh-desc-card__title"><FaAlignLeft />{t('variation_description')}</span>
         </div>
 
         {isEditMode ? (
-          <div className="nvh-desc-row__editor" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+          <div className="nvh-desc-card__body" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
             <textarea
               value={primaryDescription}
               onChange={handleDescriptionChange}
-              className="nvc-input nvc-textarea nvh-desc-row__textarea"
+              className="nvh-desc-card__textarea"
               dir={isArabicPrimary ? 'rtl' : 'ltr'}
               rows={2}
               placeholder={t('variation_description')}
             />
-            <div className="nvh-desc-row__actions">
-              <span className="nvh-action-tooltip">
-                <VoiceNoteButton
-                  recording={recording}
-                  transcribing={transcribing}
-                  disabled={busy}
-                  onClick={toggleRecording}
-                  t={t}
-                  iconOnly
-                  showNativeTooltip={false}
-                />
-                <span className="nvh-action-tooltip__content" role="tooltip">
-                  {voiceActionLabel}
+            <div className="nvh-desc-card__footer">
+              <span className="nvh-desc-card__count">{primaryDescription.length} {t('characters', 'characters')}</span>
+              <div className="nvh-desc-row__actions">
+                <span className="nvh-action-tooltip">
+                  <VoiceNoteButton
+                    recording={recording}
+                    transcribing={transcribing}
+                    disabled={busy}
+                    onClick={toggleRecording}
+                    t={t}
+                    iconOnly
+                    showNativeTooltip={false}
+                  />
+                  <span className="nvh-action-tooltip__content" role="tooltip">
+                    {voiceActionLabel}
+                  </span>
                 </span>
-              </span>
-              <span className="nvh-action-tooltip">
                 <Button
-                  size="icon"
-                  variant="ghost"
+                  size="sm"
+                  variant="accent"
                   loading={busy}
                   disabled={!primaryDescription?.trim() || recording || transcribing}
                   startIcon={<FaRobot />}
                   onClick={handleSuggestWording}
-                  className="nvh-desc-row__action"
-                  aria-label={suggestActionLabel}
-                />
-                <span className="nvh-action-tooltip__content" role="tooltip">
+                  className="nvh-desc-card__suggest-btn"
+                >
                   {suggestActionLabel}
-                </span>
-              </span>
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -300,23 +299,31 @@ const VariationHeaderInfo = memo(({
         )}
 
         {(isEditMode || secondaryDescription) && (
-          <div
-            className="nvh-description-translation"
-            dir={isArabicPrimary ? 'ltr' : 'rtl'}
-          >
-            <div className="nvh-description-translation__label">
-              {translatingDescription
-                ? `${t('translating', 'Translating')}...`
-                : secondaryDescriptionLabel}
-            </div>
-            <div className="nvh-description-translation__text">
-              {secondaryDescription || (
-                <span className="nvh-desc-row__empty">
-                  {secondaryDescriptionLabel}
+          <>
+            <div className="nvh-desc-card__divider" />
+            <div
+              className="nvh-description-translation"
+              dir={isArabicPrimary ? 'ltr' : 'rtl'}
+            >
+              <div className="nvh-description-translation__header">
+                <span className="nvh-description-translation__label">
+                  {translatingDescription
+                    ? `${t('translating', 'Translating')}...`
+                    : secondaryDescriptionLabel}
                 </span>
-              )}
+                <span className={`nvh-description-translation__badge${isArabicPrimary ? '' : ' nvh-description-translation__badge--ar'}`}>
+                  {isArabicPrimary ? 'EN' : 'ع'}
+                </span>
+              </div>
+              <div className="nvh-description-translation__text">
+                {secondaryDescription || (
+                  <span className="nvh-desc-row__empty">
+                    {secondaryDescriptionLabel}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {isEditMode && error && (

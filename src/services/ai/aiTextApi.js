@@ -25,4 +25,12 @@ export const aiTextApi = {
     });
     return data; // { overlaps: [{ line, matched_point, reason }] }
   },
+
+  async suggestRemarkFromImage(imageFile, language = "en") {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    formData.append("language", language);
+    const { data } = await api.post("suggest-remark-from-image/", formData);
+    return data; // { suggestions: string[], suggestion: string }
+  },
 };

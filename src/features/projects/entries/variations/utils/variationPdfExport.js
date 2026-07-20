@@ -70,6 +70,11 @@ export async function prepareVariationPrintDocumentLayout(el) {
   cleanupForcedGeneralRemarks = forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_CONTENT_HEIGHT_PX);
   await new Promise(resolve => requestAnimationFrame(resolve));
 
+  // General Remarks has now moved to its final page position. Re-measure its
+  // paragraphs there so no text line is bisected by a PDF page boundary.
+  cleanupPageBreaks = applyPrintPagePartBreaks(el, PRINT_CONTENT_HEIGHT_PX);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
   return () => {
     cleanupForcedGeneralRemarks?.();
     cleanupPinnedBottom?.();

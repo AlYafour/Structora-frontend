@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot, FaImage } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import Button from '../../../../../../components/common/Button';
@@ -9,6 +9,7 @@ import { useLineSyncTranslate } from '../../../../../../hooks/useLineSyncTransla
 import { useVoiceTranscription } from '../../../../../../hooks/useVoiceTranscription';
 import useCompanySettings from '../../../../../../hooks/useCompanySettings';
 import { useSuggestWording } from '../hooks/useSuggestWording';
+import { useImageRemarkSuggestion, MAX_IMAGE_SIZE_MB, ACCEPTED_IMAGE_TYPES } from '../hooks/useImageRemarkSuggestion';
 import { useRemarksOverlapCheck } from '../hooks/useRemarksOverlapCheck';
 import { normalizeRichTextForRender, htmlToPlainText, plainTextToHtml } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
@@ -76,6 +77,7 @@ function PendingAttachmentRow({ att, t, onFieldChange, onRemove }) {
 function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
   const fileInputRef = useRef(null);
   const [error, setError] = useState('');
+  const [isFileDragOver, setIsFileDragOver] = useState(false);
   const fileUrl = att.url || att.file;
   const hasReplacement = att.replacementFile instanceof File;
   const displayName = hasReplacement
@@ -100,9 +102,7 @@ function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, o
     if (fileUrl) await openFileInNewWindow(fileUrl, displayName);
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
+  const processFile = (file) => {
     if (!file) return;
 
     if (!validateFileSize(file, MAX_ATTACHMENT_SIZE_MB)) {
@@ -116,6 +116,28 @@ function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, o
     }
     setError('');
     onFileChange(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    processFile(file);
+  };
+
+  const handleFileDrag = (e, isOver) => {
+    if (!isEditMode || !Array.from(e.dataTransfer?.types || []).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsFileDragOver(isOver);
+  };
+
+  const handleFileDrop = (e) => {
+    if (!isEditMode || !Array.from(e.dataTransfer?.types || []).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsFileDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
   };
 
   return (
@@ -149,7 +171,13 @@ function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, o
           className="nvc-attachment-row__file-input-hidden"
         />
       )}
-      <div className="nvc-attachment-row__file-bar">
+      <div
+        className={`nvc-attachment-row__file-bar ${isFileDragOver ? 'nvc-attachment-row__file-bar--file-drag-over' : ''}`.trim()}
+        onDragEnter={(e) => handleFileDrag(e, true)}
+        onDragOver={(e) => handleFileDrag(e, true)}
+        onDragLeave={(e) => handleFileDrag(e, false)}
+        onDrop={handleFileDrop}
+      >
         {hasReplacement
           ? <FaCheckCircle className="nvc-attachment-row__icon nvc-attachment-row__icon--success" />
           : <FaFile className="nvc-attachment-row__icon" />}
@@ -210,11 +238,10 @@ function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, o
 function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragHandleProps }) {
   const fileInputRef = useRef(null);
   const [error, setError] = useState('');
+  const [isFileDragOver, setIsFileDragOver] = useState(false);
   const hasFile = att.newFile instanceof File;
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
+  const processFile = (file) => {
     if (!file) return;
 
     if (!validateFileSize(file, MAX_ATTACHMENT_SIZE_MB)) {
@@ -228,6 +255,28 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragH
     }
     setError('');
     onFileChange(file);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    processFile(file);
+  };
+
+  const handleFileDrag = (e, isOver) => {
+    if (!Array.from(e.dataTransfer?.types || []).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsFileDragOver(isOver);
+  };
+
+  const handleFileDrop = (e) => {
+    if (!Array.from(e.dataTransfer?.types || []).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsFileDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
   };
 
   // The picked file lives only in memory until saved — open it from a local
@@ -275,10 +324,14 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragH
         className="nvc-attachment-row__file-input-hidden"
       />
       <div
-        className="nvc-attachment-row__file-bar nvc-attachment-row__file-bar--action"
+        className={`nvc-attachment-row__file-bar nvc-attachment-row__file-bar--action ${isFileDragOver ? 'nvc-attachment-row__file-bar--file-drag-over' : ''}`.trim()}
         role="button"
         tabIndex={0}
         onClick={() => fileInputRef.current?.click()}
+        onDragEnter={(e) => handleFileDrag(e, true)}
+        onDragOver={(e) => handleFileDrag(e, true)}
+        onDragLeave={(e) => handleFileDrag(e, false)}
+        onDrop={handleFileDrop}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -290,7 +343,11 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragH
           ? <FaCheckCircle className="nvc-attachment-row__icon nvc-attachment-row__icon--success" />
           : <FaFile className="nvc-attachment-row__icon" />}
         <span className="nvc-attachment-row__filename">
-          {hasFile ? att.newFile.name : t('file_upload_select_file', 'Choose file')}
+          {isFileDragOver
+            ? t('attachment_drop_file', 'Drop file here')
+            : hasFile
+              ? att.newFile.name
+              : t('attachment_drag_or_choose_file', 'Drag a file here or click to choose')}
         </span>
         {att.aiExtracting && (
           <span className="nvc-attachment-row__ai-status" title={t('attachment_ai_extracting', 'Reading document...')}>
@@ -322,6 +379,34 @@ function NewAttachmentRow({ att, t, onFileChange, onFieldChange, onRemove, dragH
         placeholder={t('attachment_heading', 'Heading')}
       />
       {error && <span className="nvc-attachment-row__error">{error}</span>}
+    </div>
+  );
+}
+
+// Numbered, clickable candidate lines — shared between the "Suggest Wording"
+// and "Generate remark from photo" AI features, which both resolve to the
+// same action (apply one line into the English Remarks editor).
+function AiSuggestionsList({ suggestions, onApply, label }) {
+  if (!suggestions.length) return null;
+
+  return (
+    <div className="nvh-ai-suggestions">
+      <div className="nvh-ai-suggestions__heading">
+        <FaRobot /> {label}
+      </div>
+      <div className="nvh-ai-suggestions__list">
+        {suggestions.map((suggestion, index) => (
+          <button
+            key={`${suggestion}-${index}`}
+            type="button"
+            className="nvh-inline-suggestion"
+            onClick={() => onApply(suggestion)}
+          >
+            <span className="nvh-inline-suggestion__badge">{index + 1}</span>
+            <span className="nvh-inline-suggestion__text">{suggestion}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -444,6 +529,63 @@ const RemarksAttachmentsSection = memo(({
       ? t('transcribing_voice', 'Transcribing...')
       : t('record_voice_note', 'Record Voice Note');
   const remarksSuggestActionLabel = t('suggest_wording');
+
+  // "Generate remark from photo" — user uploads an image (site condition,
+  // defect, progress, a printed/handwritten note, ...) and Claude Vision
+  // drafts candidate remark lines. Applying one appends it as a new
+  // paragraph, same as a voice-note transcript, since it's new content being
+  // added rather than a reword of existing text.
+  const imageRemarkInputRef = useRef(null);
+  const [imageRemarkClientError, setImageRemarkClientError] = useState('');
+  const {
+    suggestions: imageRemarkSuggestions,
+    busy: imageRemarkBusy,
+    error: imageRemarkError,
+    requestSuggestion: requestImageRemarkSuggestion,
+    discard: discardImageRemarkSuggestions,
+    removeSuggestion: removeImageRemarkSuggestion,
+  } = useImageRemarkSuggestion({ language: 'en' });
+
+  const handleImageRemarkButtonClick = () => {
+    imageRemarkInputRef.current?.click();
+  };
+
+  const handleImageRemarkFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const ext = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
+    if (!ACCEPTED_IMAGE_TYPES.includes(ext)) {
+      setImageRemarkClientError(t('file_upload_invalid_file_type', { types: ACCEPTED_IMAGE_TYPES.join(', ') }));
+      return;
+    }
+    if (!validateFileSize(file, MAX_IMAGE_SIZE_MB)) {
+      setImageRemarkClientError(t('file_upload_too_large', { name: file.name, maxSize: MAX_IMAGE_SIZE_MB }));
+      return;
+    }
+    setImageRemarkClientError('');
+    discardRemarksSuggestions();
+    discardImageRemarkSuggestions();
+    await requestImageRemarkSuggestion(file);
+  };
+
+  // Points are independent observations rather than alternative rewordings of
+  // the same remark, so applying one only removes that point from the pending
+  // list (see useImageRemarkSuggestion.removeSuggestion) — the rest stay
+  // clickable so the user can add several from the same photo.
+  const handleApplyImageRemarkSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    onFormDataChange(prev => ({
+      ...prev,
+      remarks: `${prev.remarks || ''}${plainTextToHtml(suggestion)}`,
+    }));
+    removeImageRemarkSuggestion(suggestion);
+  };
+
+  const imageRemarkActionLabel = imageRemarkBusy
+    ? t('reading_image', 'Reading image...')
+    : t('generate_remark_from_photo', 'Generate remark from photo');
 
   // Arabic remarks stay in line-level sync with English: only lines that were
   // actually added/edited get (re)translated, plainly (no styling). Lines the
@@ -798,7 +940,7 @@ const RemarksAttachmentsSection = memo(({
                       <VoiceNoteButton
                         recording={remarksRecording}
                         transcribing={remarksTranscribing}
-                        disabled={remarksSuggestBusy}
+                        disabled={remarksSuggestBusy || imageRemarkBusy}
                         onClick={toggleRemarksRecording}
                         t={t}
                         iconOnly
@@ -813,13 +955,34 @@ const RemarksAttachmentsSection = memo(({
                         size="icon"
                         variant="ghost"
                         loading={remarksSuggestBusy}
-                        disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing}
+                        disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing || imageRemarkBusy}
                         startIcon={<FaRobot />}
                         onClick={handleSuggestRemarksWording}
                         aria-label={remarksSuggestActionLabel}
                       />
                       <span className="nvh-action-tooltip__content" role="tooltip">
                         {remarksSuggestActionLabel}
+                      </span>
+                    </span>
+                    <span className="nvh-action-tooltip">
+                      <input
+                        ref={imageRemarkInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageRemarkFileSelected}
+                        className="nvc-attachment-row__file-input-hidden"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        loading={imageRemarkBusy}
+                        disabled={remarksRecording || remarksTranscribing || remarksSuggestBusy}
+                        startIcon={<FaImage />}
+                        onClick={handleImageRemarkButtonClick}
+                        aria-label={imageRemarkActionLabel}
+                      />
+                      <span className="nvh-action-tooltip__content" role="tooltip">
+                        {imageRemarkActionLabel}
                       </span>
                     </span>
                   </div>
@@ -867,6 +1030,16 @@ const RemarksAttachmentsSection = memo(({
               </p>
             )}
 
+            {imageRemarkClientError && (
+              <p className="nvh-suggest-error">{imageRemarkClientError}</p>
+            )}
+
+            {imageRemarkError && (
+              <p className="nvh-suggest-error">
+                {t(imageRemarkError) !== imageRemarkError ? t(imageRemarkError) : imageRemarkError}
+              </p>
+            )}
+
             {remarksOverlapWarnings.length > 0 && (
               <div className="nvh-remarks-overlap-warnings">
                 <div className="nvh-remarks-overlap-warnings__heading">
@@ -892,26 +1065,17 @@ const RemarksAttachmentsSection = memo(({
               </div>
             )}
 
-            {remarksSuggestions.length > 0 && (
-              <div className="nvh-ai-suggestions">
-                <div className="nvh-ai-suggestions__heading">
-                  <FaRobot /> {t('ai_suggestions')}
-                </div>
-                <div className="nvh-ai-suggestions__list">
-                  {remarksSuggestions.map((suggestion, index) => (
-                    <button
-                      key={`${suggestion}-${index}`}
-                      type="button"
-                      className="nvh-inline-suggestion"
-                      onClick={() => handleApplyRemarksSuggestion(suggestion)}
-                    >
-                      <span className="nvh-inline-suggestion__badge">{index + 1}</span>
-                      <span className="nvh-inline-suggestion__text">{suggestion}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AiSuggestionsList
+              suggestions={remarksSuggestions}
+              onApply={handleApplyRemarksSuggestion}
+              label={t('ai_suggestions')}
+            />
+
+            <AiSuggestionsList
+              suggestions={imageRemarkSuggestions}
+              onApply={handleApplyImageRemarkSuggestion}
+              label={t('ai_points_from_image', 'Points detected in photo — click to add each')}
+            />
             </>
           ) : formData.remarks ? (
             formData.remarks_ar ? (
