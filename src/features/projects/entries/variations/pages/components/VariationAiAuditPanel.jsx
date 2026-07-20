@@ -1,7 +1,10 @@
 import { useId, useState } from 'react';
-import { FaRobot, FaUpload, FaTrash, FaFilePdf, FaCheckCircle, FaShieldAlt } from 'react-icons/fa';
+import { FaRobot, FaUpload, FaTrash, FaFilePdf, FaCheckCircle, FaShieldAlt, FaTimes } from 'react-icons/fa';
 import Button from '../../../../../../components/common/Button';
 import { projectApi } from '../../../../../../services/projects/projectApi';
+
+const OFFICIAL_DOCUMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
+const MAX_OFFICIAL_DOCUMENT_SIZE_MB = 30;
 
 const outcomes = {
   matched_locked: 'ai_outcome_matched_locked',
@@ -15,6 +18,7 @@ const outcomes = {
 export default function VariationAiAuditPanel({ variation, project, user, t, isArabic, reload, success, showError }) {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputId = useId();
   const role = user?.role?.name;
   const pendingUpload = variation?.status === 'pending_official_document' || (variation?.status === 'approved' && variation?.updated_document_pending);
@@ -49,6 +53,46 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
       .filter(Boolean);
   })();
   const selectedFileSize = file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '';
+
+  const selectFile = (selectedFile) => {
+    if (!selectedFile) return;
+
+    const extension = `.${selectedFile.name.split('.').pop()?.toLowerCase() || ''}`;
+    if (!OFFICIAL_DOCUMENT_TYPES.includes(extension)) {
+      showError(t('file_upload_invalid_file_type', { types: 'PDF, JPG, JPEG, PNG' }));
+      return;
+    }
+    if (selectedFile.size > MAX_OFFICIAL_DOCUMENT_SIZE_MB * 1024 * 1024) {
+      showError(t('file_upload_too_large', {
+        name: selectedFile.name,
+        maxSize: MAX_OFFICIAL_DOCUMENT_SIZE_MB,
+      }));
+      return;
+    }
+
+    setFile(selectedFile);
+  };
+
+  const handleDrag = (event, over) => {
+    if (busy || !Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDragOver(over);
+  };
+
+  const handleDragLeave = (event) => {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    handleDrag(event, false);
+  };
+
+  const handleDrop = (event) => {
+    if (busy || !Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+    selectFile(event.dataTransfer.files?.[0]);
+  };
 
   const renderAuditPoint = (point) => {
     const pageMatch = String(point).match(/\s*\((Page|صفحة|الصفحة)\s+(\d+)\)\s*$/i);
@@ -99,14 +143,53 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
       </div>
       {canUpload && (
         <div className="var-ai-audit__upload">
-          <input id={fileInputId} className="var-ai-audit__file-input" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setFile(event.target.files?.[0] || null)} disabled={busy} />
-          <label className={`var-ai-audit__dropzone ${file ? 'var-ai-audit__dropzone--selected' : ''}`} htmlFor={fileInputId}>
+          <input
+            id={fileInputId}
+            className="var-ai-audit__file-input"
+            type="file"
+            accept={OFFICIAL_DOCUMENT_TYPES.join(',')}
+            onChange={(event) => {
+              selectFile(event.target.files?.[0]);
+              event.target.value = '';
+            }}
+            disabled={busy}
+          />
+          <label
+            className={`var-ai-audit__dropzone ${file ? 'var-ai-audit__dropzone--selected' : ''} ${isDragOver ? 'var-ai-audit__dropzone--drag-over' : ''}`.trim()}
+            htmlFor={fileInputId}
+            onDragEnter={(event) => handleDrag(event, true)}
+            onDragOver={(event) => handleDrag(event, true)}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <span className="var-ai-audit__dropzone-icon">{file ? <FaFilePdf /> : <FaUpload />}</span>
             <span className="var-ai-audit__dropzone-copy">
-              <strong>{file ? file.name : t('choose_official_document')}</strong>
+              <strong>
+                {isDragOver
+                  ? t('attachment_drop_file', 'Drop file here')
+                  : file
+                    ? file.name
+                    : t('official_document_drag_or_choose', 'Drag the official signed document here or click to choose')}
+              </strong>
               <small>{file ? selectedFileSize : t('official_document_file_hint')}</small>
             </span>
             <span className="var-ai-audit__browse">{t('browse_files')}</span>
+            {file && (
+              <button
+                type="button"
+                className="var-ai-audit__clear-selection"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setFile(null);
+                }}
+                disabled={busy}
+                aria-label={t('remove_selected_file', 'Remove selected file')}
+                title={t('remove_selected_file', 'Remove selected file')}
+              >
+                <FaTimes />
+              </button>
+            )}
           </label>
           <div className="var-ai-audit__upload-actions">
             <Button size="md" loading={busy} disabled={!file} startIcon={<FaUpload />} onClick={() => run(() => projectApi.uploadVariationSignedCopy(project.id, variation.id, file))}>{t('upload_signed_copy')}</Button>

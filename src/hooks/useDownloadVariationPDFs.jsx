@@ -98,6 +98,11 @@ async function preparePrintDocumentLayout(el) {
   // paginated, keeping it on a dedicated final sheet.
   forceElementToPageStart(el, "[data-vpd-general-remarks-page]", 1, PRINT_CONTENT_HEIGHT_PX);
   await waitForFrame();
+
+  // Recalculate after General Remarks reaches its final page so its generated
+  // rich-text blocks cannot be cut through at a page boundary.
+  applyPrintPagePartBreaks(el, PRINT_CONTENT_HEIGHT_PX);
+  await waitForFrame();
 }
 
 async function renderVariationPrintPdfBlob({ variation, project, companyInfo, noticeData, consultantStampUrl, gmSignatureUrl, hideSignatures = false }) {

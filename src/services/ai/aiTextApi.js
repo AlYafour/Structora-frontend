@@ -1,9 +1,13 @@
 import { api } from "../api";
 
 export const aiTextApi = {
-  async suggestWording(text, language = "ar") {
-    const { data } = await api.post("suggest-wording/", { text, language });
-    return data; // { suggestions: string[], suggestion: string }
+  async suggestWording(text, language = "ar", context = {}) {
+    const { data } = await api.post("suggest-wording/", {
+      text,
+      language,
+      ...context,
+    });
+    return data; // { suggestions, suggestion, previous_variations? }
   },
 
   async transcribeAudio(audioBlob, { language, field, prompt } = {}) {
@@ -24,5 +28,13 @@ export const aiTextApi = {
       general_remarks: generalRemarks,
     });
     return data; // { overlaps: [{ line, matched_point, reason }] }
+  },
+
+  async suggestRemarkFromImage(imageFile, language = "en") {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    formData.append("language", language);
+    const { data } = await api.post("suggest-remark-from-image/", formData);
+    return data; // { suggestions: string[], suggestion: string }
   },
 };
