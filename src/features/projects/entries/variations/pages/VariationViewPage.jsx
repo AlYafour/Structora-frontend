@@ -331,7 +331,16 @@ export default function VariationViewPage() {
   };
 
   // PDF Export — client-side using html2canvas + jsPDF, then pdf-lib to append attachments
-  const exportPDF = async (ref, filenameSuffix = '', { download = true } = {}) => {
+  const exportPDF = async (
+    ref,
+    filenameSuffix = '',
+    {
+      download = true,
+      includeAttachments = true,
+      canvasScale = PDF_CANVAS_SCALE,
+      jpegQuality = PDF_JPEG_QUALITY,
+    } = {}
+  ) => {
     if (!variation || !project || !ref.current) {
       if (download) showError(t("pdf_export_error"));
       throw new Error('Variation PDF document is not ready');
@@ -372,7 +381,7 @@ export default function VariationViewPage() {
       await new Promise(resolve => requestAnimationFrame(resolve));
 
       const canvas = await html2canvas(el, {
-        scale: PDF_CANVAS_SCALE,
+        scale: canvasScale,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -455,7 +464,7 @@ export default function VariationViewPage() {
         const drawW = canvas.width * drawScale;
         const drawH = srcH * drawScale;
         pdf.addImage(
-          slice.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
+          slice.toDataURL('image/jpeg', jpegQuality),
           'JPEG',
           (pageW - drawW) / 2,
           margin + topGap,
@@ -492,7 +501,7 @@ export default function VariationViewPage() {
 
       // Merge variation_attachments (PDFs/images) as header/footer attachment pages.
       let attachmentPageIndexes = [];
-      if (attachments.length > 0) {
+      if (includeAttachments && attachments.length > 0) {
         attachmentPageIndexes = await appendWrappedVariationAttachments(mergedDoc, {
           attachments,
           variation,
@@ -541,7 +550,14 @@ export default function VariationViewPage() {
   const handleExportPDF = () => exportPDF(printDocumentRef);
   const handleExportPDFClean = () => exportPDF(printDocumentCleanRef, '_unsigned');
   const createGmInitialSnapshot = () => exportPDF(
-    printDocumentRef, '_gm_initial_snapshot', { download: false }
+    printDocumentRef,
+    '_gm_initial_snapshot',
+    {
+      download: false,
+      includeAttachments: false,
+      canvasScale: 2,
+      jpegQuality: 0.85,
+    }
   );
 
   const {

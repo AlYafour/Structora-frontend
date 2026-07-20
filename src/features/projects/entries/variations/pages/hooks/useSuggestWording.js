@@ -5,8 +5,14 @@ import { normalizeSuggestions } from '../../utils/aiSuggestionText';
 const MAX_CHARS = 4000; // keep in sync with backend SUGGEST_WORDING_MAX_CHARS
 const TARGET_SUGGESTIONS = 2;
 
-export function useSuggestWording({ language = 'ar' } = {}) {
+export function useSuggestWording({
+  language = 'ar',
+  context,
+  projectId,
+  variationId,
+} = {}) {
   const [suggestions, setSuggestions] = useState([]);
+  const [previousVariations, setPreviousVariations] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const inFlightRef = useRef(false);
@@ -19,11 +25,19 @@ export function useSuggestWording({ language = 'ar' } = {}) {
     setError('');
     try {
       const promptText = trimmed.slice(0, MAX_CHARS);
-      const firstData = await aiTextApi.suggestWording(promptText, language);
+      const requestContext = context ? {
+        context,
+        project_id: projectId,
+        variation_id: variationId,
+      } : {};
+      const firstData = await aiTextApi.suggestWording(promptText, language, requestContext);
       let nextSuggestions = normalizeSuggestions(firstData);
+      setPreviousVariations(
+        Array.isArray(firstData?.previous_variations) ? firstData.previous_variations : []
+      );
 
-      if (nextSuggestions.length < TARGET_SUGGESTIONS) {
-        const secondData = await aiTextApi.suggestWording(promptText, language);
+      if (!context && nextSuggestions.length < TARGET_SUGGESTIONS) {
+        const secondData = await aiTextApi.suggestWording(promptText, language, requestContext);
         nextSuggestions = [...nextSuggestions, ...normalizeSuggestions(secondData)];
       }
 
@@ -37,12 +51,13 @@ export function useSuggestWording({ language = 'ar' } = {}) {
       setBusy(false);
       inFlightRef.current = false;
     }
-  }, [language]);
+  }, [context, language, projectId, variationId]);
 
   const discard = useCallback(() => {
     setSuggestions([]);
+    setPreviousVariations([]);
     setError('');
   }, []);
 
-  return { suggestions, busy, error, requestSuggestion, discard };
+  return { suggestions, previousVariations, busy, error, requestSuggestion, discard };
 }

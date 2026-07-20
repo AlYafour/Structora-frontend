@@ -3752,6 +3752,15 @@ html.theme-dark .nvc-remarks-split-view-grid {
   gap: 6px;
 }
 
+.nvh-ai-suggestions--history {
+  border-color: rgba(180, 120, 20, 0.28);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.03));
+}
+
+.nvh-ai-suggestions--history .nvh-ai-suggestions__heading {
+  color: #9a6700;
+}
+
 .nvh-inline-suggestion {
   width: 100%;
   margin: 0;
@@ -3794,6 +3803,19 @@ html.theme-dark .nvc-remarks-split-view-grid {
 
 .nvh-inline-suggestion__text {
   display: block;
+}
+
+.nvh-inline-suggestion--history {
+  grid-template-columns: minmax(36px, auto) 1fr;
+}
+
+.nvh-inline-suggestion--history .nvh-inline-suggestion__badge {
+  width: auto;
+  min-width: 36px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #8a5b00;
 }
 
 .nvh-remarks-overlap-warnings {

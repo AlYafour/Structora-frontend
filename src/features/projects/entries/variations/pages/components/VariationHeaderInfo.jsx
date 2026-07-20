@@ -3,7 +3,7 @@
  */
 
 import { memo } from 'react';
-import { FaHashtag, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaAlignLeft, FaRobot } from 'react-icons/fa';
+import { FaHashtag, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaAlignLeft, FaRobot, FaHistory } from 'react-icons/fa';
 import MultiPresetSelectField from '../../../../../../components/common/MultiPresetSelectField';
 import AdditionalTimeSelectField from '../../../../../../components/common/AdditionalTimeSelectField';
 import Button from '../../../../../../components/common/Button';
@@ -19,6 +19,8 @@ const VariationHeaderInfo = memo(({
   formData,
   isEditMode,
   onFormDataChange,
+  projectId,
+  variationId,
   getProjectNumber,
   getProjectLocation,
   t
@@ -32,7 +34,19 @@ const VariationHeaderInfo = memo(({
   const secondaryDescriptionLabel = isArabicPrimary
     ? t('auto_translated_english', 'Auto-translated English')
     : t('auto_translated_arabic', 'Auto-translated Arabic');
-  const { suggestions, busy, error, requestSuggestion, discard } = useSuggestWording({ language: languageCode });
+  const {
+    suggestions,
+    previousVariations,
+    busy,
+    error,
+    requestSuggestion,
+    discard,
+  } = useSuggestWording({
+    language: languageCode,
+    context: 'variation_description',
+    projectId,
+    variationId,
+  });
   const { translating: translatingDescription } = useMachineAutoTranslate(
     primaryDescription,
     (translated) => onFormDataChange(prev => ({
@@ -332,6 +346,29 @@ const VariationHeaderInfo = memo(({
 
         {isEditMode && voiceError && (
           <p className="nvh-suggest-error">{t(voiceError) !== voiceError ? t(voiceError) : voiceError}</p>
+        )}
+
+        {isEditMode && previousVariations.length > 0 && (
+          <div className="nvh-ai-suggestions nvh-ai-suggestions--history">
+            <div className="nvh-ai-suggestions__heading">
+              <FaHistory /> {t('used_in_previous_variations')}
+            </div>
+            <div className="nvh-ai-suggestions__list">
+              {previousVariations.map((previousVariation) => (
+                <button
+                  key={`${previousVariation.variation_id}-${previousVariation.text}`}
+                  type="button"
+                  className="nvh-inline-suggestion nvh-inline-suggestion--history"
+                  onClick={() => handleApplySuggestion(previousVariation.text)}
+                >
+                  <span className="nvh-inline-suggestion__badge">
+                    {previousVariation.variation_number || previousVariation.variation_id}
+                  </span>
+                  <span className="nvh-inline-suggestion__text">{previousVariation.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {isEditMode && suggestions.length > 0 && (

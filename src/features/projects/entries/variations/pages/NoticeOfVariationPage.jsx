@@ -1058,6 +1058,8 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             formData={formData}
             isEditMode={isEditMode}
             onFormDataChange={setFormData}
+            projectId={project?.id || projectFromQuery}
+            variationId={variation?.id || variationId}
             getProjectNumber={getProjectNumber}
             getProjectLocation={getProjectLocation}
             t={t}

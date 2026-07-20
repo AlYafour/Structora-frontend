@@ -378,5 +378,6 @@
   "audit_description_add_discount": "Post-approval discount added: {{discount}}",
   "post_approval_discount_dialog_desc": "Enter the discount to apply to the approved variation totals.",
   "post_approval_discount_placeholder": "Discount amount",
-  "add_discount_confirm": "Apply Discount"
+  "add_discount_confirm": "Apply Discount",
+  "used_in_previous_variations": "Used in previous variations"
 }
