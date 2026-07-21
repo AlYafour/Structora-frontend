@@ -501,15 +501,16 @@ export default function VariationViewPage() {
 
       // Merge variation_attachments (PDFs/images) as header/footer attachment pages.
       let attachmentPageIndexes = [];
+      let failedAttachments = [];
       if (includeAttachments && attachments.length > 0) {
-        attachmentPageIndexes = await appendWrappedVariationAttachments(mergedDoc, {
+        ({ appendedPageIndexes: attachmentPageIndexes, failedAttachments } = await appendWrappedVariationAttachments(mergedDoc, {
           attachments,
           variation,
           project,
           companyInfo,
           noticeData,
           logger,
-        });
+        }));
       }
 
       await stampVariationPageNumbers(mergedDoc, {
@@ -530,7 +531,21 @@ export default function VariationViewPage() {
       a.click();
       URL.revokeObjectURL(url);
 
-      if (download) success(t("pdf_exported_successfully"));
+      if (failedAttachments.length > 0) {
+        // logger.warn is suppressed in production builds; use console.warn
+        // directly here so the reason is visible in prod devtools too.
+        console.warn("[VariationViewPage] attachment(s) failed to merge into export:", failedAttachments.map(
+          (f) => ({ file: f.fileUrl, reason: f.reason })
+        ));
+      }
+
+      if (download) {
+        if (failedAttachments.length > 0) {
+          showError(t("pdf_export_partial", { count: failedAttachments.length }));
+        } else {
+          success(t("pdf_exported_successfully"));
+        }
+      }
     } catch (error) {
       logger.error("Error generating PDF", error);
       if (download) showError(t("pdf_export_error"));

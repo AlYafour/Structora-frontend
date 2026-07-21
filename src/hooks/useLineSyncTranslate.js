@@ -22,24 +22,40 @@ const hasArabic = (text) => /[؀-ۿ]/.test(text || '');
  * @param {{ enabled?: boolean, debounceMs?: number }} opts
  * @returns {{ translating: boolean }}
  */
-export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { enabled = true, debounceMs = 800 } = {}) {
+export function useLineSyncTranslate(sourceHtml, targetHtml, onTargetChange, {
+  enabled = true,
+  debounceMs = 800,
+  source = 'en',
+  target = 'ar',
+} = {}) {
   const [translating, setTranslating] = useState(false);
 
-  const onArabicChangeRef = useRef(onArabicChange);
-  useEffect(() => { onArabicChangeRef.current = onArabicChange; });
+  const onTargetChangeRef = useRef(onTargetChange);
+  useEffect(() => { onTargetChangeRef.current = onTargetChange; });
 
-  const arabicHtmlRef = useRef(arabicHtml);
-  useEffect(() => { arabicHtmlRef.current = arabicHtml; });
+  const targetHtmlRef = useRef(targetHtml);
+  useEffect(() => { targetHtmlRef.current = targetHtml; });
 
   // Baseline for diffing: if Arabic already has content (e.g. a loaded
   // variation), assume it's already in sync with the current English so
   // loading doesn't trigger a disruptive one-time re-translation of
   // everything; otherwise start empty so existing English gets caught up once.
-  const prevEnglishLinesRef = useRef(
-    arabicHtml ? getPlainTextLines(englishHtml) : []
+  const prevSourceLinesRef = useRef(
+    targetHtml ? getPlainTextLines(sourceHtml) : []
   );
+  const directionRef = useRef(`${source}:${target}`);
 
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const direction = `${source}:${target}`;
+    if (directionRef.current !== direction) {
+      directionRef.current = direction;
+      prevSourceLinesRef.current = targetHtml ? getPlainTextLines(sourceHtml) : [];
+      clearTimeout(debounceRef.current);
+      setTranslating(false);
+    }
+  }, [source, sourceHtml, target, targetHtml]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -50,8 +66,8 @@ export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { 
     // with no actual wording change produces identical lines here. Checking
     // this up front, before even scheduling the debounce, means a style-only
     // edit never kicks off a pending translation cycle at all.
-    const newLines = getPlainTextLines(englishHtml);
-    const oldLines = prevEnglishLinesRef.current;
+    const newLines = getPlainTextLines(sourceHtml);
+    const oldLines = prevSourceLinesRef.current;
     const textUnchanged = newLines.length === oldLines.length
       && newLines.every((line, i) => line === oldLines[i]);
     if (textUnchanged) return undefined;
@@ -59,11 +75,11 @@ export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { 
     debounceRef.current = setTimeout(async () => {
       // Re-split fresh at execution time in case more edits landed during
       // the debounce window.
-      const latestLines = getPlainTextLines(englishHtml);
-      const script = diffLines(prevEnglishLinesRef.current, latestLines);
+      const latestLines = getPlainTextLines(sourceHtml);
+      const script = diffLines(prevSourceLinesRef.current, latestLines);
 
       if (script.every((op) => op.type === 'keep')) {
-        prevEnglishLinesRef.current = latestLines;
+        prevSourceLinesRef.current = latestLines;
         return;
       }
 
@@ -76,7 +92,9 @@ export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { 
           const results = await Promise.all(
             insertOps.map((op) => {
               const lineText = latestLines[op.newIndex];
-              return hasArabic(lineText) ? lineText : translateText(lineText);
+              return target === 'ar' && hasArabic(lineText)
+                ? lineText
+                : translateText(lineText, source, target);
             })
           );
           insertOps.forEach((op, idx) => { translatedByNewIndex[op.newIndex] = results[idx]; });
@@ -85,10 +103,10 @@ export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { 
         }
       }
 
-      const currentArabicBlocks = splitBlocks(arabicHtmlRef.current);
+      const currentTargetBlocks = splitBlocks(targetHtmlRef.current);
       const mergedHtml = script
         .map((op) => {
-          if (op.type === 'keep') return currentArabicBlocks[op.oldIndex]?.html || '';
+          if (op.type === 'keep') return currentTargetBlocks[op.oldIndex]?.html || '';
           if (op.type === 'insert') {
             const translated = translatedByNewIndex[op.newIndex];
             return translated ? `<p>${escapeHtml(translated)}</p>` : '';
@@ -98,12 +116,12 @@ export function useLineSyncTranslate(englishHtml, arabicHtml, onArabicChange, { 
         .filter(Boolean)
         .join('');
 
-      prevEnglishLinesRef.current = latestLines;
-      onArabicChangeRef.current(mergedHtml);
+      prevSourceLinesRef.current = latestLines;
+      onTargetChangeRef.current(mergedHtml);
     }, debounceMs);
 
     return () => clearTimeout(debounceRef.current);
-  }, [englishHtml, enabled, debounceMs]);
+  }, [sourceHtml, enabled, debounceMs, source, target]);
 
   return { translating };
 }

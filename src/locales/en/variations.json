@@ -54,6 +54,9 @@
   "first_variation_date": "First Variation Date",
   "variation_description": "Variation Description",
   "suggest_wording": "Suggest Wording",
+  "suggest_remarks_from_notice": "Suggest Remarks from Notice",
+  "ai_remarks_from_notice": "Suggested remarks from this notice — click to add each",
+  "variation_remarks_suggestion_failed": "Could not generate remarks from the notice.",
   "generate_remark_from_photo": "Generate remark from photo",
   "reading_image": "Reading image...",
   "ai_points_from_image": "Points detected in photo — click to add each",
@@ -379,5 +382,10 @@
   "post_approval_discount_dialog_desc": "Enter the discount to apply to the approved variation totals.",
   "post_approval_discount_placeholder": "Discount amount",
   "add_discount_confirm": "Apply Discount",
-  "used_in_previous_variations": "Used in previous variations"
+  "used_in_previous_variations": "Used in previous variations",
+  "has_contractor_fee_question": "Is there a contractor fee?",
+  "has_consultant_fee_question": "Is there a consultant fee?",
+  "has_custom_fee_question": "Are there any custom fees?",
+  "consultant_fee_amount_contract_mismatch": "The entered amount does not match the consultant fee percentage in the contract ({{percentage}}%). Expected amount: {{amount}}.",
+  "contract_notes": "Contract Notes"
 }

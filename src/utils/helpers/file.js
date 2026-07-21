@@ -233,6 +233,31 @@ export function formatFileSize(bytes) {
 
 // ===== File Operations =====
 
+// Large attachments (scanned drawings, etc.) can take a while to transfer;
+// this bounds a single attempt so a stalled connection fails clearly instead
+// of hanging indefinitely. Kept generous - a slow disk/AV-scanned read or a
+// throttled connection can legitimately take minutes for a large file, and
+// aborting a transfer that was still making progress is worse than waiting.
+const FETCH_FILE_TIMEOUT_MS = 300000;
+
+function fetchWithTimeout(url, options, timeoutMs = FETCH_FILE_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const startedAt = Date.now();
+  return fetch(url, { ...options, signal: controller.signal })
+    .catch((err) => {
+      const elapsedMs = Date.now() - startedAt;
+      const reason = controller.signal.aborted
+        ? `timed out after ${elapsedMs}ms (limit ${timeoutMs}ms)`
+        : `network error after ${elapsedMs}ms: ${err?.message || err}`;
+      // console.warn directly (not the app logger, which is suppressed in
+      // production builds) so this is visible in prod devtools too.
+      console.warn(`[fetchWithTimeout] ${url} ${reason}`);
+      throw err;
+    })
+    .finally(() => clearTimeout(timeoutId));
+}
+
 /**
  * Fetch file with authentication credentials
  * Uses protected API endpoint
@@ -246,13 +271,21 @@ export async function fetchFileWithAuth(fileUrl) {
   }
 
   const fullApiUrl = apiUrl.startsWith("http") ? apiUrl : `${window.location.origin}${apiUrl}`;
-
-  // Auth cookies are sent automatically via credentials: 'include'
-  let response = await fetch(fullApiUrl, {
+  const requestOptions = {
     method: 'GET',
     credentials: 'include',
     headers: { 'Accept': '*/*' }
-  });
+  };
+
+  // Auth cookies are sent automatically via credentials: 'include'
+  let response;
+  try {
+    response = await fetchWithTimeout(fullApiUrl, requestOptions);
+  } catch {
+    // One retry on timeout/network failure - large files can occasionally
+    // stall once on a slow or throttled connection.
+    response = await fetchWithTimeout(fullApiUrl, requestOptions);
+  }
 
   // Auto-refresh token on 401 (refresh cookie is sent automatically)
   if (!response.ok && response.status === 401) {
@@ -260,11 +293,7 @@ export async function fetchFileWithAuth(fileUrl) {
       const { api } = await import("../../services/api");
       await api.post('auth/token/refresh/', {});
 
-      response = await fetch(fullApiUrl, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Accept': '*/*' }
-      });
+      response = await fetchWithTimeout(fullApiUrl, requestOptions);
     } catch { /* token refresh failed */
       throw new Error("Authentication failed. Please login again.");
     }

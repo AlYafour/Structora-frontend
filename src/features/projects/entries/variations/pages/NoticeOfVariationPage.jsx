@@ -217,12 +217,39 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const { user, hasPermission, isAdmin } = useAuth();
   const projectFromQuery = searchParams.get('project') || projectId;
   const isEmbeddedMode = !!variationProp && !!projectProp;
+  const [project, setProject] = useState(null);
+  const contractData = project?.contract_data || project?.contract || {};
+  const contractIncludesOwnerConsultant = (
+    contractData.owner_includes_consultant === true
+    || contractData.owner_includes_consultant === 'yes'
+  );
+  const contractIncludesBankConsultant = (
+    contractData.bank_includes_consultant === true
+    || contractData.bank_includes_consultant === 'yes'
+  );
+  const sumContractConsultantPercentage = (prefix) => {
+    const includes = prefix === 'owner'
+      ? contractIncludesOwnerConsultant
+      : contractIncludesBankConsultant;
+    if (!includes) return 0;
+    const design = parseFloat(contractData[`${prefix}_fee_design_percent`] || 0) || 0;
+    const supervision = parseFloat(contractData[`${prefix}_fee_supervision_percent`] || 0) || 0;
+    const extra = contractData[`${prefix}_fee_extra_mode`] === 'percent'
+      ? (parseFloat(contractData[`${prefix}_fee_extra_value`] || 0) || 0)
+      : 0;
+    return design + supervision + extra;
+  };
+  // Variation orders belong to the owner's share; fall back to the bank rate
+  // only when the contract has no owner consultant-fee percentage.
+  const contractConsultantFeePercentage = (
+    sumContractConsultantPercentage('owner')
+    || sumContractConsultantPercentage('bank')
+  );
 
   // State
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [project, setProject] = useState(null);
   const [variation, setVariation] = useState(null);
   const { success, error: showError } = useNotifications();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -413,6 +440,12 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         percentage: fee.type === 'percentage' ? fee.percentage : '',
         amount: fee.type === 'amount' ? fee.amount : '',
       }));
+      const hasSavedContractorFee = contractorOHPType === 'percentage'
+        ? parseFloat(noticeData.contractor_ohp_percentage || 0) > 0
+        : parseFloat(noticeData.contractor_ohp_amount || 0) > 0;
+      const hasSavedConsultantFee = consultantFeesType === 'percentage'
+        ? parseFloat(noticeData.consultant_fees_percentage || 0) > 0
+        : parseFloat(noticeData.consultant_fees_amount || 0) > 0;
 
       // The attachment<->Index-row link (`linked_attachment_id`) uses a
       // client-generated id that only survives a reload via the backend's
@@ -446,12 +479,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         remarks: noticeData.remarks ?? '',
         remarks_ar: noticeData.remarks_ar ?? '',
         vat_percentage: noticeData.vat_percentage ?? '15',
+        includes_contractor_ohp: hasSavedContractorFee ? 'yes' : 'no',
         consultant_fees_type: consultantFeesType,
-        consultant_fees_percentage: consultantFeesType === 'percentage' ? (noticeData.consultant_fees_percentage ?? '4') : '',
+        consultant_fees_percentage: consultantFeesType === 'percentage' ? (noticeData.consultant_fees_percentage ?? '') : '',
         consultant_fees_amount: consultantFeesType === 'amount' ? (noticeData.consultant_fees_amount ?? '') : '',
         consultant_fee_on_total_added: noticeData.consultant_fee_on_total_added !== undefined ? noticeData.consultant_fee_on_total_added : false,
+        includes_consultant_fees: hasSavedConsultantFee ? 'yes' : 'no',
         contractor_ohp_type: contractorOHPType,
-        contractor_ohp_percentage: contractorOHPType === 'percentage' ? (noticeData.contractor_ohp_percentage ?? '15') : '',
+        contractor_ohp_percentage: contractorOHPType === 'percentage' ? (noticeData.contractor_ohp_percentage ?? '') : '',
         contractor_ohp_amount: contractorOHPType === 'amount' ? (noticeData.contractor_ohp_amount ?? '') : '',
         discount_type: noticeData.discount_type ?? 'none',
         discount_percentage: noticeData.discount_percentage_input ?? '',
@@ -468,6 +503,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         hidden_consultant_fee_net_amount: variationData.hidden_consultant_fee_net_amount ?? 0,
         hidden_consultant_fee_vat_amount: variationData.hidden_consultant_fee_vat_amount ?? 0,
         hidden_consultant_fee_gross_amount: variationData.hidden_consultant_fee_gross_amount ?? 0,
+        includes_custom_fees: customFeesForForm.length > 0 ? 'yes' : 'no',
         custom_fees: customFeesForForm
       });
 
@@ -703,7 +739,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       const finalVariationAmount = calculations.totalVariationAmount < 0 ? -roundedVariationAmount : roundedVariationAmount;
 
       const consultantFeesValue = calculations.consultantFees;
-      const consultantFeesPercentage = formData.consultant_fees_type === 'percentage' ? parseFloat(formData.consultant_fees_percentage || 4) : 0;
+      const consultantFeesPercentage = formData.consultant_fees_type === 'percentage'
+        ? (parseFloat(formData.consultant_fees_percentage || 0) || 0)
+        : 0;
       const contractorEngineeringOHPValue = calculations.contractorOHP;
       const netAmountValue = round2(calculations.totalAmount);
       const vatValue = (netAmountValue * parseFloat(formData.vat_percentage || 15)) / 100;
@@ -1109,6 +1147,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             setExistingHiddenFeeAttachment={setExistingHiddenFeeAttachment}
             setHiddenFeeAttachmentCleared={setHiddenFeeAttachmentCleared}
             project={project}
+            contractConsultantFeePercentage={contractConsultantFeePercentage}
             onFormDataChange={setFormData}
             t={t}
           />
@@ -1141,6 +1180,9 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           {/* Remarks & Attachments */}
           <RemarksAttachmentsSection
             formData={formData}
+            omittedItems={omittedItems}
+            addedItems={addedItems}
+            calculations={calculations}
             isEditMode={isEditMode}
             onFormDataChange={setFormData}
             variationAttachment={variationAttachment}

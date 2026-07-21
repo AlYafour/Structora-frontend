@@ -3555,6 +3555,7 @@ html.theme-dark .nvc-remarks-split-view-grid {
   justify-content: space-between;
   gap: 8px;
   margin-top: 6px;
+  padding-bottom: 10px;
 }
 
 .nvh-desc-card__count {
@@ -3569,6 +3570,10 @@ html.theme-dark .nvc-remarks-split-view-grid {
 .nvh-desc-card__divider {
   height: 1px;
   background: var(--border-primary);
+}
+
+.nvh-description-translation {
+  padding-top: 10px;
 }
 
 .nvh-desc-row__text {
@@ -4133,6 +4138,31 @@ html.theme-dark .nvc-remarks-split-view-grid {
   border-radius: 8px;
   padding: 8px 10px;
   min-width: 0;
+}
+
+.nfs-fee-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.nfs-fee-warning {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .nfs-custom-fee-card__name {

@@ -28,10 +28,12 @@ const defaultFormData = {
   remarks: '',
   remarks_ar: '',
   vat_percentage: '15',
+  includes_contractor_ohp: null,
   consultant_fees_type: 'percentage',
   consultant_fees_percentage: '4',
   consultant_fees_amount: '',
   consultant_fee_on_total_added: false,
+  includes_consultant_fees: null,
   contractor_ohp_type: 'percentage',
   contractor_ohp_percentage: '15',
   contractor_ohp_amount: '',
@@ -50,6 +52,7 @@ const defaultFormData = {
   hidden_consultant_fee_net_amount: 0,
   hidden_consultant_fee_vat_amount: 0,
   hidden_consultant_fee_gross_amount: 0,
+  includes_custom_fees: null,
   custom_fees: [],
 };
 

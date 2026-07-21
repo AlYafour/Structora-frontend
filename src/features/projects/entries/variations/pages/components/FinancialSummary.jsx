@@ -9,6 +9,7 @@ import { FaMinus, FaPlus, FaEquals, FaTag, FaTimes } from 'react-icons/fa';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
 import FileUpload from '../../../../../../components/file-upload/FileUpload';
 import FileAttachmentView from '../../../../../../components/file-upload/FileAttachmentView';
+import YesNoChips from '../../../../../../components/ui/YesNoChips';
 
 // Shared card used for every fee row (contractor, consultant, custom)
 function FeeCard({
@@ -16,7 +17,7 @@ function FeeCard({
   descriptionInput, description,
   typeValue, inputValue, onTypeChange, onInputChange,
   displayAmount, afterDiscountAmount, afterDiscountLabel,
-  extras, isEditMode, lang, renderAmount,
+  extras, warning, isEditMode, lang, renderAmount,
 }) {
   return (
     <div className="nfs-custom-fee-card">
@@ -67,6 +68,8 @@ function FeeCard({
         </span>
       </div>
 
+      {warning && <div className="nfs-fee-warning no-print">{warning}</div>}
+
       {/* After-discount line */}
       {afterDiscountAmount != null && afterDiscountAmount !== displayAmount && (
         <div className="nfs-fee-after">
@@ -101,6 +104,7 @@ const FinancialSummary = memo(({
   setExistingHiddenFeeAttachment,
   setHiddenFeeAttachmentCleared,
   project,
+  contractConsultantFeePercentage = 0,
   onFormDataChange,
   t
 }) => {
@@ -208,7 +212,9 @@ const FinancialSummary = memo(({
     onFormDataChange({
       ...formData,
       consultant_fees_type: type,
-      consultant_fees_percentage: '',
+      consultant_fees_percentage: type === 'percentage' && contractConsultantFeePercentage > 0
+        ? String(contractConsultantFeePercentage)
+        : '',
       consultant_fees_amount: '',
     });
   };
@@ -225,9 +231,45 @@ const FinancialSummary = memo(({
     });
   };
 
+  const handleFeeInclusionChange = (field, value) => {
+    const updates = { [field]: value };
+    if (field === 'includes_contractor_ohp') {
+      updates.contractor_ohp_percentage = value === 'yes' ? '15' : '';
+      updates.contractor_ohp_amount = '';
+    } else if (field === 'includes_consultant_fees') {
+      updates.consultant_fees_percentage = value === 'yes' && contractConsultantFeePercentage > 0
+        ? String(contractConsultantFeePercentage)
+        : '';
+      updates.consultant_fees_amount = '';
+    } else if (field === 'includes_custom_fees' && value === 'no') {
+      updates.custom_fees = [];
+    }
+    onFormDataChange({ ...formData, ...updates });
+  };
+
   const isPositive = totalVariationAmount >= 0;
+  const consultantFeeBase = formData.consultant_fee_on_total_added ? totalAdded : totalVariationAmount;
+  const expectedConsultantFeeAmount = consultantFeeBase * contractConsultantFeePercentage / 100;
+  const enteredConsultantFeeAmount = parseFloat(formData.consultant_fees_amount);
+  const consultantAmountIsInaccurate = (
+    formData.consultant_fees_type === 'amount'
+    && formData.consultant_fees_amount !== ''
+    && Number.isFinite(enteredConsultantFeeAmount)
+    && contractConsultantFeePercentage > 0
+    && Math.abs(enteredConsultantFeeAmount - expectedConsultantFeeAmount) > 0.01
+  );
   const showAdditionalFeesBlock = customFees.length > 0 || isEditMode || hasDiscount;
   const standardFeeCards = [
+    isEditMode && (
+      <div key="contractor-question" className="nfs-fee-question no-print">
+        <span>{t('has_contractor_fee_question', 'Is there a contractor fee?')}</span>
+        <YesNoChips
+          value={formData.includes_contractor_ohp}
+          onChange={value => handleFeeInclusionChange('includes_contractor_ohp', value)}
+        />
+      </div>
+    ),
+    (formData.includes_contractor_ohp === 'yes' || (!isEditMode && contractorEngineeringOHP > 0)) && (
     <FeeCard
       key="contractor-ohp"
       label={<>
@@ -254,7 +296,17 @@ const FinancialSummary = memo(({
       isEditMode={isEditMode}
       lang={lang}
       renderAmount={renderAmount}
-    />,
+    />),
+    isEditMode && (
+      <div key="consultant-question" className="nfs-fee-question no-print">
+        <span>{t('has_consultant_fee_question', 'Is there a consultant fee?')}</span>
+        <YesNoChips
+          value={formData.includes_consultant_fees}
+          onChange={value => handleFeeInclusionChange('includes_consultant_fees', value)}
+        />
+      </div>
+    ),
+    (formData.includes_consultant_fees === 'yes' || (!isEditMode && consultantFees > 0)) && (
     <FeeCard
       key="consultant-fees"
       label={<>
@@ -268,6 +320,16 @@ const FinancialSummary = memo(({
       onTypeChange={handleConsultantFeesTypeChange}
       onInputChange={val => onFormDataChange({ ...formData, [formData.consultant_fees_type === 'percentage' ? 'consultant_fees_percentage' : 'consultant_fees_amount']: val })}
       displayAmount={consultantFees}
+      warning={consultantAmountIsInaccurate
+        ? t(
+          'consultant_fee_amount_contract_mismatch',
+          'The entered amount does not match the consultant fee percentage in the contract ({{percentage}}%). Expected amount: {{amount}}.',
+          {
+            percentage: contractConsultantFeePercentage,
+            amount: formatMoney(expectedConsultantFeeAmount, { lang }),
+          }
+        )
+        : null}
       afterDiscountAmount={hasDiscount ? consultantFeesAfterDiscount : null}
       afterDiscountLabel={t('consultant_fees_after_discount')}
       extras={[
@@ -287,7 +349,7 @@ const FinancialSummary = memo(({
       isEditMode={isEditMode}
       lang={lang}
       renderAmount={renderAmount}
-    />,
+    />),
   ];
 
   return (
@@ -577,6 +639,17 @@ const FinancialSummary = memo(({
           <div className="nfs-block nfs-block--fees">
             <div className="nfs-block__title">{t('custom_fees', 'Custom Fees')}</div>
 
+            {isEditMode && (
+              <div className="nfs-fee-question no-print">
+                <span>{t('has_custom_fee_question', 'Are there any custom fees?')}</span>
+                <YesNoChips
+                  value={formData.includes_custom_fees}
+                  onChange={value => handleFeeInclusionChange('includes_custom_fees', value)}
+                />
+              </div>
+            )}
+
+            {(formData.includes_custom_fees === 'yes' || (!isEditMode && customFees.length > 0)) && (
             <div className="nfs-fees-grid">
 
               {/* Custom Fees */}
@@ -638,6 +711,7 @@ const FinancialSummary = memo(({
               )}
 
             </div>
+            )}
 
             {/* Discount line */}
             {hasDiscount && (

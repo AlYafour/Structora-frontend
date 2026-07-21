@@ -261,6 +261,7 @@
   "generating_pdf": "جاري إنشاء PDF...",
   "pdf_exported_successfully": "تم تصدير PDF بنجاح",
   "pdf_export_error": "خطأ في تصدير PDF",
+  "pdf_export_partial": "تم تصدير PDF، لكن تعذر دمج {{count}} من المرفقات بالكامل",
   "print_vat_registration": "رقم التسجيل الضريبي",
   "print_attachments": "المرفقات",
   "print_attachment": "مرفق",

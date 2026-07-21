@@ -534,10 +534,39 @@ function sourcePageHasContents(sourcePage) {
   }
 }
 
+// embedPage() only copies a page's content stream - it never carries
+// annotations (links, form widgets, comments) into the wrapped attachment
+// page regardless of which path is used. So an annotation only needs the
+// raster fallback if dropping it would lose something visible. /Link (an
+// invisible clickable region) and /Popup (a hidden comment box, parented to
+// a markup annotation that independently triggers raster on its own) are the
+// only subtypes confirmed to have zero visual footprint - this is a
+// deny-list, not an allow-list, so any other subtype (named here or not)
+// still rasterizes exactly as before. When in doubt, rasterize.
+const ANNOTATION_SUBTYPES_SAFE_TO_SKIP = new Set(["/Link", "/Popup"]);
+
+function annotationRequiresRaster(annots, index) {
+  try {
+    const dict = annots.lookup(index);
+    const subtype = dict?.lookup?.(PDFName.of("Subtype"));
+    const subtypeName = subtype?.asString?.();
+    if (!subtypeName) return true;
+    return !ANNOTATION_SUBTYPES_SAFE_TO_SKIP.has(subtypeName);
+  } catch {
+    // Unknown annotation shape - be conservative and rasterize so nothing
+    // visible is silently lost.
+    return true;
+  }
+}
+
 function sourcePageHasAnnotations(sourcePage) {
   try {
     const annots = sourcePage?.node?.Annots?.();
-    return !!annots && typeof annots.size === "function" && annots.size() > 0;
+    if (!annots || typeof annots.size !== "function") return false;
+    for (let i = 0; i < annots.size(); i += 1) {
+      if (annotationRequiresRaster(annots, i)) return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -560,6 +589,21 @@ async function createAttachmentPage(pdfDoc, fonts, opts, pageSize = DEFAULT_PAGE
   return { page, box: getContentBox(normalizedPageSize) };
 }
 
+// Safe ceiling for a rasterized page's pixel area, well under common browser
+// canvas limits (~16384px per side / ~268M px area in Chromium). Large-format
+// drawing sheets (A0/A1) rendered at the default scale can otherwise exceed
+// those limits and throw during render/toDataURL.
+const MAX_RASTER_PIXELS = 16_000_000;
+
+// Soft target, well below the hard ceiling above: caps the *typical* raster
+// near what an A4 page already produces at scale 2 (~2.0M px), so an A3/A2
+// sheet doesn't rasterize at ~2x-4x the pixel (and byte) count of an A4 page
+// hitting the same fallback. A4 pages are already under this target, so they
+// render unchanged; only larger sheets get scaled down further. Math.min
+// with the hard ceiling keeps this from ever exceeding canvas limits even if
+// the two constants are changed independently later.
+const TARGET_RASTER_PIXELS = 2_200_000;
+
 async function renderSourcePdfPageImage(bytes, pageIndex) {
   const pdfjsLib = await getPdfjsLib();
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)) });
@@ -567,12 +611,21 @@ async function renderSourcePdfPageImage(bytes, pageIndex) {
 
   try {
     const sourcePage = await pdf.getPage(pageIndex + 1);
-    const viewport = sourcePage.getViewport({ scale: 2 });
+    const baseViewport = sourcePage.getViewport({ scale: 2 });
+    const basePixels = baseViewport.width * baseViewport.height;
+    const capPixels = Math.min(MAX_RASTER_PIXELS, TARGET_RASTER_PIXELS);
+    const viewport = basePixels > capPixels
+      ? sourcePage.getViewport({ scale: 2 * Math.sqrt(capPixels / basePixels) })
+      : baseViewport;
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
 
     const ctx = canvas.getContext("2d");
+    // JPEG has no alpha channel - fill an opaque background before render so
+    // a page with no background fill of its own doesn't turn black on encode.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     await sourcePage.render({
       canvasContext: ctx,
       viewport,
@@ -580,7 +633,7 @@ async function renderSourcePdfPageImage(bytes, pageIndex) {
     }).promise;
 
     return {
-      dataUrl: canvas.toDataURL("image/png"),
+      dataUrl: canvas.toDataURL("image/jpeg", 0.85),
       width: viewport.width,
       height: viewport.height,
     };
@@ -591,7 +644,7 @@ async function renderSourcePdfPageImage(bytes, pageIndex) {
 
 async function drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex) {
   const rendered = await renderSourcePdfPageImage(bytes, sourceIndex);
-  const embeddedImg = await pdfDoc.embedPng(rendered.dataUrl);
+  const embeddedImg = await pdfDoc.embedJpg(rendered.dataUrl);
   const inset = 10;
   const fit = embeddedImg.scaleToFit(box.width - (inset * 2), box.height - (inset * 2));
 
@@ -603,6 +656,31 @@ async function drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex) {
   });
 }
 
+// Drawn onto an already-added attachment page when neither direct embedding
+// nor rasterization could produce content for it, so the page keeps its
+// header (already drawn by createAttachmentPage) instead of being left with
+// only the source content mysteriously missing.
+function drawUnrenderablePlaceholder(page, fonts, box) {
+  const message = "Attachment page could not be rendered";
+  const size = 10;
+  const textWidth = fonts.bold.widthOfTextAtSize(message, size);
+  page.drawRectangle({
+    x: box.x,
+    y: box.y,
+    width: box.width,
+    height: box.height,
+    borderColor: BORDER,
+    borderWidth: 0.7,
+  });
+  page.drawText(message, {
+    x: box.x + Math.max(0, (box.width - textWidth) / 2),
+    y: box.y + (box.height / 2),
+    size,
+    font: fonts.bold,
+    color: MUTED,
+  });
+}
+
 async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
   const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const sourcePages = srcDoc.getPages();
@@ -611,6 +689,7 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
   ));
   sourcePages.forEach((sourcePage) => ensureSourcePageContents(sourcePage, srcDoc));
   const appendedIndexes = [];
+  let unrenderedPageCount = 0;
 
   for (let sourceIndex = 0; sourceIndex < sourcePages.length; sourceIndex += 1) {
     const sourcePage = sourcePages[sourceIndex];
@@ -620,7 +699,17 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
     appendedIndexes.push(pdfDoc.getPageCount() - 1);
 
     if (rasterFallbackPages[sourceIndex]) {
-      await drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex);
+      try {
+        await drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex);
+      } catch (rasterErr) {
+        opts.logger?.warn?.(
+          "Could not rasterize variation attachment PDF page",
+          sourceIndex + 1,
+          rasterErr
+        );
+        drawUnrenderablePlaceholder(page, fonts, box);
+        unrenderedPageCount += 1;
+      }
       continue;
     }
 
@@ -643,11 +732,21 @@ async function appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts) {
         sourceIndex + 1,
         embedErr
       );
-      await drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex);
+      try {
+        await drawRasterizedPdfPage(pdfDoc, page, box, bytes, sourceIndex);
+      } catch (rasterErr) {
+        opts.logger?.warn?.(
+          "Could not rasterize variation attachment PDF page",
+          sourceIndex + 1,
+          rasterErr
+        );
+        drawUnrenderablePlaceholder(page, fonts, box);
+        unrenderedPageCount += 1;
+      }
     }
   }
 
-  return appendedIndexes;
+  return { appendedIndexes, unrenderedPageCount };
 }
 
 async function appendWrappedImageAttachment(pdfDoc, fonts, bytes, contentType, lowerUrl, opts) {
@@ -665,7 +764,7 @@ async function appendWrappedImageAttachment(pdfDoc, fonts, bytes, contentType, l
     height: fit.height,
   });
 
-  return [pdfDoc.getPageCount() - 1];
+  return { appendedIndexes: [pdfDoc.getPageCount() - 1], unrenderedPageCount: 0 };
 }
 
 export async function appendWrappedVariationAttachments(pdfDoc, {
@@ -676,35 +775,65 @@ export async function appendWrappedVariationAttachments(pdfDoc, {
   noticeData = {},
   logger = defaultLogger,
 } = {}) {
-  if (!attachments.length) return [];
+  if (!attachments.length) return { appendedPageIndexes: [], failedAttachments: [] };
 
   const fonts = await getFonts(pdfDoc);
   const cache = {};
   const appendedPageIndexes = [];
+  const failedAttachments = [];
 
   for (const att of attachments) {
     const fileUrl = att?.file || att?.url;
-    if (!fileUrl) continue;
+    if (!fileUrl) {
+      logger.warn("Skipping variation attachment with no file/url reference", att);
+      failedAttachments.push({
+        attachment: att,
+        fileUrl: null,
+        reason: "Attachment has no file reference",
+      });
+      continue;
+    }
 
     try {
       const blob = await fetchFileWithAuth(fileUrl);
       const bytes = await blob.arrayBuffer();
+      if (bytes.byteLength === 0) {
+        logger.warn("Variation attachment fetched empty content", fileUrl, { blobSize: blob.size, blobType: blob.type });
+        failedAttachments.push({
+          attachment: att,
+          fileUrl,
+          reason: `Empty file content received (${blob.size} bytes, type: ${blob.type || "unknown"})`,
+        });
+        continue;
+      }
       const fullUrl = buildFileUrl(fileUrl) || fileUrl;
       const lowerUrl = fullUrl.toLowerCase();
       const contentType = (blob.type || "").toLowerCase();
       const opts = { variation, project, companyInfo, noticeData, cache };
 
-      const indexes = contentType.includes("pdf") || lowerUrl.endsWith(".pdf")
+      const { appendedIndexes, unrenderedPageCount } = contentType.includes("pdf") || lowerUrl.endsWith(".pdf")
         ? await appendWrappedPdfAttachment(pdfDoc, fonts, bytes, opts)
         : await appendWrappedImageAttachment(pdfDoc, fonts, bytes, contentType, lowerUrl, opts);
 
-      appendedPageIndexes.push(...indexes);
+      appendedPageIndexes.push(...appendedIndexes);
+      if (unrenderedPageCount > 0) {
+        failedAttachments.push({
+          attachment: att,
+          fileUrl,
+          reason: `${unrenderedPageCount} page(s) could not be rendered`,
+        });
+      }
     } catch (err) {
       logger.warn("Could not append wrapped variation attachment", fileUrl, err);
+      failedAttachments.push({
+        attachment: att,
+        fileUrl,
+        reason: err?.message || "Failed to merge attachment",
+      });
     }
   }
 
-  return appendedPageIndexes;
+  return { appendedPageIndexes, failedAttachments };
 }
 
 // Stamps page numbers on every page of the document (main content + any

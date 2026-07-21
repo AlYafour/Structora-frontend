@@ -281,22 +281,23 @@ async function renderVariationPrintPdfBlob({ variation, project, companyInfo, no
       mergedDoc.context.obj({ Duplex: PDFName.of("DuplexFlipLongEdge") })
     );
 
+    let failedAttachments = [];
     if (attachments.length > 0) {
       // Merge PDF/image attachments as header/footer attachment pages.
-      await appendWrappedVariationAttachments(mergedDoc, {
+      ({ failedAttachments } = await appendWrappedVariationAttachments(mergedDoc, {
         attachments,
         variation,
         project,
         companyInfo,
         noticeData,
         logger: console,
-      });
+      }));
     }
 
     await stampVariationPageNumbers(mergedDoc);
 
     const mergedBytes = await mergedDoc.save();
-    return new Blob([mergedBytes], { type: "application/pdf" });
+    return { blob: new Blob([mergedBytes], { type: "application/pdf" }), failedAttachments };
   } finally {
     root.unmount();
     container.remove();
@@ -354,7 +355,7 @@ export function useDownloadVariationPDFs(projectId) {
         try { noticeData = JSON.parse(fullVariation.description); } catch { noticeData = {}; }
       }
 
-      const blob = await renderVariationPrintPdfBlob({
+      const { blob, failedAttachments } = await renderVariationPrintPdfBlob({
         variation: fullVariation,
         project: projectData,
         companyInfo,
@@ -371,7 +372,11 @@ export function useDownloadVariationPDFs(projectId) {
         downloadBlob(blob, filename);
       }
 
-      success(t("document_downloaded", "Document downloaded successfully"));
+      if (failedAttachments.length > 0) {
+        showError(t("pdf_export_partial", { count: failedAttachments.length }));
+      } else {
+        success(t("document_downloaded", "Document downloaded successfully"));
+      }
     } catch (err) {
       console.error("[useDownloadVariationPDFs] single failed:", variation?.id, err);
       showError(t("download_error", "Download failed. Please try again."));
@@ -388,6 +393,7 @@ export function useDownloadVariationPDFs(projectId) {
 
       const zip = new JSZip();
       let skipped = 0;
+      let partiallyMerged = 0;
 
       await runWithConcurrency(
         items,
@@ -399,7 +405,7 @@ export function useDownloadVariationPDFs(projectId) {
               try { noticeData = JSON.parse(variation.description); } catch { noticeData = {}; }
             }
 
-            const blob = await renderVariationPrintPdfBlob({
+            const { blob, failedAttachments } = await renderVariationPrintPdfBlob({
               variation,
               project: projectData,
               companyInfo,
@@ -408,6 +414,9 @@ export function useDownloadVariationPDFs(projectId) {
 
             if (blob) {
               zip.file(generatePDFFilename(variation, noticeData), blob);
+            }
+            if (failedAttachments.length > 0) {
+              partiallyMerged++;
             }
           } catch (err) {
             console.error("[useDownloadVariationPDFs] item failed:", variation?.id, err);
@@ -424,6 +433,8 @@ export function useDownloadVariationPDFs(projectId) {
 
       if (skipped > 0) {
         showError(t("documents_partial", `Downloaded with ${skipped} item(s) skipped due to errors.`));
+      } else if (partiallyMerged > 0) {
+        showError(t("documents_partial_attachments", `Downloaded, but ${partiallyMerged} document(s) had attachment(s) that could not be fully merged.`));
       } else {
         success(t("documents_downloaded", "Documents downloaded successfully"));
       }

@@ -261,6 +261,7 @@
   "generating_pdf": "Generating PDF...",
   "pdf_exported_successfully": "PDF exported successfully",
   "pdf_export_error": "Error exporting PDF",
+  "pdf_export_partial": "PDF exported, but {{count}} attachment(s) could not be fully merged",
   "print_vat_registration": "VAT Registration",
   "print_attachments": "Attachments",
   "print_attachment": "Attachment",

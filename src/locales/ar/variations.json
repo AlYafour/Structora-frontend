@@ -54,6 +54,9 @@
   "first_variation_date": "تاريخ أول تعديل",
   "variation_description": "وصف التعديل",
   "suggest_wording": "اقتراح صياغة",
+  "suggest_remarks_from_notice": "اقتراح ملاحظات من إشعار التغيير",
+  "ai_remarks_from_notice": "ملاحظات مقترحة من هذا الإشعار — انقر لإضافة كل ملاحظة",
+  "variation_remarks_suggestion_failed": "تعذر إنشاء ملاحظات من إشعار التغيير.",
   "generate_remark_from_photo": "إنشاء ملاحظة من صورة",
   "reading_image": "جارٍ قراءة الصورة...",
   "ai_points_from_image": "نقاط مكتشفة في الصورة — اضغط لإضافة كل نقطة",
@@ -379,5 +382,10 @@
   "post_approval_discount_dialog_desc": "أدخل قيمة الخصم المطلوب تطبيقها على إجماليات أمر التغيير المعتمد.",
   "post_approval_discount_placeholder": "قيمة الخصم",
   "add_discount_confirm": "تطبيق الخصم",
-  "used_in_previous_variations": "مستخدم في أوامر تغيير سابقة"
+  "used_in_previous_variations": "مستخدم في أوامر تغيير سابقة",
+  "has_contractor_fee_question": "هل توجد رسوم للمقاول؟",
+  "has_consultant_fee_question": "هل توجد رسوم للاستشاري؟",
+  "has_custom_fee_question": "هل توجد رسوم مخصصة؟",
+  "consultant_fee_amount_contract_mismatch": "المبلغ المُدخل لا يتطابق مع نسبة رسوم الاستشاري في العقد ({{percentage}}٪). المبلغ المتوقع: {{amount}}.",
+  "contract_notes": "ملاحظات العقد"
 }
