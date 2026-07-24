@@ -179,7 +179,9 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
   );
 
   // Editing variation content requires the create/edit permission, or an accepted edit request.
-  const canEdit = !finallyApproved &&
+  // Final approval locks the variation for everyone except the General Manager,
+  // who retains authority to correct the approved record.
+  const canEdit = (!finallyApproved || isGeneralManager) &&
     !pmEditBlocked &&
     (
       hasVariationEditPermission ||
@@ -204,14 +206,17 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
       // A draft with no recorded creator (creator account deleted) has no one
       // to restrict to — fall back to the normal edit-permission check.
       ? (variation?.created_by ? isDraftOwnedByUser(variation, user) : hasVariationEditPermission)
-      : isGeneralManager && isApprovalStage && !finallyApproved
+      : isGeneralManager && (isApprovalStage || finallyApproved)
       ? true
       : status === 'rejected_by_owner_consultant' && isStaff
       ? true
       : status === 'returned_for_edit'
       ? canEdit
       : canEdit && !approvalStageStatuses.includes(status),
-    canUploadSignedCopy: !!user && (status === 'pending_official_document' || (status === 'approved' && variation?.updated_document_pending)),
+    canUploadSignedCopy: !!user && (
+      status === 'pending_official_document' ||
+      (status === 'approved' && (variation?.updated_document_pending || isGeneralManager))
+    ),
     canRunSignedCopyAudit: isGeneralManager && status === 'pending_general_manager_final',
     canApproveProjectManager: canApproveOrReject && isProjectManager &&
       status === 'pending_project_manager' &&

@@ -348,7 +348,11 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   const isOwnDraft = effectiveVariation?.status !== 'draft' ||
     !effectiveVariation?.created_by ||
     isDraftOwnedByUser(effectiveVariation, user);
-  const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && isOwnDraft && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
+  const isEditMode = viewModeProp !== true &&
+    (!isFinalApproved || isCompanyGeneralManager) &&
+    canEditVariationContent &&
+    isOwnDraft &&
+    (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 
 
   const { i18n } = useTranslation();
@@ -1004,7 +1008,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
   /**
    * Render blocked content for final approved variations
    */
-  if (!isEmbeddedMode && !loading && isFinalApproved && viewModeProp !== true) {
+  if (!isEmbeddedMode && !loading && isFinalApproved && !isCompanyGeneralManager && viewModeProp !== true) {
     const message = t('cannot_edit_final_approved_variation');
 
     const blockedContent = (

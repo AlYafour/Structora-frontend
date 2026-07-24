@@ -16,6 +16,64 @@
   white-space: nowrap;
 }
 
+.variations-tab__summary-download {
+  display: inline-flex;
+  align-items: center;
+}
+
+.variations-tab__summary-download-button {
+  height: 31px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1.5px solid #d1d5db;
+  background: transparent;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.15s;
+}
+
+.variations-tab__summary-download-button--has-check {
+  width: 210px;
+  height: 38px;
+  padding-block: 2px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.variations-tab__summary-download-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.variations-tab__summary-hidden-fee-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #6b7280;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.variations-tab__summary-hidden-fee-check input {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
 .variations-tab__row--hidden-fee td {
   background: #fffbeb;
 }
@@ -192,6 +250,15 @@ html.theme-dark .variations-tab__pending-mini-value {
 }
 
 @media print {
+  .variations-summary--hide-hidden-fees .variations-tab__hidden-fee {
+    display: none;
+  }
+  .variations-summary--hide-hidden-fees .variations-tab__row--hidden-fee td {
+    background: inherit;
+  }
+  .variations-summary--hide-hidden-fees .variations-tab__row--hidden-fee td:first-child {
+    border-inline-start: 0;
+  }
   .variations-tab__description-cell {
     max-width: 220px;
     word-break: break-word;

@@ -45,6 +45,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const navigate = useTenantNavigate();
     const isAR = i18n.language === "ar";
     const [showVat, setShowVat] = useState(false);
+    const [includeHiddenFeesInSummary, setIncludeHiddenFeesInSummary] = useState(false);
     const vatLabel = showVat ? t("including_vat") : t("excluding_vat");
     const v = (val) => showVat ? val * 1.05 : val;
 
@@ -1177,29 +1178,34 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     />
 
                     {variations && variations.length > 0 && (
-                        <button
-                            onClick={handlePrint}
-                            style={{
-                                padding: '6px 14px',
-                                borderRadius: '6px',
-                                border: '1.5px solid #d1d5db',
-                                background: 'transparent',
-                                color: '#6b7280',
-                                fontWeight: 600,
-                                fontSize: '0.82rem',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                transition: 'all 0.15s',
-                            }}
-                        >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <path d="M12 17V3M6 11l6 6 6-6" />
-                                <path d="M4 21h16" />
-                            </svg>
-                            {t("download_tab_summary", "Download Tab Summary")}
-                        </button>
+                        <div className="variations-tab__summary-download">
+                            <button
+                                onClick={handlePrint}
+                                className={`variations-tab__summary-download-button${canViewHiddenFees ? " variations-tab__summary-download-button--has-check" : ""}`}
+                            >
+                                <span className="variations-tab__summary-download-label">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M12 17V3M6 11l6 6 6-6" />
+                                        <path d="M4 21h16" />
+                                    </svg>
+                                    {t("download_tab_summary", "Download Tab Summary")}
+                                </span>
+                                {canViewHiddenFees && (
+                                    <label
+                                        className="variations-tab__summary-hidden-fee-check"
+                                        title={t("hidden_fee_short", "Hidden fee")}
+                                        onClick={(event) => event.stopPropagation()}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={includeHiddenFeesInSummary}
+                                            onChange={(event) => setIncludeHiddenFeesInSummary(event.target.checked)}
+                                        />
+                                        <span>{t("hidden_fee_short", "Hidden fee")}</span>
+                                    </label>
+                                )}
+                            </button>
+                        </div>
                     )}
 
                     {canCreateVariation && (
@@ -1314,6 +1320,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                     </div>
 
                     <TabPrintWrapper ref={printRef} title={t("variations", "Variations")} subtitle={project?.name}>
+                    <div className={includeHiddenFeesInSummary ? "" : "variations-summary--hide-hidden-fees"}>
                     <div className="prj-table__wrapper">
                         <table className="prj-table">
                             <thead>
@@ -1695,6 +1702,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                     </TabPrintWrapper>
                 </>

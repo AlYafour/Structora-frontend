@@ -21,11 +21,13 @@ export default function VariationAiAuditPanel({ variation, project, user, t, isA
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputId = useId();
   const role = user?.role?.name;
-  const pendingUpload = variation?.status === 'pending_official_document' || (variation?.status === 'approved' && variation?.updated_document_pending);
+  const isGeneralManager = role === 'company_super_admin' || user?.is_superuser;
+  const pendingUpload = variation?.status === 'pending_official_document' ||
+    (variation?.status === 'approved' && (variation?.updated_document_pending || isGeneralManager));
   const pendingAudit = variation?.status === 'pending_general_manager_final';
   const canManageOfficialDocument = !!user;
   const canUpload = pendingUpload && canManageOfficialDocument;
-  const canAudit = pendingAudit && (role === 'company_super_admin' || user?.is_superuser);
+  const canAudit = pendingAudit && isGeneralManager;
   const result = variation?.ai_audit_result_json;
   const failedAuditError = variation?.ai_audit_status === 'failed' && typeof result?.error === 'string'
     ? result.error
