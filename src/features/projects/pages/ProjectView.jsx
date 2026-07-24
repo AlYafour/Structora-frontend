@@ -75,6 +75,7 @@ const projectDisplayName = isAR
  <PageLayout loading={loading} loadingText={t("loading")}>
  <div className="container">
  <div className="project-view__sticky-header">
+  <div className="project-view__header-shell">
   {/* Header Section */}
   <ProjectViewHeader
   project={project}
@@ -96,14 +97,14 @@ const projectDisplayName = isAR
   projectSchedule={projectSchedule}
   extensions={extensions}
   />
- </div>
-
   {/* Tabs Navigation */}
   <ProjectTabsNavigation
   activeTab={effectiveActiveTab}
   onTabChange={setActiveTab}
   auth={tabAuth}
   />
+  </div>
+ </div>
 
  {/* Main Content Card */}
  <Card className="prj-main-card">

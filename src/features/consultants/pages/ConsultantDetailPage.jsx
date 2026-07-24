@@ -276,7 +276,7 @@ export default function ConsultantDetailPage() {
                                   )}
                             </div>
                           </td>
-                          <td><code>{project.internal_code || `PRJ-${projectId}`}</code></td>
+                          <td><code>{project.project_code || project.internal_code || `PRJ-${projectId}`}</code></td>
                           <td>
                             <div className="consultant-detail__roles">
                               {(project.roles || [project.role]).map((role) => (

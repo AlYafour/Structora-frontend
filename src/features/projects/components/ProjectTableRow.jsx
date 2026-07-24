@@ -93,8 +93,8 @@ const ProjectTableRow = React.memo(({
 
       <td className="col-code">
         <div className="ds-table__code">
-          {project?.internal_code
-            ? formatInternalCode(project.internal_code)
+          {project?.project_code || project?.internal_code
+            ? formatInternalCode(project.project_code || project.internal_code)
             : `PRJ-${project?.id ?? index + 1}`}
         </div>
       </td>

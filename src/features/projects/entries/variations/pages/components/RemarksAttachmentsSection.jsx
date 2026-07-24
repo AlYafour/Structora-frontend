@@ -604,7 +604,6 @@ const RemarksAttachmentsSection = memo(({
     onFormDataChange(prev => ({
       ...prev,
       [primaryRemarksField]: plainTextToHtml(suggestion),
-      [secondaryRemarksField]: '',
     }));
     discardRemarksSuggestions();
   };
@@ -615,7 +614,6 @@ const RemarksAttachmentsSection = memo(({
     onFormDataChange(prev => ({
       ...prev,
       [primaryRemarksField]: html,
-      [secondaryRemarksField]: '',
     }));
   };
 
@@ -631,7 +629,6 @@ const RemarksAttachmentsSection = memo(({
     onFormDataChange(prev => ({
       ...prev,
       [primaryRemarksField]: `${prev[primaryRemarksField] || ''}${plainTextToHtml(transcript)}`,
-      [secondaryRemarksField]: '',
     }));
   };
 

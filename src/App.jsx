@@ -43,6 +43,7 @@ const AdminDashboardPage = lazy(() => import("./features/admin/pages/AdminDashbo
 // ====== Admin Pages ======
 const AdminTenantsPage = lazy(() => import("./features/admin/pages/AdminTenantsPage"));
 const AdminCreateCompanyPage = lazy(() => import("./features/admin/pages/AdminCreateCompanyPage"));
+const AdminCreateBranchPage = lazy(() => import("./features/admin/pages/AdminCreateBranchPage"));
 const AdminEditCompanyPage = lazy(() => import("./features/admin/pages/AdminEditCompanyPage"));
 const AdminUsersPage = lazy(() => import("./features/admin/pages/AdminUsersPage"));
 const AdminAnalyticsPage = lazy(() => import("./features/admin/pages/AdminAnalyticsPage"));
@@ -275,6 +276,7 @@ export default function App() {
           <Route path="create-company" element={<ProtectedRoute requireSuperAdmin><AdminCreateCompanyPage /></ProtectedRoute>} />
           <Route path="tenants" element={<ProtectedRoute requireSuperAdmin><AdminTenantsPage /></ProtectedRoute>} />
           <Route path="tenants/:tenantId/edit" element={<ProtectedRoute requireSuperAdmin><AdminEditCompanyPage /></ProtectedRoute>} />
+          <Route path="companies/:companyId/branches/new" element={<ProtectedRoute requireSuperAdmin><AdminCreateBranchPage /></ProtectedRoute>} />
           <Route path="users" element={<ProtectedRoute requireSuperAdmin><AdminUsersPage /></ProtectedRoute>} />
           <Route path="analytics" element={<ProtectedRoute requireSuperAdmin><AdminAnalyticsPage /></ProtectedRoute>} />
           <Route path="audit-log" element={<ProtectedRoute requireSuperAdmin><AdminAuditLogPage /></ProtectedRoute>} />

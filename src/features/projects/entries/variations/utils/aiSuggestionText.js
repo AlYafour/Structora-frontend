@@ -30,6 +30,9 @@ export function isRenderableSuggestion(text) {
   if (/^```(?:json)?$/i.test(text)) return false;
   if (/^[{}[\],:"]+$/.test(text)) return false;
   if (/^"?suggestions"?\s*:?\s*\[?$/i.test(text)) return false;
+  // Rewritten contract text is never markdown — stray emphasis is a sign the
+  // model leaked commentary/refusal prose instead of real suggestion text.
+  if (/\*\*[^*]+\*\*/.test(text)) return false;
   return true;
 }
 

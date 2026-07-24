@@ -64,7 +64,7 @@ const TASK_GROUPS = [
     id: "documents",
     labelKey: "task_group_documents",
     types: ["variation_official_document_upload"],
-    canReceive: () => true,
+    canReceive: ({ isStaff }) => isStaff,
   },
   {
     id: "hidden_fees",
@@ -160,11 +160,13 @@ export default function HomePage() {
   const isProjectManager = roleName === "Manager";
   const isSupervisor = roleName === "Supervisor";
   const isGeneralManager = !!(user?.is_superuser || roleName === "company_super_admin");
+  const isStaff = !isProjectManager && !isSupervisor && !isGeneralManager;
   const taskRoleContext = useMemo(() => ({
     isProjectManager,
     isSupervisor,
     isGeneralManager,
-  }), [isGeneralManager, isProjectManager, isSupervisor]);
+    isStaff,
+  }), [isGeneralManager, isProjectManager, isSupervisor, isStaff]);
   const today = new Date().toLocaleDateString(
     i18n.language === "ar" ? "ar-SA" : "en-US",
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }

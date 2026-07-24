@@ -24,6 +24,7 @@ import DownloadAllButton from "../../../components/common/DownloadAllButton";
 import { getVariationTotalAmount } from "../entries/variations/utils/variationAmount";
 import VariationPrintDocument from "../entries/variations/components/VariationPrintDocument";
 import { exportVariationPdf } from "../entries/variations/utils/variationPdfExport";
+import { isDraftOwnedByUser } from "../entries/variations/utils/variationStatusHelpers";
 
 // Map status → prj-badge CSS class
 const getStatusBadgeClass = (status) => {
@@ -130,6 +131,12 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
     const [hiddenFeeRejectionReason, setHiddenFeeRejectionReason] = useState("");
     const [processingHiddenFeeAction, setProcessingHiddenFeeAction] = useState(null);
     const [submittingDraftId, setSubmittingDraftId] = useState(null);
+
+    // PM → draft creator request dialog ("Request Submission" / "Request Changes")
+    const [draftRequestVariation, setDraftRequestVariation] = useState(null);
+    const [draftRequestKind, setDraftRequestKind] = useState("submit"); // 'submit' | 'changes'
+    const [draftRequestMessage, setDraftRequestMessage] = useState("");
+    const [sendingDraftRequest, setSendingDraftRequest] = useState(false);
     const [discountDialogVariation, setDiscountDialogVariation] = useState(null);
     const [postApprovalDiscount, setPostApprovalDiscount] = useState('');
     const [savingPostApprovalDiscount, setSavingPostApprovalDiscount] = useState(false);
@@ -207,6 +214,32 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         }
     };
 
+    const openDraftRequestDialog = (variation, kind) => {
+        setDraftRequestVariation(variation);
+        setDraftRequestKind(kind);
+        setDraftRequestMessage("");
+    };
+
+    const handleSendDraftRequest = async () => {
+        if (!draftRequestVariation?.id || !projectId) return;
+        setSendingDraftRequest(true);
+        try {
+            if (draftRequestKind === "submit") {
+                await projectApi.requestVariationDraftSubmission(projectId, draftRequestVariation.id, draftRequestMessage.trim());
+            } else {
+                await projectApi.requestVariationDraftChanges(projectId, draftRequestVariation.id, draftRequestMessage.trim());
+            }
+            showToast("success", t("draft_request_sent", "Notification sent to the draft creator."));
+            setDraftRequestVariation(null);
+            setDraftRequestMessage("");
+        } catch (error) {
+            const handledError = handleError(error, "VariationsTab.handleSendDraftRequest");
+            showToast("error", handledError.message || t("error_generic"));
+        } finally {
+            setSendingDraftRequest(false);
+        }
+    };
+
     const filteredVariations = useMemo(() => {
         if (!variations) return [];
 
@@ -233,29 +266,35 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
         // Sort by variation number ascending
         return filtered.sort((a, b) => {
             const getRefNumber = (v) => {
-                let ref = "";
+                const variationNumberMatch = String(
+                    v.variation_number || v.modification_number || ""
+                ).match(/\d+/);
+                if (variationNumberMatch) {
+                    return parseInt(variationNumberMatch[0], 10);
+                }
+
+                const referenceSequence = Number(v.reference_sequence);
+                if (Number.isFinite(referenceSequence) && referenceSequence > 0) {
+                    return referenceSequence;
+                }
+
+                let ref = v.reference_number || "";
 
                 // Get reference number from description JSON
-                if (v.description) {
+                if (!ref && v.description) {
                     try {
                         const parsed = JSON.parse(v.description);
                         ref = parsed.reference_no || "";
-                    } catch (e) {
+                    } catch {
                         ref = "";
                     }
                 }
 
-                // Fallbacks
-                ref =
-                    ref ||
-                    v.variation_number ||
-                    v.modification_number ||
-                    "";
+                // Canonical references can contain several numbers, so use
+                // the VO sequence rather than the first number in the string.
+                const match = String(ref).match(/(?:^|[-_\s])VO[-_\s]*(\d+)(?:$|[._-])/i);
 
-                // Extract numeric part from VAR0001
-                const match = String(ref).match(/\d+/);
-
-                return match ? parseInt(match[0], 10) : 0;
+                return match ? parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
             };
 
             return getRefNumber(a) - getRefNumber(b);
@@ -925,6 +964,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             });
             let successCount = 0;
             let failCount = 0;
+            let lastFailureMessage = null;
 
             for (const id of ids) {
                 try {
@@ -933,6 +973,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 } catch (e) {
                     logger.error(`Error deleting variation ${id}`, e);
                     failCount++;
+                    lastFailureMessage = e?.response?.data?.detail || e?.response?.data?.message;
                 }
             }
 
@@ -943,7 +984,11 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
             }
 
             if (failCount > 0) {
-                showToast("error", t("some_variations_delete_failed"));
+                if (failCount === 1 && lastFailureMessage) {
+                    showToast("error", lastFailureMessage);
+                } else {
+                    showToast("error", t("some_variations_delete_failed"));
+                }
             }
 
             setDeleteVariationsConfirmOpen(false);
@@ -974,17 +1019,23 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
     const isDraftVariation = (variation) => getVariationStatus(variation) === "draft";
 
+    // A draft with no recorded creator (creator account deleted) has no one
+    // to restrict to — fall back to open access rather than locking it forever.
+    const canActOnDraft = (variation) => !variation?.created_by || isDraftOwnedByUser(variation, user);
+
     const canStaffDeleteVariation = (variation) => {
         const s = getVariationStatus(variation);
-        return s === "draft" || s === "pending_project_manager";
+        if (s === "draft") return canActOnDraft(variation);
+        return s === "pending_project_manager";
     };
 
     // Staff may only edit directly before it leaves their hands, or once it's returned for edit.
     // Any other pending status (supervisor/GM/owner-consultant review) must go through the request-edit flow.
+    // A draft belongs to whoever created it — no other role may edit it directly.
     const canStaffEditVariation = (variation) => {
         const s = getVariationStatus(variation);
+        if (s === "draft") return canActOnDraft(variation);
         return (
-            s === "draft" ||
             s === "pending_project_manager" ||
             s === "rejected_by_project_manager" ||
             s === "rejected_by_supervisor" ||
@@ -1277,9 +1328,10 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                             className="prj-checkbox"
                                         />
                                     </th>
-                                    <th className="ds-text-center ds-w-60">#</th>
-                                    <th>{t("variation_number")}</th>
-                                    <th className="ds-min-w-200">{t("variation_description")}</th>
+                                     <th className="ds-text-center ds-w-60">#</th>
+                                     <th>{t("variation_number")}</th>
+                                     <th>{t("reference_no")}</th>
+                                     <th className="ds-min-w-200">{t("variation_description")}</th>
                                     <th>{t("status")}</th>
                                     <th className="ds-text-right">{t("amount")}</th>
                                     <th className="ds-w-60 ds-text-center">{t("action")}</th>
@@ -1295,6 +1347,7 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                     const canRejectThis = canRejectThisVariation(variation);
                                     const canDirectUnapproveThis = canDirectUnapproveThisVariation(variation);
                                     const canRequestUnapproveThis = canRequestUnapproveThisVariation(variation);
+                                    const draftEditableByCurrentUser = canActOnDraft(variation);
 
                                     let variationDescription = "";
                                     let referenceNo = null;
@@ -1309,8 +1362,9 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                         }
                                     }
 
-                                    const rawNumber = variation.variation_number || variation.modification_number || referenceNo || variation.id;
-                                    const displayNumber = `VAR${String(rawNumber).replace(/^VAR/i, "")}`;
+                                     const rawNumber = variation.variation_number || variation.modification_number || referenceNo || variation.id;
+                                     const displayNumber = `VAR${String(rawNumber).replace(/^VAR/i, "")}`;
+                                     const displayReference = variation.reference_number || referenceNo || "-";
                                     const showHiddenFeeInRow = canViewHiddenFees && hasHiddenFee(variation);
                                     const hiddenFeeStatus = getHiddenFeeStatus(variation);
                                     const canDecideHiddenFeeInRow = isGeneralManager && showHiddenFeeInRow;
@@ -1335,11 +1389,15 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
 
                                             <td className="ds-text-center ds-font-medium prj-table__index">{i + 1}</td>
 
-                                            <td>
-                                                <span className="prj-code">{displayNumber}</span>
-                                            </td>
+                                             <td>
+                                                 <span className="prj-code">{displayNumber}</span>
+                                             </td>
 
-                                            <td className="variations-tab__description-cell">
+                                             <td>
+                                                 <span className="prj-code" title={displayReference}>{displayReference}</span>
+                                             </td>
+
+                                             <td className="variations-tab__description-cell">
                                                 <span className="variations-tab__description-text" title={variationDescription}>
                                                     {variationDescription || "-"}
                                                 </span>
@@ -1409,19 +1467,37 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                                                 <ActionMenu
                                                     items={status === "draft"
                                                         ? [
-                                                            // Draft rows: Edit + Submit only — no approval/rejection actions
-                                                            ...(canEditVariation
+                                                            // Draft rows: only the creator may edit/submit (or anyone, if it has no recorded creator) — no approval/rejection actions
+                                                            ...(canEditVariation && draftEditableByCurrentUser
                                                                 ? [{ label: t("edit"), to: `/variations/${variation.id}/notice`, type: "link" }]
                                                                 : []),
-                                                            {
-                                                                label: submittingDraftId === variation.id
-                                                                    ? t("submitting", "Submitting...")
-                                                                    : t("submit_draft", "Submit"),
-                                                                type: "button",
-                                                                variant: "primary",
-                                                                onClick: () => handleSubmitDraft(variation),
-                                                                disabled: submittingDraftId === variation.id,
-                                                            },
+                                                            ...(draftEditableByCurrentUser
+                                                                ? [{
+                                                                    label: submittingDraftId === variation.id
+                                                                        ? t("submitting", "Submitting...")
+                                                                        : t("submit_draft", "Submit"),
+                                                                    type: "button",
+                                                                    variant: "primary",
+                                                                    onClick: () => handleSubmitDraft(variation),
+                                                                    disabled: submittingDraftId === variation.id,
+                                                                }]
+                                                                : []),
+                                                            ...(isProjectManager && variation?.created_by && !isDraftOwnedByUser(variation, user)
+                                                                ? [
+                                                                    {
+                                                                        label: t("request_submission", "Request Submission"),
+                                                                        type: "button",
+                                                                        variant: "warning",
+                                                                        onClick: () => openDraftRequestDialog(variation, "submit"),
+                                                                    },
+                                                                    {
+                                                                        label: t("request_changes", "Request Changes"),
+                                                                        type: "button",
+                                                                        variant: "warning",
+                                                                        onClick: () => openDraftRequestDialog(variation, "changes"),
+                                                                    },
+                                                                ]
+                                                                : []),
                                                         ]
                                                         : [
                                                             // Normal (non-draft) rows
@@ -1847,6 +1923,38 @@ const VariationsTab = memo(function VariationsTab({ projectId, project, variatio
                 onConfirm={handleSubmitAlterationRequest}
                 busy={submittingAlteration}
                 danger={alterationRequestType === "delete"}
+            />
+
+            {/* Draft Request Dialog (PM → draft creator) */}
+            <Dialog
+                open={!!draftRequestVariation}
+                title={draftRequestKind === "submit" ? t("request_submission", "Request Submission") : t("request_changes", "Request Changes")}
+                desc={
+                    <div>
+                        <p className="ds-mb-3">
+                            {draftRequestKind === "submit"
+                                ? t("request_submission_desc", "This will notify the draft's creator to submit it for approval.")
+                                : t("request_changes_desc", "This will notify the draft's creator to make changes to it.")}
+                        </p>
+                        <textarea
+                            className="prj-input ds-w-full ds-mt-2"
+                            rows={4}
+                            value={draftRequestMessage}
+                            onChange={(e) => setDraftRequestMessage(e.target.value)}
+                            placeholder={t("message", "Message")}
+                        />
+                    </div>
+                }
+                confirmLabel={sendingDraftRequest ? t("sending", "Sending...") : t("send", "Send")}
+                cancelLabel={t("cancel")}
+                onClose={() => {
+                    if (!sendingDraftRequest) {
+                        setDraftRequestVariation(null);
+                        setDraftRequestMessage("");
+                    }
+                }}
+                onConfirm={handleSendDraftRequest}
+                busy={sendingDraftRequest}
             />
         </div>
     );

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Snackbar, Alert, Slide } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '../services/notifications';
 import { toastEmitter } from '../utils/toastEmitter';
 import { useAuth } from './AuthContext';
@@ -19,6 +20,7 @@ function generateId() {
 }
 
 export function NotificationProvider({ children }) {
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
   const isArabic = i18n.language?.startsWith('ar');
   const { user } = useAuth();
@@ -266,6 +268,21 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
+  const handleNavigateFromPopup = useCallback((notification) => {
+    if (!notification?.link) return;
+
+    try {
+      const url = new URL(notification.link, window.location.origin);
+      if (url.origin !== window.location.origin) return;
+
+      markAsRead(notification.id);
+      handleCloseIncomingPopup();
+      navigate(`${url.pathname}${url.search}${url.hash}`);
+    } catch {
+      // Ignore malformed notification links.
+    }
+  }, [handleCloseIncomingPopup, markAsRead, navigate]);
+
   const markAllAsRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
@@ -354,6 +371,7 @@ export function NotificationProvider({ children }) {
           isArabic={isArabic}
           duration={3000}
           onClose={handleCloseIncomingPopup}
+          onNavigate={handleNavigateFromPopup}
         />
       )}
     </NotificationContext.Provider>

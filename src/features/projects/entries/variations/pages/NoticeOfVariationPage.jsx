@@ -46,6 +46,7 @@ import {
   DEFAULT_INDEX_DISCREPANCY_NOTE_EN,
 } from '../utils/discrepancyNoteDefaults';
 import { getOrderedAttachmentSections, getAttachmentDisplayOrder, relinkAttachmentsToIndexItems } from '../utils/attachmentOrder';
+import { isDraftOwnedByUser } from '../utils/variationStatusHelpers';
 
 import { getProjectName } from '../../../utils/projectNameUtils.jsx';
 import './NoticeOfVariationPage.css';
@@ -340,7 +341,14 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
     hasPermission("variations.create") ||
     allowRevisionEdit ||
     (effectiveVariation?.status === 'returned_for_edit' && canManageReturnedVariation);
-  const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
+  // A draft belongs to its creator — no role (including PM/admin) may edit
+  // someone else's draft directly; non-draft statuses are unaffected. A draft
+  // with no recorded creator (creator account deleted) has no one to
+  // restrict to, so it falls back to the normal permission check.
+  const isOwnDraft = effectiveVariation?.status !== 'draft' ||
+    !effectiveVariation?.created_by ||
+    isDraftOwnedByUser(effectiveVariation, user);
+  const isEditMode = viewModeProp !== true && !isFinalApproved && canEditVariationContent && isOwnDraft && (!(isStaffUser && isPMInitialApproved) || allowRevisionEdit);
 
 
   const { i18n } = useTranslation();
@@ -459,7 +467,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       setFormData({
         document_date: noticeData.document_date || variationData.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
         variation_number: variationData.variation_number ?? '',
-        reference_no: noticeData.reference_no ?? '',
+        reference_no: variationData.reference_number || noticeData.reference_no || '',
         first_variation_date: noticeData.first_variation_date ?? '',
         variation_description: noticeData.variation_description ?? '',
         variation_description_ar: noticeData.variation_description_ar ?? '',
@@ -631,7 +639,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const padded = String(nextNum).padStart(4, '0');
           updateFormData({
             variation_number: padded,
-            reference_no: `VAR${padded}`
+            reference_no: ''
           });
         });
       }
@@ -649,7 +657,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const padded = String(nextNum).padStart(4, '0');
           const updates = {
             variation_number: padded,
-            reference_no: `VAR${padded}`
+            reference_no: ''
           };
           if (contractDescription) {
             updates.project_description = contractDescription;
@@ -850,7 +858,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
           const data = await projectApi.createVariation(project.id, formDataToSend);
           if (data.variation_number) {
             // Second call: only update description (no files — already saved above)
-            const generatedReferenceNo = noticeData.reference_no || `VAR${data.variation_number}`;
+            const generatedReferenceNo = data.reference_number;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
             await projectApi.updateVariation(project.id, data.id, { description: JSON.stringify(updatedNoticeData) });
           }
@@ -869,7 +877,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
         } else {
           const data = await projectApi.createVariation(project.id, saveData);
           if (data?.variation_number) {
-            const generatedReferenceNo = noticeData.reference_no || `VAR${data.variation_number}`;
+            const generatedReferenceNo = data.reference_number;
             const updatedNoticeData = { ...noticeData, reference_no: generatedReferenceNo };
             await projectApi.updateVariation(project.id, data.id, { description: JSON.stringify(updatedNoticeData) });
           }
@@ -1098,6 +1106,7 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
             onFormDataChange={setFormData}
             projectId={project?.id || projectFromQuery}
             variationId={variation?.id || variationId}
+            referenceIsAutomatic={!variationId || Boolean(effectiveVariation?.reference_number)}
             getProjectNumber={getProjectNumber}
             getProjectLocation={getProjectLocation}
             t={t}
@@ -1244,13 +1253,6 @@ export default function NoticeOfVariationPage({ variation: variationProp, projec
       />
     </div>
   );
-
-  // Wait for the embedded-mode hydration effect (setFormData with the real
-  // remarks/remarks_ar) to run before rendering — otherwise this mounts
-  // RemarksAttachmentsSection's translate-sync hook one render too early,
-  // against the still-empty default formData, which then misreads the real
-  // (already-synced) data landing a moment later as brand-new content and
-  // retranslates the whole remarks field for nothing.
   if (isEmbeddedMode) return loading ? null : content;
 
   return (

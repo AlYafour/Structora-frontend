@@ -127,6 +127,9 @@ export default function ActionMenu({ items, project, onApprove, onReject, onFina
           style={{ top: pos.top, left: pos.left }}
         >
           {menuItems.map((item, index) => {
+            if (item.type === "divider") {
+              return <div key={`divider-${index}`} className="action-menu__divider" />;
+            }
             const itemKey = item.label || item.to || index;
             if (item.type === "link") {
               return (

@@ -52,6 +52,15 @@ class AdminService extends BaseService {
     }
   }
 
+  async createBranch(companyId, payload) {
+    try {
+      const { data } = await api.post(`auth/admin/companies/${companyId}/branches/`, payload);
+      return data;
+    } catch (error) {
+      throw handleError(error, 'AdminService.createBranch');
+    }
+  }
+
   /**
    * Update tenant
    * @param {string|number} id - Tenant ID

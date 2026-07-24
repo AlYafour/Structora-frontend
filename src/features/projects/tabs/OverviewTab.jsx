@@ -157,9 +157,9 @@ const OverviewTab = memo(function OverviewTab({
 
           <div className="overview-ribbon__hero-content">
             <div className="overview-ribbon__hero-title">
-              {project?.internal_code
+              {project?.project_code || project?.internal_code
                 ? `
-                ${formatInternalCode(project.internal_code)}`
+                ${formatInternalCode(project.project_code || project.internal_code)}`
                 : projectDisplayName}
             </div>
 
@@ -181,19 +181,19 @@ const OverviewTab = memo(function OverviewTab({
 
         <div className="overview-ribbon__data">
           <div className="overview-ribbon__slots">
-            {project?.internal_code && (
+            {(project?.project_code || project?.internal_code) && (
               <div className="overview-ribbon__slot">
                 <div className="overview-ribbon__slot-label">
                   {t("project_view_internal_code")}
                 </div>
 
                 <div className="overview-ribbon__slot-value overview-ribbon__slot-value--mono">
-                  {formatInternalCode(project.internal_code)}
+                  {formatInternalCode(project.project_code || project.internal_code)}
                 </div>
 
                 <div className="overview-ribbon__slot-subrow">
                   <CopyIconButton
-                    value={formatInternalCode(project.internal_code)}
+                    value={formatInternalCode(project.project_code || project.internal_code)}
                     title={t("copy_code")}
                   />
                 </div>

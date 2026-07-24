@@ -24,6 +24,7 @@ export default function IncomingNotificationPopup({
   notification,
   isArabic,
   onClose,
+  onNavigate,
   duration = 3000,
 }) {
   const [leaving, setLeaving] = useState(false);
@@ -47,16 +48,33 @@ export default function IncomingNotificationPopup({
     };
   }, [duration, onClose]);
 
-  const closeNow = () => {
+  const closeNow = (event) => {
+    event?.stopPropagation();
     setLeaving(true);
     setTimeout(onClose, 200);
   };
 
+  const openNotification = () => {
+    if (notification?.link) {
+      onNavigate?.(notification);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (notification?.link && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      openNotification();
+    }
+  };
+
   return (
     <aside
-      className={`incoming-ntf ${leaving ? 'incoming-ntf--leaving' : ''}`}
+      className={`incoming-ntf ${notification?.link ? 'incoming-ntf--clickable' : ''} ${leaving ? 'incoming-ntf--leaving' : ''}`}
       style={{ borderInlineEndColor: color }}
-      role="status"
+      role={notification?.link ? 'button' : 'status'}
+      tabIndex={notification?.link ? 0 : undefined}
+      onClick={openNotification}
+      onKeyDown={handleKeyDown}
       aria-live="polite"
       dir={isArabic ? 'rtl' : 'ltr'}
       data-testid="notification-popup"

@@ -31,14 +31,21 @@ export function useSuggestWording({
         variation_id: variationId,
       } : {};
       const firstData = await aiTextApi.suggestWording(promptText, language, requestContext);
-      let nextSuggestions = normalizeSuggestions(firstData);
       setPreviousVariations(
         Array.isArray(firstData?.previous_variations) ? firstData.previous_variations : []
       );
+      if (firstData?.insufficient_content) {
+        setSuggestions([]);
+        setError('suggestion_insufficient_content');
+        return [];
+      }
+      let nextSuggestions = normalizeSuggestions(firstData);
 
       if (!context && nextSuggestions.length < TARGET_SUGGESTIONS) {
         const secondData = await aiTextApi.suggestWording(promptText, language, requestContext);
-        nextSuggestions = [...nextSuggestions, ...normalizeSuggestions(secondData)];
+        if (!secondData?.insufficient_content) {
+          nextSuggestions = [...nextSuggestions, ...normalizeSuggestions(secondData)];
+        }
       }
 
       nextSuggestions = nextSuggestions.slice(0, TARGET_SUGGESTIONS);

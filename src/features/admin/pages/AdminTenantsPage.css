@@ -515,3 +515,55 @@
     align-items: flex-start;
   }
 }
+.admin-tenants__branch-group-item {
+  display: contents;
+}
+
+.admin-tenants__parent-company {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 28px 0 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-color, #dbe2ea);
+  border-inline-start: 4px solid var(--primary-color, #14213d);
+  border-radius: 12px;
+  background: var(--surface-color, #fff);
+}
+
+.admin-tenants__parent-company-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-tenants__parent-company-info > svg {
+  font-size: 24px;
+  color: var(--primary-color, #14213d);
+}
+
+.admin-tenants__parent-company-info h2 {
+  margin: 0 0 5px;
+  font-size: 18px;
+}
+
+.admin-tenants__parent-company-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted, #64748b);
+  font-size: 13px;
+}
+
+.admin-tenants__parent-company-meta code {
+  font-weight: 700;
+  color: var(--primary-color, #14213d);
+}
+
+@media (max-width: 720px) {
+  .admin-tenants__parent-company {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

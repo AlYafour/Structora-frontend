@@ -21,6 +21,7 @@ const VariationHeaderInfo = memo(({
   onFormDataChange,
   projectId,
   variationId,
+  referenceIsAutomatic,
   getProjectNumber,
   getProjectLocation,
   t
@@ -160,7 +161,7 @@ const VariationHeaderInfo = memo(({
           <div className="nvh-card__icon"><FaTag /></div>
           <div className="nvh-card__body">
             <span className="nvh-card__label">{t('reference_no')}</span>
-            {isEditMode ? (
+            {isEditMode && !referenceIsAutomatic ? (
               <input
                 type="text"
                 value={formData.reference_no ?? ''}
@@ -169,7 +170,9 @@ const VariationHeaderInfo = memo(({
                 placeholder="VAR0001"
               />
             ) : (
-              <span className="nvh-card__value nvh-card__value--mono">{formData.reference_no || '—'}</span>
+              <span className="nvh-card__value nvh-card__value--mono">
+                {formData.reference_no || (referenceIsAutomatic ? t('reference_generated_on_save') : '—')}
+              </span>
             )}
           </div>
         </div>
