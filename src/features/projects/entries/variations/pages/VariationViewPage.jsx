@@ -19,7 +19,7 @@ import { FiFile, FiDownload } from "react-icons/fi";
 import { useVariationData } from "../hooks/useVariationData";
 import { useVariationApprovalHandlers } from "../hooks/useVariationApprovalHandlers";
 import { useVariationFinancials } from "../hooks/useVariationFinancials";
-import { getStatusLabel, getStatusConfig, calculatePermissions, canDirectUnapproveVariation, canRequestUnapproveVariation, isRejected as checkRejected } from "../utils/variationStatusHelpers";
+import { getStatusLabel, getStatusConfig, calculatePermissions, canDirectUnapproveVariation, canRequestUnapproveVariation, isRejected as checkRejected, isDraftOwnedByUser } from "../utils/variationStatusHelpers";
 import { generatePDFFilename, generateDocumentTitle } from "../utils/pdfFilenameGenerator";
 import { prepareVariationPrintDocumentLayout } from "../utils/variationPdfExport";
 import { appendWrappedVariationAttachments, stampVariationPageNumbers } from "../utils/wrapVariationAttachments";
@@ -88,6 +88,9 @@ export default function VariationViewPage() {
   const [requestUnapproveBusy, setRequestUnapproveBusy] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [draftRequestKind, setDraftRequestKind] = useState(null); // 'submit' | 'changes' | null
+  const [draftRequestMessage, setDraftRequestMessage] = useState('');
+  const [draftRequestBusy, setDraftRequestBusy] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [consultantStampUrl, setConsultantStampUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -181,11 +184,14 @@ export default function VariationViewPage() {
     isCompanyGeneralManager ||
     hasPermission("variations.create") ||
     (variationStatus === 'returned_for_edit' && canManageReturnedVariation);
+  // A draft with no recorded creator (creator account deleted) has no one to
+  // restrict to — fall back to the normal edit-permission check instead of
+  // locking it forever.
   const canDeleteDraftVariation = !!(
     project?.id &&
     variation?.id &&
     variationStatus === 'draft' &&
-    (isAdmin || isCompanyGeneralManager || hasPermission("variations.create"))
+    (variation?.created_by ? isDraftOwnedByUser(variation, user) : canEditVariationContent)
   );
   const canManageHiddenFees = !!(
     user?.is_superuser ||
@@ -209,7 +215,9 @@ export default function VariationViewPage() {
     request?.status === 'accepted' &&
     (!request?.requested_by || !user?.id || String(request.requested_by) === String(user.id))
   );
-  const editBlockedMessageKey = !canEditVariationContent
+  const editBlockedMessageKey = (variationStatus === 'draft' && !!variation?.created_by && !isDraftOwnedByUser(variation, user))
+    ? "variation_edit_not_your_draft_desc"
+    : !canEditVariationContent
     ? "variation_edit_no_permission_desc"
     : canDirectUnapprove
       ? "variation_edit_use_unapprove_desc"
@@ -219,6 +227,9 @@ export default function VariationViewPage() {
           ? "variation_edit_requires_alteration_request_desc"
           : "variation_edit_not_allowed_desc";
   const isRejected = checkRejected(variation);
+  // PM can view but not edit another staff member's draft — they can only
+  // ask the creator (via notification) to submit it or make changes.
+  const canRequestDraftAction = isProjectManager && variationStatus === 'draft' && !!variation?.created_by && !isDraftOwnedByUser(variation, user);
 
   const handleReturnForEdit = async () => {
     if (!returnEditReason.trim()) {
@@ -289,6 +300,25 @@ export default function VariationViewPage() {
     } finally {
       setDeleteBusy(false);
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleSendDraftRequest = async () => {
+    if (!variation?.id || !project?.id || !draftRequestKind) return;
+    setDraftRequestBusy(true);
+    try {
+      if (draftRequestKind === 'submit') {
+        await projectApi.requestVariationDraftSubmission(project.id, variation.id, draftRequestMessage.trim());
+      } else {
+        await projectApi.requestVariationDraftChanges(project.id, variation.id, draftRequestMessage.trim());
+      }
+      success(t('draft_request_sent', 'Notification sent to the draft creator.'));
+      setDraftRequestKind(null);
+      setDraftRequestMessage('');
+    } catch (error) {
+      showError(error?.response?.data?.error || error?.message || t('error_generic'));
+    } finally {
+      setDraftRequestBusy(false);
     }
   };
 
@@ -501,15 +531,16 @@ export default function VariationViewPage() {
 
       // Merge variation_attachments (PDFs/images) as header/footer attachment pages.
       let attachmentPageIndexes = [];
+      let failedAttachments = [];
       if (includeAttachments && attachments.length > 0) {
-        attachmentPageIndexes = await appendWrappedVariationAttachments(mergedDoc, {
+        ({ appendedPageIndexes: attachmentPageIndexes, failedAttachments } = await appendWrappedVariationAttachments(mergedDoc, {
           attachments,
           variation,
           project,
           companyInfo,
           noticeData,
           logger,
-        });
+        }));
       }
 
       await stampVariationPageNumbers(mergedDoc, {
@@ -530,7 +561,21 @@ export default function VariationViewPage() {
       a.click();
       URL.revokeObjectURL(url);
 
-      if (download) success(t("pdf_exported_successfully"));
+      if (failedAttachments.length > 0) {
+        // logger.warn is suppressed in production builds; use console.warn
+        // directly here so the reason is visible in prod devtools too.
+        console.warn("[VariationViewPage] attachment(s) failed to merge into export:", failedAttachments.map(
+          (f) => ({ file: f.fileUrl, reason: f.reason })
+        ));
+      }
+
+      if (download) {
+        if (failedAttachments.length > 0) {
+          showError(t("pdf_export_partial", { count: failedAttachments.length }));
+        } else {
+          success(t("pdf_exported_successfully"));
+        }
+      }
     } catch (error) {
       logger.error("Error generating PDF", error);
       if (download) showError(t("pdf_export_error"));
@@ -822,7 +867,7 @@ export default function VariationViewPage() {
               permissions.canRejectOwnerConsultant ||
               permissions.canReturnForEdit ||
               permissions.canApproveGeneralManagerFinal ||
-              canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation) && (
+              canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation || canRequestDraftAction) && (
                 <div className="var-toolbar__actions">
                   {activeTab === "edit" && permissions.canEdit && (
                     <>
@@ -853,13 +898,23 @@ export default function VariationViewPage() {
                     permissions.canRejectOwnerConsultant ||
                     permissions.canReturnForEdit ||
                     permissions.canApproveGeneralManagerFinal ||
-                    canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation) && (
+                    canDirectUnapprove || canRequestUnapprove || canDeleteDraftVariation || canRequestDraftAction) && (
                     <>
                       <span className="var-toolbar__actions-label">{t("available_actions")}</span>
                       {canDeleteDraftVariation && (
                         <Button variant="danger" size="sm" onClick={() => setDeleteDialogOpen(true)}>
                           <FaTrash /> {t('delete_variation', 'Delete Variation')}
                         </Button>
+                      )}
+                      {canRequestDraftAction && (
+                        <>
+                          <Button variant="secondary" size="sm" onClick={() => { setDraftRequestKind('submit'); setDraftRequestMessage(''); }}>
+                            {t('request_submission', 'Request Submission')}
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => { setDraftRequestKind('changes'); setDraftRequestMessage(''); }}>
+                            {t('request_changes', 'Request Changes')}
+                          </Button>
+                        </>
                       )}
                       {permissions.canApproveProjectManager && (
                         <Button variant="primary" size="sm" onClick={() => dialogStates.setApproveProjectManagerDialogOpen(true)}>
@@ -1455,6 +1510,32 @@ export default function VariationViewPage() {
           onClose={() => { if (!deleteBusy) setDeleteDialogOpen(false); }}
           onConfirm={handleDeleteDraftVariation}
           busy={deleteBusy}
+        />
+
+        <Dialog
+          open={!!draftRequestKind}
+          title={draftRequestKind === 'submit' ? t('request_submission', 'Request Submission') : t('request_changes', 'Request Changes')}
+          desc={
+            <div>
+              <p>
+                {draftRequestKind === 'submit'
+                  ? t('request_submission_desc', "This will notify the draft's creator to submit it for approval.")
+                  : t('request_changes_desc', "This will notify the draft's creator to make changes to it.")}
+              </p>
+              <label className="var-dialog-label">{t('message', 'Message')} ({t('optional')})</label>
+              <textarea
+                className="var-dialog-textarea"
+                rows={4}
+                value={draftRequestMessage}
+                onChange={(e) => setDraftRequestMessage(e.target.value)}
+              />
+            </div>
+          }
+          confirmLabel={t('send', 'Send')}
+          cancelLabel={t('cancel')}
+          onClose={() => { if (!draftRequestBusy) { setDraftRequestKind(null); setDraftRequestMessage(''); } }}
+          onConfirm={handleSendDraftRequest}
+          busy={draftRequestBusy}
         />
 
         <Dialog

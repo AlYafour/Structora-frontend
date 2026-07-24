@@ -53,6 +53,7 @@ export const useProjectFilters = (projects, t) => {
       const hay = [
         p?.display_name,
         p?.name,
+        p?.project_code,
         p?.internal_code,
         p?.project_type,
         p?.contract_type,
@@ -71,7 +72,7 @@ export const useProjectFilters = (projects, t) => {
 
       if (q && !hay.includes(q)) return false;
 
-      const internalCode = (p?.internal_code || "").toLowerCase();
+      const internalCode = (p?.project_code || p?.internal_code || "").toLowerCase();
       const codeToSearch = code.startsWith("m") ? code.substring(1) : code;
       if (code && !internalCode.includes(codeToSearch)) return false;
 
@@ -133,8 +134,8 @@ export const useProjectFilters = (projects, t) => {
             bVal = (b?.display_name || b?.name || '').toLowerCase();
             break;
           case 'internal_code':
-            aVal = (a?.internal_code || `PRJ-${a?.id || 0}`).toLowerCase();
-            bVal = (b?.internal_code || `PRJ-${b?.id || 0}`).toLowerCase();
+            aVal = (a?.project_code || a?.internal_code || `PRJ-${a?.id || 0}`).toLowerCase();
+            bVal = (b?.project_code || b?.internal_code || `PRJ-${b?.id || 0}`).toLowerCase();
             break;
           case 'consultant':
             aVal = (a?.__consultant_name || '').toLowerCase();

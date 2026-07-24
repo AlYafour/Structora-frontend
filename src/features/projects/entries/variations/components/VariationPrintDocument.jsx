@@ -606,7 +606,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   {data.remarks_ar ? (
                     <div className="vpd-notes__split">
                       <div className="vpd-notes__split-col">
-                        <strong className="vpd-notes__label">Remarks</strong>
+                        <strong className="vpd-notes__label">Contract Notes</strong>
                         <PrintRichText value={data.remarks} />
                       </div>
                       <div className="vpd-notes__split-divider" />
@@ -622,7 +622,7 @@ const VariationPrintDocument = forwardRef(({ variation, project, companyInfo, no
                   ) : (
                     <>
                       <strong className="vpd-notes__label">
-                        <BilingualText ar="ملاحظات" en="Remarks" />
+                        <BilingualText ar="ملاحظات العقد" en="Contract Notes" />
                       </strong>
                       <PrintRichText value={data.remarks} />
                     </>

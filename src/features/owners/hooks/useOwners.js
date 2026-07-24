@@ -54,6 +54,7 @@ const extractOwnersFromProjects = (projects, language = 'ar') => {
           ownerData.projects.push({
             id: projectId,
             name: p?.display_name || p?.name || `Project #${projectId}`,
+            projectCode: p?.project_code,
             internalCode: p?.internal_code,
           });
         }

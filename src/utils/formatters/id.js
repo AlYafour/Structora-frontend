@@ -202,7 +202,7 @@ export const toDigits = (str) => (str || "").replace(/[^0-9]/g, "");
  */
 export const formatInternalCode = (raw) => {
   if (!raw) return "";
-  // New format: already formatted (e.g. "37-CON-1001-2026")
+  // Generated formats are already formatted (old and branch-based forms contain hyphens).
   if (String(raw).includes("-")) return raw;
   // Legacy format: M + digits
   const digits = toDigits(raw);

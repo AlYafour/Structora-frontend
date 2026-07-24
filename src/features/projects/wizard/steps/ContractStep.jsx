@@ -108,7 +108,7 @@ export default function ContractStep({ projectId, onPrev, onNext, isView: isView
   };
 
   // ─── Project Codes & Image ───
-  const internalCode = setup?.internalCode || "";   // auto-generated (read-only)
+  const internalCode = setup?.projectCode || setup?.internalCode || "";   // canonical code, then historical fallback
   const legacyCode = setup?.legacyCode || "";       // old code (optional, editable)
   const setSetupField = (k, v) => onSetupChange?.((prev) => ({ ...prev, [k]: v }));
   const [projectImage, setProjectImage] = useState(null);

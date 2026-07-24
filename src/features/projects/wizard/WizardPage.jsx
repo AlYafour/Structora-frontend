@@ -241,6 +241,7 @@ export default function WizardPage() {
         setSetup((prev) => ({
           projectType: data?.project_type || "",
           contractType: data?.contract_type || "",
+          projectCode: data?.project_code || "",
           internalCode: data?.internal_code || "",
           legacyCode: data?.legacy_code || "",
           contractClassification: prev?.contractClassification || "",
@@ -600,7 +601,7 @@ export default function WizardPage() {
         onBack={handleBackToProjects}
         backLabel={sectionOnly ? t("back") : t("wizard.back_to_projects")}
         title={projectTitle}
-        subtitle={!isNewProject && project?.internal_code ? project.internal_code : undefined}
+        subtitle={!isNewProject && (project?.project_code || project?.internal_code) ? (project.project_code || project.internal_code) : undefined}
         className={
           !sectionOnly && STEPS.length > 1
             ? "wizard-page-header"

@@ -21,6 +21,7 @@ const VariationHeaderInfo = memo(({
   onFormDataChange,
   projectId,
   variationId,
+  referenceIsAutomatic,
   getProjectNumber,
   getProjectLocation,
   t
@@ -31,9 +32,9 @@ const VariationHeaderInfo = memo(({
   const secondaryDescriptionField = isArabicPrimary ? 'variation_description' : 'variation_description_ar';
   const primaryDescription = formData[primaryDescriptionField] ?? '';
   const secondaryDescription = formData[secondaryDescriptionField] ?? '';
-  const secondaryDescriptionLabel = isArabicPrimary
-    ? t('auto_translated_english', 'Auto-translated English')
-    : t('auto_translated_arabic', 'Auto-translated Arabic');
+  const descriptionNeedsBootstrap = !primaryDescription.trim() && !!secondaryDescription.trim();
+  const translationSourceDescription = descriptionNeedsBootstrap ? secondaryDescription : primaryDescription;
+  const translationTargetField = descriptionNeedsBootstrap ? primaryDescriptionField : secondaryDescriptionField;
   const {
     suggestions,
     previousVariations,
@@ -48,15 +49,15 @@ const VariationHeaderInfo = memo(({
     variationId,
   });
   const { translating: translatingDescription } = useMachineAutoTranslate(
-    primaryDescription,
+    translationSourceDescription,
     (translated) => onFormDataChange(prev => ({
       ...prev,
-      [secondaryDescriptionField]: translated,
+      [translationTargetField]: translated,
     })),
     {
       enabled: isEditMode,
-      source: isArabicPrimary ? 'ar' : 'en',
-      target: isArabicPrimary ? 'en' : 'ar',
+      source: (isArabicPrimary !== descriptionNeedsBootstrap) ? 'ar' : 'en',
+      target: (isArabicPrimary !== descriptionNeedsBootstrap) ? 'en' : 'ar',
     }
   );
 
@@ -82,6 +83,24 @@ const VariationHeaderInfo = memo(({
       [primaryDescriptionField]: event.target.value,
       [secondaryDescriptionField]: '',
     });
+  };
+
+  const handleEnglishDescriptionChange = (event) => {
+    if (!isArabicPrimary) {
+      handleDescriptionChange(event);
+      return;
+    }
+    discard();
+    onFormDataChange(prev => ({ ...prev, variation_description: event.target.value }));
+  };
+
+  const handleArabicDescriptionChange = (event) => {
+    if (isArabicPrimary) {
+      handleDescriptionChange(event);
+      return;
+    }
+    discard();
+    onFormDataChange(prev => ({ ...prev, variation_description_ar: event.target.value }));
   };
 
   const appendDescriptionTranscript = (transcript) => {
@@ -142,7 +161,7 @@ const VariationHeaderInfo = memo(({
           <div className="nvh-card__icon"><FaTag /></div>
           <div className="nvh-card__body">
             <span className="nvh-card__label">{t('reference_no')}</span>
-            {isEditMode ? (
+            {isEditMode && !referenceIsAutomatic ? (
               <input
                 type="text"
                 value={formData.reference_no ?? ''}
@@ -151,7 +170,9 @@ const VariationHeaderInfo = memo(({
                 placeholder="VAR0001"
               />
             ) : (
-              <span className="nvh-card__value nvh-card__value--mono">{formData.reference_no || '—'}</span>
+              <span className="nvh-card__value nvh-card__value--mono">
+                {formData.reference_no || (referenceIsAutomatic ? t('reference_generated_on_save') : '—')}
+              </span>
             )}
           </div>
         </div>
@@ -266,11 +287,11 @@ const VariationHeaderInfo = memo(({
           <div className="nvh-desc-card__body" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
             <textarea
               value={primaryDescription}
-              onChange={handleDescriptionChange}
+              onChange={isArabicPrimary ? handleArabicDescriptionChange : handleEnglishDescriptionChange}
               className="nvh-desc-card__textarea"
               dir={isArabicPrimary ? 'rtl' : 'ltr'}
               rows={2}
-              placeholder={t('variation_description')}
+              placeholder={`${t('variation_description')} — ${isArabicPrimary ? t('arabic', 'Arabic') : t('english', 'English')}`}
             />
             <div className="nvh-desc-card__footer">
               <span className="nvh-desc-card__count">{primaryDescription.length} {t('characters', 'characters')}</span>
@@ -302,42 +323,45 @@ const VariationHeaderInfo = memo(({
                 </Button>
               </div>
             </div>
-          </div>
-        ) : (
-          <div
-            className="nvh-desc-row__text"
-            dir={isArabicPrimary ? 'rtl' : 'ltr'}
-          >
-            {primaryDescription || <span className="nvh-desc-row__empty">—</span>}
-          </div>
-        )}
 
-        {(isEditMode || secondaryDescription) && (
-          <>
             <div className="nvh-desc-card__divider" />
-            <div
-              className="nvh-description-translation"
-              dir={isArabicPrimary ? 'ltr' : 'rtl'}
-            >
+            <div className="nvh-description-translation" dir={isArabicPrimary ? 'ltr' : 'rtl'}>
               <div className="nvh-description-translation__header">
                 <span className="nvh-description-translation__label">
                   {translatingDescription
                     ? `${t('translating', 'Translating')}...`
-                    : secondaryDescriptionLabel}
+                    : (isArabicPrimary ? t('english', 'English') : t('arabic', 'Arabic'))}
                 </span>
                 <span className={`nvh-description-translation__badge${isArabicPrimary ? '' : ' nvh-description-translation__badge--ar'}`}>
                   {isArabicPrimary ? 'EN' : 'ع'}
                 </span>
               </div>
-              <div className="nvh-description-translation__text">
-                {secondaryDescription || (
-                  <span className="nvh-desc-row__empty">
-                    {secondaryDescriptionLabel}
-                  </span>
-                )}
-              </div>
+              <textarea
+                value={secondaryDescription}
+                onChange={isArabicPrimary ? handleEnglishDescriptionChange : handleArabicDescriptionChange}
+                className="nvh-desc-card__textarea"
+                dir={isArabicPrimary ? 'ltr' : 'rtl'}
+                rows={2}
+                placeholder={isArabicPrimary
+                  ? t('auto_translated_english', 'Auto-translated English')
+                  : t('auto_translated_arabic', 'Auto-translated Arabic')}
+              />
             </div>
-          </>
+          </div>
+        ) : (
+          <div dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+            <div className="nvh-desc-row__text" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+              {primaryDescription || <span className="nvh-desc-row__empty">—</span>}
+            </div>
+            {secondaryDescription && (
+              <>
+                <div className="nvh-desc-card__divider" />
+                <div className="nvh-description-translation" dir={isArabicPrimary ? 'ltr' : 'rtl'}>
+                  <div className="nvh-description-translation__text">{secondaryDescription}</div>
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {isEditMode && error && (

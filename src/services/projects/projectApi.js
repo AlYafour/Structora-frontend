@@ -49,9 +49,9 @@ class ProjectService extends BaseService {
 
   /**
    * Get lightweight project list for dropdowns/selectors.
-   * Returns only id, name, display_name, internal_code — no heavy calculations.
+   * Returns only id, name, display_name and project identifiers — no heavy calculations.
    * ~100x faster than getAll().
-   * @returns {Promise} Array of {id, name, display_name, internal_code}
+   * @returns {Promise} Array of {id, name, display_name, project_code, internal_code}
    */
   async getSimpleList() {
     try {
@@ -424,6 +424,44 @@ class ProjectService extends BaseService {
       return data;
     } catch (error) {
       throw handleError(error, 'ProjectService.submitVariationDraft');
+    }
+  }
+
+  /**
+   * PM asks a draft's creator to submit it for approval (notification only).
+   * @param {string|number} projectId - Project ID
+   * @param {string|number} variationId - Variation ID
+   * @param {string} [message] - Optional message to include in the notification
+   * @returns {Promise} Response data
+   */
+  async requestVariationDraftSubmission(projectId, variationId, message) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/request-submission/`,
+        { message }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.requestVariationDraftSubmission');
+    }
+  }
+
+  /**
+   * PM asks a draft's creator to make changes to it (notification only).
+   * @param {string|number} projectId - Project ID
+   * @param {string|number} variationId - Variation ID
+   * @param {string} [message] - Optional message to include in the notification
+   * @returns {Promise} Response data
+   */
+  async requestVariationDraftChanges(projectId, variationId, message) {
+    try {
+      const { data } = await api.post(
+        `${this.basePath}${projectId}/variations/${variationId}/request-changes/`,
+        { message }
+      );
+      return data;
+    } catch (error) {
+      throw handleError(error, 'ProjectService.requestVariationDraftChanges');
     }
   }
 

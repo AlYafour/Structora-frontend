@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { NotificationProvider, useNotifications } from './NotificationContext';
 
 const mocks = vi.hoisted(() => ({
@@ -57,12 +58,18 @@ function NotificationHarness() {
           message_en: 'Your approval is now pending.',
           notification_type: 'approval',
           is_read: false,
+          link: '/variations/42/view?project=9',
         })}
       >
         Add notification
       </button>
     </>
   );
+}
+
+function CurrentLocation() {
+  const location = useLocation();
+  return <span data-testid="current-location">{location.pathname}{location.search}</span>;
 }
 
 describe('incoming notification popup', () => {
@@ -73,9 +80,12 @@ describe('incoming notification popup', () => {
 
   it('shows a new notification top-right for three seconds and keeps it in the list', async () => {
     render(
-      <NotificationProvider>
-        <NotificationHarness />
-      </NotificationProvider>
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <NotificationProvider>
+          <NotificationHarness />
+          <CurrentLocation />
+        </NotificationProvider>
+      </MemoryRouter>
     );
 
     await waitFor(() => expect(mocks.getAll).toHaveBeenCalledTimes(1));
@@ -90,5 +100,24 @@ describe('incoming notification popup', () => {
     expect(screen.getByText('Your approval is now pending.')).toBeInTheDocument();
     expect(screen.getByTestId('notification-count')).toHaveTextContent('1');
     expect(mocks.playSound).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to the notification link when the popup is clicked', async () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <NotificationProvider>
+          <NotificationHarness />
+          <CurrentLocation />
+        </NotificationProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(mocks.getAll).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Add notification' }));
+    fireEvent.click(await screen.findByTestId('notification-popup'));
+
+    expect(screen.getByTestId('current-location')).toHaveTextContent(
+      '/variations/42/view?project=9'
+    );
   });
 });

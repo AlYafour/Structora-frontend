@@ -37,4 +37,9 @@ export const aiTextApi = {
     const { data } = await api.post("suggest-remark-from-image/", formData);
     return data; // { suggestions: string[], suggestion: string }
   },
+
+  async suggestVariationRemarks(noticeData) {
+    const { data } = await api.post("suggest-variation-remarks/", noticeData);
+    return data; // { suggestions: string[], suggestion: string }
+  },
 };

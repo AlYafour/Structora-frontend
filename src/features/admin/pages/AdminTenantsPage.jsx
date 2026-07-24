@@ -20,6 +20,7 @@ import {
   FaLink,
   FaExclamationTriangle,
   FaTrash,
+  FaPlus,
 } from 'react-icons/fa';
 import { formatDate } from '../../../utils/formatters';
 import { buildFileUrl } from '../../../utils/helpers/file';
@@ -98,6 +99,13 @@ export default function AdminTenantsPage() {
         hasSettings: !!settingsMap[tenant.id],
       }));
 
+      merged.sort((a, b) => {
+        const companyA = a.tenant.company?.code || a.tenant.id;
+        const companyB = b.tenant.company?.code || b.tenant.id;
+        if (companyA !== companyB) return String(companyA).localeCompare(String(companyB));
+        if (a.tenant.is_default_branch !== b.tenant.is_default_branch) return a.tenant.is_default_branch ? -1 : 1;
+        return (a.tenant.branch_name || '').localeCompare(b.tenant.branch_name || '');
+      });
       setTenants(merged);
     } catch (error) {
       logger.error('Error loading tenants', error);
@@ -213,12 +221,23 @@ export default function AdminTenantsPage() {
   };
 
   // Stats
+  const companyGroups = useMemo(() => {
+    const groups = new Map();
+    tenants.forEach((item) => {
+      const company = item.tenant.company;
+      const key = company?.id || item.tenant.id;
+      if (!groups.has(key)) groups.set(key, { company, branches: [] });
+      groups.get(key).branches.push(item);
+    });
+    return Array.from(groups.values());
+  }, [tenants]);
+
   const stats = useMemo(() => ({
-    total: tenants.length,
-    active: tenants.filter(t => t.tenant.is_active).length,
-    trial: tenants.filter(t => t.subscription_status === 'trial').length,
-    suspended: tenants.filter(t => t.subscription_status === 'suspended' || t.subscription_status === 'expired').length,
-  }), [tenants]);
+    total: companyGroups.length,
+    active: companyGroups.filter(g => g.company?.is_active !== false && g.branches.some(b => b.tenant.is_active)).length,
+    trial: companyGroups.filter(g => g.branches.some(b => b.subscription_status === 'trial')).length,
+    suspended: companyGroups.filter(g => g.branches.every(b => ['suspended', 'expired'].includes(b.subscription_status))).length,
+  }), [companyGroups]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -314,13 +333,45 @@ export default function AdminTenantsPage() {
       ) : filtered.length === 0 ? (
         <Card><div className="admin-tenants__empty">{t('admin_no_companies_found')}</div></Card>
       ) : (
-        filtered.map(item => {
+        filtered.map((item, index) => {
+          const companyKey = item.tenant.company?.id || item.tenant.id;
+          const previousCompanyKey = index > 0
+            ? (filtered[index - 1].tenant.company?.id || filtered[index - 1].tenant.id)
+            : null;
+          const showCompanyHeader = companyKey !== previousCompanyKey;
+          const companyBranchCount = filtered.filter(candidate =>
+            (candidate.tenant.company?.id || candidate.tenant.id) === companyKey
+          ).length;
           const isEditing = editingId === item.tenant.id;
           const isEditingSlug = editingSlugId === item.tenant.id;
           const usersPercent = getUsagePercent(item.current_users_count, item.max_users);
           const projectsPercent = getUsagePercent(item.current_projects_count, item.max_projects);
 
           return (
+            <div key={item.tenant.id} className="admin-tenants__branch-group-item">
+              {showCompanyHeader && (
+                <div className="admin-tenants__parent-company">
+                  <div className="admin-tenants__parent-company-info">
+                    <FaBuilding />
+                    <div>
+                      <h2>{item.tenant.company?.name || item.displayName}</h2>
+                      <div className="admin-tenants__parent-company-meta">
+                        <code>{item.tenant.company?.code || '—'}</code>
+                        <span>{companyBranchCount === 1 ? t('admin_one_branch') : t('admin_many_branches', { count: companyBranchCount })}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {item.tenant.company?.id && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => navigate(`/admin/companies/${item.tenant.company.id}/branches/new`)}
+                    >
+                      <FaPlus className="ds-icon-gap-sm" /> {t('admin_add_branch')}
+                    </Button>
+                  )}
+                </div>
+              )}
             <Card key={item.tenant.id} className="admin-tenants__company-card">
               {/* Company Header Row */}
               <div className="admin-tenants__company-header">
@@ -342,11 +393,11 @@ export default function AdminTenantsPage() {
                       onClick={() => navigate(`/admin/tenants/${item.tenant.id}/edit`)}
                       title={t('admin_edit_company')}
                     >
-                      {item.displayName}
+                      {item.tenant.branch_name || item.displayName}
                     </h3>
-                    {item.displayName !== item.tenant.name && (
-                      <div className="admin-tenants__tenant-name">{item.tenant.name}</div>
-                    )}
+                    <div className="admin-tenants__tenant-name">
+                      {item.tenant.branch_code} · {item.tenant.is_default_branch ? t('admin_default_branch') : t('admin_branch')}
+                    </div>
                     <div className="admin-tenants__company-meta">
                       <span><FaCalendarAlt /> {formatDate(item.tenant.created_at, i18n.language)}</span>
                     </div>
@@ -548,6 +599,7 @@ export default function AdminTenantsPage() {
                 </div>
               )}
             </Card>
+            </div>
           );
         })
       )}

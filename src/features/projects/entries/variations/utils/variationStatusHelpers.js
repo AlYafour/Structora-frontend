@@ -83,6 +83,14 @@ export const isRejected = (variation) => {
          status === 'rejected';
 };
 
+/**
+ * Whether the given variation was created by the given user.
+ * A draft belongs to its creator — no role may edit/delete/submit someone
+ * else's draft, regardless of permission or seniority.
+ */
+export const isDraftOwnedByUser = (variation, user) =>
+  !!variation?.created_by && !!user?.id && String(variation.created_by) === String(user.id);
+
 const getRoleFlags = (user) => {
   const isProjectManager = user?.role?.name === 'Manager';
   const isSupervisor = user?.role?.name === 'Supervisor';
@@ -192,7 +200,11 @@ export const calculatePermissions = (variation, user, alterationRequests = [], o
   const canApproveOrReject = !rejected;
 
   return {
-    canEdit: isGeneralManager && isApprovalStage && !finallyApproved
+    canEdit: status === 'draft'
+      // A draft with no recorded creator (creator account deleted) has no one
+      // to restrict to — fall back to the normal edit-permission check.
+      ? (variation?.created_by ? isDraftOwnedByUser(variation, user) : hasVariationEditPermission)
+      : isGeneralManager && isApprovalStage && !finallyApproved
       ? true
       : status === 'rejected_by_owner_consultant' && isStaff
       ? true

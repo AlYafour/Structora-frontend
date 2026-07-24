@@ -49,7 +49,7 @@ export default function SelectProjectPage({
     const q = search.trim().toLowerCase();
     return projects.filter((p) => {
       const name = getProjectName(p);
-      const code = p?.internal_code || "";
+      const code = p?.project_code || p?.internal_code || "";
       return (
         (name.ar || "").toLowerCase().includes(q) ||
         (name.en || "").toLowerCase().includes(q) ||
@@ -192,8 +192,8 @@ export default function SelectProjectPage({
                   </div>
                   <div className="select-project__card-body">
                     <div className="select-project__card-code">
-                      {p?.internal_code
-                        ? formatInternalCode(p.internal_code)
+                      {p?.project_code || p?.internal_code
+                        ? formatInternalCode(p.project_code || p.internal_code)
                         : `PRJ-${p?.id}`}
                     </div>
                     <div className="select-project__card-info">

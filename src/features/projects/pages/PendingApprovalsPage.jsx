@@ -186,9 +186,9 @@ export default function PendingApprovalsPage() {
                                             </td>
 
                                             <td className="ds-text-sm ds-py-3 ds-px-4">
-                                                {p?.internal_code ? (
+                                                {p?.project_code || p?.internal_code ? (
                                                     <code className="pending-approvals__code">
-                                                        {formatInternalCode(p.internal_code)}
+                                                        {formatInternalCode(p.project_code || p.internal_code)}
                                                     </code>
                                                 ) : (
                                                     <span className="ds-text-muted">

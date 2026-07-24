@@ -19,7 +19,8 @@ const ProjectEntryInfo = memo(function ProjectEntryInfo({ project }) {
 
   const nameAr = project.display_name || project.name || "";
   const nameEn = project.display_name_en || "";
-  const code = project.internal_code ? formatInternalCode(project.internal_code) : null;
+  const rawCode = project.project_code || project.internal_code;
+  const code = rawCode ? formatInternalCode(rawCode) : null;
 
   // Check if both names exist and are different
   const hasBothNames = nameAr && nameEn && nameAr !== nameEn;

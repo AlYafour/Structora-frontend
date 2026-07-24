@@ -49,8 +49,8 @@ const ProjectCard = React.memo(({
             {projectName.ar || projectName.full || t("empty_value")}
           </div>
           <div className="projects-mobile-card-code">
-            {project?.internal_code
-              ? formatInternalCode(project.internal_code)
+            {project?.project_code || project?.internal_code
+              ? formatInternalCode(project.project_code || project.internal_code)
               : `PRJ-${project?.id ?? index + 1}`}
           </div>
         </div>

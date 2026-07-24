@@ -1,8 +1,9 @@
 import { memo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FiDownload, FiUpload } from "react-icons/fi";
+import { FiChevronLeft, FiDownload, FiEdit3, FiImage } from "react-icons/fi";
 import Button from "../../../components/common/Button";
+import ActionMenu from "../../../components/common/ActionMenu";
 import { formatDate } from "../../../utils/formatters";
 import { formatInternalCode } from "../../../utils/formatters/id";
 import { buildFileUrl } from "../../../utils/helpers/file";
@@ -115,8 +116,9 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
   };
 
   // Use internal code or project ID as title
-  const titleText = project?.internal_code
-    ? `${t("project_view_internal_code")}: ${formatInternalCode(project.internal_code)}`
+  const canonicalCode = project?.project_code || project?.internal_code;
+  const titleText = canonicalCode
+    ? `${t("project_view_internal_code")}: ${formatInternalCode(canonicalCode)}`
     : t("wizard_project_prefix") + ` #${projectId}`;
 
   // Extract owner name (Arabic + English) from siteplan
@@ -151,7 +153,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
       execution_started: { label: t("status_execution_started"), variant: "info" },
       under_execution: { label: t("status_under_execution"), variant: "primary" },
       temporarily_suspended: { label: t("status_temporarily_suspended"), variant: "warning" },
-      handover_stage: { label: t("status_handover_stage"), variant: "success" },
+      handover_stage: { label: t("status_handover_stage"), variant: "warning" },
       pending_financial_closure: { label: t("status_pending_financial_closure"), variant: "warning" },
       completed: { label: t("status_completed"), variant: "success" },
       draft: { label: t("draft"), variant: "default" },
@@ -195,15 +197,81 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
     toggleHeaderDateFormat(dateId);
   };
 
+  // Consolidated workflow actions for the "..." menu — same conditions as before, just relocated
+  const menuItems = [];
+
+  if (!permissionsLoading && projectPermissions?.can_submit && project?.approval_status === "draft" && !isSuperAdmin) {
+    menuItems.push({ label: t("submit_for_approval"), onClick: onSubmitClick, type: "button", variant: "success" });
+  }
+
+  const showFinalApprove =
+    ((project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin) ||
+    (project?.approval_status === "draft" && !isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve) ||
+    (project?.approval_status === "approved" && (isSuperAdmin || (!isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve)));
+
+  if (showFinalApprove) {
+    menuItems.push({ label: t("final_approve"), onClick: onFinalApproveClick, type: "button", variant: "success" });
+  }
+
+  if (project?.approval_status === "pending" && !isSuperAdmin && (isManager || (!isManager && !permissionsLoading && projectPermissions?.can_approve))) {
+    menuItems.push({ label: t("approve_stage"), onClick: onApproveClick, type: "button", variant: "success" });
+    if (isManager || projectPermissions?.can_reject) {
+      menuItems.push({ label: t("reject"), onClick: onRejectClick, type: "button", variant: "danger" });
+    }
+  }
+
+  if (project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval) {
+    menuItems.push({ label: t("revoke_final_approval"), onClick: onRevokeFinalApprovalClick, type: "button", variant: "danger" });
+  }
+
+  if (canDeleteProject) {
+    if (menuItems.length > 0) {
+      menuItems.push({ type: "divider" });
+    }
+    menuItems.push({ label: t("delete_project"), onClick: onDeleteClick, type: "button", variant: "danger" });
+  }
+
   return (
     <div className="prj-view-header">
-      <div className="prj-view-header__split">
 
-        {/* Left panel: all info + actions */}
-        <div className="prj-view-header__left">
+      {/* Topbar: back link + attachments/edit/kebab actions */}
+      <div className="prj-view-header__topbar">
+        <div className="prj-view-header__topbar-left">
+          <Button
+            as={Link}
+            variant="ghost"
+            to="/projects"
+            size="sm"
+            className="prj-view-header__back-link"
+            startIcon={<FiChevronLeft aria-hidden="true" />}
+          >
+            {t("back_to_projects")}
+          </Button>
+        </div>
+        <div className="prj-view-header__topbar-right">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadAll}
+            loading={downloading}
+            startIcon={<FiDownload />}
+          >
+            {downloading ? t("downloading") : t("attachments")}
+          </Button>
+          {projectPermissions?.can_edit && (
+            <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="accent" size="sm" startIcon={<FiEdit3 />}>
+              {t("edit")}
+            </Button>
+          )}
+          {menuItems.length > 0 && <ActionMenu items={menuItems} />}
+        </div>
+      </div>
 
-          {/* Status row: approval badge or banner */}
-          <div className="prj-view-header__status-row">
+      <div className="prj-view-header__main">
+
+        {/* Identity: badges, name, codes */}
+        <div className="prj-view-header__main-left">
+          <div className="prj-view-header__badges">
             {project?.approval_status === 'final_approved' && (
               <div className="prj-approval-status-badge prj-approval-status-badge--final-approved">
                 <span className="prj-approval-status-badge__icon">✓</span>
@@ -228,155 +296,73 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 </div>
               </div>
             )}
-            {headerDates.length > 0 && (
-              <div className="prj-view-header__dates" aria-label={t("project_schedule")}>
-                {headerDates.map((item) => (
-                  <div className="prj-view-header__date-item" key={item.id}>
-                    <span className="prj-view-header__date-label">{item.label}</span>
-                    <span
-                      className="prj-view-header__date-value prj-view-header__date-value--toggle"
-                      onDoubleClick={() => toggleHeaderDateFormat(item.id)}
-                      onKeyDown={(event) => handleHeaderDateKeyDown(event, item.id)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            {statusInfo && (
+              <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
+                {statusInfo.label}
+              </span>
             )}
           </div>
 
-          <div className="prj-view-header__content-row">
-            <div className="prj-view-header__content-main">
-              {/* Identity: name */}
-              <div className="prj-view-header__identity">
-                {(nameAr || nameEn) ? (
-                  <>
-                    <h1 className="prj-view-header__name-primary">
-                      {isAR ? (nameAr || nameEn) : (nameEn || nameAr)}
-                    </h1>
-                    {nameAr && nameEn && nameAr !== nameEn && (
-                      <p className="prj-view-header__name-secondary">
-                        {isAR ? nameEn : nameAr}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <h1 className="prj-view-header__name-primary">{titleText}</h1>
-                )}
-              </div>
+          <div className="prj-view-header__identity">
+            {(nameAr || nameEn) ? (
+              <h1 className="prj-view-header__name-primary">
+                {isAR ? (nameAr || nameEn) : (nameEn || nameAr)}
+              </h1>
+            ) : (
+              <h1 className="prj-view-header__name-primary">{titleText}</h1>
+            )}
+          </div>
 
-              {/* Meta: internal code + execution status */}
-              <div className="prj-view-header__meta">
-                {project?.internal_code && (
-                  <div className="prj-view-header__top-code">
-                    <span className="mono">{formatInternalCode(project.internal_code)}</span>
-                  </div>
-                )}
-                {legacyCode && (
-                  <span
-                    className="prj-view-header__legacy-code"
-                    tabIndex={0}
-                    aria-label={`${t("legacy_project_code")}: ${legacyCode}`}
-                  >
-                    <span className="prj-view-header__legacy-value">{legacyCode}</span>
-                  </span>
-                )}
-                {statusInfo && (
-                  <span className={`prj-view-header__status prj-view-header__status--${statusInfo.variant}`}>
-                    {statusInfo.label}
-                  </span>
-                )}
-              </div>
+          {nameAr && nameEn && nameAr !== nameEn && (
+            <p className="prj-view-header__name-secondary">
+              {isAR ? nameEn : nameAr}
+            </p>
+          )}
+
+          {legacyCode && (
+            <div className="prj-view-header__codes">
+              <span
+                className="prj-view-header__legacy-code"
+                tabIndex={0}
+                aria-label={`${t("legacy_project_code")}: ${legacyCode}`}
+              >
+                <span className="prj-view-header__legacy-label">
+                  {t("legacy_project_code")}:
+                </span>
+                <span className="prj-view-header__legacy-value">{legacyCode}</span>
+              </span>
             </div>
-
-          </div>
-
-          {/* Spacer: pushes buttons to bottom */}
-          <div className="prj-view-header__spacer" />
-
-          {/* Nav buttons */}
-          <div className="prj-view-header__nav">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="prj-view-header__btn--light"
-              onClick={handleDownloadAll}
-              loading={downloading}
-              startIcon={<FiDownload />}
-            >
-              {downloading ? t("downloading") : t("download_all_attachments")}
-            </Button>
-            {projectPermissions?.can_edit && (
-              <Button as={Link} to={`/projects/${projectId}/wizard?step=setup&mode=edit`} variant="secondary" size="sm" className="prj-view-header__btn--light">
-                {t("edit")}
-              </Button>
-            )}
-            <Button as={Link} variant="secondary" to="/projects" size="sm" className="prj-view-header__btn--light">
-              {t("back_projects")}
-            </Button>
-          </div>
-
-          {/* Action buttons */}
-          <div className="prj-view-header__actions-row">
-            {!permissionsLoading && projectPermissions?.can_submit && project?.approval_status === "draft" && !isSuperAdmin && (
-              <Button variant="primary" onClick={onSubmitClick} size="sm">
-                {t("submit_for_approval")}
-              </Button>
-            )}
-
-            {(project?.approval_status === "draft" || project?.approval_status === "pending") && isSuperAdmin && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
-                {t("final_approve")}
-              </Button>
-            )}
-
-            {project?.approval_status === "draft" && !isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
-                {t("final_approve")}
-              </Button>
-            )}
-
-            {project?.approval_status === "pending" && !isSuperAdmin && (isManager || (!isManager && !permissionsLoading && projectPermissions?.can_approve)) && (
-              <>
-                <Button variant="primary" onClick={onApproveClick} size="sm">
-                  {t("approve_stage")}
-                </Button>
-                {(isManager || projectPermissions?.can_reject) && (
-                  <Button variant="danger" onClick={onRejectClick} size="sm">
-                    {t("reject")}
-                  </Button>
-                )}
-              </>
-            )}
-
-            {project?.approval_status === "approved" && (isSuperAdmin || (!isSuperAdmin && !permissionsLoading && projectPermissions?.can_final_approve)) && (
-              <Button variant="primary" onClick={onFinalApproveClick} size="sm">
-                {t("final_approve")}
-              </Button>
-            )}
-
-            {project?.approval_status === "final_approved" && !permissionsLoading && projectPermissions?.can_revoke_final_approval && (
-              <Button variant="danger" onClick={onRevokeFinalApprovalClick} size="sm">
-                {t("revoke_final_approval")}
-              </Button>
-            )}
-
-            {canDeleteProject && <div className="prj-view-header__action-sep" />}
-
-            {canDeleteProject && (
-              <Button variant="danger" onClick={onDeleteClick} size="sm">
-                {t("delete_project")}
-              </Button>
-            )}
-          </div>
-
+          )}
         </div>
 
-        {/* Right panel: project image or upload zone */}
-        <div className="prj-view-header__right">
+        {/* Stats: contract code + schedule dates */}
+        {(canonicalCode || headerDates.length > 0) && (
+          <div className="prj-view-header__stats" aria-label={t("project_schedule")}>
+            {canonicalCode && (
+              <div className="prj-view-header__date-item">
+                <span className="prj-view-header__date-label">{t("project_view_internal_code")}</span>
+                <span className="prj-view-header__date-value">{formatInternalCode(canonicalCode)}</span>
+              </div>
+            )}
+            {headerDates.map((item) => (
+              <div className={`prj-view-header__date-item prj-view-header__date-item--${item.id}`} key={item.id}>
+                <span className="prj-view-header__date-label">{item.label}</span>
+                <span
+                  className="prj-view-header__date-value prj-view-header__date-value--toggle"
+                  onDoubleClick={() => toggleHeaderDateFormat(item.id)}
+                  onKeyDown={(event) => handleHeaderDateKeyDown(event, item.id)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Project image or upload zone */}
+        <div className="prj-view-header__photo">
           {displayImageUrl ? (
             <>
               <img src={displayImageUrl} alt={t("project_image")} className="prj-view-header__right-img" />
@@ -398,7 +384,7 @@ const ProjectViewHeader = memo(function ProjectViewHeader({
                 onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0])}
               />
               <div className="prj-view-header__upload-icon">
-                <FiUpload />
+                <FiImage />
               </div>
               <div className="prj-view-header__upload-body">
                 <p className="prj-view-header__upload-label">

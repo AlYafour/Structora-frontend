@@ -6,7 +6,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../../../../../utils/formatters';
 import DirhamsIcon from '../../../../../../components/common/DirhamsIcon';
-import { useAutoTranslate } from '../../../../../../hooks/useAutoTranslate';
+import { useMachineAutoTranslate } from '../../../../../../hooks/useMachineAutoTranslate';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import { UNIT_OPTIONS } from '../../utils/unitOptions';
 
@@ -25,17 +25,38 @@ const ItemRow = memo(
     colSpan,
   }) => {
     const { i18n } = useTranslation();
+    const isArabicPrimary = /^ar\b/i.test(i18n.language || '');
+    const primaryDescriptionField = isArabicPrimary ? 'description_ar' : 'description';
+    const secondaryDescriptionField = isArabicPrimary ? 'description' : 'description_ar';
+    const primaryRemarkField = isArabicPrimary ? 'remarks_ar' : 'remarks';
+    const secondaryRemarkField = isArabicPrimary ? 'remarks' : 'remarks_ar';
+    const descriptionNeedsBootstrap = !String(item[primaryDescriptionField] || '').trim()
+      && !!String(item[secondaryDescriptionField] || '').trim();
+    const remarkNeedsBootstrap = !String(item[primaryRemarkField] || '').trim()
+      && !!String(item[secondaryRemarkField] || '').trim();
+    const descriptionSourceField = descriptionNeedsBootstrap ? secondaryDescriptionField : primaryDescriptionField;
+    const descriptionTargetField = descriptionNeedsBootstrap ? primaryDescriptionField : secondaryDescriptionField;
+    const remarkSourceField = remarkNeedsBootstrap ? secondaryRemarkField : primaryRemarkField;
+    const remarkTargetField = remarkNeedsBootstrap ? primaryRemarkField : secondaryRemarkField;
 
-    const { translating: translatingDescription } = useAutoTranslate(
-      item.description,
-      (ar) => onUpdate?.(item.id, 'description_ar', ar),
-      { enabled: isEditMode && !item.description_ar }
+    const { translating: translatingDescription } = useMachineAutoTranslate(
+      item[descriptionSourceField],
+      (translated) => onUpdate?.(item.id, descriptionTargetField, translated),
+      {
+        enabled: isEditMode,
+        source: (isArabicPrimary !== descriptionNeedsBootstrap) ? 'ar' : 'en',
+        target: (isArabicPrimary !== descriptionNeedsBootstrap) ? 'en' : 'ar',
+      }
     );
 
-    const { translating: translatingRemark } = useAutoTranslate(
-      item.remarks,
-      (ar) => onUpdate?.(item.id, 'remarks_ar', ar),
-      { enabled: isEditMode }
+    const { translating: translatingRemark } = useMachineAutoTranslate(
+      item[remarkSourceField],
+      (translated) => onUpdate?.(item.id, remarkTargetField, translated),
+      {
+        enabled: isEditMode,
+        source: (isArabicPrimary !== remarkNeedsBootstrap) ? 'ar' : 'en',
+        target: (isArabicPrimary !== remarkNeedsBootstrap) ? 'en' : 'ar',
+      }
     );
 
     const formatCurrency = (value) => {
@@ -55,7 +76,7 @@ const ItemRow = memo(
       return str;
     };
 
-    const hasRemarks = !!(item.remarks && item.remarks.trim());
+    const hasRemarks = !!((item.remarks && item.remarks.trim()) || (item.remarks_ar && item.remarks_ar.trim()));
     const amount =
       typeof item.amount === 'number'
         ? item.amount
@@ -72,18 +93,20 @@ const ItemRow = memo(
                   <input
                     type="text"
                     className="nvi-input nvi-input--text"
-                    value={item.description ?? ''}
-                    onChange={(e) =>
-                      onUpdate?.(item.id, 'description', e.target.value)
-                    }
+                    value={item[primaryDescriptionField] ?? ''}
+                    onChange={(e) => {
+                      onUpdate?.(item.id, primaryDescriptionField, e.target.value);
+                      onUpdate?.(item.id, secondaryDescriptionField, '');
+                    }}
+                    dir={isArabicPrimary ? 'rtl' : 'ltr'}
                     autoComplete="off"
                   />
 
-                  {(item.description_ar || translatingDescription) && (
-                    <div className="nvi-desc-ar-preview" dir="rtl">
-                      {translatingDescription && !item.description_ar
+                  {(item[secondaryDescriptionField] || translatingDescription) && (
+                    <div className="nvi-desc-ar-preview" dir={isArabicPrimary ? 'ltr' : 'rtl'}>
+                      {translatingDescription && !item[secondaryDescriptionField]
                         ? `${t('translating', 'Translating')}...`
-                        : item.description_ar}
+                        : item[secondaryDescriptionField]}
                     </div>
                   )}
                 </div>
@@ -111,12 +134,12 @@ const ItemRow = memo(
               <div className="nvi-desc-view">
                 <span className="nvi-row-index">{index + 1}</span>
                 <span className="nvi-desc-text">
-                  {item.description || '—'}
+                  {item[primaryDescriptionField] || '—'}
                 </span>
 
-                {item.description_ar && (
-                  <span className="nvi-desc-text-ar" dir="rtl">
-                    {item.description_ar}
+                {item[secondaryDescriptionField] && (
+                  <span className="nvi-desc-text-ar" dir={isArabicPrimary ? 'ltr' : 'rtl'}>
+                    {item[secondaryDescriptionField]}
                   </span>
                 )}
 
@@ -245,18 +268,27 @@ const ItemRow = memo(
             <td colSpan={colSpan} className="nvi-td nvi-td--remarks">
               <div className="nvi-remarks-wrap">
                 {isEditMode ? (
-                  <div className="nvc-remarks-split-card">
+                  <div className="nvc-remarks-split-card" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
                     {/* English pane — original input */}
-                    <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en">
+                    <div
+                      className={`nvc-remarks-split-pane ${isArabicPrimary ? 'nvc-remarks-split-pane--ar' : 'nvc-remarks-split-pane--en'}`}
+                      dir={isArabicPrimary ? 'rtl' : 'ltr'}
+                    >
                       <div className="nvc-remarks-split-pane__header">
-                        <span className="nvc-remarks-split-pane__lang">EN</span>
-                        <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                        <span className="nvc-remarks-split-pane__lang">{isArabicPrimary ? 'ع' : 'EN'}</span>
+                        <span className="nvc-remarks-split-pane__label">
+                          {isArabicPrimary ? t('arabic', 'Arabic') : t('english', 'English')}
+                        </span>
                       </div>
                       <textarea
                         className="nvc-remarks-split-input"
-                        value={item.remarks ?? ''}
-                        onChange={(e) => onUpdate?.(item.id, 'remarks', e.target.value)}
+                        value={item[primaryRemarkField] ?? ''}
+                        onChange={(e) => {
+                          onUpdate?.(item.id, primaryRemarkField, e.target.value);
+                          onUpdate?.(item.id, secondaryRemarkField, '');
+                        }}
                         placeholder={t('item_remarks_placeholder')}
+                        dir={isArabicPrimary ? 'rtl' : 'ltr'}
                         autoComplete="off"
                       />
                     </div>
@@ -264,40 +296,47 @@ const ItemRow = memo(
                     <div className="nvc-remarks-split-divider" />
 
                     {/* Arabic pane — auto-translated, read-only */}
-                    <div className="nvc-remarks-split-pane nvc-remarks-split-pane--ar">
+                    <div
+                      className={`nvc-remarks-split-pane ${isArabicPrimary ? 'nvc-remarks-split-pane--en' : 'nvc-remarks-split-pane--ar'}`}
+                      dir={isArabicPrimary ? 'ltr' : 'rtl'}
+                    >
                       <div className="nvc-remarks-split-pane__header">
-                        <span className="nvc-remarks-split-pane__lang">ع</span>
+                        <span className="nvc-remarks-split-pane__lang">{isArabicPrimary ? 'EN' : 'ع'}</span>
                         <span className="nvc-remarks-split-pane__label">
                           {translatingRemark ? (
                             <span className="nvc-remarks-split-pane__translating">
                               <span className="nvc-remarks-split-pane__dot" />
                               {t('translating', 'Translating')}...
                             </span>
-                          ) : t('arabic', 'Arabic')}
+                          ) : (isArabicPrimary ? t('english', 'English') : t('arabic', 'Arabic'))}
                         </span>
                       </div>
-                      <div className="nvc-remarks-split-ar-view" dir="rtl">
-                        {item.remarks_ar
-                          ? item.remarks_ar
-                          : <span className="nvc-remarks-split-placeholder">{t('auto_translated_arabic', 'ترجمة تلقائية...')}</span>
-                        }
-                      </div>
+                      <textarea
+                        className="nvc-remarks-split-input"
+                        value={item[secondaryRemarkField] ?? ''}
+                        onChange={(e) => onUpdate?.(item.id, secondaryRemarkField, e.target.value)}
+                        placeholder={isArabicPrimary
+                          ? t('auto_translated_english', 'Auto-translated English')
+                          : t('auto_translated_arabic', 'Auto-translated Arabic')}
+                        dir={isArabicPrimary ? 'ltr' : 'rtl'}
+                        autoComplete="off"
+                      />
                     </div>
                   </div>
                 ) : (
-                  item.remarks_ar ? (
-                    <div className="nvc-remarks-split-view-grid">
-                      <div className="nvc-remarks-split-view-col">
-                        <div className="nvi-remarks-text">{item.remarks || <span className="nvi-remarks-empty">—</span>}</div>
+                  (item.remarks && item.remarks_ar) ? (
+                    <div className="nvc-remarks-split-view-grid" dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+                      <div className={`nvc-remarks-split-view-col ${isArabicPrimary ? 'nvc-remarks-split-view-col--ar' : ''}`} dir={isArabicPrimary ? 'rtl' : 'ltr'}>
+                        <div className="nvi-remarks-text">{item[primaryRemarkField] || <span className="nvi-remarks-empty">—</span>}</div>
                       </div>
                       <div className="nvc-remarks-split-view-divider" />
-                      <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
-                        <div className="nvi-remarks-text">{item.remarks_ar}</div>
+                      <div className={`nvc-remarks-split-view-col ${isArabicPrimary ? '' : 'nvc-remarks-split-view-col--ar'}`} dir={isArabicPrimary ? 'ltr' : 'rtl'}>
+                        <div className="nvi-remarks-text">{item[secondaryRemarkField]}</div>
                       </div>
                     </div>
                   ) : (
                     <div className="nvi-remarks-text">
-                      {item.remarks || <span className="nvi-remarks-empty">—</span>}
+                      {item[primaryRemarkField] || item[secondaryRemarkField] || <span className="nvi-remarks-empty">—</span>}
                     </div>
                   )
                 )}

@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot, FaImage } from 'react-icons/fa';
+import { FaPaperclip, FaTimes, FaPlus, FaFile, FaCheckCircle, FaRegEye, FaSpinner, FaExclamationTriangle, FaGripVertical, FaExchangeAlt, FaRobot, FaImage, FaMagic } from 'react-icons/fa';
 import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import SinglePresetSelectField from '../../../../../../components/common/SinglePresetSelectField';
 import Button from '../../../../../../components/common/Button';
@@ -11,6 +11,7 @@ import useCompanySettings from '../../../../../../hooks/useCompanySettings';
 import { useSuggestWording } from '../hooks/useSuggestWording';
 import { useImageRemarkSuggestion, MAX_IMAGE_SIZE_MB, ACCEPTED_IMAGE_TYPES } from '../hooks/useImageRemarkSuggestion';
 import { useRemarksOverlapCheck } from '../hooks/useRemarksOverlapCheck';
+import { useVariationRemarksSuggestion } from '../hooks/useVariationRemarksSuggestion';
 import { normalizeRichTextForRender, htmlToPlainText, plainTextToHtml } from '../../../../../../utils/richText';
 import { openFileInNewWindow, extractFileNameFromUrl, validateFileSize } from '../../../../../../utils/helpers/file';
 import { ATTACHMENT_SECTIONS, ATTACHMENT_SECTIONS_AR, OTHER_ATTACHMENT_SECTION } from '../../utils/attachmentSections';
@@ -29,6 +30,17 @@ import { projectApi } from '../../../../../../services';
 
 const ACCEPTED_ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
 const MAX_ATTACHMENT_SIZE_MB = 50;
+
+const cleanNoticeItems = (items) => items
+  .filter(item => String(item.description || item.remarks || '').trim())
+  .map(item => ({
+    description: item.description || '',
+    quantity: item.qty ?? '',
+    unit: item.unit || '',
+    rate: item.rate ?? '',
+    amount: item.amount ?? '',
+    remarks: item.remarks || '',
+  }));
 
 function RichRemarksView({ value, className = '', dir = 'ltr' }) {
   const html = normalizeRichTextForRender(value);
@@ -172,7 +184,16 @@ function SavedAttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, o
         />
       )}
       <div
-        className={`nvc-attachment-row__file-bar ${isFileDragOver ? 'nvc-attachment-row__file-bar--file-drag-over' : ''}`.trim()}
+        className={`nvc-attachment-row__file-bar ${isEditMode ? 'nvc-attachment-row__file-bar--action' : ''} ${isFileDragOver ? 'nvc-attachment-row__file-bar--file-drag-over' : ''}`.trim()}
+        role={isEditMode ? 'button' : undefined}
+        tabIndex={isEditMode ? 0 : undefined}
+        onClick={() => { if (isEditMode) fileInputRef.current?.click(); }}
+        onKeyDown={(e) => {
+          if (isEditMode && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
         onDragEnter={(e) => handleFileDrag(e, true)}
         onDragOver={(e) => handleFileDrag(e, true)}
         onDragLeave={(e) => handleFileDrag(e, false)}
@@ -454,6 +475,9 @@ function AttachmentRow({ att, isEditMode, t, onFileChange, onFieldChange, onRemo
 
 const RemarksAttachmentsSection = memo(({
   formData,
+  omittedItems = [],
+  addedItems = [],
+  calculations = {},
   isEditMode,
   onFormDataChange,
   existingVariationAttachment,
@@ -465,6 +489,15 @@ const RemarksAttachmentsSection = memo(({
 }) => {
   const { i18n } = useTranslation();
   const isRTL = /^ar\b/i.test(i18n.language || '');
+  const primaryRemarksField = isRTL ? 'remarks_ar' : 'remarks';
+  const secondaryRemarksField = isRTL ? 'remarks' : 'remarks_ar';
+  const primaryRemarks = formData[primaryRemarksField] ?? '';
+  const secondaryRemarks = formData[secondaryRemarksField] ?? '';
+  const remarksNeedBootstrap = !htmlToPlainText(primaryRemarks).trim()
+    && !!htmlToPlainText(secondaryRemarks).trim();
+  const translationSourceRemarks = remarksNeedBootstrap ? secondaryRemarks : primaryRemarks;
+  const translationTargetRemarks = remarksNeedBootstrap ? primaryRemarks : secondaryRemarks;
+  const translationTargetRemarksField = remarksNeedBootstrap ? primaryRemarksField : secondaryRemarksField;
   const getSectionLabel = (section) => (isRTL && ATTACHMENT_SECTIONS_AR[section]) || section;
 
   // Company-wide General Remarks — always shown read-only, above the
@@ -473,6 +506,80 @@ const RemarksAttachmentsSection = memo(({
   const { data: companySettings } = useCompanySettings();
   const generalRemarksEn = companySettings?.general_remarks_en || '';
   const generalRemarksAr = companySettings?.general_remarks_ar || '';
+
+  const noticeRemarksPayload = useMemo(() => ({
+    variation_description: formData.variation_description || '',
+    variation_cause: Array.isArray(formData.variation_cause)
+      ? formData.variation_cause
+      : (formData.variation_cause ? [formData.variation_cause] : []),
+    additional_time: formData.additional_time || '',
+    omitted_items: cleanNoticeItems(omittedItems),
+    added_items: cleanNoticeItems(addedItems),
+    financial_summary: {
+      total_omitted: calculations.totalOmitted ?? 0,
+      total_added: calculations.totalAdded ?? 0,
+      variation_amount: calculations.totalVariationAmount ?? 0,
+      total_amount: calculations.totalAmount ?? 0,
+    },
+    existing_remarks: htmlToPlainText(formData.remarks),
+    general_remarks: htmlToPlainText(generalRemarksEn),
+    language: 'en',
+  }), [
+    addedItems,
+    calculations.totalAdded,
+    calculations.totalAmount,
+    calculations.totalOmitted,
+    calculations.totalVariationAmount,
+    formData.additional_time,
+    formData.remarks,
+    formData.variation_cause,
+    formData.variation_description,
+    generalRemarksEn,
+    omittedItems,
+  ]);
+
+  const hasNoticeContent = Boolean(
+    noticeRemarksPayload.variation_description.trim()
+    || noticeRemarksPayload.variation_cause.length
+    || noticeRemarksPayload.omitted_items.length
+    || noticeRemarksPayload.added_items.length
+  );
+
+  const {
+    suggestions: noticeRemarkSuggestions,
+    busy: noticeRemarkBusy,
+    error: noticeRemarkError,
+    requestSuggestion: requestNoticeRemarkSuggestion,
+    discard: discardNoticeRemarkSuggestions,
+    removeSuggestion: removeNoticeRemarkSuggestion,
+  } = useVariationRemarksSuggestion();
+
+  const noticeSourceKey = JSON.stringify({
+    description: noticeRemarksPayload.variation_description,
+    causes: noticeRemarksPayload.variation_cause,
+    additionalTime: noticeRemarksPayload.additional_time,
+    omitted: noticeRemarksPayload.omitted_items,
+    added: noticeRemarksPayload.added_items,
+  });
+
+  useEffect(() => {
+    discardNoticeRemarkSuggestions();
+  }, [discardNoticeRemarkSuggestions, noticeSourceKey]);
+
+  const handleSuggestRemarksFromNotice = async () => {
+    discardRemarksSuggestions();
+    discardImageRemarkSuggestions();
+    await requestNoticeRemarkSuggestion(noticeRemarksPayload);
+  };
+
+  const handleApplyNoticeRemarkSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    onFormDataChange(prev => ({
+      ...prev,
+      remarks: `${prev.remarks || ''}${plainTextToHtml(suggestion)}`,
+    }));
+    removeNoticeRemarkSuggestion(suggestion);
+  };
 
   // Suggest Wording + Voice Note for the English remarks pane — mirrors the
   // same two AI affordances on the Variation Description field. The English
@@ -486,30 +593,42 @@ const RemarksAttachmentsSection = memo(({
     error: remarksSuggestError,
     requestSuggestion: requestRemarksSuggestion,
     discard: discardRemarksSuggestions,
-  } = useSuggestWording({ language: 'en' });
+  } = useSuggestWording({ language: isRTL ? 'ar' : 'en', context: 'variation_remarks' });
 
   const handleSuggestRemarksWording = async () => {
-    await requestRemarksSuggestion(htmlToPlainText(formData.remarks));
+    await requestRemarksSuggestion(htmlToPlainText(primaryRemarks));
   };
 
   const handleApplyRemarksSuggestion = (suggestion) => {
     if (!suggestion) return;
-    onFormDataChange(prev => ({ ...prev, remarks: plainTextToHtml(suggestion) }));
+    onFormDataChange(prev => ({
+      ...prev,
+      [primaryRemarksField]: plainTextToHtml(suggestion),
+    }));
     discardRemarksSuggestions();
   };
 
   const handleRemarksChange = (html) => {
     discardRemarksSuggestions();
-    onFormDataChange(prev => ({ ...prev, remarks: html }));
+    discardNoticeRemarkSuggestions();
+    onFormDataChange(prev => ({
+      ...prev,
+      [primaryRemarksField]: html,
+    }));
+  };
+
+  const handleSecondaryRemarksChange = (html) => {
+    onFormDataChange(prev => ({ ...prev, [secondaryRemarksField]: html }));
   };
 
   // Remarks are incremental bullet points, so voice notes append as a new
   // paragraph rather than replacing existing content.
   const appendRemarksTranscript = (transcript) => {
     discardRemarksSuggestions();
+    discardNoticeRemarkSuggestions();
     onFormDataChange(prev => ({
       ...prev,
-      remarks: `${prev.remarks || ''}${plainTextToHtml(transcript)}`,
+      [primaryRemarksField]: `${prev[primaryRemarksField] || ''}${plainTextToHtml(transcript)}`,
     }));
   };
 
@@ -519,8 +638,8 @@ const RemarksAttachmentsSection = memo(({
     error: remarksVoiceError,
     toggleRecording: toggleRemarksRecording,
   } = useVoiceTranscription({
-    language: 'en',
-    field: 'variation remarks',
+    language: isRTL ? 'ar' : 'en',
+    field: isRTL ? 'variation remarks Arabic' : 'variation remarks English',
     onTranscribed: appendRemarksTranscript,
   });
   const remarksVoiceActionLabel = remarksRecording
@@ -529,6 +648,7 @@ const RemarksAttachmentsSection = memo(({
       ? t('transcribing_voice', 'Transcribing...')
       : t('record_voice_note', 'Record Voice Note');
   const remarksSuggestActionLabel = t('suggest_wording');
+  const noticeRemarksActionLabel = t('suggest_remarks_from_notice', 'Suggest Remarks from Notice');
 
   // "Generate remark from photo" — user uploads an image (site condition,
   // defect, progress, a printed/handwritten note, ...) and Claude Vision
@@ -566,6 +686,7 @@ const RemarksAttachmentsSection = memo(({
     }
     setImageRemarkClientError('');
     discardRemarksSuggestions();
+    discardNoticeRemarkSuggestions();
     discardImageRemarkSuggestions();
     await requestImageRemarkSuggestion(file);
   };
@@ -581,6 +702,7 @@ const RemarksAttachmentsSection = memo(({
       remarks: `${prev.remarks || ''}${plainTextToHtml(suggestion)}`,
     }));
     removeImageRemarkSuggestion(suggestion);
+    discardNoticeRemarkSuggestions();
   };
 
   const imageRemarkActionLabel = imageRemarkBusy
@@ -593,15 +715,15 @@ const RemarksAttachmentsSection = memo(({
   // any manual wording/styling applied there directly (via the Arabic
   // editor's own toolbar) persists indefinitely — see useLineSyncTranslate.
   const { translating } = useLineSyncTranslate(
-    formData.remarks,
-    formData.remarks_ar,
-    (html) => onFormDataChange(prev => ({ ...prev, remarks_ar: html })),
-    { enabled: isEditMode }
+    translationSourceRemarks,
+    translationTargetRemarks,
+    (html) => onFormDataChange(prev => ({ ...prev, [translationTargetRemarksField]: html })),
+    {
+      enabled: isEditMode,
+      source: (isRTL !== remarksNeedBootstrap) ? 'ar' : 'en',
+      target: (isRTL !== remarksNeedBootstrap) ? 'en' : 'ar',
+    }
   );
-
-  const handleArabicRemarksChange = (html) => {
-    onFormDataChange(prev => ({ ...prev, remarks_ar: html }));
-  };
 
   // Soft, dismissible warning if a new/edited English remark line looks like
   // it already means the same thing as something in General Remarks above.
@@ -898,40 +1020,48 @@ const RemarksAttachmentsSection = memo(({
           <div className="nvc-section-header">
             <h3>{t('general_remarks_title', 'General Remarks')}</h3>
           </div>
-          <div className="nvc-remarks-split-view-grid">
-            <div className="nvc-remarks-split-view-col" style={{ whiteSpace: 'pre-wrap' }}>
+          <div className="nvc-remarks-split-view-grid" dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="nvc-remarks-split-view-col" style={{ whiteSpace: 'pre-wrap', order: isRTL ? 2 : 0 }} dir="ltr">
               {generalRemarksEn}
             </div>
-            <div className="nvc-remarks-split-view-divider" />
-            <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" style={{ whiteSpace: 'pre-wrap' }} dir="rtl">
+            <div className="nvc-remarks-split-view-divider" style={{ order: 1 }} />
+            <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" style={{ whiteSpace: 'pre-wrap', order: isRTL ? 0 : 2 }} dir="rtl">
               {generalRemarksAr}
             </div>
           </div>
         </div>
       )}
 
-      {(isEditMode || formData.remarks) && (
+      {(isEditMode || formData.remarks || formData.remarks_ar) && (
         <div className="nvc-section-header">
-          <h3>{t('remarks')}</h3>
+          <h3>{t('contract_notes', 'Contract Notes')}</h3>
         </div>
       )}
       <div className="nvc-remarks-grid">
         <div className="nvc-field nvc-field--full">
           {isEditMode ? (
             <>
-            <div className="nvc-remarks-split-card">
+            <div className="nvc-remarks-split-card" dir={isRTL ? 'rtl' : 'ltr'}>
               {/* English pane — original input */}
-              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--en" dir="ltr">
+              <div
+                className="nvc-remarks-split-pane nvc-remarks-split-pane--en"
+                dir="ltr"
+                style={{ order: isRTL ? 2 : 0 }}
+              >
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">EN</span>
-                  <span className="nvc-remarks-split-pane__label">{t('english', 'English')}</span>
+                  <span className="nvc-remarks-split-pane__label">
+                    {isRTL && translating
+                      ? `${t('translating', 'Translating')}...`
+                      : t('english', 'English')}
+                  </span>
                 </div>
                 <div className="nvc-remarks-editor">
                   <RichTextEditor
                     className="nvc-remarks-rich-editor"
                     value={formData.remarks ?? ''}
-                    onChange={handleRemarksChange}
-                    placeholder={`${t('remarks')} — ${t('one_point_per_line', 'one point per line')}`}
+                    onChange={isRTL ? handleSecondaryRemarksChange : handleRemarksChange}
+                    placeholder={`${t('contract_notes', 'Contract Notes')} — ${t('one_point_per_line', 'one point per line')}`}
                     dir="ltr"
                     t={t}
                   />
@@ -940,7 +1070,7 @@ const RemarksAttachmentsSection = memo(({
                       <VoiceNoteButton
                         recording={remarksRecording}
                         transcribing={remarksTranscribing}
-                        disabled={remarksSuggestBusy || imageRemarkBusy}
+                        disabled={remarksSuggestBusy || imageRemarkBusy || noticeRemarkBusy}
                         onClick={toggleRemarksRecording}
                         t={t}
                         iconOnly
@@ -954,8 +1084,22 @@ const RemarksAttachmentsSection = memo(({
                       <Button
                         size="icon"
                         variant="ghost"
+                        loading={noticeRemarkBusy}
+                        disabled={!hasNoticeContent || remarksRecording || remarksTranscribing || remarksSuggestBusy || imageRemarkBusy}
+                        startIcon={<FaMagic />}
+                        onClick={handleSuggestRemarksFromNotice}
+                        aria-label={noticeRemarksActionLabel}
+                      />
+                      <span className="nvh-action-tooltip__content" role="tooltip">
+                        {noticeRemarksActionLabel}
+                      </span>
+                    </span>
+                    <span className="nvh-action-tooltip">
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         loading={remarksSuggestBusy}
-                        disabled={!htmlToPlainText(formData.remarks).trim() || remarksRecording || remarksTranscribing || imageRemarkBusy}
+                        disabled={!htmlToPlainText(primaryRemarks).trim() || remarksRecording || remarksTranscribing || imageRemarkBusy || noticeRemarkBusy}
                         startIcon={<FaRobot />}
                         onClick={handleSuggestRemarksWording}
                         aria-label={remarksSuggestActionLabel}
@@ -976,7 +1120,7 @@ const RemarksAttachmentsSection = memo(({
                         size="icon"
                         variant="ghost"
                         loading={imageRemarkBusy}
-                        disabled={remarksRecording || remarksTranscribing || remarksSuggestBusy}
+                        disabled={remarksRecording || remarksTranscribing || remarksSuggestBusy || noticeRemarkBusy}
                         startIcon={<FaImage />}
                         onClick={handleImageRemarkButtonClick}
                         aria-label={imageRemarkActionLabel}
@@ -989,17 +1133,21 @@ const RemarksAttachmentsSection = memo(({
                 </div>
               </div>
 
-              <div className="nvc-remarks-split-divider" />
+              <div className="nvc-remarks-split-divider" style={{ order: 1 }} />
 
               {/* Arabic pane — auto-translated + auto-formatted to mirror
                   English by default, but freely editable/stylable on its own;
                   editing it here stops the auto-mirroring for this field (see
                   handleArabicRemarksChange) so manual work is never undone. */}
-              <div className="nvc-remarks-split-pane nvc-remarks-split-pane--ar">
+              <div
+                className="nvc-remarks-split-pane nvc-remarks-split-pane--ar"
+                dir="rtl"
+                style={{ order: isRTL ? 0 : 2 }}
+              >
                 <div className="nvc-remarks-split-pane__header">
                   <span className="nvc-remarks-split-pane__lang">ع</span>
                   <span className="nvc-remarks-split-pane__label">
-                    {translating ? (
+                    {!isRTL && translating ? (
                       <span className="nvc-remarks-split-pane__translating">
                         <span className="nvc-remarks-split-pane__dot" />
                         {t('translating', 'Translating')}...
@@ -1010,7 +1158,7 @@ const RemarksAttachmentsSection = memo(({
                 <RichTextEditor
                   className="nvc-remarks-rich-editor"
                   value={formData.remarks_ar ?? ''}
-                  onChange={handleArabicRemarksChange}
+                  onChange={isRTL ? handleRemarksChange : handleSecondaryRemarksChange}
                   placeholder={t('auto_translated_arabic', 'ترجمة تلقائية...')}
                   dir="rtl"
                   t={t}
@@ -1021,6 +1169,12 @@ const RemarksAttachmentsSection = memo(({
             {remarksSuggestError && (
               <p className="nvh-suggest-error">
                 {t(remarksSuggestError) !== remarksSuggestError ? t(remarksSuggestError) : remarksSuggestError}
+              </p>
+            )}
+
+            {noticeRemarkError && (
+              <p className="nvh-suggest-error">
+                {t(noticeRemarkError) !== noticeRemarkError ? t(noticeRemarkError) : noticeRemarkError}
               </p>
             )}
 
@@ -1072,24 +1226,30 @@ const RemarksAttachmentsSection = memo(({
             />
 
             <AiSuggestionsList
+              suggestions={noticeRemarkSuggestions}
+              onApply={handleApplyNoticeRemarkSuggestion}
+              label={t('ai_remarks_from_notice', 'Suggested remarks from this notice — click to add each')}
+            />
+
+            <AiSuggestionsList
               suggestions={imageRemarkSuggestions}
               onApply={handleApplyImageRemarkSuggestion}
               label={t('ai_points_from_image', 'Points detected in photo — click to add each')}
             />
             </>
-          ) : formData.remarks ? (
-            formData.remarks_ar ? (
-              <div className="nvc-remarks-split-view-grid">
-                <div className="nvc-remarks-split-view-col">
-                  <RichRemarksView value={formData.remarks} />
+          ) : (formData.remarks || formData.remarks_ar) ? (
+            (formData.remarks && formData.remarks_ar) ? (
+              <div className="nvc-remarks-split-view-grid" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className={`nvc-remarks-split-view-col ${isRTL ? 'nvc-remarks-split-view-col--ar' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <RichRemarksView value={primaryRemarks} dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
                 <div className="nvc-remarks-split-view-divider" />
-                <div className="nvc-remarks-split-view-col nvc-remarks-split-view-col--ar" dir="rtl">
-                  <RichRemarksView value={formData.remarks_ar} dir="rtl" />
+                <div className={`nvc-remarks-split-view-col ${isRTL ? '' : 'nvc-remarks-split-view-col--ar'}`} dir={isRTL ? 'ltr' : 'rtl'}>
+                  <RichRemarksView value={secondaryRemarks} dir={isRTL ? 'ltr' : 'rtl'} />
                 </div>
               </div>
             ) : (
-              <RichRemarksView value={formData.remarks} />
+              <RichRemarksView value={primaryRemarks || secondaryRemarks} dir={isRTL ? 'rtl' : 'ltr'} />
             )
           ) : null}
         </div>

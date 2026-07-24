@@ -251,7 +251,7 @@ export default function OwnerDetailPage() {
                     {projects.map((project) => (
                       <tr key={project.id}>
                         <td>{getProjectName(project)}</td>
-                        <td><code>{project.internal_code || `PRJ-${project.id}`}</code></td>
+                        <td><code>{project.project_code || project.internal_code || `PRJ-${project.id}`}</code></td>
                         <td>{getProjectType(project) || t("empty_value")}</td>
                         <td>
                           <div className="owner-detail__table-actions">
